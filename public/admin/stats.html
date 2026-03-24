@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Statistiques — Mos Pub Mercière</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MOS">
+  <meta name="theme-color" content="#0b2d3e">
+</head>
+<body>
+  <nav class="nav" id="nav"></nav>
+
+  <div class="page">
+    <div class="container">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📈 Statistiques</div>
+          <div class="page-subtitle">Suivi des performances de l'équipe</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="date" id="fromDate" style="width:auto;">
+          <span style="color:var(--text-muted);">→</span>
+          <input type="date" id="toDate" style="width:auto;">
+          <button class="btn btn-primary" onclick="loadStats()">Filtrer</button>
+          <button class="btn btn-secondary" onclick="resetFilter()">Tout</button>
+        </div>
+      </div>
+
+      <!-- Per-staff leaderboard -->
+      <div class="grid grid-2 mb-4">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🏆 Classement de l'équipe</div>
+          </div>
+          <div id="leaderboard">
+            <div class="empty-state"><div class="empty-state-icon">⏳</div><div class="empty-state-text">Chargement...</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📊 Par catégorie</div>
+          </div>
+          <div id="byCategory">
+            <div class="empty-state"><div class="empty-state-icon">⏳</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top tasks -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <div class="card-title">🔥 Tâches les plus réalisées</div>
+        </div>
+        <div id="topTasks">
+          <div class="empty-state"><div class="empty-state-icon">⏳</div></div>
+        </div>
+      </div>
+
+      <!-- Daily activity -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📅 Activité quotidienne (30 derniers jours)</div>
+        </div>
+        <div id="dailyActivity" style="overflow-x:auto;">
+          <div class="empty-state"><div class="empty-state-icon">⏳</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="/js/api.js"></script>
+  <script>
+    buildNav('stats');
+
+    // Default: last 30 days
+    const toD = new Date();
+    const fromD = new Date();
+    fromD.setDate(fromD.getDate() - 30);
+    document.getElementById('toDate').value = toD.toISOString().split('T')[0];
+    document.getElementById('fromDate').value = fromD.toISOString().split('T')[0];
+
+    function resetFilter() {
+      document.getElementById('fromDate').value = '';
+      document.getElementById('toDate').value = '';
+      loadStats();
+    }
+
+    async function loadStats() {
+      const from = document.getElementById('fromDate').value;
+      const to = document.getElementById('toDate').value;
+      const url = from && to ? `/api/admin/stats?from=${from}&to=${to}` : '/api/admin/stats';
+      const stats = await api.get(url);
+      if (!stats) return;
+
+      renderLeaderboard(stats.byUser);
+      renderByCategory(stats.byCategory);
+      renderTopTasks(stats.topTasks);
+      renderDailyActivity(stats.dailyActivity);
+    }
+
+    function renderLeaderboard(data) {
+      const el = document.getElementById('leaderboard');
+      if (!data?.length) {
+        el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🏆</div><div class="empty-state-text">Aucune donnée</div></div>`;
+        return;
+      }
+      const medals = ['🥇', '🥈', '🥉'];
+      const maxVal = data[0]?.total_completions || 1;
+      el.innerHTML = data.map((u, i) => `
+        <div style="margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:1.1rem;">${medals[i] || '👤'}</span>
+              <div>
+                <div style="font-weight:600;">${u.name}</div>
+                <div class="text-xs text-muted">${u.shift === 'midi' ? '🌅 Midi' : u.shift === 'soir' ? '🌙 Soir' : ''} · ${u.days_worked} jour${u.days_worked !== 1 ? 's' : ''} travaillé${u.days_worked !== 1 ? 's' : ''}</div>
+              </div>
+            </div>
+            <span class="badge badge-primary">${u.total_completions} tâche${u.total_completions !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${Math.round(u.total_completions / maxVal * 100)}%"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderByCategory(data) {
+      const el = document.getElementById('byCategory');
+      if (!data?.length) {
+        el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-text">Aucune donnée</div></div>`;
+        return;
+      }
+      const icons = { matin: '🌅', passation: '🔄', soir: '🌙' };
+      const labels = { matin: 'MATIN', passation: 'PASSATION', soir: 'SOIR' };
+      const colors = { matin: 'var(--primary)', passation: 'var(--info)', soir: 'var(--purple)' };
+      const maxVal = Math.max(...data.map(d => d.completions));
+      el.innerHTML = data.map(d => `
+        <div style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-weight:600;">${icons[d.category] || ''} ${labels[d.category] || d.category}</span>
+            <span class="badge badge-muted">${d.completions} fois · ${d.days} jours</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${Math.round(d.completions / maxVal * 100)}%;background:${colors[d.category] || 'var(--primary)'}"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderTopTasks(data) {
+      const el = document.getElementById('topTasks');
+      if (!data?.length) {
+        el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Aucune donnée</div></div>`;
+        return;
+      }
+      const maxVal = data[0]?.completions || 1;
+      const catIcons = { matin: '🌅', passation: '🔄', soir: '🌙' };
+      el.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;">` +
+        data.map((t, i) => `
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:0.8rem;color:var(--text-muted);width:20px;text-align:right;">${i + 1}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.description}</div>
+              <div class="text-xs text-muted">${catIcons[t.category] || ''} ${t.section || ''}</div>
+            </div>
+            <div style="width:200px;">
+              <div style="display:flex;justify-content:flex-end;margin-bottom:3px;">
+                <span class="text-xs text-muted">${t.completions}×</span>
+              </div>
+              <div class="progress-bar" style="height:5px;">
+                <div class="progress-fill" style="width:${Math.round(t.completions / maxVal * 100)}%"></div>
+              </div>
+            </div>
+          </div>
+        `).join('') + `</div>`;
+    }
+
+    function renderDailyActivity(data) {
+      const el = document.getElementById('dailyActivity');
+      if (!data?.length) {
+        el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">Aucune donnée</div></div>`;
+        return;
+      }
+      const maxVal = Math.max(...data.map(d => d.completions));
+      el.innerHTML = `
+        <table>
+          <thead><tr>
+            <th>Date</th>
+            <th>Tâches réalisées</th>
+            <th>Membres actifs</th>
+            <th style="width:300px;">Progression</th>
+          </tr></thead>
+          <tbody>
+            ${data.map(d => `
+              <tr>
+                <td>${formatDate(d.date)}</td>
+                <td><strong>${d.completions}</strong></td>
+                <td>${d.staff_active} membre${d.staff_active !== 1 ? 's' : ''}</td>
+                <td>
+                  <div class="progress-bar" style="height:6px;">
+                    <div class="progress-fill" style="width:${Math.round(d.completions / maxVal * 100)}%"></div>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    loadStats();
+  </script>
+</body>
+</html>

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Plan de Salle — Mos Pub Mercière</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MOS">
+  <meta name="theme-color" content="#0b2d3e">
+  <style>
+    .floor-canvas { min-height: 600px; cursor: default; }
+    .floor-table { cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; }
+    .floor-table:hover { transform: scale(1.03); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+
+    /* Status colors */
+    .s-available  { background: var(--bg-surface); border-color: var(--border); color: var(--text-muted); }
+    .s-reserved   { background: var(--info-bg); border-color: var(--info); color: var(--info); }
+    .s-setup      { background: var(--warning-bg); border-color: var(--warning); color: var(--warning); }
+    .s-arrived    { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+    .s-alert      { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); animation: pulse 1s infinite; }
+
+    .legend { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+    .legend-item { display:flex; align-items:center; gap:6px; font-size:0.8rem; color:var(--text-muted); }
+    .legend-dot { width:10px; height:10px; border-radius:50%; border:2px solid; }
+
+    /* Date bar */
+    .date-bar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+
+    .zone-tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:14px; }
+    .zone-tab { padding:7px 14px; border-radius:var(--radius-sm); font-size:0.82rem; font-weight:600; background:var(--bg-card); border:1px solid var(--border); color:var(--text-muted); cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+    .zone-tab.active { background:var(--primary-dim); border-color:var(--primary); color:var(--primary); }
+    .zone-tab .zt-count { font-size:0.72rem; margin-left:4px; opacity:0.8; }
+    .floor-table.is-deco { cursor:default !important; border-style:dashed !important; background:rgba(255,255,255,0.03) !important; color:rgba(255,255,255,0.2) !important; border-color:rgba(255,255,255,0.12) !important; }
+    .floor-table.is-deco:hover { transform:none !important; box-shadow:none !important; }
+  </style>
+</head>
+<body>
+  <nav class="nav" id="nav"></nav>
+
+  <!-- Alert banners container -->
+  <div id="alertBanners"></div>
+
+  <div class="page">
+    <div class="container" style="max-width:1400px;">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🍽️ Plan de Salle</div>
+          <div class="page-subtitle" id="dateLabel"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <input type="date" id="viewDate" style="width:auto;" onchange="loadAll()">
+          <button class="btn btn-primary" onclick="openNewReservation()">+ Réservation</button>
+        </div>
+      </div>
+
+      <div class="zone-tabs" id="zoneTabs"></div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--bg-surface);border-color:var(--border)"></div> Libre</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--info-bg);border-color:var(--info)"></div> Réservée</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--warning-bg);border-color:var(--warning)"></div> Mise en place</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--success-bg);border-color:var(--success)"></div> Clients arrivés</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--danger-bg);border-color:var(--danger)"></div> ⚠️ Alerte non-arrivée</div>
+      </div>
+
+      <div class="floor-container">
+        <div class="floor-canvas" id="floorCanvas"></div>
+      </div>
+
+      <!-- Reservations list below plan -->
+      <div class="card mt-3">
+        <div class="card-header">
+          <div class="card-title">📋 Toutes les réservations</div>
+          <span class="badge badge-muted" id="resCount">0</span>
+        </div>
+        <div id="resList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table detail / status panel -->
+  <div class="modal-overlay hidden" id="tableModal" onclick="closeOnOverlay(event,'tableModal')">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="modalTableName">Table</div>
+          <div class="text-sm text-muted" id="modalTableCap"></div>
+        </div>
+        <button class="modal-close" onclick="hideModal('tableModal')">✕</button>
+      </div>
+
+      <!-- Status buttons -->
+      <div style="margin-bottom:18px;">
+        <div class="text-sm text-muted mb-4">Changer le statut :</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-secondary btn-sm" onclick="setTableStatus('available')">⬜ Libre</button>
+          <button class="btn btn-sm" style="background:var(--info-bg);color:var(--info);" onclick="setTableStatus('reserved')">📋 Réservée</button>
+          <button class="btn btn-sm" style="background:var(--warning-bg);color:var(--warning);" onclick="setTableStatus('setup')">🪑 Mise en place</button>
+          <button class="btn btn-sm" style="background:var(--success-bg);color:var(--success);" onclick="setTableStatus('arrived')">✅ Clients arrivés</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Reservation for this table -->
+      <div id="tableResDetail"></div>
+
+      <!-- Assign reservation -->
+      <div id="assignSection">
+        <div class="text-sm text-muted mb-4" style="margin-top:12px;">Réservation liée à cette table :</div>
+        <select id="assignRes" style="margin-bottom:10px;">
+          <option value="">— Aucune réservation —</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="assignReservation()">Associer</button>
+      </div>
+
+      <div class="divider"></div>
+      <button class="btn btn-primary btn-full mt-2" onclick="openNewReservationForTable()">+ Nouvelle réservation pour cette table</button>
+    </div>
+  </div>
+
+  <!-- New / Edit Reservation Modal -->
+  <div class="modal-overlay hidden" id="resModal" onclick="closeOnOverlay(event,'resModal')">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <div class="modal-title" id="resModalTitle">Nouvelle Réservation</div>
+        <button class="modal-close" onclick="hideModal('resModal')">✕</button>
+      </div>
+      <form id="resForm" onsubmit="saveReservation(event)">
+        <input type="hidden" id="resId">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="form-row form-row-2">
+            <div class="form-group">
+              <label class="form-label">Nom du client *</label>
+              <input type="text" id="resName" placeholder="Ex: Dupont" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Téléphone</label>
+              <input type="tel" id="resPhone" placeholder="06 xx xx xx xx">
+            </div>
+          </div>
+          <div class="form-row form-row-3">
+            <div class="form-group">
+              <label class="form-label">Date *</label>
+              <input type="date" id="resDate" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Heure *</label>
+              <input type="time" id="resTime" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nombre de personnes</label>
+              <input type="number" id="resParty" min="1" max="30" value="2">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Table assignée</label>
+            <select id="resTable">
+              <option value="">— Pas encore assignée —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea id="resNotes" rows="2" placeholder="Allergies, occasion spéciale..." style="resize:vertical;"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="hideModal('resModal')">Annuler</button>
+          <div style="flex:1"></div>
+          <button type="button" class="btn btn-danger btn-sm" id="btnDeleteRes" onclick="deleteReservation()" style="display:none;">Supprimer</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/api.js"></script>
+  <script>
+    buildNav('tables');
+    const socket = io();
+
+    const ZONES = [
+      { key:'salle_bas',  label:'Salle Bas',  canvasW:1150, canvasH:660 },
+      { key:'etage',      label:'Étage',       canvasW:1000, canvasH:650 },
+      { key:'coin_canap', label:'Coin Canapé', canvasW:980,  canvasH:560 },
+      { key:'terrasse',   label:'Terrasse',    canvasW:1120, canvasH:580 },
+    ];
+    let currentZone = 'salle_bas';
+
+    let tables = [];
+    let reservations = [];
+    let tableStatuses = {}; // tableId → status (local, derived from reservations)
+    let selectedTableId = null;
+    const activeAlerts = new Set();
+
+    const viewDate = document.getElementById('viewDate');
+    viewDate.value = today();
+    document.getElementById('dateLabel').textContent = formatDate(today());
+
+    async function loadAll() {
+      const date = viewDate.value;
+      document.getElementById('dateLabel').textContent = formatDate(date);
+      const [t, r] = await Promise.all([
+        api.get('/api/tables'),
+        api.get(`/api/reservations?date=${date}`)
+      ]);
+      if (!t || !r) return;
+      tables = t;
+      reservations = r;
+      computeStatuses();
+      renderZoneTabs();
+      renderFloor();
+      renderResList();
+      populateTableSelects();
+    }
+
+    function computeStatuses() {
+      tableStatuses = {};
+      tables.forEach(t => { tableStatuses[t.id] = 'available'; });
+      reservations.forEach(r => {
+        if (!r.table_id) return;
+        if (r.status === 'cancelled') return;
+        const cur = tableStatuses[r.table_id];
+        if (r.status === 'arrived') tableStatuses[r.table_id] = 'arrived';
+        else if (cur !== 'arrived') tableStatuses[r.table_id] = r.status === 'confirmed' ? 'reserved' : r.status;
+      });
+    }
+
+    function renderZoneTabs() {
+      document.getElementById('zoneTabs').innerHTML = ZONES.map(z => {
+        const zoneTables = tables.filter(t => t.zone === z.key && !t.is_decoration);
+        const total = zoneTables.length;
+        const occupied = zoneTables.filter(t => {
+          const s = tableStatuses[t.id];
+          return s === 'reserved' || s === 'arrived' || s === 'alert';
+        }).length;
+        const countStr = occupied > 0 ? `${occupied}/${total}` : total;
+        return `<button class="zone-tab ${z.key === currentZone ? 'active' : ''}"
+                        onclick="switchZone('${z.key}')">
+                  ${z.label}<span class="zt-count">${countStr}</span>
+                </button>`;
+      }).join('');
+    }
+
+    function switchZone(key) {
+      currentZone = key;
+      renderZoneTabs();
+      renderFloor();
+    }
+
+    function renderFloor() {
+      const canvas = document.getElementById('floorCanvas');
+      const zone = ZONES.find(z => z.key === currentZone);
+      canvas.style.width  = (zone?.canvasW ?? 1150) + 'px';
+      canvas.style.height = (zone?.canvasH ?? 660) + 'px';
+      canvas.innerHTML = '';
+
+      const zoneTables = tables.filter(t => t.zone === currentZone);
+      if (!zoneTables.length) {
+        canvas.innerHTML = `<div class="empty-state" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">
+          <div class="empty-state-icon">🪑</div>
+          <div class="empty-state-text">Aucune table dans cette zone</div>
+        </div>`;
+        return;
+      }
+
+      zoneTables.forEach(t => {
+        const status = t.is_decoration ? 'deco' : (tableStatuses[t.id] || 'available');
+        const res = !t.is_decoration ? reservations.find(r => r.table_id === t.id && r.status !== 'cancelled') : null;
+
+        const el = document.createElement('div');
+        el.id = 'tbl-' + t.id;
+        el.className = `floor-table${t.is_decoration ? ' is-deco' : (' s-' + status)}`;
+        el.style.cssText = `left:${t.x}px;top:${t.y}px;width:${t.width}px;height:${t.height}px;border-radius:${t.shape==='round'?'50%':'10px'};border:2px solid;`;
+
+        const statusIcon = { available:'', reserved:'📋', setup:'🪑', arrived:'✅', alert:'⚠️' };
+        const fs = Math.min(t.width,t.height) > 75 ? '0.78rem' : '0.62rem';
+        if (t.is_decoration) {
+          el.innerHTML = `<div class="table-name" style="font-size:${fs};font-weight:700;">${t.name}</div>`;
+        } else {
+          el.innerHTML = `
+            <div class="table-name" style="font-size:${fs};font-weight:700;">${t.name}</div>
+            ${res ? `<div style="font-size:0.58rem;text-align:center;line-height:1.2;padding:0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${res.customer_name}<br>${res.time}·${res.party_size}p</div>` : `<div class="table-capacity">${t.capacity}p</div>`}
+            <div style="font-size:0.75rem;margin-top:1px;">${statusIcon[status]||''}</div>
+          `;
+          el.addEventListener('click', () => openTableModal(t.id));
+        }
+        canvas.appendChild(el);
+      });
+    }
+
+    function renderResList() {
+      const container = document.getElementById('resList');
+      document.getElementById('resCount').textContent = reservations.length;
+
+      if (!reservations.length) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">Aucune réservation pour cette date</div></div>`;
+        return;
+      }
+
+      const statusCfg = {
+        confirmed: { label:'Confirmée', cls:'info' },
+        arrived:   { label:'Arrivée',   cls:'success' },
+        no_show:   { label:'No show',   cls:'danger' },
+        cancelled: { label:'Annulée',   cls:'muted' }
+      };
+
+      container.innerHTML = `<div class="table-wrap"><table>
+        <thead><tr><th>Heure</th><th>Client</th><th>Table</th><th>Pers.</th><th>Statut</th><th>Notes</th><th></th></tr></thead>
+        <tbody>
+          ${reservations.map(r => {
+            const s = statusCfg[r.status] || { label:r.status, cls:'muted' };
+            return `<tr>
+              <td><strong>${r.time}</strong></td>
+              <td>${r.customer_name}${r.phone ? `<div class="text-xs text-muted">${r.phone}</div>` : ''}</td>
+              <td>${r.table_name || '<span class="text-muted">—</span>'}</td>
+              <td>${r.party_size}</td>
+              <td>
+                <select class="res-status-select" style="font-size:0.8rem;padding:4px 8px;width:auto;" onchange="changeResStatus(${r.id}, this.value)">
+                  <option value="confirmed" ${r.status==='confirmed'?'selected':''}>Confirmée</option>
+                  <option value="arrived"   ${r.status==='arrived'?'selected':''}>Arrivée ✅</option>
+                  <option value="no_show"   ${r.status==='no_show'?'selected':''}>No show</option>
+                  <option value="cancelled" ${r.status==='cancelled'?'selected':''}>Annulée</option>
+                </select>
+              </td>
+              <td class="text-xs text-muted">${r.notes || ''}</td>
+              <td><button class="btn btn-secondary btn-sm" onclick="editReservation(${r.id})">✏️</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table></div>`;
+    }
+
+    function populateTableSelects() {
+      const opts = `<option value="">— Pas encore assignée —</option>` +
+        tables.map(t => `<option value="${t.id}">${t.name} (${t.capacity} pers.)</option>`).join('');
+      document.getElementById('resTable').innerHTML = opts;
+      document.getElementById('assignRes').innerHTML = `<option value="">— Aucune réservation —</option>` +
+        reservations.filter(r => r.status !== 'cancelled').map(r => `<option value="${r.id}">${r.time} · ${r.customer_name} (${r.party_size}p)</option>`).join('');
+    }
+
+    // ── Table modal ──────────────────────────────────────────────────────────────
+    function openTableModal(tableId) {
+      selectedTableId = tableId;
+      const t = tables.find(x => x.id === tableId);
+      const res = reservations.find(r => r.table_id === tableId && r.status !== 'cancelled');
+
+      document.getElementById('modalTableName').textContent = t.name;
+      document.getElementById('modalTableCap').textContent = `Capacité : ${t.capacity} personnes`;
+
+      const detail = document.getElementById('tableResDetail');
+      if (res) {
+        detail.innerHTML = `
+          <div class="card" style="background:var(--bg-surface);margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;">
+              <div>
+                <div style="font-weight:700;font-size:1.05rem;">${res.customer_name}</div>
+                <div class="text-sm text-muted">${res.time} · ${res.party_size} personne${res.party_size > 1 ? 's' : ''}</div>
+                ${res.phone ? `<div class="text-sm" style="margin-top:4px;">📞 ${res.phone}</div>` : ''}
+                ${res.notes ? `<div class="text-sm text-muted" style="margin-top:4px;">📝 ${res.notes}</div>` : ''}
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="editReservation(${res.id})">✏️ Modifier</button>
+            </div>
+          </div>`;
+      } else {
+        detail.innerHTML = `<div class="text-muted text-sm" style="margin-bottom:12px;">Aucune réservation associée à cette table.</div>`;
+      }
+
+      // Pre-select in assign dropdown
+      document.getElementById('assignRes').value = res?.id || '';
+
+      showModal('tableModal');
+    }
+
+    async function setTableStatus(status) {
+      if (!selectedTableId) return;
+      // Find reservation for this table and update its status
+      const res = reservations.find(r => r.table_id === selectedTableId && r.status !== 'cancelled');
+      if (res) {
+        const mappedStatus = status === 'available' ? 'confirmed' : status === 'arrived' ? 'arrived' : 'confirmed';
+        await changeResStatus(res.id, mappedStatus);
+      } else {
+        // No reservation — just update local display
+        tableStatuses[selectedTableId] = status;
+        renderFloor();
+      }
+      hideModal('tableModal');
+      showToast('Statut mis à jour', 'success');
+    }
+
+    async function changeResStatus(resId, status) {
+      await api.put(`/api/reservations/${resId}`, { status });
+      const r = reservations.find(x => x.id === resId);
+      if (r) r.status = status;
+      computeStatuses();
+      renderFloor();
+      renderResList();
+    }
+
+    async function assignReservation() {
+      const resId = document.getElementById('assignRes').value;
+      if (!selectedTableId) return;
+      if (resId) {
+        await api.put(`/api/reservations/${resId}`, { table_id: selectedTableId });
+        const r = reservations.find(x => x.id === parseInt(resId));
+        if (r) { r.table_id = selectedTableId; r.table_name = tables.find(t => t.id === selectedTableId)?.name; }
+      }
+      computeStatuses();
+      renderFloor();
+      renderResList();
+      hideModal('tableModal');
+      showToast('Réservation associée', 'success');
+    }
+
+    // ── Reservation CRUD ─────────────────────────────────────────────────────────
+    function openNewReservation() {
+      document.getElementById('resModalTitle').textContent = 'Nouvelle Réservation';
+      document.getElementById('resId').value = '';
+      document.getElementById('resForm').reset();
+      document.getElementById('resDate').value = viewDate.value;
+      document.getElementById('btnDeleteRes').style.display = 'none';
+      populateTableSelects();
+      showModal('resModal');
+    }
+
+    function openNewReservationForTable() {
+      hideModal('tableModal');
+      openNewReservation();
+      document.getElementById('resTable').value = selectedTableId || '';
+    }
+
+    function editReservation(id) {
+      const r = reservations.find(x => x.id === id);
+      if (!r) return;
+      document.getElementById('resModalTitle').textContent = 'Modifier la Réservation';
+      document.getElementById('resId').value = r.id;
+      document.getElementById('resName').value = r.customer_name;
+      document.getElementById('resPhone').value = r.phone || '';
+      document.getElementById('resDate').value = r.date;
+      document.getElementById('resTime').value = r.time;
+      document.getElementById('resParty').value = r.party_size;
+      document.getElementById('resNotes').value = r.notes || '';
+      document.getElementById('btnDeleteRes').style.display = 'flex';
+      populateTableSelects();
+      document.getElementById('resTable').value = r.table_id || '';
+      hideModal('tableModal');
+      showModal('resModal');
+    }
+
+    async function saveReservation(e) {
+      e.preventDefault();
+      const id = document.getElementById('resId').value;
+      const body = {
+        customer_name: document.getElementById('resName').value.trim(),
+        phone: document.getElementById('resPhone').value.trim() || null,
+        date: document.getElementById('resDate').value,
+        time: document.getElementById('resTime').value,
+        party_size: parseInt(document.getElementById('resParty').value) || 2,
+        table_id: document.getElementById('resTable').value || null,
+        notes: document.getElementById('resNotes').value.trim() || null
+      };
+
+      let result;
+      if (id) {
+        result = await api.put(`/api/reservations/${id}`, body);
+      } else {
+        result = await api.post('/api/reservations', body);
+      }
+
+      if (result?.error) { showToast(result.error, 'error'); return; }
+      hideModal('resModal');
+      showToast(id ? 'Réservation mise à jour ✓' : 'Réservation créée ✓', 'success');
+      loadAll();
+    }
+
+    async function deleteReservation() {
+      const id = document.getElementById('resId').value;
+      if (!id || !confirm('Supprimer cette réservation ?')) return;
+      await api.delete(`/api/reservations/${id}`);
+      hideModal('resModal');
+      showToast('Réservation supprimée', 'info');
+      loadAll();
+    }
+
+    // ── 15-min alerts ────────────────────────────────────────────────────────────
+    socket.on('alert:no_show', data => {
+      if (activeAlerts.has(data.reservationId)) return;
+      activeAlerts.add(data.reservationId);
+      playAlertSound();
+      showAlert(data);
+      // Update local status
+      const r = reservations.find(x => x.id === data.reservationId);
+      if (r) { r.status = 'no_show'; }
+      tableStatuses[data.tableId] = 'alert';
+      renderZoneTabs();
+      renderFloor();
+    });
+
+    socket.on('alert:cancel', ({ reservationId }) => {
+      activeAlerts.delete(reservationId);
+      const el = document.getElementById('alert-' + reservationId);
+      if (el) el.remove();
+    });
+
+    function showAlert(data) {
+      const container = document.getElementById('alertBanners');
+      const el = document.createElement('div');
+      el.id = 'alert-' + data.reservationId;
+      el.className = 'alert-banner';
+      el.style.cssText = `position:fixed;top:calc(var(--nav-height) + 12px);left:50%;transform:translateX(-50%);z-index:500;width:calc(100% - 40px);max-width:600px;`;
+      el.innerHTML = `
+        <div class="alert-banner-icon">⚠️</div>
+        <div class="alert-banner-text">${data.message}</div>
+        <button class="alert-banner-close" onclick="dismissAlert(${data.reservationId}, ${data.tableId})">OK</button>
+      `;
+      document.body.appendChild(el);
+    }
+
+    async function dismissAlert(resId, tableId) {
+      activeAlerts.delete(resId);
+      const el = document.getElementById('alert-' + resId);
+      if (el) el.remove();
+      // Mark as no_show
+      await api.put(`/api/reservations/${resId}`, { status: 'no_show' });
+      const r = reservations.find(x => x.id === resId);
+      if (r) r.status = 'no_show';
+      computeStatuses();
+      renderFloor();
+      renderResList();
+    }
+
+    // ── Real-time sync ───────────────────────────────────────────────────────────
+    socket.on('reservation:updated', r => {
+      if (r.date !== viewDate.value) return;
+      const idx = reservations.findIndex(x => x.id === r.id);
+      if (idx >= 0) reservations[idx] = r;
+      else reservations.push(r);
+      computeStatuses();
+      renderZoneTabs();
+      renderFloor();
+      renderResList();
+      populateTableSelects();
+    });
+
+    socket.on('reservation:deleted', ({ id }) => {
+      reservations = reservations.filter(r => r.id !== id);
+      computeStatuses();
+      renderZoneTabs();
+      renderFloor();
+      renderResList();
+      populateTableSelects();
+    });
+
+    socket.on('table:created', t => { tables.push(t); renderZoneTabs(); renderFloor(); });
+    socket.on('table:updated', t => {
+      const idx = tables.findIndex(x => x.id === t.id);
+      if (idx >= 0) tables[idx] = t;
+      renderZoneTabs();
+      renderFloor();
+    });
+    socket.on('table:deleted', ({ id }) => {
+      tables = tables.filter(t => t.id !== id);
+      renderZoneTabs();
+      renderFloor();
+    });
+
+    loadAll();
+  </script>
+</body>
+</html>

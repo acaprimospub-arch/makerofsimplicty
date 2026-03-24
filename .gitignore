@@ -1,0 +1,7 @@
+node_modules/
+db/mos.db
+db/mos.db-shm
+db/mos.db-wal
+*.log
+.env
+.DS_Store

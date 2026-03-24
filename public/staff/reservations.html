@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Réservations — Mos Pub Mercière</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MOS">
+  <meta name="theme-color" content="#0b2d3e">
+  <style>
+    /* ── Carte réservation ── */
+    .res-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color 0.15s;
+      flex-wrap: wrap;
+    }
+    .res-card:hover { border-color: var(--primary-dim); }
+    .res-card.status-arrived  { border-left: 4px solid var(--success); }
+    .res-card.status-confirmed { border-left: 4px solid var(--info); }
+    .res-card.status-no_show  { border-left: 4px solid var(--danger); }
+    .res-card.status-cancelled { border-left: 4px solid #444; opacity: 0.55; }
+
+    .res-time {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--text);
+      min-width: 52px;
+      letter-spacing: -0.5px;
+      flex-shrink: 0;
+    }
+
+    .res-main { flex: 1; min-width: 180px; }
+    .res-name { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .res-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .res-meta span { display: flex; align-items: center; gap: 4px; }
+
+    .res-table-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .res-table-badge.assigned {
+      background: rgba(212,175,55,0.15);
+      color: var(--gold);
+      border: 1px solid rgba(212,175,55,0.4);
+    }
+    .res-table-badge.unassigned {
+      background: rgba(255,255,255,0.05);
+      color: #555;
+      border: 1px solid #333;
+    }
+
+    .res-status-wrap { flex-shrink: 0; }
+    .res-status-select {
+      font-size: 0.78rem;
+      padding: 5px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text);
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .res-status-select.s-confirmed { border-color: var(--info);    color: var(--info); }
+    .res-status-select.s-arrived   { border-color: var(--success); color: var(--success); }
+    .res-status-select.s-no_show   { border-color: var(--danger);  color: var(--danger); }
+    .res-status-select.s-cancelled { border-color: #555;           color: #555; }
+
+    .res-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    /* ── Résumé du jour ── */
+    .day-summary {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .summary-chip {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 14px;
+      font-size: 0.82rem;
+    }
+    .summary-chip strong { font-size: 1.1rem; }
+    .chip-dot { width:9px;height:9px;border-radius:50%;flex-shrink:0; }
+    .chip-total   { border-color: var(--primary-dim); }
+    .chip-total   strong { color: var(--primary); }
+    .chip-confirm .chip-dot { background: var(--info); }
+    .chip-confirm strong    { color: var(--info); }
+    .chip-arrived .chip-dot { background: var(--success); }
+    .chip-arrived strong    { color: var(--success); }
+    .chip-noshow  .chip-dot { background: var(--danger); }
+    .chip-noshow  strong    { color: var(--danger); }
+
+    /* ── Barre date ── */
+    .date-nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .date-nav input[type="date"] { width: auto; }
+    .date-jump {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .date-jump:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ── Notes block ── */
+    .res-notes {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav" id="nav"></nav>
+
+  <div class="page">
+    <div class="container-sm">
+
+      <!-- Header -->
+      <div class="page-header">
+        <div>
+          <div class="page-title">📋 Réservations</div>
+          <div class="page-subtitle" id="dateLabel"></div>
+        </div>
+        <button class="btn btn-primary" onclick="openCreate()">+ Nouvelle réservation</button>
+      </div>
+
+      <!-- Navigation de date -->
+      <div class="date-nav">
+        <button class="date-jump" onclick="shiftDate(-1)">← Hier</button>
+        <input type="date" id="viewDate" onchange="loadReservations()">
+        <button class="date-jump" onclick="goToday()">Aujourd'hui</button>
+        <button class="date-jump" onclick="shiftDate(1)">Demain →</button>
+      </div>
+
+      <!-- Résumé du jour -->
+      <div class="day-summary" id="daySummary"></div>
+
+      <!-- Liste des réservations -->
+      <div id="resList"></div>
+
+    </div>
+  </div>
+
+  <!-- ── Modal Créer / Modifier ─────────────────────────────────────────── -->
+  <div class="modal-overlay hidden" id="resModal" onclick="closeOnOverlay(event,'resModal')">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <div class="modal-title" id="resModalTitle">Nouvelle réservation</div>
+        <button class="modal-close" onclick="hideModal('resModal')">✕</button>
+      </div>
+
+      <form id="resForm" onsubmit="saveRes(event)">
+        <input type="hidden" id="resId">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+
+          <div class="form-row form-row-2">
+            <div class="form-group">
+              <label class="form-label">Nom du client *</label>
+              <input type="text" id="resName" placeholder="Ex : Dupont" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Téléphone</label>
+              <input type="tel" id="resPhone" placeholder="06 xx xx xx xx">
+            </div>
+          </div>
+
+          <div class="form-row form-row-3">
+            <div class="form-group">
+              <label class="form-label">Date *</label>
+              <input type="date" id="resDate" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Heure *</label>
+              <input type="time" id="resTime" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nombre de personnes</label>
+              <input type="number" id="resParty" min="1" max="50" value="2">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notes <span style="color:var(--text-muted);font-weight:400;">(allergies, occasion, demandes…)</span></label>
+            <textarea id="resNotes" rows="3" placeholder="Ex : Allergie aux noix · Anniversaire · Table en terrasse si possible…" style="resize:vertical;"></textarea>
+          </div>
+
+          <!-- Info : table assignée par les serveurs -->
+          <div style="background:rgba(91,141,238,0.07);border:1px solid rgba(91,141,238,0.25);border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#5b8dee;">
+            ℹ️ La <strong>table sera assignée par les serveurs</strong> depuis le plan de salle lors du service.
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="hideModal('resModal')">Annuler</button>
+          <div style="flex:1"></div>
+          <button type="button" class="btn btn-danger btn-sm" id="btnDeleteRes" onclick="deleteRes()" style="display:none;">Supprimer</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/api.js"></script>
+  <script>
+    buildNav('reservations');
+    const socket = io();
+
+    let reservations = [];
+    const viewDate = document.getElementById('viewDate');
+    viewDate.value = today();
+    updateDateLabel();
+
+    // ── Chargement ────────────────────────────────────────────────────────
+    async function loadReservations() {
+      updateDateLabel();
+      const data = await api.get(`/api/reservations?date=${viewDate.value}`);
+      if (!data) return;
+      reservations = data.sort((a, b) => a.time.localeCompare(b.time));
+      render();
+    }
+
+    function updateDateLabel() {
+      document.getElementById('dateLabel').textContent = formatDate(viewDate.value);
+    }
+
+    function shiftDate(days) {
+      const d = new Date(viewDate.value);
+      d.setDate(d.getDate() + days);
+      viewDate.value = d.toISOString().split('T')[0];
+      loadReservations();
+    }
+
+    function goToday() {
+      viewDate.value = today();
+      loadReservations();
+    }
+
+    // ── Rendu ─────────────────────────────────────────────────────────────
+    const STATUS_CFG = {
+      confirmed: { label: 'Confirmée',  cls: 's-confirmed', icon: '📋' },
+      arrived:   { label: 'Arrivée ✅', cls: 's-arrived',   icon: '✅' },
+      no_show:   { label: 'No show',    cls: 's-no_show',   icon: '⚠️' },
+      cancelled: { label: 'Annulée',    cls: 's-cancelled', icon: '❌' },
+    };
+
+    function render() {
+      renderSummary();
+      renderList();
+    }
+
+    function renderSummary() {
+      const total    = reservations.length;
+      const confirmed = reservations.filter(r => r.status === 'confirmed').length;
+      const arrived   = reservations.filter(r => r.status === 'arrived').length;
+      const noshow    = reservations.filter(r => r.status === 'no_show').length;
+      const totalPax  = reservations.filter(r => r.status !== 'cancelled').reduce((s, r) => s + r.party_size, 0);
+
+      document.getElementById('daySummary').innerHTML = `
+        <div class="summary-chip chip-total">
+          <strong>${total}</strong> réservation${total !== 1 ? 's' : ''}
+          <span style="color:var(--text-muted)">· ${totalPax} pers.</span>
+        </div>
+        ${confirmed ? `<div class="summary-chip chip-confirm"><div class="chip-dot"></div><strong>${confirmed}</strong> confirmée${confirmed>1?'s':''}</div>` : ''}
+        ${arrived   ? `<div class="summary-chip chip-arrived"><div class="chip-dot"></div><strong>${arrived}</strong> arrivée${arrived>1?'s':''}</div>` : ''}
+        ${noshow    ? `<div class="summary-chip chip-noshow"><div class="chip-dot"></div><strong>${noshow}</strong> no show</div>` : ''}
+      `;
+    }
+
+    function renderList() {
+      const container = document.getElementById('resList');
+
+      if (!reservations.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📅</div>
+            <div class="empty-state-text">Aucune réservation pour ce jour</div>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = reservations.map(r => {
+        const s = STATUS_CFG[r.status] || STATUS_CFG.confirmed;
+        const tableHtml = r.table_name
+          ? `<span class="res-table-badge assigned">🪑 ${r.table_name}</span>`
+          : `<span class="res-table-badge unassigned">Table non assignée</span>`;
+
+        return `
+          <div class="res-card status-${r.status}" id="res-${r.id}">
+            <div class="res-time">${r.time}</div>
+
+            <div class="res-main">
+              <div class="res-name">${r.customer_name}</div>
+              <div class="res-meta">
+                <span>👥 ${r.party_size} pers.</span>
+                ${r.phone ? `<span>📞 <a href="tel:${r.phone}" style="color:var(--text-muted)">${r.phone}</a></span>` : ''}
+              </div>
+              ${r.notes ? `<div class="res-notes">📝 ${r.notes}</div>` : ''}
+            </div>
+
+            ${tableHtml}
+
+            <div class="res-status-wrap">
+              <select class="res-status-select ${s.cls}"
+                      onchange="changeStatus(${r.id}, this.value)"
+                      onclick="event.stopPropagation()">
+                <option value="confirmed" ${r.status==='confirmed'?'selected':''}>📋 Confirmée</option>
+                <option value="arrived"   ${r.status==='arrived'?'selected':''}>✅ Arrivée</option>
+                <option value="no_show"   ${r.status==='no_show'?'selected':''}>⚠️ No show</option>
+                <option value="cancelled" ${r.status==='cancelled'?'selected':''}>❌ Annulée</option>
+              </select>
+            </div>
+
+            <div class="res-actions">
+              <button class="btn btn-secondary btn-sm" onclick="openEdit(${r.id})">✏️</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // ── Statut rapide ─────────────────────────────────────────────────────
+    async function changeStatus(id, status) {
+      await api.put(`/api/reservations/${id}`, { status });
+      const r = reservations.find(x => x.id === id);
+      if (r) r.status = status;
+      render();
+      showToast('Statut mis à jour', 'success');
+    }
+
+    // ── Créer ─────────────────────────────────────────────────────────────
+    function openCreate() {
+      document.getElementById('resModalTitle').textContent = 'Nouvelle réservation';
+      document.getElementById('resId').value = '';
+      document.getElementById('resForm').reset();
+      document.getElementById('resDate').value = viewDate.value;
+      document.getElementById('resTime').value = '';
+      document.getElementById('btnDeleteRes').style.display = 'none';
+      showModal('resModal');
+    }
+
+    // ── Modifier ──────────────────────────────────────────────────────────
+    function openEdit(id) {
+      const r = reservations.find(x => x.id === id);
+      if (!r) return;
+      document.getElementById('resModalTitle').textContent = 'Modifier la réservation';
+      document.getElementById('resId').value      = r.id;
+      document.getElementById('resName').value    = r.customer_name;
+      document.getElementById('resPhone').value   = r.phone || '';
+      document.getElementById('resDate').value    = r.date;
+      document.getElementById('resTime').value    = r.time;
+      document.getElementById('resParty').value   = r.party_size;
+      document.getElementById('resNotes').value   = r.notes || '';
+      document.getElementById('btnDeleteRes').style.display = 'flex';
+      showModal('resModal');
+    }
+
+    // ── Sauvegarder ───────────────────────────────────────────────────────
+    async function saveRes(e) {
+      e.preventDefault();
+      const id = document.getElementById('resId').value;
+      const body = {
+        customer_name: document.getElementById('resName').value.trim(),
+        phone:         document.getElementById('resPhone').value.trim() || null,
+        date:          document.getElementById('resDate').value,
+        time:          document.getElementById('resTime').value,
+        party_size:    parseInt(document.getElementById('resParty').value) || 2,
+        notes:         document.getElementById('resNotes').value.trim() || null,
+      };
+
+      const result = id
+        ? await api.put(`/api/reservations/${id}`, body)
+        : await api.post('/api/reservations', body);
+
+      if (result?.error) { showToast(result.error, 'error'); return; }
+
+      hideModal('resModal');
+      showToast(id ? 'Réservation modifiée ✓' : 'Réservation enregistrée ✓', 'success');
+
+      // Recharger seulement si la résa est pour la date affichée
+      if (body.date === viewDate.value) loadReservations();
+    }
+
+    // ── Supprimer ─────────────────────────────────────────────────────────
+    async function deleteRes() {
+      const id = document.getElementById('resId').value;
+      if (!id || !confirm('Supprimer cette réservation ?')) return;
+      await api.delete(`/api/reservations/${id}`);
+      hideModal('resModal');
+      showToast('Réservation supprimée', 'info');
+      loadReservations();
+    }
+
+    // ── Sync temps réel ───────────────────────────────────────────────────
+    socket.on('reservation:updated', r => {
+      if (r.date !== viewDate.value) return;
+      const idx = reservations.findIndex(x => x.id === r.id);
+      if (idx >= 0) reservations[idx] = r;
+      else reservations.push(r);
+      reservations.sort((a, b) => a.time.localeCompare(b.time));
+      render();
+    });
+
+    socket.on('reservation:deleted', ({ id }) => {
+      reservations = reservations.filter(r => r.id !== id);
+      render();
+    });
+
+    loadReservations();
+  </script>
+</body>
+</html>

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Dashboard — Mos Pub Mercière</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MOS">
+  <meta name="theme-color" content="#0b2d3e">
+  <style>
+    /* ── Chips statistiques ── */
+    .stat-chips {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 900px) { .stat-chips { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px) { .stat-chips { grid-template-columns: 1fr; } }
+
+    .stat-chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .stat-chip.danger {
+      border-color: rgba(239,68,68,0.5);
+      background: rgba(239,68,68,0.08);
+    }
+    .stat-chip-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .stat-chip-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+    .stat-chip.danger .stat-chip-value { color: #ef4444; }
+    .stat-chip-sub {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Alertes no-show ── */
+    #alertsSection { margin-bottom: 24px; }
+    .alert-noshow {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(239,68,68,0.12);
+      border: 1.5px solid rgba(239,68,68,0.6);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      animation: pulseRed 2s ease-in-out infinite;
+    }
+    @keyframes pulseRed {
+      0%,100% { border-color: rgba(239,68,68,0.6); background: rgba(239,68,68,0.10); }
+      50%      { border-color: rgba(239,68,68,1);   background: rgba(239,68,68,0.18); }
+    }
+    .alert-noshow-icon { font-size: 1.6rem; flex-shrink: 0; }
+    .alert-noshow-info { flex: 1; }
+    .alert-noshow-name { font-weight: 700; font-size: 1rem; color: #ef4444; }
+    .alert-noshow-detail { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
+    .alert-noshow-time {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #ef4444;
+      flex-shrink: 0;
+    }
+
+    /* ── Layout principal ── */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 860px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+    /* ── Tâches par catégorie ── */
+    .category-block {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .category-block:last-child { border-bottom: none; }
+    .category-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .category-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .category-count {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .progress-bar { height: 8px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width 0.5s ease; }
+    .progress-fill.success { background: #22c55e; }
+
+    /* ── Par personne ── */
+    .person-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .person-row:last-child { border-bottom: none; }
+    .person-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--primary-dim);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .person-info { flex: 1; min-width: 0; }
+    .person-name { font-weight: 500; font-size: 0.9rem; }
+    .person-bar-wrap { margin-top: 4px; }
+    .person-mini-bar { height: 5px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; }
+    .person-mini-fill { height: 100%; background: var(--primary); border-radius: 99px; }
+    .person-count {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary);
+      flex-shrink: 0;
+    }
+
+    /* ── Timeline réservations ── */
+    .resa-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .resa-row:last-child { border-bottom: none; }
+    .resa-row.is-late { background: rgba(239,68,68,0.06); border-radius: 8px; padding: 10px 8px; }
+    .resa-time {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      flex-shrink: 0;
+      width: 42px;
+    }
+    .resa-info { flex: 1; min-width: 0; }
+    .resa-name { font-weight: 500; font-size: 0.88rem; }
+    .resa-detail { font-size: 0.75rem; color: var(--text-muted); }
+    .resa-badge {
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 0.73rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+    .resa-badge.confirmed { background: rgba(59,130,246,0.2); color: #60a5fa; }
+    .resa-badge.arrived   { background: rgba(34,197,94,0.2);  color: #4ade80; }
+    .resa-badge.no_show   { background: rgba(239,68,68,0.2);  color: #f87171; animation: pulseRed 2s ease-in-out infinite; }
+    .resa-badge.cancelled { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+
+    /* ── Live indicator ── */
+    .live-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      margin-right: 6px;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* ── Date nav ── */
+    .date-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .date-nav button {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .date-nav button:hover { background: var(--bg-hover); }
+    .date-nav input[type="date"] {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav" id="nav"></nav>
+
+  <div class="page">
+    <div class="container">
+
+      <!-- Header -->
+      <div class="page-header" style="margin-bottom:20px;">
+        <div>
+          <div class="page-title">
+            <span class="live-dot"></span>Dashboard
+          </div>
+          <div class="page-subtitle" id="dateLabel"></div>
+        </div>
+        <div class="date-nav">
+          <button onclick="shiftDate(-1)" title="Jour précédent">‹</button>
+          <input type="date" id="logDate" onchange="loadAll()">
+          <button onclick="shiftDate(1)" title="Jour suivant">›</button>
+        </div>
+      </div>
+
+      <!-- Chips statistiques -->
+      <div class="stat-chips" id="statChips">
+        <div class="stat-chip">
+          <div class="stat-chip-label">📅 Réservations</div>
+          <div class="stat-chip-value" id="chipTotal">—</div>
+          <div class="stat-chip-sub">aujourd'hui</div>
+        </div>
+        <div class="stat-chip">
+          <div class="stat-chip-label">✅ Arrivées</div>
+          <div class="stat-chip-value" id="chipArrived">—</div>
+          <div class="stat-chip-sub" id="chipArrivedSub">sur le total</div>
+        </div>
+        <div class="stat-chip danger" id="chipLateCard">
+          <div class="stat-chip-label">⚠️ En retard / No show</div>
+          <div class="stat-chip-value" id="chipLate">—</div>
+          <div class="stat-chip-sub">à surveiller</div>
+        </div>
+        <div class="stat-chip">
+          <div class="stat-chip-label">🎯 Tâches faites</div>
+          <div class="stat-chip-value" id="chipTasks">—</div>
+          <div class="stat-chip-sub" id="chipTasksSub">au total</div>
+        </div>
+      </div>
+
+      <!-- Section alertes no-show -->
+      <div id="alertsSection"></div>
+
+      <!-- Grille principale -->
+      <div class="dashboard-grid">
+
+        <!-- Colonne gauche : tâches + par personne -->
+        <div style="display:flex;flex-direction:column;gap:20px;">
+
+          <!-- Tâches par catégorie -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">🎯 Progression des tâches</div>
+              <a href="/staff/taches.html" class="btn btn-secondary btn-sm">Voir →</a>
+            </div>
+            <div id="taskCategories">
+              <div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Chargement…</div></div>
+            </div>
+          </div>
+
+          <!-- Par personne -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">👥 Tâches par personne</div>
+            </div>
+            <div id="byPerson">
+              <div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">Chargement…</div></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Colonne droite : réservations -->
+        <div>
+          <div class="card" style="height:100%;">
+            <div class="card-header">
+              <div class="card-title">🍽️ Réservations du jour</div>
+              <a href="/staff/reservations.html" class="btn btn-secondary btn-sm">Gérer →</a>
+            </div>
+            <div id="resaTimeline">
+              <div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">Chargement…</div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Log d'activité récente -->
+      <div class="card mt-4">
+        <div class="card-header">
+          <div class="card-title">📋 Activité récente</div>
+          <button class="btn btn-secondary btn-sm" onclick="loadLog()">↻ Actualiser</button>
+        </div>
+        <div id="logList">
+          <div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Chargement…</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/api.js"></script>
+  <script>
+    buildNav('dashboard');
+
+    const logDateInput = document.getElementById('logDate');
+    logDateInput.value = today();
+    updateDateLabel();
+
+    function updateDateLabel() {
+      document.getElementById('dateLabel').textContent = formatDate(logDateInput.value);
+    }
+    function shiftDate(delta) {
+      const d = new Date(logDateInput.value);
+      d.setDate(d.getDate() + delta);
+      logDateInput.value = d.toISOString().split('T')[0];
+      updateDateLabel();
+      loadAll();
+    }
+
+    // ─── Chargement principal ───────────────────────────────────────
+    async function loadAll() {
+      updateDateLabel();
+      const date = logDateInput.value;
+      await Promise.all([loadDashboard(date), loadLog(date)]);
+    }
+
+    async function loadDashboard(date) {
+      const data = await api.get(`/api/admin/dashboard?date=${date}`);
+      if (!data) return;
+
+      renderStatChips(data);
+      renderAlerts(data.reservations);
+      renderTaskCategories(data.tasksByCategory);
+      renderByPerson(data.byPerson);
+      renderResaTimeline(data.reservations);
+    }
+
+    // ─── Chips statistiques ────────────────────────────────────────
+    function renderStatChips(data) {
+      const resas = data.reservations || [];
+      const total = resas.length;
+      const arrived = resas.filter(r => r.status === 'arrived').length;
+      const late = resas.filter(r => r.status === 'no_show' || isLate(r)).length;
+
+      // Tâches : total unique tasks done (au moins 1 completion)
+      const cats = data.tasksByCategory || [];
+      const totalTasks = cats.reduce((s, c) => s + c.total, 0);
+      const doneTasks  = cats.reduce((s, c) => s + c.done_tasks, 0);
+
+      document.getElementById('chipTotal').textContent = total;
+      document.getElementById('chipArrived').textContent = arrived;
+      document.getElementById('chipArrivedSub').textContent = total ? `sur ${total} résa${total>1?'s':''}` : 'aucune résa';
+      document.getElementById('chipLate').textContent = late;
+
+      const lateCard = document.getElementById('chipLateCard');
+      if (late > 0) {
+        lateCard.classList.add('danger');
+        lateCard.style.animation = 'pulseCard 2s ease-in-out infinite';
+      } else {
+        lateCard.classList.remove('danger');
+        lateCard.style.animation = '';
+      }
+
+      const pct = totalTasks ? Math.round(doneTasks / totalTasks * 100) : 0;
+      document.getElementById('chipTasks').textContent = `${doneTasks}/${totalTasks}`;
+      document.getElementById('chipTasksSub').textContent = `${pct}% complétées`;
+    }
+
+    // ─── Alertes no-show ───────────────────────────────────────────
+    function isLate(r) {
+      if (r.status !== 'confirmed') return false;
+      const now = new Date();
+      const [h, m] = r.time.split(':').map(Number);
+      const resaTime = new Date(now);
+      resaTime.setHours(h, m + 15, 0, 0);
+      // Only for today
+      return r.date === today() && now >= resaTime;
+    }
+
+    function renderAlerts(resas) {
+      const container = document.getElementById('alertsSection');
+      const late = (resas || []).filter(r => r.status === 'no_show' || isLate(r));
+      if (!late.length) { container.innerHTML = ''; return; }
+
+      container.innerHTML = `
+        <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.06em;color:#ef4444;font-weight:700;margin-bottom:10px;">
+          ⚠️ ${late.length} réservation${late.length>1?'s':''} en alerte
+        </div>
+        ${late.map(r => `
+          <div class="alert-noshow">
+            <div class="alert-noshow-icon">🚨</div>
+            <div class="alert-noshow-info">
+              <div class="alert-noshow-name">${r.customer_name}</div>
+              <div class="alert-noshow-detail">
+                ${r.party_size} pers. · Table ${r.table_name || '—'}
+                ${r.phone ? `· 📞 ${r.phone}` : ''}
+                ${r.status === 'no_show' ? ' · <strong style="color:#ef4444">No show confirmé</strong>' : ' · <strong style="color:#f97316">+15 min — pas arrivé</strong>'}
+              </div>
+            </div>
+            <div class="alert-noshow-time">${r.time}</div>
+          </div>
+        `).join('')}
+      `;
+    }
+
+    // ─── Tâches par catégorie ──────────────────────────────────────
+    const catConfig = {
+      matin:      { label: '🌅 Matin',       color: '#cda443' },
+      passation:  { label: '🔄 Passation',   color: '#60a5fa' },
+      soir:       { label: '🌙 Fermeture',   color: '#a78bfa' },
+    };
+
+    function renderTaskCategories(cats) {
+      const container = document.getElementById('taskCategories');
+      if (!cats || !cats.length) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Aucune tâche</div></div>`;
+        return;
+      }
+      container.innerHTML = cats.map(c => {
+        const cfg = catConfig[c.category] || { label: c.category, color: 'var(--primary)' };
+        const pct = c.total ? Math.round(c.done_tasks / c.total * 100) : 0;
+        const isComplete = pct === 100;
+        return `
+          <div class="category-block">
+            <div class="category-header">
+              <div class="category-name" style="color:${cfg.color}">${cfg.label}</div>
+              <div class="category-count">${c.done_tasks}/${c.total} · ${pct}%</div>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill ${isComplete ? 'success' : ''}" style="width:${pct}%;background:${isComplete ? '#22c55e' : cfg.color};"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ─── Par personne ──────────────────────────────────────────────
+    function renderByPerson(persons) {
+      const container = document.getElementById('byPerson');
+      const active = (persons || []).filter(p => p.task_count > 0);
+      if (!active.length) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">Aucune tâche cochée aujourd'hui</div></div>`;
+        return;
+      }
+      const maxCount = Math.max(...active.map(p => p.task_count));
+      container.innerHTML = active.map(p => {
+        const initials = p.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+        const pct = maxCount ? Math.round(p.task_count / maxCount * 100) : 0;
+        return `
+          <div class="person-row">
+            <div class="person-avatar">${initials}</div>
+            <div class="person-info">
+              <div class="person-name">${p.name}</div>
+              <div class="person-bar-wrap">
+                <div class="person-mini-bar">
+                  <div class="person-mini-fill" style="width:${pct}%"></div>
+                </div>
+              </div>
+            </div>
+            <div class="person-count">${p.task_count}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ─── Timeline réservations ─────────────────────────────────────
+    const statusConfig = {
+      confirmed: { label: 'Confirmée', cls: 'confirmed' },
+      arrived:   { label: 'Arrivée',   cls: 'arrived' },
+      no_show:   { label: 'No show',   cls: 'no_show' },
+      cancelled: { label: 'Annulée',   cls: 'cancelled' },
+    };
+
+    function renderResaTimeline(resas) {
+      const container = document.getElementById('resaTimeline');
+      if (!resas || !resas.length) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">Aucune réservation</div></div>`;
+        return;
+      }
+      container.innerHTML = resas.map(r => {
+        const s = statusConfig[r.status] || { label: r.status, cls: 'cancelled' };
+        const late = r.status === 'no_show' || isLate(r);
+        return `
+          <div class="resa-row ${late ? 'is-late' : ''}">
+            <div class="resa-time">${r.time}</div>
+            <div class="resa-info">
+              <div class="resa-name">${r.customer_name} ${late ? '⚠️' : ''}</div>
+              <div class="resa-detail">
+                ${r.party_size} pers.${r.table_name ? ` · T. ${r.table_name}` : ' · sans table'}${r.notes ? ` · ${r.notes}` : ''}
+              </div>
+            </div>
+            <div class="resa-badge ${s.cls}">${s.label}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ─── Log d'activité ───────────────────────────────────────────
+    async function loadLog(date) {
+      const d = date || logDateInput.value;
+      const log = await api.get(`/api/admin/daily-log?date=${d}`);
+      if (!log) return;
+      const container = document.getElementById('logList');
+      if (!log.length) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Aucune activité pour cette date</div></div>`;
+        return;
+      }
+      const catIcon = { matin: '🌅', passation: '🔄', soir: '🌙' };
+      container.innerHTML = `<div style="max-height:300px;overflow-y:auto;">` +
+        log.map(l => `
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="font-size:0.77rem;color:var(--text-muted);flex-shrink:0;margin-top:2px;min-width:42px;">${formatDateTime(l.completed_at)}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.84rem;">${l.description}</div>
+              <div style="font-size:0.74rem;color:var(--text-muted);">${catIcon[l.category] || ''} ${l.section} · ${l.user_name}</div>
+            </div>
+            <span class="badge badge-success" style="flex-shrink:0;">✓</span>
+          </div>
+        `).join('') + `</div>`;
+    }
+
+    // ─── Socket.io temps réel ──────────────────────────────────────
+    const socket = io();
+
+    socket.on('task:updated', () => {
+      loadDashboard(logDateInput.value);
+    });
+    socket.on('reservation:updated', () => {
+      loadDashboard(logDateInput.value);
+    });
+    socket.on('reservation:deleted', () => {
+      loadDashboard(logDateInput.value);
+    });
+    socket.on('alert:no_show', (data) => {
+      loadDashboard(logDateInput.value);
+      playAlertSound();
+      showToast(`⚠️ No-show : ${data.customerName} — ${data.time}`, 'warning');
+    });
+
+    // ─── Init ──────────────────────────────────────────────────────
+    loadAll();
+
+    // Rafraîchissement automatique toutes les 60s
+    setInterval(() => loadAll(), 60000);
+  </script>
+</body>
+</html>
