@@ -128,6 +128,9 @@ try { db.exec("ALTER TABLE users ADD COLUMN email TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE joy_events ADD COLUMN assigned_tables TEXT DEFAULT '[]'"); } catch(e) {}
 try { db.exec("ALTER TABLE reservations ADD COLUMN joy_event_id INTEGER"); } catch(e) {}
 try { db.exec("ALTER TABLE reservations ADD COLUMN space TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE reservations ADD COLUMN table_ids TEXT DEFAULT '[]'"); } catch(e) {}
+// Migration : on peuple table_ids depuis table_id pour les lignes existantes
+try { db.exec("UPDATE reservations SET table_ids = json_array(table_id) WHERE table_id IS NOT NULL AND (table_ids IS NULL OR table_ids = '[]')"); } catch(e) {}
 
 // ─── Nettoyage doublons Joy au démarrage ───────────────────────────────────────
 // Supprime les résas Joy en double (garde celle avec table assignée ou la plus récente)
@@ -609,30 +612,43 @@ function deleteTable(id) {
 }
 
 // ─── Reservations ──────────────────────────────────────────────────────────────
+
+// Enrichit une ligne DB avec table_ids (array) et table_names (array de noms)
+function _enrichRes(r) {
+  if (!r) return r;
+  let ids = [];
+  try { ids = JSON.parse(r.table_ids || '[]'); } catch(e) {}
+  if (ids.length === 0 && r.table_id) ids = [r.table_id]; // backward compat
+  const names = ids.map(tid => db.prepare('SELECT name FROM floor_tables WHERE id = ?').get(tid)?.name).filter(Boolean);
+  return { ...r, table_ids: ids, table_names: names, table_name: names[0] || null };
+}
+
 function getReservationsByDate(date) {
-  return db.prepare(`
-    SELECT r.*, ft.name as table_name
-    FROM reservations r
-    LEFT JOIN floor_tables ft ON r.table_id = ft.id
-    WHERE r.date = ?
-    ORDER BY r.time
-  `).all(date);
+  return db.prepare(`SELECT r.* FROM reservations r WHERE r.date = ? ORDER BY r.time`).all(date).map(_enrichRes);
 }
 function getReservationById(id) {
-  return db.prepare(`
-    SELECT r.*, ft.name as table_name
-    FROM reservations r
-    LEFT JOIN floor_tables ft ON r.table_id = ft.id
-    WHERE r.id = ?
-  `).get(id);
+  return _enrichRes(db.prepare(`SELECT r.* FROM reservations r WHERE r.id = ?`).get(id));
 }
-function createReservation({ table_id, customer_name, phone, party_size, date, time, notes }) {
-  return db.prepare('INSERT INTO reservations (table_id, customer_name, phone, party_size, date, time, notes) VALUES (?, ?, ?, ?, ?, ?, ?)').run(table_id ?? null, customer_name, phone ?? null, party_size ?? 2, date, time, notes ?? null).lastInsertRowid;
+function createReservation({ table_ids, table_id, customer_name, phone, party_size, date, time, notes }) {
+  const ids = Array.isArray(table_ids) ? table_ids : (table_id ? [table_id] : []);
+  const firstId = ids[0] ?? null;
+  return db.prepare(
+    'INSERT INTO reservations (table_id, table_ids, customer_name, phone, party_size, date, time, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(firstId, JSON.stringify(ids), customer_name, phone ?? null, party_size ?? 2, date, time, notes ?? null).lastInsertRowid;
 }
 function updateReservation(id, data) {
-  const fields = ['table_id', 'customer_name', 'phone', 'party_size', 'date', 'time', 'notes', 'status'];
-  const updates = fields.filter(f => data[f] !== undefined).map(f => `${f} = ?`);
-  const values = fields.filter(f => data[f] !== undefined).map(f => data[f]);
+  // Normalise table_ids ↔ table_id
+  let d = { ...data };
+  if (d.table_ids !== undefined) {
+    const ids = Array.isArray(d.table_ids) ? d.table_ids : [];
+    d.table_id  = ids[0] ?? null;
+    d.table_ids = JSON.stringify(ids);
+  } else if (d.table_id !== undefined) {
+    d.table_ids = JSON.stringify(d.table_id ? [d.table_id] : []);
+  }
+  const fields = ['table_id', 'table_ids', 'customer_name', 'phone', 'party_size', 'date', 'time', 'notes', 'status', 'space'];
+  const updates = fields.filter(f => d[f] !== undefined).map(f => `${f} = ?`);
+  const values  = fields.filter(f => d[f] !== undefined).map(f => d[f]);
   if (!updates.length) return;
   db.prepare(`UPDATE reservations SET ${updates.join(', ')} WHERE id = ?`).run(...values, id);
 }

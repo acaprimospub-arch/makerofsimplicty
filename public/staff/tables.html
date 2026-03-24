@@ -63,9 +63,30 @@
     .s-arrived   { background: var(--success-bg); border-color: var(--success); color: var(--success); }
     .s-alert     { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); animation: pulse 1s infinite; }
 
-    /* En mode assignation : tables libres en surbrillance verte, occupées grisées */
-    .assign-mode .floor-table.s-available { border-color: var(--success) !important; box-shadow: 0 0 0 2px rgba(76,175,106,.25); }
-    .assign-mode .floor-table:not(.s-available):not(.is-deco) { opacity: .45; }
+    /* En mode assignation */
+    .assign-mode .floor-table.s-available   { border-color: var(--success) !important; box-shadow: 0 0 0 2px rgba(76,175,106,.25); }
+    .assign-mode .floor-table.s-selected    { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(205,164,67,.4); background: rgba(205,164,67,.18) !important; color: var(--primary) !important; }
+    .assign-mode .floor-table:not(.s-available):not(.s-selected):not(.is-deco) { opacity: .4; pointer-events: none; }
+
+    /* Bouton flottant confirmation multi-tables */
+    .confirm-assign-btn {
+      display: none;
+      position: fixed;
+      bottom: calc(var(--bottom-nav-height) + 16px + env(safe-area-inset-bottom));
+      left: 50%; transform: translateX(-50%);
+      z-index: 190;
+      background: var(--primary);
+      color: #000;
+      font-weight: 700;
+      font-size: .95rem;
+      padding: 14px 28px;
+      border-radius: 30px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(205,164,67,.5);
+      white-space: nowrap;
+    }
+    .confirm-assign-btn.visible { display: block; }
 
     /* ══ LISTE RÉSAS ══ */
     .res-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
@@ -195,6 +216,11 @@
     </div>
   </div>
 
+  <!-- Bouton flottant confirmation multi-tables -->
+  <button class="confirm-assign-btn" id="confirmAssignBtn" onclick="confirmMultiAssign()">
+    ✓ Confirmer (<span id="confirmCount">0</span> table<span id="confirmPlural"></span>)
+  </button>
+
   <!-- ══ DRAWER TABLE ══ -->
   <div class="drawer-backdrop" id="backdrop" onclick="closeDrawer()"></div>
 
@@ -293,12 +319,13 @@
     let viewScale = 1, fitScale = 1;
     const activeAlerts = new Set();
 
-    // ── Mode assignation ─────────────────────────────────────────────────────
+    // ── Mode assignation multi-tables ────────────────────────────────────────
     const urlParams = new URLSearchParams(location.search);
     const assignToResId = parseInt(urlParams.get('assignTo')) || null;
     const assignReturnDate = urlParams.get('date') || null;
     const assignResName = decodeURIComponent(urlParams.get('name') || '');
     const isAssignMode = !!assignToResId;
+    let selectedTableIds = new Set(); // tables cochées en mode assignation
 
     if (isAssignMode) {
       document.getElementById('assignBanner').classList.add('visible');
@@ -307,6 +334,19 @@
 
     function cancelAssign() {
       window.location.href = `/staff/reservations.html${assignReturnDate ? '?date='+assignReturnDate : ''}`;
+    }
+
+    function updateConfirmBtn() {
+      const n = selectedTableIds.size;
+      document.getElementById('confirmCount').textContent = n;
+      document.getElementById('confirmPlural').textContent = n > 1 ? 's' : '';
+      document.getElementById('confirmAssignBtn').classList.toggle('visible', n > 0);
+    }
+
+    async function confirmMultiAssign() {
+      const ids = Array.from(selectedTableIds);
+      await api.put(`/api/reservations/${assignToResId}`, { table_ids: ids });
+      window.location.href = `/staff/reservations.html?date=${assignReturnDate||today()}&assigned=1`;
     }
 
     // ── Dates & chargement ───────────────────────────────────────────────────
@@ -320,6 +360,12 @@
       const [t, r] = await Promise.all([api.get('/api/tables'), api.get(`/api/reservations?date=${date}`)]);
       if (!t || !r) return;
       tables = t; reservations = r;
+      // En mode assignation : pré-sélectionner les tables déjà assignées
+      if (isAssignMode && selectedTableIds.size === 0) {
+        const cur = reservations.find(x => x.id === assignToResId);
+        if (cur?.table_ids?.length) cur.table_ids.forEach(id => selectedTableIds.add(id));
+        updateConfirmBtn();
+      }
       computeStatuses();
       renderZoneTabs();
       renderFloor();
@@ -331,9 +377,13 @@
       tableStatuses = {};
       tables.forEach(t => { tableStatuses[t.id] = 'available'; });
       reservations.forEach(r => {
-        if (!r.table_id || r.status === 'cancelled') return;
-        if (r.status === 'arrived') tableStatuses[r.table_id] = 'arrived';
-        else if (tableStatuses[r.table_id] !== 'arrived') tableStatuses[r.table_id] = r.status === 'confirmed' ? 'reserved' : r.status;
+        // Support multi-tables
+        const ids = r.table_ids?.length ? r.table_ids : (r.table_id ? [r.table_id] : []);
+        if (!ids.length || r.status === 'cancelled') return;
+        ids.forEach(tid => {
+          if (r.status === 'arrived') tableStatuses[tid] = 'arrived';
+          else if (tableStatuses[tid] !== 'arrived') tableStatuses[tid] = r.status === 'confirmed' ? 'reserved' : r.status;
+        });
       });
     }
 
@@ -440,9 +490,14 @@
             <div style="font-size:.72rem;margin-top:1px">${statusIcon[status]||''}</div>`;
 
           if (isAssignMode) {
-            // En mode assignation : seules les tables libres sont cliquables
-            if (status === 'available') {
-              el.addEventListener('click', () => doAssignTable(t.id, t.name));
+            // Tables déjà sélectionnées → classe spéciale
+            if (selectedTableIds.has(t.id)) {
+              el.classList.remove('s-' + status);
+              el.classList.add('s-selected');
+            }
+            // Cliquable si libre OU déjà sélectionnée
+            if (status === 'available' || selectedTableIds.has(t.id)) {
+              el.addEventListener('click', () => toggleTableSelection(t.id, t.name, el, status));
             }
           } else {
             el.addEventListener('click', () => openTableDrawer(t.id));
@@ -453,12 +508,20 @@
       scaleToFit();
     }
 
-    // ── Mode assignation : assigner la table ─────────────────────────────────
-    async function doAssignTable(tableId, tableName) {
-      await api.put(`/api/reservations/${assignToResId}`, { table_id: tableId });
-      const returnUrl = `/staff/reservations.html?date=${assignReturnDate || today()}&assigned=1`;
-      showToast(`Table ${tableName} assignée ✓`, 'success');
-      setTimeout(() => { window.location.href = returnUrl; }, 800);
+    // ── Mode assignation : toggle sélection ─────────────────────────────────
+    function toggleTableSelection(tableId, tableName, el, originalStatus) {
+      if (selectedTableIds.has(tableId)) {
+        // Désélectionner
+        selectedTableIds.delete(tableId);
+        el.classList.remove('s-selected');
+        el.classList.add('s-' + originalStatus);
+      } else {
+        // Sélectionner
+        selectedTableIds.add(tableId);
+        el.classList.remove('s-' + originalStatus);
+        el.classList.add('s-selected');
+      }
+      updateConfirmBtn();
     }
 
     // ── Rendu liste résas ────────────────────────────────────────────────────

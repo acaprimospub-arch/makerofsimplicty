@@ -273,8 +273,9 @@
       el.innerHTML = reservations.map(r => {
         const isJoy = !!r.joy_event_id;
         const st = ST[r.status] || ST.confirmed;
-        const tableBadge = r.table_name
-          ? `<span class="rc-table-ok">🪑 ${r.table_name}</span>`
+        const tableNames = r.table_names?.length ? r.table_names : (r.table_name ? [r.table_name] : []);
+        const tableBadge = tableNames.length
+          ? tableNames.map(n => `<span class="rc-table-ok">🪑 ${n}</span>`).join(' ')
           : `<span class="rc-table-nok">Sans table</span>`;
         return `
           <div class="res-card st-${r.status}${isJoy?' is-joy':''}" id="rc-${r.id}" onclick="openDetail(${r.id})">
@@ -322,8 +323,9 @@
       document.getElementById('detailTitle').innerHTML =
         r.customer_name + (isJoy ? ` <span class="joy-tag">Joy.io</span>` : '');
 
-      const tableBadge = r.table_name
-        ? `<span class="detail-table-badge dtb-ok">🪑 ${r.table_name}</span>`
+      const tableNames = r.table_names?.length ? r.table_names : (r.table_name ? [r.table_name] : []);
+      const tableBadge = tableNames.length
+        ? tableNames.map(n => `<span class="detail-table-badge dtb-ok">🪑 ${n}</span>`).join(' ')
         : `<span class="detail-table-badge dtb-nok">Pas de table assignée</span>`;
 
       document.getElementById('detailBody').innerHTML = `
