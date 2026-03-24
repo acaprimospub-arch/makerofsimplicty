@@ -57,8 +57,9 @@ async function buildNav(activePage) {
   // ── Liens avec icônes séparées pour la bottom nav mobile ──
   const adminLinks = [
     { href: '/admin/dashboard.html',    label: '📊 Dashboard',     mobileLabel: 'Dashboard',   icon: '📊', key: 'dashboard' },
+    { href: '/admin/analytics.html',    label: '📈 Analytics',     mobileLabel: 'Analytics',   icon: '📈', key: 'analytics' },
     { href: '/admin/equipe.html',       label: '👥 Équipe',         mobileLabel: 'Équipe',      icon: '👥', key: 'equipe' },
-    { href: '/admin/stats.html',        label: '📈 Stats',          mobileLabel: 'Stats',       icon: '📈', key: 'stats' },
+    { href: '/admin/stats.html',        label: '🏆 Stats',          mobileLabel: 'Stats',       icon: '🏆', key: 'stats' },
     { href: '/admin/plan-tables.html',  label: '🗺️ Plan',          mobileLabel: 'Plan',        icon: '🗺️', key: 'plan' },
     { href: '/staff/taches.html',       label: '✅ Tâches',          mobileLabel: 'Tâches',      icon: '✅', key: 'taches' },
     { href: '/staff/reservations.html', label: '📋 Réservations',   mobileLabel: 'Résas',       icon: '📋', key: 'reservations' },

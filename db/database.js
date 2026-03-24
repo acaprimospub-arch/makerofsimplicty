@@ -864,6 +864,67 @@ function getDashboardData(date) {
 }
 
 
+// ─── Reservation Stats ─────────────────────────────────────────────────────────
+function getReservationStats(from, to) {
+  const condition = from && to ? 'WHERE date BETWEEN ? AND ?' : 'WHERE 1=1';
+  const params    = from && to ? [from, to] : [];
+
+  // Totaux généraux
+  const overview = db.prepare(`
+    SELECT
+      COUNT(*) as total,
+      SUM(party_size) as total_pax,
+      ROUND(AVG(party_size), 1) as avg_pax,
+      SUM(CASE WHEN status='confirmed' THEN 1 ELSE 0 END) as nb_confirmed,
+      SUM(CASE WHEN status='arrived'   THEN 1 ELSE 0 END) as nb_arrived,
+      SUM(CASE WHEN status='no_show'   THEN 1 ELSE 0 END) as nb_no_show,
+      SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) as nb_cancelled,
+      SUM(CASE WHEN joy_event_id IS NOT NULL THEN 1 ELSE 0 END) as nb_joy,
+      SUM(CASE WHEN joy_event_id IS NULL THEN 1 ELSE 0 END) as nb_manual
+    FROM reservations ${condition}
+  `).get(...params);
+
+  // Par jour de la semaine (0=dim, 1=lun ... 6=sam)
+  const byWeekday = db.prepare(`
+    SELECT strftime('%w', date) as dow,
+           COUNT(*) as total,
+           SUM(CASE WHEN status='arrived' THEN 1 ELSE 0 END) as arrived
+    FROM reservations ${condition}
+    GROUP BY dow ORDER BY dow
+  `).all(...params);
+
+  // Par heure de réservation
+  const byHour = db.prepare(`
+    SELECT CAST(substr(time, 1, 2) AS INTEGER) as hour,
+           COUNT(*) as total,
+           SUM(party_size) as pax
+    FROM reservations ${condition}
+    GROUP BY hour ORDER BY hour
+  `).all(...params);
+
+  // Par espace (space = salle, etage, terrasse, etc.)
+  const bySpace = db.prepare(`
+    SELECT COALESCE(space, 'Non précisé') as space,
+           COUNT(*) as total,
+           SUM(party_size) as pax
+    FROM reservations ${condition}
+    GROUP BY space ORDER BY total DESC
+  `).all(...params);
+
+  // Tendance journalière
+  const dailyTrend = db.prepare(`
+    SELECT date,
+           COUNT(*) as total,
+           SUM(CASE WHEN status='arrived' THEN 1 ELSE 0 END) as arrived,
+           SUM(CASE WHEN status='no_show' THEN 1 ELSE 0 END) as no_show,
+           SUM(party_size) as pax
+    FROM reservations ${condition}
+    GROUP BY date ORDER BY date
+  `).all(...params);
+
+  return { overview, byWeekday, byHour, bySpace, dailyTrend };
+}
+
 // ─── Settings ──────────────────────────────────────────────────────────────────
 function getSetting(key) {
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
@@ -1134,7 +1195,7 @@ module.exports = {
   getTasksWithCompletions, getTaskById, getAllTasks, completeTask, uncompleteTask, createTask, updateTask, deactivateTask,
   getTables, getTableById, createTable, updateTable, deleteTable,
   getReservationsByDate, getReservationById, createReservation, updateReservation, deleteReservation,
-  getStats, getDailyLog, getDashboardData,
+  getStats, getDailyLog, getDashboardData, getReservationStats,
   createHrEvent, getHrEvents, deleteHrEvent, getHrSummaryForUser,
   getSetting, setSetting,
   upsertJoyEvent, upsertReservationFromJoy, cleanupJoyReservationDuplicates, cleanupStaleJoyReservations,

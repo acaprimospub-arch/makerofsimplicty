@@ -12,44 +12,59 @@
   <meta name="apple-mobile-web-app-title" content="MOS">
   <meta name="theme-color" content="#0b2d3e">
   <style>
-    /* ── Chips statistiques ── */
-    .stat-chips {
+    /* ── KPI chips ── */
+    .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
       margin-bottom: 24px;
     }
-    @media (max-width: 900px) { .stat-chips { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 500px) { .stat-chips { grid-template-columns: 1fr; } }
+    @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 600px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
 
-    .stat-chip {
+    .kpi-chip {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 14px;
-      padding: 18px 20px;
+      padding: 16px 18px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
+      position: relative;
+      overflow: hidden;
     }
-    .stat-chip.danger {
-      border-color: rgba(239,68,68,0.5);
-      background: rgba(239,68,68,0.08);
+    .kpi-chip::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--kpi-accent, var(--primary));
+      border-radius: 14px 14px 0 0;
     }
-    .stat-chip-label {
-      font-size: 0.78rem;
+    .kpi-chip.danger  { --kpi-accent: #ef4444; border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.06); }
+    .kpi-chip.success { --kpi-accent: #22c55e; }
+    .kpi-chip.blue    { --kpi-accent: #60a5fa; }
+    .kpi-chip.purple  { --kpi-accent: #a78bfa; }
+    .kpi-chip.orange  { --kpi-accent: #fb923c; }
+    .kpi-chip.cuisine { --kpi-accent: #f59e0b; }
+
+    .kpi-label {
+      font-size: 0.72rem;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.06em;
+      font-weight: 600;
     }
-    .stat-chip-value {
-      font-size: 2rem;
-      font-weight: 700;
+    .kpi-value {
+      font-size: 1.9rem;
+      font-weight: 800;
       color: var(--text);
       line-height: 1;
     }
-    .stat-chip.danger .stat-chip-value { color: #ef4444; }
-    .stat-chip-sub {
-      font-size: 0.76rem;
+    .kpi-chip.danger  .kpi-value { color: #ef4444; }
+    .kpi-chip.success .kpi-value { color: #22c55e; }
+    .kpi-sub {
+      font-size: 0.73rem;
       color: var(--text-muted);
     }
 
@@ -74,20 +89,16 @@
     .alert-noshow-info { flex: 1; }
     .alert-noshow-name { font-weight: 700; font-size: 1rem; color: #ef4444; }
     .alert-noshow-detail { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
-    .alert-noshow-time {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #ef4444;
-      flex-shrink: 0;
-    }
+    .alert-noshow-time { font-size: 1.2rem; font-weight: 700; color: #ef4444; flex-shrink: 0; }
 
     /* ── Layout principal ── */
     .dashboard-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 20px;
     }
-    @media (max-width: 860px) { .dashboard-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 1100px) { .dashboard-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 700px)  { .dashboard-grid { grid-template-columns: 1fr; } }
 
     /* ── Tâches par catégorie ── */
     .category-block {
@@ -95,131 +106,93 @@
       border-bottom: 1px solid var(--border);
     }
     .category-block:last-child { border-bottom: none; }
-    .category-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .category-name {
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-    .category-count {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-    }
+    .category-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .category-name { font-weight: 600; font-size: 0.9rem; }
+    .category-count { font-size: 0.82rem; color: var(--text-muted); }
     .progress-bar { height: 8px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; }
     .progress-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width 0.5s ease; }
     .progress-fill.success { background: #22c55e; }
 
     /* ── Par personne ── */
     .person-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
     }
     .person-row:last-child { border-bottom: none; }
     .person-avatar {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background: var(--primary-dim);
-      color: var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 0.85rem;
-      flex-shrink: 0;
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--primary-dim); color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
     }
+    .person-avatar.cuisine-av { background: rgba(245,158,11,0.18); color: #f59e0b; }
     .person-info { flex: 1; min-width: 0; }
     .person-name { font-weight: 500; font-size: 0.9rem; }
-    .person-bar-wrap { margin-top: 4px; }
-    .person-mini-bar { height: 5px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; }
+    .person-meta { font-size: 0.72rem; color: var(--text-muted); }
+    .person-mini-bar { height: 5px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; margin-top: 4px; }
     .person-mini-fill { height: 100%; background: var(--primary); border-radius: 99px; }
-    .person-count {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: var(--primary);
-      flex-shrink: 0;
-    }
+    .person-count { font-size: 0.85rem; font-weight: 700; color: var(--primary); flex-shrink: 0; }
 
     /* ── Timeline réservations ── */
     .resa-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
     }
     .resa-row:last-child { border-bottom: none; }
     .resa-row.is-late { background: rgba(239,68,68,0.06); border-radius: 8px; padding: 10px 8px; }
-    .resa-time {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: var(--text);
-      flex-shrink: 0;
-      width: 42px;
-    }
+    .resa-time { font-size: 0.95rem; font-weight: 700; color: var(--text); flex-shrink: 0; width: 42px; }
     .resa-info { flex: 1; min-width: 0; }
     .resa-name { font-weight: 500; font-size: 0.88rem; }
     .resa-detail { font-size: 0.75rem; color: var(--text-muted); }
     .resa-badge {
-      padding: 3px 10px;
-      border-radius: 99px;
-      font-size: 0.73rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      flex-shrink: 0;
+      padding: 3px 10px; border-radius: 99px; font-size: 0.73rem;
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; flex-shrink: 0;
     }
-    .resa-badge.confirmed { background: rgba(59,130,246,0.2); color: #60a5fa; }
-    .resa-badge.arrived   { background: rgba(34,197,94,0.2);  color: #4ade80; }
-    .resa-badge.no_show   { background: rgba(239,68,68,0.2);  color: #f87171; animation: pulseRed 2s ease-in-out infinite; }
+    .resa-badge.confirmed { background: rgba(59,130,246,0.2);  color: #60a5fa; }
+    .resa-badge.arrived   { background: rgba(34,197,94,0.2);   color: #4ade80; }
+    .resa-badge.no_show   { background: rgba(239,68,68,0.2);   color: #f87171; animation: pulseRed 2s ease-in-out infinite; }
     .resa-badge.cancelled { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+
+    /* ── Mini donut ── */
+    .donut-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .donut-row:last-child { border-bottom: none; }
+    .donut-label { flex: 1; font-size: 0.85rem; }
+    .donut-bar-wrap { width: 80px; }
+    .donut-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; }
+    .donut-fill { height: 100%; border-radius: 99px; transition: width .4s ease; }
+    .donut-val { font-size: 0.82rem; font-weight: 700; width: 28px; text-align: right; color: var(--text-muted); }
 
     /* ── Live indicator ── */
     .live-dot {
-      display: inline-block;
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: #22c55e;
-      margin-right: 6px;
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: #22c55e; margin-right: 6px;
       animation: blink 1.5s ease-in-out infinite;
     }
     @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
     /* ── Date nav ── */
-    .date-nav {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .date-nav { display: flex; align-items: center; gap: 8px; }
     .date-nav button {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 8px;
-      width: 32px;
-      height: 32px;
-      cursor: pointer;
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: var(--bg-card); border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px; width: 32px; height: 32px;
+      cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;
     }
     .date-nav button:hover { background: var(--bg-hover); }
     .date-nav input[type="date"] {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 8px;
-      padding: 4px 10px;
-      font-size: 0.85rem;
+      background: var(--bg-card); border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px; padding: 4px 10px; font-size: 0.85rem;
     }
+
+    /* ── Section cuisine mini ── */
+    .cuisine-chip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .cuisine-chip:last-child { border-bottom: none; }
+    .cuisine-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .cuisine-info { flex: 1; min-width: 0; }
+    .cuisine-name { font-size: 0.85rem; font-weight: 500; }
+    .cuisine-val { font-size: 0.78rem; color: var(--text-muted); }
   </style>
 </head>
 <body>
@@ -231,39 +204,50 @@
       <!-- Header -->
       <div class="page-header" style="margin-bottom:20px;">
         <div>
-          <div class="page-title">
-            <span class="live-dot"></span>Dashboard
-          </div>
+          <div class="page-title"><span class="live-dot"></span>Dashboard</div>
           <div class="page-subtitle" id="dateLabel"></div>
         </div>
-        <div class="date-nav">
-          <button onclick="shiftDate(-1)" title="Jour précédent">‹</button>
-          <input type="date" id="logDate" onchange="loadAll()">
-          <button onclick="shiftDate(1)" title="Jour suivant">›</button>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <a href="/admin/analytics.html" class="btn btn-secondary btn-sm">📈 Analytics</a>
+          <div class="date-nav">
+            <button onclick="shiftDate(-1)" title="Jour précédent">‹</button>
+            <input type="date" id="logDate" onchange="loadAll()">
+            <button onclick="shiftDate(1)" title="Jour suivant">›</button>
+          </div>
         </div>
       </div>
 
-      <!-- Chips statistiques -->
-      <div class="stat-chips" id="statChips">
-        <div class="stat-chip">
-          <div class="stat-chip-label">📅 Réservations</div>
-          <div class="stat-chip-value" id="chipTotal">—</div>
-          <div class="stat-chip-sub">aujourd'hui</div>
+      <!-- KPI chips -->
+      <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi-chip blue">
+          <div class="kpi-label">📅 Réservations</div>
+          <div class="kpi-value" id="kpiTotal">—</div>
+          <div class="kpi-sub" id="kpiTotalSub">aujourd'hui</div>
         </div>
-        <div class="stat-chip">
-          <div class="stat-chip-label">✅ Arrivées</div>
-          <div class="stat-chip-value" id="chipArrived">—</div>
-          <div class="stat-chip-sub" id="chipArrivedSub">sur le total</div>
+        <div class="kpi-chip">
+          <div class="kpi-label">🪑 Couverts</div>
+          <div class="kpi-value" id="kpiPax">—</div>
+          <div class="kpi-sub" id="kpiPaxSub">pax attendus</div>
         </div>
-        <div class="stat-chip danger" id="chipLateCard">
-          <div class="stat-chip-label">⚠️ En retard / No show</div>
-          <div class="stat-chip-value" id="chipLate">—</div>
-          <div class="stat-chip-sub">à surveiller</div>
+        <div class="kpi-chip success">
+          <div class="kpi-label">✅ Arrivées</div>
+          <div class="kpi-value" id="kpiArrived">—</div>
+          <div class="kpi-sub" id="kpiArrivedSub">taux d'arrivée</div>
         </div>
-        <div class="stat-chip">
-          <div class="stat-chip-label">🎯 Tâches faites</div>
-          <div class="stat-chip-value" id="chipTasks">—</div>
-          <div class="stat-chip-sub" id="chipTasksSub">au total</div>
+        <div class="kpi-chip danger" id="kpiDanger">
+          <div class="kpi-label">⚠️ No-shows</div>
+          <div class="kpi-value" id="kpiNoshow">—</div>
+          <div class="kpi-sub">confirmées en attente</div>
+        </div>
+        <div class="kpi-chip purple">
+          <div class="kpi-label">🎯 Tâches salle</div>
+          <div class="kpi-value" id="kpiTasks">—</div>
+          <div class="kpi-sub" id="kpiTasksSub">complétées</div>
+        </div>
+        <div class="kpi-chip cuisine">
+          <div class="kpi-label">🍳 Tâches cuisine</div>
+          <div class="kpi-value" id="kpiCuisine">—</div>
+          <div class="kpi-sub" id="kpiCuisineSub">complétées</div>
         </div>
       </div>
 
@@ -273,13 +257,12 @@
       <!-- Grille principale -->
       <div class="dashboard-grid">
 
-        <!-- Colonne gauche : tâches + par personne -->
+        <!-- Col 1 : tâches salle -->
         <div style="display:flex;flex-direction:column;gap:20px;">
 
-          <!-- Tâches par catégorie -->
           <div class="card">
             <div class="card-header">
-              <div class="card-title">🎯 Progression des tâches</div>
+              <div class="card-title">🎯 Tâches salle</div>
               <a href="/staff/taches.html" class="btn btn-secondary btn-sm">Voir →</a>
             </div>
             <div id="taskCategories">
@@ -287,10 +270,9 @@
             </div>
           </div>
 
-          <!-- Par personne -->
           <div class="card">
             <div class="card-header">
-              <div class="card-title">👥 Tâches par personne</div>
+              <div class="card-title">👥 Par personne</div>
             </div>
             <div id="byPerson">
               <div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">Chargement…</div></div>
@@ -299,7 +281,7 @@
 
         </div>
 
-        <!-- Colonne droite : réservations -->
+        <!-- Col 2 : réservations -->
         <div>
           <div class="card" style="height:100%;">
             <div class="card-header">
@@ -310,6 +292,30 @@
               <div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">Chargement…</div></div>
             </div>
           </div>
+        </div>
+
+        <!-- Col 3 : cuisine + stats résas rapides -->
+        <div style="display:flex;flex-direction:column;gap:20px;">
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">🍳 Cuisine du jour</div>
+              <a href="/cuisine/dashboard.html" class="btn btn-secondary btn-sm">Voir →</a>
+            </div>
+            <div id="cuisineSection">
+              <div class="empty-state"><div class="empty-state-icon">🍳</div><div class="empty-state-text">Chargement…</div></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📊 Résas par statut</div>
+            </div>
+            <div id="resaStats">
+              <div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-text">Chargement…</div></div>
+            </div>
+          </div>
+
         </div>
 
       </div>
@@ -349,7 +355,6 @@
       loadAll();
     }
 
-    // ─── Chargement principal ───────────────────────────────────────
     async function loadAll() {
       updateDateLabel();
       const date = logDateInput.value;
@@ -359,53 +364,56 @@
     async function loadDashboard(date) {
       const data = await api.get(`/api/admin/dashboard?date=${date}`);
       if (!data) return;
-
-      renderStatChips(data);
+      renderKpis(data);
       renderAlerts(data.reservations);
       renderTaskCategories(data.tasksByCategory);
       renderByPerson(data.byPerson);
       renderResaTimeline(data.reservations);
+      renderResaStats(data.reservations);
+      await loadCuisine(date);
     }
 
-    // ─── Chips statistiques ────────────────────────────────────────
-    function renderStatChips(data) {
+    // ─── KPIs ─────────────────────────────────────────────────────
+    function renderKpis(data) {
       const resas = data.reservations || [];
-      const total = resas.length;
-      const arrived = resas.filter(r => r.status === 'arrived').length;
-      const late = resas.filter(r => r.status === 'no_show' || isLate(r)).length;
+      // only non-cancelled for active count
+      const active = resas.filter(r => r.status !== 'cancelled');
+      const total    = active.length;
+      const totalPax = active.reduce((s, r) => s + (r.party_size || 0), 0);
+      const arrived  = resas.filter(r => r.status === 'arrived').length;
+      const noShow   = resas.filter(r => r.status === 'no_show' || isLate(r)).length;
+      const pct      = total ? Math.round(arrived / total * 100) : 0;
 
-      // Tâches : total unique tasks done (au moins 1 completion)
+      document.getElementById('kpiTotal').textContent = total;
+      document.getElementById('kpiTotalSub').textContent = resas.filter(r=>r.status==='cancelled').length
+        ? `+ ${resas.filter(r=>r.status==='cancelled').length} annulée(s)` : 'aujourd\'hui';
+      document.getElementById('kpiPax').textContent = totalPax;
+      document.getElementById('kpiPaxSub').textContent = total ? `moy. ${total ? (totalPax/total).toFixed(1) : '—'} / table` : 'aucune résa';
+      document.getElementById('kpiArrived').textContent = arrived;
+      document.getElementById('kpiArrivedSub').textContent = total ? `${pct}% de taux` : '—';
+      document.getElementById('kpiNoshow').textContent = noShow;
+
+      const kpiDanger = document.getElementById('kpiDanger');
+      kpiDanger.className = 'kpi-chip' + (noShow > 0 ? ' danger' : '');
+
       const cats = data.tasksByCategory || [];
-      const totalTasks = cats.reduce((s, c) => s + c.total, 0);
-      const doneTasks  = cats.reduce((s, c) => s + c.done_tasks, 0);
+      const salleCats = cats.filter(c => !['fermeture','nettoyage'].includes(c.category));
+      const totalT = salleCats.reduce((s,c) => s + c.total, 0);
+      const doneT  = salleCats.reduce((s,c) => s + c.done_tasks, 0);
+      const pctT   = totalT ? Math.round(doneT / totalT * 100) : 0;
+      document.getElementById('kpiTasks').textContent = `${doneT}/${totalT}`;
+      document.getElementById('kpiTasksSub').textContent = `${pctT}% complétées`;
 
-      document.getElementById('chipTotal').textContent = total;
-      document.getElementById('chipArrived').textContent = arrived;
-      document.getElementById('chipArrivedSub').textContent = total ? `sur ${total} résa${total>1?'s':''}` : 'aucune résa';
-      document.getElementById('chipLate').textContent = late;
-
-      const lateCard = document.getElementById('chipLateCard');
-      if (late > 0) {
-        lateCard.classList.add('danger');
-        lateCard.style.animation = 'pulseCard 2s ease-in-out infinite';
-      } else {
-        lateCard.classList.remove('danger');
-        lateCard.style.animation = '';
-      }
-
-      const pct = totalTasks ? Math.round(doneTasks / totalTasks * 100) : 0;
-      document.getElementById('chipTasks').textContent = `${doneTasks}/${totalTasks}`;
-      document.getElementById('chipTasksSub').textContent = `${pct}% complétées`;
+      // Cuisine KPI will be filled by loadCuisine
     }
 
-    // ─── Alertes no-show ───────────────────────────────────────────
+    // ─── Alertes ──────────────────────────────────────────────────
     function isLate(r) {
       if (r.status !== 'confirmed') return false;
       const now = new Date();
       const [h, m] = r.time.split(':').map(Number);
       const resaTime = new Date(now);
       resaTime.setHours(h, m + 15, 0, 0);
-      // Only for today
       return r.date === today() && now >= resaTime;
     }
 
@@ -413,7 +421,6 @@
       const container = document.getElementById('alertsSection');
       const late = (resas || []).filter(r => r.status === 'no_show' || isLate(r));
       if (!late.length) { container.innerHTML = ''; return; }
-
       container.innerHTML = `
         <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.06em;color:#ef4444;font-weight:700;margin-bottom:10px;">
           ⚠️ ${late.length} réservation${late.length>1?'s':''} en alerte
@@ -424,8 +431,8 @@
             <div class="alert-noshow-info">
               <div class="alert-noshow-name">${r.customer_name}</div>
               <div class="alert-noshow-detail">
-                ${r.party_size} pers. · Table ${r.table_name || '—'}
-                ${r.phone ? `· 📞 ${r.phone}` : ''}
+                ${r.party_size} pers.${r.table_name ? ` · T.${r.table_name}` : ''}
+                ${r.phone ? ` · 📞 ${r.phone}` : ''}
                 ${r.status === 'no_show' ? ' · <strong style="color:#ef4444">No show confirmé</strong>' : ' · <strong style="color:#f97316">+15 min — pas arrivé</strong>'}
               </div>
             </div>
@@ -435,23 +442,23 @@
       `;
     }
 
-    // ─── Tâches par catégorie ──────────────────────────────────────
+    // ─── Tâches salle ─────────────────────────────────────────────
     const catConfig = {
-      matin:      { label: '🌅 Matin',       color: '#cda443' },
-      passation:  { label: '🔄 Passation',   color: '#60a5fa' },
-      soir:       { label: '🌙 Fermeture',   color: '#a78bfa' },
+      matin:     { label: '🌅 Matin',     color: '#cda443' },
+      passation: { label: '🔄 Passation', color: '#60a5fa' },
+      soir:      { label: '🌙 Fermeture', color: '#a78bfa' },
     };
 
     function renderTaskCategories(cats) {
       const container = document.getElementById('taskCategories');
-      if (!cats || !cats.length) {
+      const salleCats = (cats || []).filter(c => !['fermeture','nettoyage'].includes(c.category));
+      if (!salleCats.length) {
         container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Aucune tâche</div></div>`;
         return;
       }
-      container.innerHTML = cats.map(c => {
+      container.innerHTML = salleCats.map(c => {
         const cfg = catConfig[c.category] || { label: c.category, color: 'var(--primary)' };
         const pct = c.total ? Math.round(c.done_tasks / c.total * 100) : 0;
-        const isComplete = pct === 100;
         return `
           <div class="category-block">
             <div class="category-header">
@@ -459,39 +466,35 @@
               <div class="category-count">${c.done_tasks}/${c.total} · ${pct}%</div>
             </div>
             <div class="progress-bar">
-              <div class="progress-fill ${isComplete ? 'success' : ''}" style="width:${pct}%;background:${isComplete ? '#22c55e' : cfg.color};"></div>
+              <div class="progress-fill ${pct===100?'success':''}" style="width:${pct}%;background:${pct===100?'#22c55e':cfg.color};"></div>
             </div>
-          </div>
-        `;
+          </div>`;
       }).join('');
     }
 
-    // ─── Par personne ──────────────────────────────────────────────
+    // ─── Par personne ─────────────────────────────────────────────
     function renderByPerson(persons) {
       const container = document.getElementById('byPerson');
       const active = (persons || []).filter(p => p.task_count > 0);
       if (!active.length) {
-        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">Aucune tâche cochée aujourd'hui</div></div>`;
+        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">Aucune tâche cochée</div></div>`;
         return;
       }
       const maxCount = Math.max(...active.map(p => p.task_count));
       container.innerHTML = active.map(p => {
         const initials = p.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
         const pct = maxCount ? Math.round(p.task_count / maxCount * 100) : 0;
+        const isCuisine = p.shift === 'cuisine';
         return `
           <div class="person-row">
-            <div class="person-avatar">${initials}</div>
+            <div class="person-avatar ${isCuisine?'cuisine-av':''}">${initials}</div>
             <div class="person-info">
               <div class="person-name">${p.name}</div>
-              <div class="person-bar-wrap">
-                <div class="person-mini-bar">
-                  <div class="person-mini-fill" style="width:${pct}%"></div>
-                </div>
-              </div>
+              <div class="person-meta">${isCuisine?'🍳 Cuisine':'🍽️ Salle'}</div>
+              <div class="person-mini-bar"><div class="person-mini-fill" style="width:${pct}%;background:${isCuisine?'#f59e0b':'var(--primary)'};"></div></div>
             </div>
-            <div class="person-count">${p.task_count}</div>
-          </div>
-        `;
+            <div class="person-count" style="color:${isCuisine?'#f59e0b':'var(--primary)'}">${p.task_count}</div>
+          </div>`;
       }).join('');
     }
 
@@ -509,7 +512,7 @@
         container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">Aucune réservation</div></div>`;
         return;
       }
-      container.innerHTML = resas.map(r => {
+      container.innerHTML = `<div style="max-height:420px;overflow-y:auto;">` + resas.map(r => {
         const s = statusConfig[r.status] || { label: r.status, cls: 'cancelled' };
         const late = r.status === 'no_show' || isLate(r);
         return `
@@ -518,13 +521,94 @@
             <div class="resa-info">
               <div class="resa-name">${r.customer_name} ${late ? '⚠️' : ''}</div>
               <div class="resa-detail">
-                ${r.party_size} pers.${r.table_name ? ` · T. ${r.table_name}` : ' · sans table'}${r.notes ? ` · ${r.notes}` : ''}
+                ${r.party_size} pers.${r.table_name ? ` · T.${r.table_name}` : ''}${r.notes ? ` · ${r.notes}` : ''}
               </div>
             </div>
             <div class="resa-badge ${s.cls}">${s.label}</div>
-          </div>
-        `;
-      }).join('');
+          </div>`;
+      }).join('') + `</div>`;
+    }
+
+    // ─── Stats résas rapides ───────────────────────────────────────
+    function renderResaStats(resas) {
+      const container = document.getElementById('resaStats');
+      const list = resas || [];
+      const items = [
+        { label: '✅ Arrivées',    val: list.filter(r=>r.status==='arrived').length,   color:'#22c55e' },
+        { label: '📌 Confirmées',  val: list.filter(r=>r.status==='confirmed').length, color:'#60a5fa' },
+        { label: '❌ No-shows',    val: list.filter(r=>r.status==='no_show').length,   color:'#ef4444' },
+        { label: '🚫 Annulées',    val: list.filter(r=>r.status==='cancelled').length, color:'var(--text-muted)' },
+        { label: '🔗 Via Joy.io',  val: list.filter(r=>r.joy_event_id).length,        color:'#f59e0b' },
+      ];
+      const max = Math.max(...items.map(i => i.val), 1);
+      container.innerHTML = items.map(i => `
+        <div class="donut-row">
+          <div class="donut-label">${i.label}</div>
+          <div class="donut-bar-wrap"><div class="donut-bar"><div class="donut-fill" style="width:${Math.round(i.val/max*100)}%;background:${i.color};"></div></div></div>
+          <div class="donut-val">${i.val}</div>
+        </div>`).join('');
+    }
+
+    // ─── Section Cuisine ──────────────────────────────────────────
+    async function loadCuisine(date) {
+      try {
+        const [completions, timeEvents] = await Promise.all([
+          api.get(`/api/cuisine/completions?date=${date}`),
+          api.get(`/api/cuisine/time-events?date=${date}`)
+        ]);
+        renderCuisine(completions, timeEvents, date);
+      } catch(e) {
+        document.getElementById('cuisineSection').innerHTML =
+          `<div class="empty-state"><div class="empty-state-text">Non disponible</div></div>`;
+      }
+    }
+
+    function renderCuisine(completions, timeEvents, date) {
+      const container = document.getElementById('cuisineSection');
+      const comp = completions || [];
+      const events = timeEvents || [];
+
+      // Cuisine KPI
+      const totalTasks = comp.length ? comp[0].total : 0;
+      const totalDone  = comp.reduce((s,u) => s + (u.done||0), 0);
+      const teamSize   = comp.length;
+      const teamDone   = totalTasks ? Math.round(totalDone / (totalTasks * teamSize || 1) * 100) : 0;
+      document.getElementById('kpiCuisine').textContent = `${totalDone}/${totalTasks * teamSize}`;
+      document.getElementById('kpiCuisineSub').textContent = `${teamDone}% (équipe)`;
+
+      let html = '';
+      // Tâches par personne
+      if (comp.length) {
+        html += comp.map(u => {
+          const pct = u.total ? Math.round(u.done / u.total * 100) : 0;
+          const initials = u.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+          return `
+            <div class="cuisine-chip">
+              <div class="person-avatar cuisine-av" style="width:30px;height:30px;font-size:0.78rem;">${initials}</div>
+              <div class="cuisine-info">
+                <div class="cuisine-name">${u.name}</div>
+                <div class="progress-bar" style="height:5px;margin-top:4px;">
+                  <div class="progress-fill ${pct===100?'success':''}" style="width:${pct}%;background:${pct===100?'#22c55e':'#f59e0b'};"></div>
+                </div>
+              </div>
+              <span style="font-size:0.82rem;font-weight:700;color:#f59e0b;">${u.done}/${u.total}</span>
+            </div>`;
+        }).join('');
+      } else {
+        html += `<div class="empty-state"><div class="empty-state-text">Aucun staff cuisine actif</div></div>`;
+      }
+
+      // Retards/heures supp
+      if (events.length) {
+        const retards = events.filter(e=>e.type==='retard');
+        const supps   = events.filter(e=>e.type==='supp');
+        html += `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:0.78rem;color:var(--text-muted);">`;
+        if (retards.length) html += `⏰ ${retards.length} retard(s) · ${retards.reduce((s,e)=>s+(e.minutes||0),0)} min  `;
+        if (supps.length)   html += `➕ ${supps.length} heure(s) supp · ${supps.reduce((s,e)=>s+(e.minutes||0),0)} min`;
+        html += `</div>`;
+      }
+
+      container.innerHTML = html || `<div class="empty-state"><div class="empty-state-text">Aucune donnée</div></div>`;
     }
 
     // ─── Log d'activité ───────────────────────────────────────────
@@ -534,45 +618,36 @@
       if (!log) return;
       const container = document.getElementById('logList');
       if (!log.length) {
-        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Aucune activité pour cette date</div></div>`;
+        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Aucune activité</div></div>`;
         return;
       }
-      const catIcon = { matin: '🌅', passation: '🔄', soir: '🌙' };
+      const catIcon = { matin: '🌅', passation: '🔄', soir: '🌙', fermeture: '🔒', nettoyage: '🧽' };
       container.innerHTML = `<div style="max-height:300px;overflow-y:auto;">` +
         log.map(l => `
           <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
             <span style="font-size:0.77rem;color:var(--text-muted);flex-shrink:0;margin-top:2px;min-width:42px;">${formatDateTime(l.completed_at)}</span>
             <div style="flex:1;min-width:0;">
               <div style="font-size:0.84rem;">${l.description}</div>
-              <div style="font-size:0.74rem;color:var(--text-muted);">${catIcon[l.category] || ''} ${l.section} · ${l.user_name}</div>
+              <div style="font-size:0.74rem;color:var(--text-muted);">${catIcon[l.category] || ''} ${l.section || ''} · ${l.user_name}</div>
             </div>
             <span class="badge badge-success" style="flex-shrink:0;">✓</span>
-          </div>
-        `).join('') + `</div>`;
+          </div>`).join('') + `</div>`;
     }
 
-    // ─── Socket.io temps réel ──────────────────────────────────────
+    // ─── Socket.io ────────────────────────────────────────────────
     const socket = io();
-
-    socket.on('task:updated', () => {
-      loadDashboard(logDateInput.value);
-    });
-    socket.on('reservation:updated', () => {
-      loadDashboard(logDateInput.value);
-    });
-    socket.on('reservation:deleted', () => {
-      loadDashboard(logDateInput.value);
-    });
+    socket.on('task:updated', () => loadDashboard(logDateInput.value));
+    socket.on('reservation:updated', () => loadDashboard(logDateInput.value));
+    socket.on('reservation:deleted', () => loadDashboard(logDateInput.value));
+    socket.on('cuisine:time-events:updated', () => loadDashboard(logDateInput.value));
     socket.on('alert:no_show', (data) => {
       loadDashboard(logDateInput.value);
       playAlertSound();
       showToast(`⚠️ No-show : ${data.customerName} — ${data.time}`, 'warning');
     });
 
-    // ─── Init ──────────────────────────────────────────────────────
+    // ─── Init ─────────────────────────────────────────────────────
     loadAll();
-
-    // Rafraîchissement automatique toutes les 60s
     setInterval(() => loadAll(), 60000);
   </script>
 </body>

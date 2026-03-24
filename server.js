@@ -476,6 +476,11 @@ app.get('/api/admin/dashboard', requireAdminOrManager, (req, res) => {
   res.json(db.getDashboardData(date));
 });
 
+app.get('/api/admin/reservation-stats', requireAdminOrManager, (req, res) => {
+  const { from, to } = req.query;
+  res.json(db.getReservationStats(from, to));
+});
+
 
 // ─── 15-minute alert system ────────────────────────────────────────────────────
 const alertedReservations = new Set();

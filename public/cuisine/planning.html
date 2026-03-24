@@ -57,6 +57,42 @@
       border-radius:20px; padding:4px 12px; margin-bottom:14px;
     }
 
+    /* ── WhatsApp button ── */
+    .btn-whatsapp {
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      background:#25d366; color:#fff; border:none;
+      border-radius:var(--radius-sm); padding:13px 20px;
+      font-size:.95rem; font-weight:700; cursor:pointer;
+      transition:background .15s; text-decoration:none;
+      white-space:nowrap; width:100%;
+    }
+    .btn-whatsapp:hover { background:#1da851; }
+    .btn-whatsapp svg { width:20px; height:20px; fill:currentColor; flex-shrink:0; }
+
+    /* ── Preview box ── */
+    .preview-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      font-family: monospace;
+      font-size: .82rem;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+    .preview-label {
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 8px;
+    }
+
     /* ── Drawer ── */
     .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s; }
     .drawer-backdrop.open { opacity:1; pointer-events:auto; }
@@ -94,6 +130,9 @@
           <div class="page-title">📅 Planning Cuisine</div>
           <div class="page-subtitle" id="weekSubtitle"></div>
         </div>
+        <button id="btnValidate" class="btn btn-primary hidden" onclick="openPreview()">
+          ✅ Valider le planning
+        </button>
       </div>
 
       <div class="week-nav">
@@ -114,8 +153,28 @@
     </div>
   </div>
 
-  <!-- Backdrop -->
-  <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+  <!-- Backdrop (partagé — ferme tout) -->
+  <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeAll()"></div>
+
+  <!-- Preview drawer -->
+  <div class="drawer" id="previewDrawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-head">
+      <div class="drawer-title">📋 Aperçu du planning</div>
+      <button class="drawer-close" onclick="closePreview()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="preview-label">Message qui sera envoyé</div>
+      <div class="preview-box" id="previewBox"></div>
+    </div>
+    <div class="drawer-footer" style="flex-direction:column;gap:10px;">
+      <button class="btn-whatsapp" onclick="sendToWhatsApp()">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+        Ouvrir WhatsApp &amp; Envoyer
+      </button>
+      <button class="btn btn-secondary" onclick="closePreview()" style="justify-content:center;">Modifier encore</button>
+    </div>
+  </div>
 
   <!-- Shift editor drawer -->
   <div class="drawer" id="shiftDrawer">
@@ -202,8 +261,21 @@
       const user = await api.get('/api/auth/me');
       if (!user) return;
       isChef = user.role === 'admin' || (user.role === 'manager' && user.shift === 'cuisine');
-      if (!isChef) document.getElementById('readonlyBadge').classList.remove('hidden');
+      if (!isChef) {
+        document.getElementById('readonlyBadge').classList.remove('hidden');
+      } else {
+        document.getElementById('btnValidate').classList.remove('hidden');
+      }
       await load();
+    }
+
+    // ── WhatsApp send ─────────────────────────────────────────────
+    function sendToWhatsApp() {
+      const msg = buildMessage();
+      const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+      closePreview();
+      showToast('WhatsApp ouvert — sélectionne le groupe 👍', 'success');
     }
 
     async function load() {
@@ -293,10 +365,59 @@
       }, 10);
     }
 
-    function closeDrawer() {
+    function closeAll() {
       document.getElementById('drawerBackdrop').classList.remove('open');
       document.getElementById('shiftDrawer').classList.remove('open');
+      document.getElementById('previewDrawer').classList.remove('open');
       document.body.style.overflow = '';
+    }
+
+    function closeDrawer() { closeAll(); }
+
+    function openPreview() {
+      if (!planningData.users.length) {
+        showToast('Aucun planning à envoyer', 'warning');
+        return;
+      }
+      document.getElementById('previewBox').textContent = buildMessage();
+      document.getElementById('drawerBackdrop').classList.add('open');
+      document.getElementById('previewDrawer').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePreview() { closeAll(); }
+
+    function buildMessage() {
+      const dayDates = DAYS.map((_, i) => addDays(currentWeekStart, i));
+      const weekLabel = fmtWeekLabel(currentWeekStart);
+
+      let msg = `📅 Planning Cuisine — ${weekLabel}\n`;
+      msg += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+      planningData.users.forEach(u => {
+        msg += `👤 ${u.name}\n`;
+        let hasAny = false;
+        dayDates.forEach((dd, i) => {
+          const shift = planningData.shifts.find(s => s.user_id === u.id && s.day_date === dd);
+          if (!shift) return;
+          hasAny = true;
+          const dayShort = DAYS[i].short;
+          const dateStr  = dd.slice(5).replace('-', '/');
+          if (shift.is_off) {
+            msg += `• ${dayShort} ${dateStr} : 📴 Repos\n`;
+          } else {
+            const start = shift.start_time ? shift.start_time.slice(0,5) : '?';
+            const end   = shift.end_time   ? shift.end_time.slice(0,5)   : '?';
+            msg += `• ${dayShort} ${dateStr} : ${start} → ${end}\n`;
+          }
+        });
+        if (!hasAny) msg += `• Aucun créneau défini\n`;
+        msg += '\n';
+      });
+
+      msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+      msg += `Mos Pub Mercière 🍺`;
+      return msg;
     }
 
     async function saveShift(e) {
