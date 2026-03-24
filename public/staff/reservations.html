@@ -140,6 +140,10 @@
       </div>
 
       <div class="chips" id="chips"></div>
+      <div id="joySyncBar" style="display:none;align-items:center;gap:10px;margin-bottom:12px;font-size:.78rem;color:var(--text-muted);">
+        <span id="joySyncLabel"></span>
+        <button id="joySyncBtn" onclick="manualSync()" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-muted);border-radius:20px;padding:4px 12px;font-size:.75rem;cursor:pointer;white-space:nowrap;">🔄 Sync Joy.io</button>
+      </div>
       <div class="res-list" id="resList"></div>
 
     </div>
@@ -474,6 +478,37 @@
     }
     function closeDrawer() { closeAllDrawers(true); currentResId = null; }
 
+    // ── Sync Joy.io ───────────────────────────────────────────────────────────
+    async function initSyncBar() {
+      const user = await api.get('/api/auth/me');
+      if (!user || (user.role !== 'admin' && user.role !== 'manager')) return;
+      const bar = document.getElementById('joySyncBar');
+      bar.style.display = 'flex';
+      refreshSyncLabel();
+    }
+    async function refreshSyncLabel() {
+      const cfg = await api.get('/api/joy/config');
+      if (!cfg) return;
+      const label = document.getElementById('joySyncLabel');
+      if (cfg.lastSync) {
+        const d = new Date(cfg.lastSync);
+        label.textContent = `Joy.io — dernière sync : ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
+      } else {
+        label.textContent = 'Joy.io — jamais synchronisé';
+      }
+    }
+    async function manualSync() {
+      const btn = document.getElementById('joySyncBtn');
+      btn.textContent = '⏳ Sync…'; btn.disabled = true;
+      const r = await api.post('/api/joy/sync', {});
+      btn.textContent = '🔄 Sync Joy.io'; btn.disabled = false;
+      if (r?.error) { showToast('Erreur sync : ' + r.error, 'error'); return; }
+      showToast(`Joy.io — ${r.synced} résa${r.synced > 1 ? 's' : ''} synchronisée${r.synced > 1 ? 's' : ''} ✓`, 'success');
+      refreshSyncLabel();
+      load();
+    }
+    initSyncBar();
+
     // ── Temps réel ────────────────────────────────────────────────────────────
     socket.on('reservation:updated', r => {
       if (r.date !== viewDate.value) return;
@@ -485,6 +520,11 @@
     socket.on('reservation:deleted', ({id}) => {
       reservations = reservations.filter(r=>r.id!==id);
       render();
+    });
+    // Recharge automatiquement après une synchro Joy.io
+    socket.on('joy:synced', () => {
+      load();
+      refreshSyncLabel();
     });
 
     // ── Retour depuis plan de salle (table assignée) ──────────────────────────

@@ -989,11 +989,14 @@ function cleanupJoyReservationDuplicates() {
 }
 
 function cleanupStaleJoyReservations(validJoyIds) {
-  // Supprime les résas Joy dont le joy_event_id n'est plus dans le sync actuel
-  // (cas : Joy.io change les UIDs entre deux exports)
+  // Supprime uniquement les résas Joy FUTURES dont l'event_id n'est plus dans le sync
+  // Joy.io n'exporte que les événements à venir → ne jamais effacer les résas passées
   if (!validJoyIds.length) return;
+  const today = new Date().toISOString().split('T')[0];
   const ph = validJoyIds.map(() => '?').join(',');
-  db.prepare(`DELETE FROM reservations WHERE joy_event_id IS NOT NULL AND joy_event_id NOT IN (${ph})`).run(...validJoyIds);
+  db.prepare(
+    `DELETE FROM reservations WHERE joy_event_id IS NOT NULL AND date >= ? AND joy_event_id NOT IN (${ph})`
+  ).run(today, ...validJoyIds);
 }
 
 function getJoyEvents({ date, upcoming, all: showAll } = {}) {

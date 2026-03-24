@@ -172,6 +172,8 @@ async function syncJoyEvents() {
 
     db.setSetting('joy_last_sync', new Date().toISOString());
     console.log(`[Joy.io] ✅ ${synced} événements synchronisés`);
+    // Notifie tous les clients connectés pour qu'ils rechargent les résas
+    if (typeof io !== 'undefined') io.emit('joy:synced', { synced, total: events.length });
     return { synced, total: events.length };
   } catch (err) {
     console.error('[Joy.io] ❌ Erreur sync:', err.message);
@@ -517,9 +519,9 @@ app.delete('/api/joy/events/:id', requireAdminOrManager, (req, res) => {
   res.json({ ok: true });
 });
 
-// Auto-sync Joy.io au démarrage puis toutes les 30 min
+// Auto-sync Joy.io au démarrage puis toutes les 5 min
 setTimeout(syncJoyEvents, 8000);
-setInterval(syncJoyEvents, 30 * 60 * 1000);
+setInterval(syncJoyEvents, 5 * 60 * 1000);
 
 setInterval(() => {
   const now = new Date();
