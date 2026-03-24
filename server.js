@@ -111,9 +111,32 @@ function parseIcalEvents(raw) {
     const barePhone = description.match(/((?:\+33[\s.\-]?|0)[1-9](?:[\s.\-]?\d){8})/);
     const phone = labeledPhone ? labeledPhone[1].trim() : (barePhone ? barePhone[1].trim() : null);
 
+    // Extract notes : demandes spéciales, allergies, devis, placement...
+    // Essaie d'abord un champ étiqueté
+    let notes = null;
+    const labeledNotes = description.match(
+      /(?:notes?|demandes?|commentaires?|remarques?|souhaits?|pr[eé]cisions?|allergies?|occasion|devis|menu|placement|disposition|configuration|sp[eé]cial)\s*[:=.]\s*(.{4,})/i
+    );
+    if (labeledNotes) {
+      notes = labeledNotes[1].trim().replace(/\s+/g, ' ').substring(0, 300);
+    } else {
+      // Sinon, supprime les champs structurés connus et garde le reste comme note libre
+      const stripped = description
+        .replace(/(?:t[eé]l(?:[eé]phone)?|phone|portable|mobile|mob|contact|num[eé]ro)\s*[:=.]?\s*(?:\+33[\s.\-]?|0)[1-9](?:[\s.\-]?\d){8}/gi, '')
+        .replace(/(?:nom|name|client|prenom|pr[eé]nom)\s*[:=.]\s*[^\s][^|\\]{0,50}/gi, '')
+        .replace(/(?:participant|personne|convive|couvert|pax|place|nb|nombre|guest)\w*\s*[:=.]\s*\d+/gi, '')
+        .replace(/\d+\s*(?:participant|personne|pers\b|convive|couvert|pax|place|invit|person)\w*/gi, '')
+        .replace(/(?:espace|salle|room|space|location|lieu)\s*[:=.]\s*[^\s][^|\\]{0,50}/gi, '')
+        .replace(/(?:date|heure|de|[àa])\s*[:=.]?\s*[\d/: hHhmM-]{3,20}/gi, '')
+        .replace(new RegExp(customerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+      if (stripped.length >= 6) notes = stripped.substring(0, 300);
+    }
+
     const status = (icalStatus || '').toLowerCase() === 'cancelled' ? 'cancelled' : 'confirmed';
 
-    events.push({ joy_uid: uid, customer_name: customerName, participants, date, time_start: timeStart, time_end: timeEnd, space, raw_summary: summary, raw_description: description, status, phone });
+    events.push({ joy_uid: uid, customer_name: customerName, participants, date, time_start: timeStart, time_end: timeEnd, space, raw_summary: summary, raw_description: description, status, phone, notes });
   }
   return events;
 }

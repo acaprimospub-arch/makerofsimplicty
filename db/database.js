@@ -764,7 +764,7 @@ function upsertJoyEvent({ joy_uid, customer_name, participants, date, time_start
   return db.prepare('SELECT id FROM joy_events WHERE joy_uid = ?').get(joy_uid)?.id || null;
 }
 
-function upsertReservationFromJoy(joyEventId, { customer_name, participants, date, time_start, status, phone }) {
+function upsertReservationFromJoy(joyEventId, { customer_name, participants, date, time_start, status, phone, notes }) {
   const partySize  = participants > 0 ? participants : 2;
   const time       = time_start || '00:00';
   const resStatus  = status === 'cancelled' ? 'cancelled' : 'confirmed';
@@ -783,11 +783,11 @@ function upsertReservationFromJoy(joyEventId, { customer_name, participants, dat
   const finalStatus = resStatus === 'cancelled' ? 'cancelled'
     : (best && ['arrived', 'no_show'].includes(best.status) ? best.status : resStatus);
 
-  // Insère une ligne propre en préservant la table assignée
+  // Insère une ligne propre avec les demandes clients dans les notes
   db.prepare(`
     INSERT INTO reservations (table_id, customer_name, party_size, date, time, status, phone, notes, joy_event_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)
-  `).run(best?.table_id || null, customer_name || '', partySize, date || '', time, finalStatus, phone || null, joyEventId);
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(best?.table_id || null, customer_name || '', partySize, date || '', time, finalStatus, phone || null, notes || null, joyEventId);
 }
 
 function cleanupJoyReservationDuplicates() {
