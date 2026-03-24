@@ -91,9 +91,13 @@ function parseIcalEvents(raw) {
       space = parts[parts.length - 1].trim();
     }
 
+    // Extract phone number from description
+    const phoneMatch = description.match(/(?:t[eé]l(?:[eé]phone)?|phone|portable|mob(?:ile)?|contact)\s*[:.]?\s*([+\d][\d\s.\-()]{7,20})/i);
+    const phone = phoneMatch ? phoneMatch[1].replace(/\s+/g, ' ').trim() : null;
+
     const status = (icalStatus || '').toLowerCase() === 'cancelled' ? 'cancelled' : 'confirmed';
 
-    events.push({ joy_uid: uid, customer_name: customerName, participants, date, time_start: timeStart, time_end: timeEnd, space, raw_summary: summary, raw_description: description, status });
+    events.push({ joy_uid: uid, customer_name: customerName, participants, date, time_start: timeStart, time_end: timeEnd, space, raw_summary: summary, raw_description: description, status, phone });
   }
   return events;
 }
@@ -107,7 +111,7 @@ async function syncJoyEvents() {
     let synced = 0;
     for (const ev of events) {
       const joyId = db.upsertJoyEvent(ev);
-      if (joyId) db.upsertReservationFromJoy(joyId, ev);
+      if (joyId) db.upsertReservationFromJoy(joyId, { ...ev, phone: ev.phone || null });
       synced++;
     }
     db.setSetting('joy_last_sync', new Date().toISOString());

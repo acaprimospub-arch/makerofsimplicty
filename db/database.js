@@ -764,33 +764,23 @@ function upsertJoyEvent({ joy_uid, customer_name, participants, date, time_start
   return db.prepare('SELECT id FROM joy_events WHERE joy_uid = ?').get(joy_uid)?.id || null;
 }
 
-function upsertReservationFromJoy(joyEventId, { customer_name, participants, date, time_start, time_end, space, raw_description, status }) {
+function upsertReservationFromJoy(joyEventId, { customer_name, participants, date, time_start, status, phone }) {
   const partySize  = participants > 0 ? participants : 2;
   const time       = time_start || '00:00';
   const resStatus  = status === 'cancelled' ? 'cancelled' : 'confirmed';
-
-  // Construire les notes depuis les infos Joy.io
-  const parts = [];
-  if (space) parts.push(`📍 ${space}`);
-  if (time_end) parts.push(`jusqu'à ${time_end}`);
-  if (raw_description) {
-    const desc = raw_description.substring(0, 120).trim();
-    if (desc) parts.push(desc);
-  }
-  const notes = parts.length ? parts.join(' · ') : null;
 
   const existing = db.prepare('SELECT id FROM reservations WHERE joy_event_id = ?').get(joyEventId);
   if (existing) {
     db.prepare(`
       UPDATE reservations SET
-        customer_name = ?, party_size = ?, date = ?, time = ?, notes = ?, status = ?
+        customer_name = ?, party_size = ?, date = ?, time = ?, status = ?, phone = ?
       WHERE joy_event_id = ?
-    `).run(customer_name || '', partySize, date || '', time, notes, resStatus, joyEventId);
+    `).run(customer_name || '', partySize, date || '', time, resStatus, phone || null, joyEventId);
   } else {
     db.prepare(`
-      INSERT INTO reservations (customer_name, party_size, date, time, notes, status, joy_event_id)
+      INSERT INTO reservations (customer_name, party_size, date, time, status, phone, joy_event_id)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(customer_name || '', partySize, date || '', time, notes, resStatus, joyEventId);
+    `).run(customer_name || '', partySize, date || '', time, resStatus, phone || null, joyEventId);
   }
 }
 

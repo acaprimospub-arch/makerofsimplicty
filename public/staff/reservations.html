@@ -61,14 +61,19 @@
       flex-shrink: 0;
     }
     .res-table-badge.assigned {
-      background: rgba(212,175,55,0.15);
-      color: var(--gold);
-      border: 1px solid rgba(212,175,55,0.4);
+      background: rgba(34,197,94,0.15);
+      color: #22c55e;
+      border: 1px solid rgba(34,197,94,0.4);
+    }
+    @keyframes blink-badge {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
     }
     .res-table-badge.unassigned {
-      background: rgba(255,255,255,0.05);
-      color: #555;
-      border: 1px solid #333;
+      background: rgba(239,68,68,0.12);
+      color: #ef4444;
+      border: 1px solid rgba(239,68,68,0.45);
+      animation: blink-badge 1.4s ease-in-out infinite;
     }
 
     .res-status-wrap { flex-shrink: 0; }
@@ -145,6 +150,15 @@
       color: var(--text-muted);
       margin-top: 3px;
       font-style: italic;
+    }
+
+    /* ── Modal mobile ── */
+    @media (max-width: 600px) {
+      .modal { padding: 16px 14px 20px; border-radius: 16px 16px 0 0; margin: auto 0 0; max-height: 92vh; overflow-y: auto; }
+      .modal-overlay { align-items: flex-end; }
+      .form-row-2, .form-row-3 { grid-template-columns: 1fr !important; gap: 10px; }
+      .modal-footer { flex-wrap: wrap; gap: 8px; }
+      .modal-footer .btn { flex: 1; min-width: 100px; }
     }
 
     /* ── Réservations Joy.io ── */
