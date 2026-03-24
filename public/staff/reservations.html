@@ -95,6 +95,17 @@
 
     .res-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
+    /* ── Cartes mobile ── */
+    @media (max-width: 640px) {
+      .res-card { gap: 10px; }
+      .res-time { font-size: 1.1rem; min-width: 44px; }
+      .res-main { min-width: 0; }
+      .res-table-badge { font-size: 0.7rem; padding: 2px 8px; }
+      .res-status-wrap { width: 100%; order: 5; }
+      .res-status-select { width: 100% !important; }
+      .res-actions { order: 1; flex-shrink: 0; margin-left: auto; }
+    }
+
     /* ── Résumé du jour ── */
     .day-summary {
       display: flex;
@@ -152,13 +163,33 @@
       font-style: italic;
     }
 
-    /* ── Modal mobile ── */
-    @media (max-width: 600px) {
-      .modal { padding: 16px 14px 20px; border-radius: 16px 16px 0 0; margin: auto 0 0; max-height: 92vh; overflow-y: auto; }
-      .modal-overlay { align-items: flex-end; }
-      .form-row-2, .form-row-3 { grid-template-columns: 1fr !important; gap: 10px; }
-      .modal-footer { flex-wrap: wrap; gap: 8px; }
-      .modal-footer .btn { flex: 1; min-width: 100px; }
+    /* ── Modal bottom-sheet mobile ── */
+    @media (max-width: 640px) {
+      .modal-overlay {
+        align-items: flex-end !important;
+        padding: 0 !important;
+      }
+      .modal {
+        border-radius: 20px 20px 0 0 !important;
+        max-height: 92dvh !important;
+        overflow-y: auto !important;
+        padding: 20px 16px 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+      }
+      .modal-footer {
+        position: sticky !important;
+        bottom: 0 !important;
+        background: var(--bg-card) !important;
+        padding: 12px 0 calc(16px + env(safe-area-inset-bottom)) !important;
+        margin-top: 12px !important;
+        flex-wrap: wrap !important;
+        border-top: 1px solid var(--border) !important;
+        gap: 8px !important;
+      }
+      .modal-footer .btn { flex: 1 !important; }
+      .res-table-info { display: none !important; }
     }
 
     /* ── Réservations Joy.io ── */
@@ -255,7 +286,7 @@
           </div>
 
           <!-- Info : table assignée par les serveurs -->
-          <div style="background:rgba(91,141,238,0.07);border:1px solid rgba(91,141,238,0.25);border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#5b8dee;">
+          <div class="res-table-info" style="background:rgba(91,141,238,0.07);border:1px solid rgba(91,141,238,0.25);border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#5b8dee;">
             ℹ️ La <strong>table sera assignée par les serveurs</strong> depuis le plan de salle lors du service.
           </div>
 

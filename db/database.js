@@ -765,22 +765,34 @@ function upsertJoyEvent({ joy_uid, customer_name, participants, date, time_start
 }
 
 function upsertReservationFromJoy(joyEventId, { customer_name, participants, date, time_start, status, phone }) {
-  const partySize  = participants > 0 ? participants : 2;
-  const time       = time_start || '00:00';
-  const resStatus  = status === 'cancelled' ? 'cancelled' : 'confirmed';
+  const partySize = participants > 0 ? participants : 2;
+  const time      = time_start || '00:00';
+  const resStatus = status === 'cancelled' ? 'cancelled' : 'confirmed';
 
-  const existing = db.prepare('SELECT id FROM reservations WHERE joy_event_id = ?').get(joyEventId);
-  if (existing) {
+  // Récupère TOUS les doublons éventuels
+  const all = db.prepare('SELECT id, table_id FROM reservations WHERE joy_event_id = ?').all(joyEventId);
+
+  if (all.length === 0) {
+    // Aucune résa existante → créer
     db.prepare(`
-      UPDATE reservations SET
-        customer_name = ?, party_size = ?, date = ?, time = ?, status = ?, phone = ?
-      WHERE joy_event_id = ?
+      INSERT INTO reservations (customer_name, party_size, date, time, status, phone, notes, joy_event_id)
+      VALUES (?, ?, ?, ?, ?, ?, NULL, ?)
     `).run(customer_name || '', partySize, date || '', time, resStatus, phone || null, joyEventId);
   } else {
+    // Garder la résa avec une table assignée (si possible), sinon la première
+    const keeper = all.find(r => r.table_id) || all[0];
+    // Supprimer tous les doublons sauf le keeper
+    const toDelete = all.filter(r => r.id !== keeper.id);
+    if (toDelete.length > 0) {
+      const placeholders = toDelete.map(() => '?').join(',');
+      db.prepare(`DELETE FROM reservations WHERE id IN (${placeholders})`).run(...toDelete.map(r => r.id));
+    }
+    // Mettre à jour le keeper — notes forcées à NULL
     db.prepare(`
-      INSERT INTO reservations (customer_name, party_size, date, time, status, phone, joy_event_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(customer_name || '', partySize, date || '', time, resStatus, phone || null, joyEventId);
+      UPDATE reservations SET
+        customer_name = ?, party_size = ?, date = ?, time = ?, status = ?, phone = ?, notes = NULL
+      WHERE id = ?
+    `).run(customer_name || '', partySize, date || '', time, resStatus, phone || null, keeper.id);
   }
 }
 

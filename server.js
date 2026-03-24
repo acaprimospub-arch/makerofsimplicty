@@ -91,9 +91,12 @@ function parseIcalEvents(raw) {
       space = parts[parts.length - 1].trim();
     }
 
-    // Extract phone number from description
-    const phoneMatch = description.match(/(?:t[eé]l(?:[eé]phone)?|phone|portable|mob(?:ile)?|contact)\s*[:.]?\s*([+\d][\d\s.\-()]{7,20})/i);
-    const phone = phoneMatch ? phoneMatch[1].replace(/\s+/g, ' ').trim() : null;
+    // Extract phone: labeled first, then bare French phone number anywhere in description
+    const labeledPhone = description.match(
+      /(?:t[eé]l(?:[eé]phone)?|phone|portable|mobile|mob|contact|num[eé]ro|appel)\s*[:=.]?\s*((?:\+33[\s.\-]?|0)[1-9](?:[\s.\-]?\d){8})/i
+    );
+    const barePhone = description.match(/((?:\+33[\s.\-]?|0)[1-9](?:[\s.\-]?\d){8})/);
+    const phone = labeledPhone ? labeledPhone[1].trim() : (barePhone ? barePhone[1].trim() : null);
 
     const status = (icalStatus || '').toLowerCase() === 'cancelled' ? 'cancelled' : 'confirmed';
 
