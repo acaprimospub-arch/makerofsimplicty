@@ -146,6 +146,23 @@
       margin-top: 3px;
       font-style: italic;
     }
+
+    /* ── Réservations Joy.io ── */
+    .res-card.is-joy { border-left: 4px solid #8b5cf6; }
+    .joy-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #8b5cf6;
+      background: rgba(139,92,246,0.12);
+      border: 1px solid rgba(139,92,246,0.35);
+      border-radius: 20px;
+      padding: 2px 8px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
   </style>
 </head>
 <body>
@@ -296,6 +313,7 @@
       const arrived   = reservations.filter(r => r.status === 'arrived').length;
       const noshow    = reservations.filter(r => r.status === 'no_show').length;
       const totalPax  = reservations.filter(r => r.status !== 'cancelled').reduce((s, r) => s + r.party_size, 0);
+      const joyCount  = reservations.filter(r => r.joy_event_id).length;
 
       document.getElementById('daySummary').innerHTML = `
         <div class="summary-chip chip-total">
@@ -305,6 +323,7 @@
         ${confirmed ? `<div class="summary-chip chip-confirm"><div class="chip-dot"></div><strong>${confirmed}</strong> confirmée${confirmed>1?'s':''}</div>` : ''}
         ${arrived   ? `<div class="summary-chip chip-arrived"><div class="chip-dot"></div><strong>${arrived}</strong> arrivée${arrived>1?'s':''}</div>` : ''}
         ${noshow    ? `<div class="summary-chip chip-noshow"><div class="chip-dot"></div><strong>${noshow}</strong> no show</div>` : ''}
+        ${joyCount  ? `<div class="summary-chip" style="border-color:rgba(139,92,246,0.4)"><div class="chip-dot" style="background:#8b5cf6"></div><strong style="color:#8b5cf6">${joyCount}</strong> Joy.io</div>` : ''}
       `;
     }
 
@@ -325,13 +344,17 @@
         const tableHtml = r.table_name
           ? `<span class="res-table-badge assigned">🪑 ${r.table_name}</span>`
           : `<span class="res-table-badge unassigned">Table non assignée</span>`;
+        const isJoy = !!r.joy_event_id;
 
         return `
-          <div class="res-card status-${r.status}" id="res-${r.id}">
-            <div class="res-time">${r.time}</div>
+          <div class="res-card status-${r.status}${isJoy ? ' is-joy' : ''}" id="res-${r.id}">
+            <div class="res-time">${r.time || '—'}</div>
 
             <div class="res-main">
-              <div class="res-name">${r.customer_name}</div>
+              <div class="res-name">
+                ${r.customer_name}
+                ${isJoy ? `<span class="joy-badge">🎉 Joy.io</span>` : ''}
+              </div>
               <div class="res-meta">
                 <span>👥 ${r.party_size} pers.</span>
                 ${r.phone ? `<span>📞 <a href="tel:${r.phone}" style="color:var(--text-muted)">${r.phone}</a></span>` : ''}

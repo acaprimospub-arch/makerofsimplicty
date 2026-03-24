@@ -106,7 +106,8 @@ async function syncJoyEvents() {
     const events = parseIcalEvents(raw);
     let synced = 0;
     for (const ev of events) {
-      db.upsertJoyEvent(ev);
+      const joyId = db.upsertJoyEvent(ev);
+      if (joyId) db.upsertReservationFromJoy(joyId, ev);
       synced++;
     }
     db.setSetting('joy_last_sync', new Date().toISOString());

@@ -126,6 +126,7 @@ try { db.exec("ALTER TABLE floor_tables ADD COLUMN zone TEXT DEFAULT 'salle_bas'
 try { db.exec("ALTER TABLE floor_tables ADD COLUMN is_decoration INTEGER DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN email TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE joy_events ADD COLUMN assigned_tables TEXT DEFAULT '[]'"); } catch(e) {}
+try { db.exec("ALTER TABLE reservations ADD COLUMN joy_event_id INTEGER"); } catch(e) {}
 
 // ─── Seed Joy iCal URL ─────────────────────────────────────────────────────────
 db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('joy_ical_url', 'https://prvt.re/RvuFyy')").run();
@@ -760,6 +761,37 @@ function upsertJoyEvent({ joy_uid, customer_name, participants, date, time_start
       status          = excluded.status,
       last_sync       = datetime('now', 'localtime')
   `).run(joy_uid, customer_name || '', participants || 0, date || '', time_start || '', time_end || '', space || '', raw_summary || '', raw_description || '', status || 'confirmed');
+  return db.prepare('SELECT id FROM joy_events WHERE joy_uid = ?').get(joy_uid)?.id || null;
+}
+
+function upsertReservationFromJoy(joyEventId, { customer_name, participants, date, time_start, time_end, space, raw_description, status }) {
+  const partySize  = participants > 0 ? participants : 2;
+  const time       = time_start || '00:00';
+  const resStatus  = status === 'cancelled' ? 'cancelled' : 'confirmed';
+
+  // Construire les notes depuis les infos Joy.io
+  const parts = [];
+  if (space) parts.push(`📍 ${space}`);
+  if (time_end) parts.push(`jusqu'à ${time_end}`);
+  if (raw_description) {
+    const desc = raw_description.substring(0, 120).trim();
+    if (desc) parts.push(desc);
+  }
+  const notes = parts.length ? parts.join(' · ') : null;
+
+  const existing = db.prepare('SELECT id FROM reservations WHERE joy_event_id = ?').get(joyEventId);
+  if (existing) {
+    db.prepare(`
+      UPDATE reservations SET
+        customer_name = ?, party_size = ?, date = ?, time = ?, notes = ?, status = ?
+      WHERE joy_event_id = ?
+    `).run(customer_name || '', partySize, date || '', time, notes, resStatus, joyEventId);
+  } else {
+    db.prepare(`
+      INSERT INTO reservations (customer_name, party_size, date, time, notes, status, joy_event_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(customer_name || '', partySize, date || '', time, notes, resStatus, joyEventId);
+  }
 }
 
 function getJoyEvents({ date, upcoming, all: showAll } = {}) {
@@ -803,5 +835,5 @@ module.exports = {
   getStats, getDailyLog, getDashboardData,
   createHrEvent, getHrEvents, deleteHrEvent, getHrSummaryForUser,
   getSetting, setSetting,
-  upsertJoyEvent, getJoyEvents, deleteJoyEvent, assignTableToJoyEvent
+  upsertJoyEvent, upsertReservationFromJoy, getJoyEvents, deleteJoyEvent, assignTableToJoyEvent
 };
