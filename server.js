@@ -336,6 +336,32 @@ app.delete('/api/cuisine/planning', requireCuisineManager, (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── Cuisine — Retards & Heures supp ──────────────────────────────────────────
+app.post('/api/cuisine/time-events', requireAuth, (req, res) => {
+  const { type, minutes, note, date } = req.body;
+  if (!['retard', 'supp'].includes(type)) return res.status(400).json({ error: 'Type invalide' });
+  const today = date || new Date().toISOString().split('T')[0];
+  const id = db.logTimeEvent({ user_id: req.session.userId, date: today, type, minutes: parseInt(minutes) || 0, note });
+  const events = db.getTimeEventsByDate(today);
+  io.emit('cuisine:time-events:updated', { date: today, events });
+  res.json({ ok: true, id });
+});
+
+app.get('/api/cuisine/time-events', requireAuth, (req, res) => {
+  const { date, from, to } = req.query;
+  if (from && to) return res.json(db.getTimeEventsRange(from, to));
+  const d = date || new Date().toISOString().split('T')[0];
+  res.json(db.getTimeEventsByDate(d));
+});
+
+app.delete('/api/cuisine/time-events/:id', requireAuth, (req, res) => {
+  db.deleteTimeEvent(req.params.id, req.session.userId);
+  const today = new Date().toISOString().split('T')[0];
+  const events = db.getTimeEventsByDate(today);
+  io.emit('cuisine:time-events:updated', { date: today, events });
+  res.json({ ok: true });
+});
+
 // ─── Tables (floor plan) ───────────────────────────────────────────────────────
 app.get('/api/tables', requireAuth, (req, res) => {
   res.json(db.getTables());

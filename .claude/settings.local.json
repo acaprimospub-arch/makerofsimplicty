@@ -44,7 +44,9 @@
       "Bash(node --experimental-sqlite -e \"require\\(''''./server.js''''\\)\")",
       "Bash(pkill -f 'node --experimental-sqlite')",
       "Bash(grep -E \"gitignore|git$\")",
-      "Bash(timeout 3 node --experimental-sqlite server.js)"
+      "Bash(timeout 3 node --experimental-sqlite server.js)",
+      "Bash(node --experimental-sqlite --check \"/Users/arthurcapri/Documents/Maker of Simplicity/server.js\")",
+      "Bash(node --experimental-sqlite --check \"/Users/arthurcapri/Documents/Maker of Simplicity/db/database.js\")"
     ]
   }
 }

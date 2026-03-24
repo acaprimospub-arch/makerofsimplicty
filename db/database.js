@@ -165,6 +165,21 @@ try {
   `);
 } catch(e) {}
 
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS cuisine_time_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      type TEXT NOT NULL,
+      minutes INTEGER NOT NULL DEFAULT 0,
+      note TEXT,
+      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+} catch(e) {}
+
 // ─── Nettoyage doublons Joy au démarrage ───────────────────────────────────────
 // Supprime les résas Joy en double (garde celle avec table assignée ou la plus récente)
 db.exec(`
@@ -1079,6 +1094,38 @@ function getCuisineCompletionsByDate(date) {
   });
 }
 
+// ─── Cuisine Time Events ───────────────────────────────────────────────────────
+function logTimeEvent({ user_id, date, type, minutes, note }) {
+  return db.prepare(
+    'INSERT INTO cuisine_time_events (user_id, date, type, minutes, note) VALUES (?, ?, ?, ?, ?)'
+  ).run(user_id, date, type, minutes || 0, note || null).lastInsertRowid;
+}
+
+function getTimeEventsByDate(date) {
+  return db.prepare(`
+    SELECT te.*, u.name as user_name
+    FROM cuisine_time_events te
+    JOIN users u ON te.user_id = u.id
+    WHERE te.date = ?
+    ORDER BY te.created_at DESC
+  `).all(date);
+}
+
+function getTimeEventsRange(fromDate, toDate) {
+  return db.prepare(`
+    SELECT te.*, u.name as user_name
+    FROM cuisine_time_events te
+    JOIN users u ON te.user_id = u.id
+    WHERE te.date >= ? AND te.date <= ?
+    ORDER BY te.date DESC, te.created_at DESC
+  `).all(fromDate, toDate);
+}
+
+function deleteTimeEvent(id, userId) {
+  // user can only delete their own, admin/chef can delete any
+  db.prepare('DELETE FROM cuisine_time_events WHERE id = ?').run(id);
+}
+
 module.exports = {
   getUserByPin, getUserById, getAllUsers, createUser, updateUser, deleteUser,
   getTasksWithCompletions, getTaskById, getAllTasks, completeTask, uncompleteTask, createTask, updateTask, deactivateTask,
@@ -1092,4 +1139,5 @@ module.exports = {
   getShiftMessages, upsertShiftMessage,
   getCuisinePlanning, upsertCuisinePlanning, deleteCuisinePlanningShift,
   getCuisineCompletionsByDate,
+  logTimeEvent, getTimeEventsByDate, getTimeEventsRange, deleteTimeEvent,
 };

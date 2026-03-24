@@ -76,6 +76,27 @@
     .btn-icon { width:32px; height:32px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--bg-card); color:var(--text-muted); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:.85rem; }
     .btn-icon:hover { border-color:var(--primary); color:var(--primary); }
     .btn-icon.danger:hover { border-color:var(--danger); color:var(--danger); }
+
+    /* ── Signalement retard / heures supp ── */
+    .signal-section { margin-top: 24px; }
+    .signal-title { font-size:.82rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
+    .signal-btns { display:flex; gap:10px; }
+    .btn-signal { flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:14px 10px; cursor:pointer; font-size:.85rem; font-weight:600; transition:border-color .15s,background .12s; }
+    .btn-signal:active { background:var(--bg-surface); }
+    .btn-signal.retard { border-color:rgba(240,180,41,.35); }
+    .btn-signal.retard:hover { border-color:var(--warning); background:rgba(240,180,41,.07); }
+    .btn-signal.supp   { border-color:rgba(76,175,106,.35); }
+    .btn-signal.supp:hover   { border-color:var(--success); background:rgba(76,175,106,.07); }
+    .btn-signal-icon { font-size:1.4rem; }
+    .time-events-list { display:flex; flex-direction:column; gap:6px; margin-top:10px; }
+    .time-event-item { display:flex; align-items:center; gap:10px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 14px; }
+    .te-badge { font-size:.72rem; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+    .te-retard { background:rgba(240,180,41,.15); color:var(--warning); border:1px solid rgba(240,180,41,.3); }
+    .te-supp   { background:rgba(76,175,106,.12); color:var(--success); border:1px solid rgba(76,175,106,.3); }
+    .te-info { flex:1; font-size:.85rem; }
+    .te-note { font-size:.75rem; color:var(--text-muted); margin-top:2px; }
+    .te-del { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:.85rem; padding:4px; }
+    .te-del:hover { color:var(--danger); }
   </style>
 </head>
 <body>
@@ -131,6 +152,22 @@
       <!-- Gestion tâches (chef only) -->
       <div class="hidden" id="chefControls" style="margin-top:20px;">
         <button class="btn btn-secondary" style="width:100%" onclick="openTaskManager()">⚙️ Gérer les tâches</button>
+      </div>
+
+      <!-- Signalement retard / heures supp -->
+      <div class="signal-section">
+        <div class="signal-title">⏱ Signalement</div>
+        <div class="signal-btns">
+          <button class="btn-signal retard" onclick="openSignal('retard')">
+            <span class="btn-signal-icon">⏰</span>
+            <span>Retard</span>
+          </button>
+          <button class="btn-signal supp" onclick="openSignal('supp')">
+            <span class="btn-signal-icon">➕</span>
+            <span>Heures supp</span>
+          </button>
+        </div>
+        <div class="time-events-list" id="timeEventsList"></div>
       </div>
     </div>
   </div>
@@ -190,6 +227,37 @@
     </div>
   </div>
 
+  <!-- Drawer: signalement -->
+  <div class="drawer" id="signalDrawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-head">
+      <div class="drawer-title" id="signalDrawerTitle">Signaler un retard</div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <form id="signalForm" onsubmit="submitSignal(event)">
+        <input type="hidden" id="signalType">
+        <div class="frow">
+          <div class="fgroup">
+            <label id="signalMinLabel">Minutes de retard</label>
+            <div style="display:flex;align-items:center;gap:10px">
+              <input type="number" id="signalMinutes" min="1" max="480" placeholder="Ex : 15" style="flex:1" required>
+              <span style="color:var(--text-muted);font-size:.85rem">min</span>
+            </div>
+          </div>
+          <div class="fgroup">
+            <label>Note <span style="font-weight:400;color:var(--text-muted)">(optionnel)</span></label>
+            <input type="text" id="signalNote" placeholder="Ex : Transport, problème..." autocomplete="off">
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-secondary" onclick="closeDrawer()">Annuler</button>
+      <button type="submit" form="signalForm" class="btn btn-primary">Envoyer</button>
+    </div>
+  </div>
+
   <div id="toast-container"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/api.js"></script>
@@ -225,6 +293,7 @@
       `).join('');
 
       await loadTasks();
+      await loadTimeEvents();
 
       if (isChef) {
         document.getElementById('teamOverview').classList.remove('hidden');
@@ -495,6 +564,71 @@
           </div>`;
       }).join('');
     }
+
+    // ── Signalement ───────────────────────────────────────────────────────────
+    let timeEvents = [];
+
+    async function loadTimeEvents() {
+      const data = await api.get(`/api/cuisine/time-events?date=${today()}`);
+      if (!data) return;
+      timeEvents = data;
+      renderTimeEvents();
+    }
+
+    function renderTimeEvents() {
+      const el = document.getElementById('timeEventsList');
+      if (!timeEvents.length) { el.innerHTML = ''; return; }
+      const myEvents = isChef ? timeEvents : timeEvents.filter(e => e.user_id === currentUser?.id);
+      if (!myEvents.length) { el.innerHTML = ''; return; }
+      el.innerHTML = myEvents.map(e => {
+        const label = e.type === 'retard' ? 'Retard' : 'Heure supp';
+        const cls   = e.type === 'retard' ? 'te-retard' : 'te-supp';
+        const who   = isChef ? `<b>${e.user_name}</b> · ` : '';
+        return `
+          <div class="time-event-item">
+            <span class="te-badge ${cls}">${label}</span>
+            <div class="te-info">
+              <div>${who}${e.minutes} min</div>
+              ${e.note ? `<div class="te-note">${e.note}</div>` : ''}
+            </div>
+            <button class="te-del" onclick="deleteTimeEvent(${e.id})" title="Supprimer">✕</button>
+          </div>`;
+      }).join('');
+    }
+
+    function openSignal(type) {
+      document.getElementById('signalType').value = type;
+      document.getElementById('signalDrawerTitle').textContent = type === 'retard' ? '⏰ Signaler un retard' : '➕ Heures supplémentaires';
+      document.getElementById('signalMinLabel').textContent = type === 'retard' ? 'Minutes de retard' : 'Minutes supplémentaires';
+      document.getElementById('signalMinutes').value = '';
+      document.getElementById('signalNote').value = '';
+      openDrawer('signalDrawer');
+      setTimeout(() => document.getElementById('signalMinutes').focus(), 350);
+    }
+
+    async function submitSignal(e) {
+      e.preventDefault();
+      const type    = document.getElementById('signalType').value;
+      const minutes = parseInt(document.getElementById('signalMinutes').value) || 0;
+      const note    = document.getElementById('signalNote').value.trim() || null;
+      if (!minutes) return;
+      await api.post('/api/cuisine/time-events', { type, minutes, note });
+      closeDrawer();
+      showToast(type === 'retard' ? 'Retard signalé ✓' : 'Heures supp signalées ✓', 'success');
+      await loadTimeEvents();
+    }
+
+    async function deleteTimeEvent(id) {
+      await api.delete(`/api/cuisine/time-events/${id}`);
+      await loadTimeEvents();
+    }
+
+    socket.on('cuisine:time-events:updated', ({ date: d, events }) => {
+      if (d === today()) {
+        timeEvents = events;
+        renderTimeEvents();
+      }
+    });
 
     init();
   </script>
