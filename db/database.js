@@ -221,9 +221,10 @@ const _seedUsers = [
   { name: 'Rayan',    pin: '1369', role: 'staff',   shift: 'soir' },
   { name: 'Thibaut',  pin: '0402', role: 'staff',   shift: 'soir' },
   { name: 'Pierre',   pin: '3945', role: 'manager', shift: 'cuisine' },
-  { name: 'Noah',   pin: '5284', role: 'staff', shift: 'cuisine' },
-  { name: 'Thomas', pin: '7163', role: 'staff', shift: 'cuisine' },
-  { name: 'Moha',   pin: '8452', role: 'staff', shift: 'cuisine' },
+  { name: 'Noah',     pin: '5284', role: 'staff',   shift: 'cuisine' },
+  { name: 'Thomas',   pin: '7163', role: 'staff',   shift: 'cuisine' },
+  { name: 'Moha',     pin: '8452', role: 'staff',   shift: 'cuisine' },
+  { name: 'Myriam',   pin: '9991', role: 'manager', shift: 'marketing' },
 ];
 const _insertUser = db.prepare('INSERT OR IGNORE INTO users (name, pin, role, shift) VALUES (?, ?, ?, ?)');
 for (const u of _seedUsers) _insertUser.run(u.name, u.pin, u.role, u.shift);
@@ -766,6 +767,26 @@ function updateReservation(id, data) {
 function deleteReservation(id) {
   db.prepare('DELETE FROM reservations WHERE id = ?').run(id);
 }
+function getReservationsByRange(from, to) {
+  return db.prepare(`
+    SELECT r.* FROM reservations r
+    WHERE r.date BETWEEN ? AND ?
+    ORDER BY r.date, r.time
+  `).all(from, to).map(_enrichRes);
+}
+function getUpcomingReservationStats() {
+  const today = new Date().toISOString().split('T')[0];
+  const week  = new Date(); week.setDate(week.getDate() + 6);  const month = new Date(); month.setDate(month.getDate() + 29);
+  const weekEnd  = week.toISOString().split('T')[0];
+  const monthEnd = month.toISOString().split('T')[0];
+  return {
+    today:     db.prepare("SELECT COUNT(*) as c, SUM(party_size) as p FROM reservations WHERE date = ? AND status != 'cancelled'").get(today),
+    week:      db.prepare("SELECT COUNT(*) as c, SUM(party_size) as p FROM reservations WHERE date BETWEEN ? AND ? AND status != 'cancelled'").get(today, weekEnd),
+    month:     db.prepare("SELECT COUNT(*) as c, SUM(party_size) as p FROM reservations WHERE date BETWEEN ? AND ? AND status != 'cancelled'").get(today, monthEnd),
+    viaJoy:    db.prepare("SELECT COUNT(*) as c FROM reservations WHERE date >= ? AND joy_event_id IS NOT NULL AND status != 'cancelled'").get(today),
+    bySpace:   db.prepare("SELECT COALESCE(space,'—') as space, COUNT(*) as c FROM reservations WHERE date BETWEEN ? AND ? AND status != 'cancelled' GROUP BY space ORDER BY c DESC").all(today, weekEnd),
+  };
+}
 
 // ─── Stats & Logs ──────────────────────────────────────────────────────────────
 function getStats(from, to) {
@@ -1195,6 +1216,7 @@ module.exports = {
   getTasksWithCompletions, getTaskById, getAllTasks, completeTask, uncompleteTask, createTask, updateTask, deactivateTask,
   getTables, getTableById, createTable, updateTable, deleteTable,
   getReservationsByDate, getReservationById, createReservation, updateReservation, deleteReservation,
+  getReservationsByRange, getUpcomingReservationStats,
   getStats, getDailyLog, getDashboardData, getReservationStats,
   createHrEvent, getHrEvents, deleteHrEvent, getHrSummaryForUser,
   getSetting, setSetting,

@@ -97,13 +97,20 @@ async function buildNav(activePage) {
     { href: '/cuisine/taches.html',    label: '🍳 Tâches',     mobileLabel: 'Tâches',    icon: '🍳', key: 'cuisine' },
     { href: '/cuisine/planning.html',  label: '📅 Planning',   mobileLabel: 'Planning',  icon: '📅', key: 'planning' },
   ];
+  const marketingLinks = [
+    { href: '/marketing/dashboard.html',     label: '📊 Dashboard',      mobileLabel: 'Dashboard', icon: '📊', key: 'marketing-dashboard' },
+    { href: '/marketing/reservations.html',  label: '📋 Réservations',   mobileLabel: 'Résas',     icon: '📋', key: 'marketing-reservations' },
+    { href: '/admin/joy.html',               label: '🔗 Joy.io',          mobileLabel: 'Joy',       icon: '🔗', key: 'joy' },
+    { href: '/admin/analytics.html',         label: '📈 Analytics',       mobileLabel: 'Analytics', icon: '📈', key: 'analytics' },
+  ];
 
-  const links = user.role === 'admin'                          ? adminLinks
-    : user.shift === 'cuisine'                                 ? cuisineLinks
-    : user.role === 'manager' && user.shift === 'midi'         ? managerMidiLinks
-    : user.role === 'manager' && user.shift === 'soir'         ? managerSoirLinks
-    : user.shift === 'midi'                                    ? staffMidiLinks
-    :                                                            staffSoirLinks;
+  const links = user.role === 'admin'                               ? adminLinks
+    : user.shift === 'marketing'                                    ? marketingLinks
+    : user.shift === 'cuisine'                                      ? cuisineLinks
+    : user.role === 'manager' && user.shift === 'midi'              ? managerMidiLinks
+    : user.role === 'manager' && user.shift === 'soir'              ? managerSoirLinks
+    : user.shift === 'midi'                                         ? staffMidiLinks
+    :                                                                 staffSoirLinks;
 
   // ── Top nav (desktop) ──
   nav.innerHTML = `

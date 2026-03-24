@@ -481,6 +481,16 @@ app.get('/api/admin/reservation-stats', requireAdminOrManager, (req, res) => {
   res.json(db.getReservationStats(from, to));
 });
 
+app.get('/api/reservations/range', requireAdminOrManager, (req, res) => {
+  const { from, to } = req.query;
+  if (!from || !to) return res.status(400).json({ error: 'from et to requis' });
+  res.json(db.getReservationsByRange(from, to));
+});
+
+app.get('/api/marketing/stats', requireAdminOrManager, (req, res) => {
+  res.json(db.getUpcomingReservationStats());
+});
+
 
 // ─── 15-minute alert system ────────────────────────────────────────────────────
 const alertedReservations = new Set();
