@@ -131,10 +131,24 @@ try { db.exec("ALTER TABLE reservations ADD COLUMN joy_event_id INTEGER"); } cat
 // ─── Seed Joy iCal URL ─────────────────────────────────────────────────────────
 db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('joy_ical_url', 'https://prvt.re/RvuFyy')").run();
 
-// ─── Seed admin ────────────────────────────────────────────────────────────────
-if (!db.prepare('SELECT id FROM users WHERE role = ?').get('admin')) {
-  db.prepare('INSERT INTO users (name, pin, role) VALUES (?, ?, ?)').run('Admin', '0000', 'admin');
-}
+// ─── Seed équipe ───────────────────────────────────────────────────────────────
+const _seedUsers = [
+  { name: 'Arthur',   pin: '7404', role: 'admin',   shift: null   },
+  { name: 'Paul',     pin: '0781', role: 'admin',   shift: null   },
+  { name: 'Hugo',     pin: '6909', role: 'admin',   shift: null   },
+  { name: 'Philippe', pin: '2102', role: 'manager', shift: 'midi' },
+  { name: 'Nicolas',  pin: '6913', role: 'manager', shift: 'soir' },
+  { name: 'Anthony',  pin: '1312', role: 'manager', shift: 'soir' },
+  { name: 'Doan',     pin: '1809', role: 'staff',   shift: 'midi' },
+  { name: 'Chemsy',   pin: '1812', role: 'staff',   shift: 'midi' },
+  { name: 'Jeanne',   pin: '2001', role: 'staff',   shift: 'soir' },
+  { name: 'Rayan',    pin: '1369', role: 'staff',   shift: 'soir' },
+  { name: 'Thibaut',  pin: '0402', role: 'staff',   shift: 'soir' },
+];
+const _insertUser = db.prepare('INSERT OR IGNORE INTO users (name, pin, role, shift) VALUES (?, ?, ?, ?)');
+for (const u of _seedUsers) _insertUser.run(u.name, u.pin, u.role, u.shift);
+// Désactiver les anciens comptes test génériques
+db.prepare("UPDATE users SET active = 0 WHERE pin IN ('0000','1234','11111')").run();
 
 // ─── Seed tasks ────────────────────────────────────────────────────────────────
 if (db.prepare('SELECT COUNT(*) as c FROM tasks').get().c === 0) {
