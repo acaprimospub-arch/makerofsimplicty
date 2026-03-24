@@ -326,6 +326,7 @@
     const assignToResId = parseInt(urlParams.get('assignTo')) || null;
     const assignReturnDate = urlParams.get('date') || null;
     const assignResName = decodeURIComponent(urlParams.get('name') || '');
+    const assignReturnTo = urlParams.get('returnTo') || null;
     const isAssignMode = !!assignToResId;
     let selectedTableIds = new Set(); // tables cochées en mode assignation
 
@@ -335,7 +336,11 @@
     }
 
     function cancelAssign() {
-      window.location.href = `/staff/reservations.html${assignReturnDate ? '?date='+assignReturnDate : ''}`;
+      if (assignReturnTo) {
+        window.location.href = assignReturnTo + (assignReturnDate ? '?date='+assignReturnDate : '');
+      } else {
+        window.location.href = `/staff/reservations.html${assignReturnDate ? '?date='+assignReturnDate : ''}`;
+      }
     }
 
     function updateConfirmBtn() {
@@ -348,7 +353,8 @@
     async function confirmMultiAssign() {
       const ids = Array.from(selectedTableIds);
       await api.put(`/api/reservations/${assignToResId}`, { table_ids: ids });
-      window.location.href = `/staff/reservations.html?date=${assignReturnDate||today()}&assigned=1`;
+      const base = assignReturnTo || '/staff/reservations.html';
+      window.location.href = `${base}?date=${assignReturnDate||today()}&assigned=1`;
     }
 
     // ── Dates & chargement ───────────────────────────────────────────────────

@@ -130,26 +130,29 @@
     .fgroup label { font-size:.82rem; font-weight:600; color:var(--text-muted); }
     .f2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 
-    /* ── Table picker ── */
-    .table-picker-zone { margin-bottom:12px; }
-    .table-picker-zone:last-child { margin-bottom:0; }
-    .zone-label {
-      font-size:.7rem; font-weight:700; color:var(--text-muted);
-      text-transform:uppercase; letter-spacing:.06em; margin-bottom:7px;
+    /* ── Table assign button ── */
+    .table-assign-box {
+      display: flex; flex-direction: column; gap: 10px;
     }
-    .table-chips { display:flex; flex-wrap:wrap; gap:6px; }
-    .table-chip {
-      padding:5px 11px; border-radius:8px; border:1.5px solid var(--border);
-      background:var(--bg-surface); cursor:pointer; font-size:.78rem; font-weight:600;
-      transition:.15s; display:flex; flex-direction:column; align-items:center; gap:1px;
-      min-width:44px; text-align:center;
+    .table-assigned-tags {
+      display: flex; flex-wrap: wrap; gap: 6px;
     }
-    .table-chip .tc-cap { font-size:.62rem; color:var(--text-muted); font-weight:400; }
-    .table-chip:hover:not(.taken) { border-color:var(--primary); background:var(--primary-dim); }
-    .table-chip.selected { border-color:#fb923c; background:rgba(251,146,60,.15); color:#fb923c; }
-    .table-chip.selected .tc-cap { color:#fb923c; }
-    .table-chip.taken { opacity:.4; cursor:not-allowed; border-style:dashed; }
-    .table-chip.taken::after { content:'✗'; font-size:.6rem; color:var(--danger); }
+    .assigned-tag {
+      padding: 4px 10px; border-radius: 8px;
+      background: rgba(34,197,94,.12); color: #22c55e;
+      font-size: .78rem; font-weight: 700; border: 1px solid rgba(34,197,94,.3);
+    }
+    .no-assigned-label {
+      font-size: .82rem; color: var(--text-muted); font-style: italic;
+    }
+    .btn-assign-plan {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 16px; border-radius: 10px;
+      background: rgba(11,45,62,.6); border: 1.5px solid var(--border);
+      color: var(--text); font-size: .85rem; font-weight: 600;
+      cursor: pointer; transition: .15s; width: 100%; justify-content: center;
+    }
+    .btn-assign-plan:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-dim); }
 
     /* ── Status pills ── */
     .status-btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
@@ -244,7 +247,7 @@
           <div class="f2">
             <div class="fgroup">
               <label>Date</label>
-              <input type="date" id="resaDate" required onchange="refreshTablePicker()">
+              <input type="date" id="resaDate" required>
             </div>
             <div class="fgroup">
               <label>Heure</label>
@@ -274,11 +277,16 @@
             </select>
           </div>
 
-          <!-- Table picker -->
+          <!-- Table assign (via plan de salle) -->
           <div class="fgroup">
-            <label>Tables assignées <span id="tableSelLabel" style="color:#fb923c;font-weight:400;"></span></label>
-            <div id="tablePicker">
-              <div style="font-size:.8rem;color:var(--text-muted);">Chargement des tables…</div>
+            <label>Tables assignées</label>
+            <div class="table-assign-box">
+              <div class="table-assigned-tags" id="assignedTagsDisplay">
+                <span class="no-assigned-label">Aucune table assignée</span>
+              </div>
+              <button type="button" class="btn-assign-plan" id="btnAssignPlan" onclick="goToFloorPlan()">
+                🗺️ Assigner via le plan de salle
+              </button>
             </div>
           </div>
 
@@ -321,12 +329,12 @@
     const ZONE_LABELS = { salle_bas:'Salle Bas', etage:'Étage', terrasse:'Terrasse', coin_canap:'Coin Canapé' };
 
     let currentWeekStart = getMonday(new Date());
-    let allResas    = [];
-    let allTables   = [];
-    let selectedTableIds = [];
-    let currentStatus    = 'confirmed';
-    let editId           = null;
-    let filterNoTable    = false;
+    let allResas      = [];
+    let allTables     = [];
+    let currentStatus = 'confirmed';
+    let editId        = null;
+    let editDate      = null;
+    let filterNoTable = false;
 
     function getMonday(d) {
       const dt = new Date(d); const day = dt.getDay();
@@ -450,73 +458,64 @@
       }).join('');
     }
 
-    // ─── Table picker ─────────────────────────────────────────────
-    function refreshTablePicker() {
-      const date = document.getElementById('resaDate').value;
-      if (!date) return;
-
-      // Tables prises par d'AUTRES résas ce jour-là (non annulées, pas la résa en cours d'édition)
-      const takenIds = new Set(
-        allResas
-          .filter(r => r.date === date && r.status !== 'cancelled' && r.id !== editId)
-          .flatMap(r => r.table_ids || [])
-      );
-
-      // Grouper les tables par zone (exclure décorations)
-      const realTables = allTables.filter(t => !t.is_decoration);
-      const zones = [...new Set(realTables.map(t => t.zone))];
-
-      const html = zones.map(zone => {
-        const tables = realTables.filter(t => t.zone === zone);
-        const chips  = tables.map(t => {
-          const isTaken    = takenIds.has(t.id);
-          const isSelected = selectedTableIds.includes(t.id);
-          return `
-            <div class="table-chip ${isSelected?'selected':''} ${isTaken?'taken':''}"
-                 onclick="${isTaken ? '' : `toggleTable(${t.id})`}"
-                 title="${isTaken ? 'Déjà réservée' : `Capacité : ${t.capacity} pers.`}">
-              <span>${t.name}</span>
-              <span class="tc-cap">${t.capacity}p</span>
-            </div>`;
-        }).join('');
-
-        return `
-          <div class="table-picker-zone">
-            <div class="zone-label">${ZONE_LABELS[zone] || zone}</div>
-            <div class="table-chips">${chips}</div>
-          </div>`;
-      }).join('');
-
-      document.getElementById('tablePicker').innerHTML = html || '<div style="font-size:.8rem;color:var(--text-muted);">Aucune table disponible</div>';
-      updateTableSelLabel();
-    }
-
-    function toggleTable(id) {
-      const idx = selectedTableIds.indexOf(id);
-      if (idx === -1) selectedTableIds.push(id);
-      else selectedTableIds.splice(idx, 1);
-      refreshTablePicker();
-    }
-
-    function updateTableSelLabel() {
-      const lbl = document.getElementById('tableSelLabel');
-      if (selectedTableIds.length === 0) {
-        lbl.textContent = '— aucune sélectionnée';
+    // ─── Table display (assigned via floor plan) ──────────────────
+    function refreshAssignedDisplay(tableIds) {
+      const box = document.getElementById('assignedTagsDisplay');
+      if (!tableIds || tableIds.length === 0) {
+        box.innerHTML = '<span class="no-assigned-label">Aucune table assignée</span>';
       } else {
-        const names = selectedTableIds.map(id => allTables.find(t=>t.id===id)?.name || id);
-        lbl.textContent = `→ T.${names.join(' + ')}`;
+        const names = tableIds.map(id => allTables.find(t => t.id === id)?.name || `T.${id}`);
+        box.innerHTML = names.map(n => `<span class="assigned-tag">🍽 ${n}</span>`).join('');
+      }
+    }
+
+    async function goToFloorPlan() {
+      const name  = document.getElementById('resaName').value.trim();
+      const date  = document.getElementById('resaDate').value;
+      const returnPath = encodeURIComponent('/marketing/reservations.html');
+
+      if (editId) {
+        // Mode édition : on a déjà un ID, on peut sauvegarder et rediriger
+        const body = {
+          customer_name: name,
+          date,
+          time:       document.getElementById('resaTime').value,
+          party_size: parseInt(document.getElementById('resaPax').value),
+          phone:      document.getElementById('resaPhone').value.trim() || null,
+          space:      document.getElementById('resaSpace').value || null,
+          notes:      document.getElementById('resaNotes').value.trim() || null,
+          status:     currentStatus,
+        };
+        await api.put(`/api/reservations/${editId}`, body);
+        window.location.href = `/staff/tables.html?assignTo=${editId}&date=${date}&name=${encodeURIComponent(name)}&returnTo=${returnPath}`;
+      } else {
+        // Mode création : créer la résa d'abord, puis rediriger vers le plan
+        if (!name || !date) { showToast('Remplis au moins le nom et la date', 'warning'); return; }
+        const body = {
+          customer_name: name,
+          date,
+          time:       document.getElementById('resaTime').value || '12:00',
+          party_size: parseInt(document.getElementById('resaPax').value) || 2,
+          phone:      document.getElementById('resaPhone').value.trim() || null,
+          space:      document.getElementById('resaSpace').value || null,
+          notes:      document.getElementById('resaNotes').value.trim() || null,
+          status:     'confirmed',
+        };
+        const created = await api.post('/api/reservations', body);
+        if (!created?.id) { showToast('Erreur lors de la création', 'error'); return; }
+        window.location.href = `/staff/tables.html?assignTo=${created.id}&date=${date}&name=${encodeURIComponent(name)}&returnTo=${returnPath}`;
       }
     }
 
     // ─── Drawer create ────────────────────────────────────────────
     function openCreate(date) {
       editId = null;
-      selectedTableIds = [];
+      editDate = date || today();
       currentStatus = 'confirmed';
       document.getElementById('drawerTitle').textContent = 'Nouvelle réservation';
       document.getElementById('resaId').value    = '';
       document.getElementById('resaName').value  = '';
-      document.getElementById('resaDate').value  = date || today();
+      document.getElementById('resaDate').value  = editDate;
       document.getElementById('resaTime').value  = '12:00';
       document.getElementById('resaPax').value   = 2;
       document.getElementById('resaPhone').value = '';
@@ -525,7 +524,7 @@
       document.getElementById('statusSection').style.display = 'none';
       document.getElementById('btnDelete').style.display     = 'none';
       document.getElementById('btnSave').textContent = 'Créer';
-      refreshTablePicker();
+      refreshAssignedDisplay([]);
       openDrawer();
     }
 
@@ -533,7 +532,7 @@
       const r = allResas.find(r => r.id === id);
       if (!r) return;
       editId = id;
-      selectedTableIds = [...(r.table_ids || [])];
+      editDate = r.date;
       currentStatus = r.status;
       document.getElementById('drawerTitle').textContent = `Modifier · ${r.customer_name}`;
       document.getElementById('resaId').value    = r.id;
@@ -548,7 +547,7 @@
       document.getElementById('btnDelete').style.display = r.joy_event_id ? 'none' : 'inline-flex';
       document.getElementById('btnSave').textContent = 'Enregistrer';
       updateStatusBtns();
-      refreshTablePicker();
+      refreshAssignedDisplay(r.table_ids || []);
       openDrawer();
     }
 
@@ -570,7 +569,6 @@
         phone:         document.getElementById('resaPhone').value.trim() || null,
         space:         document.getElementById('resaSpace').value || null,
         notes:         document.getElementById('resaNotes').value.trim() || null,
-        table_ids:     selectedTableIds,
         status:        editId ? currentStatus : 'confirmed',
       };
       if (editId) {
@@ -609,11 +607,15 @@
     socket.on('reservation:deleted', loadWeek);
     socket.on('joy:synced', () => { loadWeek(); showToast('Joy.io synchronisé ✓', 'success'); });
 
-    // ─── URL param ────────────────────────────────────────────────
-    const urlDate = new URLSearchParams(location.search).get('date');
+    // ─── URL params ───────────────────────────────────────────────
+    const _urlParams = new URLSearchParams(location.search);
+    const urlDate    = _urlParams.get('date');
+    const urlAssigned = _urlParams.get('assigned');
     if (urlDate) currentWeekStart = getMonday(new Date(urlDate));
 
-    init();
+    init().then(() => {
+      if (urlAssigned === '1') showToast('Tables assignées avec succès ✓', 'success');
+    });
   </script>
 </body>
 </html>
