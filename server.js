@@ -84,55 +84,45 @@ function parseIcalEvents(raw) {
                        : partAfter   ? parseInt(partAfter[1])
                        : partSummary ? parseInt(partSummary[1])
                        : 0;
-    console.log(`[Joy] "${summary}" → participants=${participants} | desc="${description.substring(0,80)}"`);
-
-    // Extract customer name: first segment before ' - ' in summary, or "Nom: xxx" in desc
+    // Extract customer name : "Nom Prénom - N" → prendre tout avant le dernier " - N"
     let customerName = summary;
     const nomMatch = description.match(/nom\s*[:]\s*([^\n\\,]+)/i);
     if (nomMatch) {
       customerName = nomMatch[1].trim();
     } else if (summary.includes(' - ')) {
-      customerName = summary.split(' - ')[0].trim();
+      customerName = summary.replace(/\s+-\s+\d+\s*$/, '').trim();
     }
 
-    // Extract space: from location, or "Espace: xxx" / "Salle: xxx" in desc, or last segment of summary
+    // Extract space : Joy.io format réel = "Réservation confirmée [ESPACE] +33..."
     let space = location || '';
-    const espaceMatch = description.match(/(?:espace|salle|space)\s*[:]\s*([^\n\\,]+)/i);
-    if (espaceMatch) space = espaceMatch[1].trim();
-    else if (!space && summary.includes(' - ')) {
-      const parts = summary.split(' - ');
-      space = parts[parts.length - 1].trim();
+    if (!space) {
+      const spaceFromConfirm = description.match(/r[eé]servation\s+confirm[eé]e\s+(.*?)\s*\+33/i);
+      if (spaceFromConfirm) space = spaceFromConfirm[1].trim();
+    }
+    if (!space) {
+      const labeled = description.match(/(?:espace|salle|space|lieu)\s*[:]\s*([^\n\\,]+)/i);
+      if (labeled) space = labeled[1].trim();
     }
 
-    // Extract phone: labeled first, then bare French phone number anywhere in description
+    // Extract phone : Joy.io le place directement sans label ex: +33607124124
     const labeledPhone = description.match(
-      /(?:t[eé]l(?:[eé]phone)?|phone|portable|mobile|mob|contact|num[eé]ro|appel)\s*[:=.]?\s*((?:\+33[\s.\-]?|0)[1-9](?:[\s.\-]?\d){8})/i
+      /(?:t[eé]l(?:[eé]phone)?|phone|portable|mobile|mob|contact|num[eé]ro)\s*[:=.]?\s*((?:\+33[\s.\-]?|0)[1-9](?:[\s.\-]?\d){8})/i
     );
     const barePhone = description.match(/((?:\+33[\s.\-]?|0)[1-9](?:[\s.\-]?\d){8})/);
     const phone = labeledPhone ? labeledPhone[1].trim() : (barePhone ? barePhone[1].trim() : null);
 
-    // Extract notes : demandes spéciales, allergies, devis, placement...
-    // Essaie d'abord un champ étiqueté
+    // Extract notes : supprime le boilerplate Joy.io, garde uniquement le contenu utile
+    // (prix/devis, demandes spéciales, toute info non standard)
     let notes = null;
-    const labeledNotes = description.match(
-      /(?:notes?|demandes?|commentaires?|remarques?|souhaits?|pr[eé]cisions?|allergies?|occasion|devis|menu|placement|disposition|configuration|sp[eé]cial)\s*[:=.]\s*(.{4,})/i
-    );
-    if (labeledNotes) {
-      notes = labeledNotes[1].trim().replace(/\s+/g, ' ').substring(0, 300);
-    } else {
-      // Sinon, supprime les champs structurés connus et garde le reste comme note libre
-      const stripped = description
-        .replace(/(?:t[eé]l(?:[eé]phone)?|phone|portable|mobile|mob|contact|num[eé]ro)\s*[:=.]?\s*(?:\+33[\s.\-]?|0)[1-9](?:[\s.\-]?\d){8}/gi, '')
-        .replace(/(?:nom|name|client|prenom|pr[eé]nom)\s*[:=.]\s*[^\s][^|\\]{0,50}/gi, '')
-        .replace(/(?:participant|personne|convive|couvert|pax|place|nb|nombre|guest)\w*\s*[:=.]\s*\d+/gi, '')
-        .replace(/\d+\s*(?:participant|personne|pers\b|convive|couvert|pax|place|invit|person)\w*/gi, '')
-        .replace(/(?:espace|salle|room|space|location|lieu)\s*[:=.]\s*[^\s][^|\\]{0,50}/gi, '')
-        .replace(/(?:date|heure|de|[àa])\s*[:=.]?\s*[\d/: hHhmM-]{3,20}/gi, '')
-        .replace(new RegExp(customerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '')
-        .replace(/\s{2,}/g, ' ')
-        .trim();
-      if (stripped.length >= 6) notes = stripped.substring(0, 300);
-    }
+    const notesRaw = description
+      .replace(/r[eé]servation\s+confirm[eé]e/gi, '')
+      .replace(new RegExp((space || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '')
+      .replace(/((?:\+33[\s.\-]?|0)[1-9](?:[\s.\-]?\d){8})/g, '')
+      .replace(/pour\s+modifier\s+ou\s+supprimer\s*(cette\s+)?r[eé]s[ae][^\n]*/gi, '')
+      .replace(/https?:\/\/\S+/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    if (notesRaw.length >= 5) notes = notesRaw.substring(0, 300);
 
     const status = (icalStatus || '').toLowerCase() === 'cancelled' ? 'cancelled' : 'confirmed';
 
