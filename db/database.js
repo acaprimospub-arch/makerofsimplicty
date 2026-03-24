@@ -129,6 +129,30 @@ try { db.exec("ALTER TABLE joy_events ADD COLUMN assigned_tables TEXT DEFAULT '[
 try { db.exec("ALTER TABLE reservations ADD COLUMN joy_event_id INTEGER"); } catch(e) {}
 try { db.exec("ALTER TABLE reservations ADD COLUMN space TEXT"); } catch(e) {}
 
+// ─── Nettoyage doublons Joy au démarrage ───────────────────────────────────────
+// Supprime les résas Joy en double (garde celle avec table assignée ou la plus récente)
+db.exec(`
+  DELETE FROM reservations
+  WHERE joy_event_id IS NOT NULL
+  AND id NOT IN (
+    SELECT COALESCE(
+      (SELECT id FROM reservations r2 WHERE r2.joy_event_id = r1.joy_event_id AND r2.table_id IS NOT NULL ORDER BY r2.id DESC LIMIT 1),
+      (SELECT id FROM reservations r2 WHERE r2.joy_event_id = r1.joy_event_id ORDER BY r2.id DESC LIMIT 1)
+    )
+    FROM reservations r1
+    WHERE r1.joy_event_id IS NOT NULL
+    GROUP BY r1.joy_event_id
+  )
+`);
+// Supprime les doublons de joy_events par fingerprint (même nom+date+heure, UID différent)
+db.exec(`
+  DELETE FROM joy_events
+  WHERE id NOT IN (
+    SELECT MIN(id) FROM joy_events
+    GROUP BY customer_name, date, time_start
+  )
+`);
+
 // ─── Seed Joy iCal URL ─────────────────────────────────────────────────────────
 db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('joy_ical_url', 'https://prvt.re/RvuFyy')").run();
 
@@ -761,20 +785,36 @@ function getHrSummaryForUser(userId, from, to) {
 
 // ─── Joy.io Events ─────────────────────────────────────────────────────────────
 function upsertJoyEvent({ joy_uid, customer_name, participants, date, time_start, time_end, space, raw_summary, raw_description, status }) {
+  const fields = [
+    customer_name || '', participants || 0, date || '', time_start || '',
+    time_end || '', space || '', raw_summary || '', raw_description || '',
+    status || 'confirmed', joy_uid
+  ];
+
+  // 1. Cherche par UID exact (cas normal)
+  const byUid = db.prepare('SELECT id FROM joy_events WHERE joy_uid = ?').get(joy_uid);
+  if (byUid) {
+    db.prepare(`UPDATE joy_events SET customer_name=?,participants=?,date=?,time_start=?,time_end=?,space=?,raw_summary=?,raw_description=?,status=?,joy_uid=?,last_sync=datetime('now','localtime') WHERE id=?`)
+      .run(...fields, byUid.id);
+    return byUid.id;
+  }
+
+  // 2. Joy.io change parfois l'UID → cherche par fingerprint (nom + date + heure)
+  if (customer_name && date && time_start) {
+    const byContent = db.prepare(
+      'SELECT id FROM joy_events WHERE customer_name = ? AND date = ? AND time_start = ?'
+    ).get(customer_name, date, time_start);
+    if (byContent) {
+      db.prepare(`UPDATE joy_events SET customer_name=?,participants=?,date=?,time_start=?,time_end=?,space=?,raw_summary=?,raw_description=?,status=?,joy_uid=?,last_sync=datetime('now','localtime') WHERE id=?`)
+        .run(...fields, byContent.id);
+      return byContent.id;
+    }
+  }
+
+  // 3. Nouvel événement
   db.prepare(`
     INSERT INTO joy_events (joy_uid, customer_name, participants, date, time_start, time_end, space, raw_summary, raw_description, status)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(joy_uid) DO UPDATE SET
-      customer_name   = excluded.customer_name,
-      participants    = excluded.participants,
-      date            = excluded.date,
-      time_start      = excluded.time_start,
-      time_end        = excluded.time_end,
-      space           = excluded.space,
-      raw_summary     = excluded.raw_summary,
-      raw_description = excluded.raw_description,
-      status          = excluded.status,
-      last_sync       = datetime('now', 'localtime')
   `).run(joy_uid, customer_name || '', participants || 0, date || '', time_start || '', time_end || '', space || '', raw_summary || '', raw_description || '', status || 'confirmed');
   return db.prepare('SELECT id FROM joy_events WHERE joy_uid = ?').get(joy_uid)?.id || null;
 }
