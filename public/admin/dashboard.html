@@ -15,11 +15,11 @@
     /* ── KPI chips ── */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 12px;
       margin-bottom: 24px;
     }
-    @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 1000px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 600px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
 
     .kpi-chip {
@@ -224,11 +224,6 @@
           <div class="kpi-value" id="kpiTotal">—</div>
           <div class="kpi-sub" id="kpiTotalSub">aujourd'hui</div>
         </div>
-        <div class="kpi-chip">
-          <div class="kpi-label">🪑 Couverts</div>
-          <div class="kpi-value" id="kpiPax">—</div>
-          <div class="kpi-sub" id="kpiPaxSub">pax attendus</div>
-        </div>
         <div class="kpi-chip success">
           <div class="kpi-label">✅ Arrivées</div>
           <div class="kpi-value" id="kpiArrived">—</div>
@@ -377,18 +372,15 @@
     function renderKpis(data) {
       const resas = data.reservations || [];
       // only non-cancelled for active count
-      const active = resas.filter(r => r.status !== 'cancelled');
-      const total    = active.length;
-      const totalPax = active.reduce((s, r) => s + (r.party_size || 0), 0);
-      const arrived  = resas.filter(r => r.status === 'arrived').length;
-      const noShow   = resas.filter(r => r.status === 'no_show' || isLate(r)).length;
-      const pct      = total ? Math.round(arrived / total * 100) : 0;
+      const active  = resas.filter(r => r.status !== 'cancelled');
+      const total   = active.length;
+      const arrived = resas.filter(r => r.status === 'arrived').length;
+      const noShow  = resas.filter(r => r.status === 'no_show' || isLate(r)).length;
+      const pct     = total ? Math.round(arrived / total * 100) : 0;
 
       document.getElementById('kpiTotal').textContent = total;
       document.getElementById('kpiTotalSub').textContent = resas.filter(r=>r.status==='cancelled').length
         ? `+ ${resas.filter(r=>r.status==='cancelled').length} annulée(s)` : 'aujourd\'hui';
-      document.getElementById('kpiPax').textContent = totalPax;
-      document.getElementById('kpiPaxSub').textContent = total ? `moy. ${total ? (totalPax/total).toFixed(1) : '—'} / table` : 'aucune résa';
       document.getElementById('kpiArrived').textContent = arrived;
       document.getElementById('kpiArrivedSub').textContent = total ? `${pct}% de taux` : '—';
       document.getElementById('kpiNoshow').textContent = noShow;
