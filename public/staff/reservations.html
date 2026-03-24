@@ -37,7 +37,9 @@
     .res-card.st-confirmed { border-left-color:var(--info); }
     .res-card.st-arrived   { border-left-color:var(--success); }
     .res-card.st-no_show   { border-left-color:var(--danger); }
-    .res-card.st-cancelled { border-left-color:#444; opacity:.5; }
+    .res-card.st-cancelled { border-left-color:var(--danger); background:rgba(232,84,84,.04); opacity:.7; }
+    .res-card.st-cancelled .rc-time { text-decoration:line-through; color:var(--danger); }
+    .res-card.st-cancelled .rc-name { text-decoration:line-through; color:var(--danger); }
     .res-card.is-joy       { border-left-color:var(--purple); }
 
     .rc-time { font-size:1.2rem; font-weight:800; letter-spacing:-.5px; padding-top:2px; line-height:1; }

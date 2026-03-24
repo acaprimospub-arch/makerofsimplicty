@@ -655,7 +655,11 @@ function createReservation({ table_ids, table_id, customer_name, phone, party_si
 function updateReservation(id, data) {
   // Normalise table_ids ↔ table_id
   let d = { ...data };
-  if (d.table_ids !== undefined) {
+  // Si on annule la réservation → libérer les tables
+  if (d.status === 'cancelled') {
+    d.table_id  = null;
+    d.table_ids = '[]';
+  } else if (d.table_ids !== undefined) {
     const ids = Array.isArray(d.table_ids) ? d.table_ids : [];
     d.table_id  = ids[0] ?? null;
     d.table_ids = JSON.stringify(ids);
@@ -870,11 +874,16 @@ function upsertReservationFromJoy(joyEventId, { customer_name, participants, dat
   const finalStatus = resStatus === 'cancelled' ? 'cancelled'
     : (best && ['arrived', 'no_show'].includes(best.status) ? best.status : resStatus);
 
+  // Si annulée par Joy → libérer les tables, sinon conserver l'assignation
+  const finalTableId  = finalStatus === 'cancelled' ? null : (best?.table_id || null);
+  const finalTableIds = finalStatus === 'cancelled' ? '[]'
+    : (finalTableId ? JSON.stringify([finalTableId]) : '[]');
+
   // Insère une ligne propre avec l'espace réservé et les notes clients
   db.prepare(`
-    INSERT INTO reservations (table_id, customer_name, party_size, date, time, status, phone, notes, joy_event_id, space)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(best?.table_id || null, customer_name || '', partySize, date || '', time, finalStatus, phone || null, notes || null, joyEventId, space || null);
+    INSERT INTO reservations (table_id, table_ids, customer_name, party_size, date, time, status, phone, notes, joy_event_id, space)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(finalTableId, finalTableIds, customer_name || '', partySize, date || '', time, finalStatus, phone || null, notes || null, joyEventId, space || null);
 }
 
 function cleanupJoyReservationDuplicates() {
