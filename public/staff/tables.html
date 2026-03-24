@@ -12,7 +12,8 @@
   <meta name="apple-mobile-web-app-title" content="MOS">
   <meta name="theme-color" content="#0b2d3e">
   <style>
-    .floor-canvas { min-height: 600px; cursor: default; }
+    /* ── Canvas ── */
+    .floor-canvas { cursor: default; }
     .floor-table { cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; }
     .floor-table:hover { transform: scale(1.03); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
 
@@ -23,12 +24,9 @@
     .s-arrived    { background: var(--success-bg); border-color: var(--success); color: var(--success); }
     .s-alert      { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); animation: pulse 1s infinite; }
 
-    .legend { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+    .legend { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
     .legend-item { display:flex; align-items:center; gap:6px; font-size:0.8rem; color:var(--text-muted); }
-    .legend-dot { width:10px; height:10px; border-radius:50%; border:2px solid; }
-
-    /* Date bar */
-    .date-bar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+    .legend-dot { width:10px; height:10px; border-radius:50%; border:2px solid; flex-shrink:0; }
 
     .zone-tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:14px; }
     .zone-tab { padding:7px 14px; border-radius:var(--radius-sm); font-size:0.82rem; font-weight:600; background:var(--bg-card); border:1px solid var(--border); color:var(--text-muted); cursor:pointer; transition:all 0.15s; white-space:nowrap; }
@@ -36,6 +34,81 @@
     .zone-tab .zt-count { font-size:0.72rem; margin-left:4px; opacity:0.8; }
     .floor-table.is-deco { cursor:default !important; border-style:dashed !important; background:rgba(255,255,255,0.03) !important; color:rgba(255,255,255,0.2) !important; border-color:rgba(255,255,255,0.12) !important; }
     .floor-table.is-deco:hover { transform:none !important; box-shadow:none !important; }
+
+    /* ── Conteneur scrollable mobile ── */
+    .floor-container {
+      width: 100%;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      position: relative;
+      touch-action: pan-x pan-y;
+    }
+    .floor-canvas {
+      transform-origin: top left;
+      position: relative;
+    }
+
+    /* ── Zoom bar mobile ── */
+    .zoom-bar {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .zoom-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .zoom-label { font-size: 0.82rem; color: var(--text-muted); min-width: 48px; text-align:center; }
+
+    @media (max-width: 768px) {
+      .zoom-bar { display: flex; }
+      .floor-table:hover { transform: none; box-shadow: none; }
+
+      /* Réservations en cartes sur mobile */
+      .res-table-desktop { display: none !important; }
+      .res-cards-mobile  { display: flex !important; }
+    }
+    @media (min-width: 769px) {
+      .res-table-desktop { display: block; }
+      .res-cards-mobile  { display: none; }
+    }
+
+    /* Cartes réservations mobile */
+    .res-cards-mobile {
+      flex-direction: column;
+      gap: 8px;
+      padding: 4px 0;
+    }
+    .res-card-mob {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .res-card-mob-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .res-card-mob-name { font-weight: 700; font-size: 0.95rem; }
+    .res-card-mob-time { font-size: 0.82rem; color: var(--text-muted); }
+    .res-card-mob-meta { font-size: 0.8rem; color: var(--text-muted); display:flex; gap:8px; flex-wrap:wrap; }
+    .res-card-mob select { font-size: 0.82rem; padding: 5px 8px; border-radius: 6px; }
   </style>
 </head>
 <body>
@@ -58,6 +131,14 @@
       </div>
 
       <div class="zone-tabs" id="zoneTabs"></div>
+
+      <!-- Zoom bar (mobile only) -->
+      <div class="zoom-bar">
+        <button class="zoom-btn" onclick="changeZoom(-0.15)">−</button>
+        <span class="zoom-label" id="zoomLabel">100%</span>
+        <button class="zoom-btn" onclick="changeZoom(+0.15)">+</button>
+        <button class="zoom-btn" onclick="resetZoom()" title="Ajuster à l'écran">⊡</button>
+      </div>
 
       <div class="legend">
         <div class="legend-item"><div class="legend-dot" style="background:var(--bg-surface);border-color:var(--border)"></div> Libre</div>
@@ -195,9 +276,79 @@
 
     let tables = [];
     let reservations = [];
-    let tableStatuses = {}; // tableId → status (local, derived from reservations)
+    let tableStatuses = {};
     let selectedTableId = null;
     const activeAlerts = new Set();
+
+    // ── Zoom / scale mobile ──────────────────────────────────────────────────────
+    let viewScale = 1;
+    let fitScale  = 1;
+
+    function scaleToFit() {
+      const canvas    = document.getElementById('floorCanvas');
+      const container = canvas.parentElement;
+      const nativeW   = parseInt(canvas.style.width)  || 1150;
+      const nativeH   = parseInt(canvas.style.height) || 660;
+      const availW    = container.clientWidth - 2;
+
+      if (availW < nativeW) {
+        fitScale  = availW / nativeW;
+        viewScale = fitScale;
+      } else {
+        fitScale  = 1;
+        viewScale = 1;
+      }
+      applyScale(canvas, container, nativeH);
+    }
+
+    function applyScale(canvas, container, nativeH) {
+      canvas    = canvas    || document.getElementById('floorCanvas');
+      container = container || canvas.parentElement;
+      nativeH   = nativeH  || parseInt(canvas.style.height) || 660;
+
+      canvas.style.transform = `scale(${viewScale})`;
+      container.style.height = Math.ceil(nativeH * viewScale) + 'px';
+      container.style.overflow = viewScale <= fitScale ? 'hidden' : 'auto';
+
+      const lbl = document.getElementById('zoomLabel');
+      if (lbl) lbl.textContent = Math.round(viewScale * 100) + '%';
+    }
+
+    function changeZoom(delta) {
+      const canvas  = document.getElementById('floorCanvas');
+      const nativeH = parseInt(canvas.style.height) || 660;
+      viewScale = Math.min(2.5, Math.max(fitScale, viewScale + delta));
+      applyScale(canvas, canvas.parentElement, nativeH);
+    }
+
+    function resetZoom() {
+      const canvas  = document.getElementById('floorCanvas');
+      const nativeH = parseInt(canvas.style.height) || 660;
+      viewScale = fitScale;
+      applyScale(canvas, canvas.parentElement, nativeH);
+    }
+
+    // Pinch-to-zoom
+    (function initPinch() {
+      let pinching = false, startDist = 0, startScale = 1;
+      document.addEventListener('touchstart', e => {
+        if (e.target.closest('.floor-canvas') && e.touches.length === 2) {
+          pinching = true;
+          startDist  = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+          startScale = viewScale;
+        }
+      }, { passive: true });
+      document.addEventListener('touchmove', e => {
+        if (!pinching || e.touches.length < 2) return;
+        e.preventDefault();
+        const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        viewScale = Math.min(2.5, Math.max(fitScale, startScale * (d / startDist)));
+        const canvas  = document.getElementById('floorCanvas');
+        const nativeH = parseInt(canvas.style.height) || 660;
+        applyScale(canvas, canvas.parentElement, nativeH);
+      }, { passive: false });
+      document.addEventListener('touchend', () => { pinching = false; });
+    })();
 
     const viewDate = document.getElementById('viewDate');
     viewDate.value = today();
@@ -293,6 +444,7 @@
         }
         canvas.appendChild(el);
       });
+      scaleToFit();
     }
 
     function renderResList() {
@@ -306,35 +458,61 @@
 
       const statusCfg = {
         confirmed: { label:'Confirmée', cls:'info' },
-        arrived:   { label:'Arrivée',   cls:'success' },
+        arrived:   { label:'Arrivée ✅', cls:'success' },
         no_show:   { label:'No show',   cls:'danger' },
         cancelled: { label:'Annulée',   cls:'muted' }
       };
 
-      container.innerHTML = `<div class="table-wrap"><table>
+      const selectHtml = (r) => `
+        <select style="font-size:0.82rem;padding:5px 8px;width:100%;border-radius:6px;" onchange="changeResStatus(${r.id}, this.value)">
+          <option value="confirmed" ${r.status==='confirmed'?'selected':''}>Confirmée</option>
+          <option value="arrived"   ${r.status==='arrived'?'selected':''}>Arrivée ✅</option>
+          <option value="no_show"   ${r.status==='no_show'?'selected':''}>No show</option>
+          <option value="cancelled" ${r.status==='cancelled'?'selected':''}>Annulée</option>
+        </select>`;
+
+      // ── Vue desktop (tableau) ────────────────────────────────────────────────
+      const tableHtml = `<div class="table-wrap res-table-desktop"><table>
         <thead><tr><th>Heure</th><th>Client</th><th>Table</th><th>Pers.</th><th>Statut</th><th>Notes</th><th></th></tr></thead>
         <tbody>
-          ${reservations.map(r => {
-            const s = statusCfg[r.status] || { label:r.status, cls:'muted' };
-            return `<tr>
+          ${reservations.map(r => `<tr>
               <td><strong>${r.time}</strong></td>
               <td>${r.customer_name}${r.phone ? `<div class="text-xs text-muted">${r.phone}</div>` : ''}</td>
               <td>${r.table_name || '<span class="text-muted">—</span>'}</td>
               <td>${r.party_size}</td>
-              <td>
-                <select class="res-status-select" style="font-size:0.8rem;padding:4px 8px;width:auto;" onchange="changeResStatus(${r.id}, this.value)">
-                  <option value="confirmed" ${r.status==='confirmed'?'selected':''}>Confirmée</option>
-                  <option value="arrived"   ${r.status==='arrived'?'selected':''}>Arrivée ✅</option>
-                  <option value="no_show"   ${r.status==='no_show'?'selected':''}>No show</option>
-                  <option value="cancelled" ${r.status==='cancelled'?'selected':''}>Annulée</option>
-                </select>
-              </td>
+              <td><select style="font-size:0.8rem;padding:4px 8px;width:auto;" onchange="changeResStatus(${r.id}, this.value)">
+                <option value="confirmed" ${r.status==='confirmed'?'selected':''}>Confirmée</option>
+                <option value="arrived"   ${r.status==='arrived'?'selected':''}>Arrivée ✅</option>
+                <option value="no_show"   ${r.status==='no_show'?'selected':''}>No show</option>
+                <option value="cancelled" ${r.status==='cancelled'?'selected':''}>Annulée</option>
+              </select></td>
               <td class="text-xs text-muted">${r.notes || ''}</td>
               <td><button class="btn btn-secondary btn-sm" onclick="editReservation(${r.id})">✏️</button></td>
-            </tr>`;
-          }).join('')}
+            </tr>`).join('')}
         </tbody>
       </table></div>`;
+
+      // ── Vue mobile (cartes) ─────────────────────────────────────────────────
+      const cardsHtml = `<div class="res-cards-mobile">
+        ${reservations.map(r => `
+          <div class="res-card-mob">
+            <div class="res-card-mob-top">
+              <div>
+                <div class="res-card-mob-name">${r.customer_name}</div>
+                <div class="res-card-mob-time">${r.time} · ${r.table_name || 'Table non assignée'}</div>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="editReservation(${r.id})">✏️</button>
+            </div>
+            <div class="res-card-mob-meta">
+              <span>👥 ${r.party_size} pers.</span>
+              ${r.phone ? `<span>📞 ${r.phone}</span>` : ''}
+              ${r.notes ? `<span>📝 ${r.notes}</span>` : ''}
+            </div>
+            ${selectHtml(r)}
+          </div>`).join('')}
+      </div>`;
+
+      container.innerHTML = tableHtml + cardsHtml;
     }
 
     function populateTableSelects() {
