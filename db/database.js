@@ -125,6 +125,7 @@ db.exec(`
 try { db.exec("ALTER TABLE floor_tables ADD COLUMN zone TEXT DEFAULT 'salle_bas'"); } catch(e) {}
 try { db.exec("ALTER TABLE floor_tables ADD COLUMN is_decoration INTEGER DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN email TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE joy_events ADD COLUMN assigned_tables TEXT DEFAULT '[]'"); } catch(e) {}
 
 // ─── Seed Joy iCal URL ─────────────────────────────────────────────────────────
 db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('joy_ical_url', 'https://prvt.re/RvuFyy')").run();
@@ -776,6 +777,24 @@ function deleteJoyEvent(id) {
   db.prepare('DELETE FROM joy_events WHERE id = ?').run(id);
 }
 
+function assignTableToJoyEvent(tableId, joyEventId) {
+  // Retire cette table de tous les événements Joy
+  const all = db.prepare('SELECT id, assigned_tables FROM joy_events').all();
+  for (const ev of all) {
+    const tids = JSON.parse(ev.assigned_tables || '[]').filter(id => id !== tableId);
+    db.prepare('UPDATE joy_events SET assigned_tables = ? WHERE id = ?').run(JSON.stringify(tids), ev.id);
+  }
+  // Ajoute au nouvel événement si fourni
+  if (joyEventId) {
+    const ev = db.prepare('SELECT assigned_tables FROM joy_events WHERE id = ?').get(joyEventId);
+    if (ev) {
+      const tids = JSON.parse(ev.assigned_tables || '[]');
+      if (!tids.includes(tableId)) tids.push(tableId);
+      db.prepare('UPDATE joy_events SET assigned_tables = ? WHERE id = ?').run(JSON.stringify(tids), joyEventId);
+    }
+  }
+}
+
 module.exports = {
   getUserByPin, getUserById, getAllUsers, createUser, updateUser, deleteUser,
   getTasksWithCompletions, getTaskById, getAllTasks, completeTask, uncompleteTask, createTask, updateTask, deactivateTask,
@@ -784,5 +803,5 @@ module.exports = {
   getStats, getDailyLog, getDashboardData,
   createHrEvent, getHrEvents, deleteHrEvent, getHrSummaryForUser,
   getSetting, setSetting,
-  upsertJoyEvent, getJoyEvents, deleteJoyEvent
+  upsertJoyEvent, getJoyEvents, deleteJoyEvent, assignTableToJoyEvent
 };

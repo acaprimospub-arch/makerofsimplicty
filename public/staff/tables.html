@@ -23,6 +23,10 @@
     .s-setup      { background: var(--warning-bg); border-color: var(--warning); color: var(--warning); }
     .s-arrived    { background: var(--success-bg); border-color: var(--success); color: var(--success); }
     .s-alert      { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); animation: pulse 1s infinite; }
+    .s-joy        { background: rgba(139,92,246,0.15); border-color: #8b5cf6; color: #8b5cf6; }
+
+    /* Joy legend dot */
+    .legend-dot.joy { background: rgba(139,92,246,0.15); border-color: #8b5cf6; }
 
     .legend { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
     .legend-item { display:flex; align-items:center; gap:6px; font-size:0.8rem; color:var(--text-muted); }
@@ -146,10 +150,20 @@
         <div class="legend-item"><div class="legend-dot" style="background:var(--warning-bg);border-color:var(--warning)"></div> Mise en place</div>
         <div class="legend-item"><div class="legend-dot" style="background:var(--success-bg);border-color:var(--success)"></div> Clients arrivés</div>
         <div class="legend-item"><div class="legend-dot" style="background:var(--danger-bg);border-color:var(--danger)"></div> ⚠️ Alerte non-arrivée</div>
+        <div class="legend-item"><div class="legend-dot joy"></div> 🎉 Événement Joy.io</div>
       </div>
 
       <div class="floor-container">
         <div class="floor-canvas" id="floorCanvas"></div>
+      </div>
+
+      <!-- Événements Joy.io du jour -->
+      <div class="card mt-3" id="joyCard" style="display:none;">
+        <div class="card-header">
+          <div class="card-title">🎉 Événements Joy.io</div>
+          <span class="badge badge-muted" id="joyCount">0</span>
+        </div>
+        <div id="joyList"></div>
       </div>
 
       <!-- Reservations list below plan -->
@@ -197,6 +211,17 @@
           <option value="">— Aucune réservation —</option>
         </select>
         <button class="btn btn-secondary btn-sm" onclick="assignReservation()">Associer</button>
+      </div>
+
+      <!-- Section Joy.io -->
+      <div class="divider"></div>
+      <div id="joyModalSection">
+        <div class="text-sm text-muted mb-4" style="margin-top:4px;">🎉 Événement Joy.io lié :</div>
+        <div id="joyTableDetail"></div>
+        <select id="assignJoySelect" style="margin-bottom:10px;width:100%;">
+          <option value="">— Aucun événement Joy.io —</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="assignJoyEvent()">Associer</button>
       </div>
 
       <div class="divider"></div>
@@ -276,6 +301,8 @@
 
     let tables = [];
     let reservations = [];
+    let joyEvents = [];
+    let joyTableMap = {}; // tableId → joyEvent
     let tableStatuses = {};
     let selectedTableId = null;
     const activeAlerts = new Set();
@@ -357,29 +384,39 @@
     async function loadAll() {
       const date = viewDate.value;
       document.getElementById('dateLabel').textContent = formatDate(date);
-      const [t, r] = await Promise.all([
+      const [t, r, j] = await Promise.all([
         api.get('/api/tables'),
-        api.get(`/api/reservations?date=${date}`)
+        api.get(`/api/reservations?date=${date}`),
+        api.get(`/api/joy/events?date=${date}`)
       ]);
       if (!t || !r) return;
       tables = t;
       reservations = r;
+      joyEvents = j || [];
       computeStatuses();
       renderZoneTabs();
       renderFloor();
       renderResList();
+      renderJoyList();
       populateTableSelects();
     }
 
     function computeStatuses() {
       tableStatuses = {};
+      joyTableMap = {};
       tables.forEach(t => { tableStatuses[t.id] = 'available'; });
       reservations.forEach(r => {
-        if (!r.table_id) return;
-        if (r.status === 'cancelled') return;
+        if (!r.table_id || r.status === 'cancelled') return;
         const cur = tableStatuses[r.table_id];
         if (r.status === 'arrived') tableStatuses[r.table_id] = 'arrived';
         else if (cur !== 'arrived') tableStatuses[r.table_id] = r.status === 'confirmed' ? 'reserved' : r.status;
+      });
+      // Overlay Joy.io events (uniquement sur les tables libres)
+      joyEvents.forEach(ev => {
+        (ev.assigned_tables || []).forEach(tid => {
+          joyTableMap[tid] = ev;
+          if (tableStatuses[tid] === 'available') tableStatuses[tid] = 'joy';
+        });
       });
     }
 
@@ -430,10 +467,18 @@
         el.className = `floor-table${t.is_decoration ? ' is-deco' : (' s-' + status)}`;
         el.style.cssText = `left:${t.x}px;top:${t.y}px;width:${t.width}px;height:${t.height}px;border-radius:${t.shape==='round'?'50%':'10px'};border:2px solid;`;
 
-        const statusIcon = { available:'', reserved:'📋', setup:'🪑', arrived:'✅', alert:'⚠️' };
+        const statusIcon = { available:'', reserved:'📋', setup:'🪑', arrived:'✅', alert:'⚠️', joy:'🎉' };
         const fs = Math.min(t.width,t.height) > 75 ? '0.78rem' : '0.62rem';
+        const joyEv = joyTableMap[t.id];
         if (t.is_decoration) {
           el.innerHTML = `<div class="table-name" style="font-size:${fs};font-weight:700;">${t.name}</div>`;
+        } else if (joyEv) {
+          el.innerHTML = `
+            <div class="table-name" style="font-size:${fs};font-weight:700;">${t.name}</div>
+            <div style="font-size:0.56rem;text-align:center;line-height:1.2;padding:0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">🎉 ${joyEv.customer_name}</div>
+            <div style="font-size:0.62rem;">${joyEv.participants > 0 ? joyEv.participants+'p' : ''}</div>
+          `;
+          el.addEventListener('click', () => openTableModal(t.id));
         } else {
           el.innerHTML = `
             <div class="table-name" style="font-size:${fs};font-weight:700;">${t.name}</div>
@@ -523,6 +568,52 @@
         reservations.filter(r => r.status !== 'cancelled').map(r => `<option value="${r.id}">${r.time} · ${r.customer_name} (${r.party_size}p)</option>`).join('');
     }
 
+    // ── Joy.io dans le plan ──────────────────────────────────────────────────────
+    function renderJoyList() {
+      const card = document.getElementById('joyCard');
+      const list = document.getElementById('joyList');
+      document.getElementById('joyCount').textContent = joyEvents.length;
+
+      if (!joyEvents.length) { card.style.display = 'none'; return; }
+      card.style.display = '';
+
+      list.innerHTML = joyEvents.map(ev => {
+        const assignedNames = (ev.assigned_tables || []).map(tid => {
+          const tbl = tables.find(t => t.id === tid);
+          return tbl ? tbl.name : tid;
+        }).join(', ');
+
+        return `<div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;">🎉 ${ev.customer_name}</div>
+            <div class="text-sm text-muted">
+              ${ev.time_start || ''}${ev.time_end ? ' → '+ev.time_end : ''}
+              ${ev.participants ? ' · 👥 '+ev.participants+' pers.' : ''}
+              ${ev.space ? ' · 📍 '+ev.space : ''}
+            </div>
+            ${assignedNames ? `<div class="text-sm" style="color:#8b5cf6;margin-top:3px;">Tables : ${assignedNames}</div>` : '<div class="text-sm text-muted" style="margin-top:3px;">Aucune table assignée</div>'}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function populateJoySelect(selectedJoyId) {
+      document.getElementById('assignJoySelect').innerHTML =
+        `<option value="">— Aucun événement Joy.io —</option>` +
+        joyEvents.map(ev => `<option value="${ev.id}" ${ev.id === selectedJoyId ? 'selected' : ''}>${ev.customer_name}${ev.participants ? ' ('+ev.participants+'p)' : ''}${ev.time_start ? ' · '+ev.time_start : ''}</option>`).join('');
+    }
+
+    async function assignJoyEvent() {
+      const joyId = document.getElementById('assignJoySelect').value;
+      await api.post('/api/joy/assign-table', {
+        table_id: selectedTableId,
+        joy_event_id: joyId ? parseInt(joyId) : null
+      });
+      showToast('Table associée à l\'événement Joy.io', 'success');
+      hideModal('tableModal');
+      loadAll();
+    }
+
     // ── Table modal ──────────────────────────────────────────────────────────────
     function openTableModal(tableId) {
       selectedTableId = tableId;
@@ -552,6 +643,25 @@
 
       // Pre-select in assign dropdown
       document.getElementById('assignRes').value = res?.id || '';
+
+      // ── Joy.io section ──
+      const joyEv = joyTableMap[tableId] || null;
+      populateJoySelect(joyEv?.id || null);
+
+      const joyDetail = document.getElementById('joyTableDetail');
+      if (joyEv) {
+        joyDetail.innerHTML = `
+          <div style="background:rgba(139,92,246,0.1);border:1px solid #8b5cf6;border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+            <div style="font-weight:700;color:#8b5cf6;">🎉 ${joyEv.customer_name}</div>
+            <div class="text-sm text-muted" style="margin-top:3px;">
+              ${joyEv.time_start || ''}${joyEv.time_end ? ' → ' + joyEv.time_end : ''}
+              ${joyEv.participants ? ' · 👥 ' + joyEv.participants + ' pers.' : ''}
+              ${joyEv.space ? ' · 📍 ' + joyEv.space : ''}
+            </div>
+          </div>`;
+      } else {
+        joyDetail.innerHTML = '';
+      }
 
       showModal('tableModal');
     }

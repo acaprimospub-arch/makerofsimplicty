@@ -324,7 +324,16 @@ const alertedReservations = new Set();
 // ─── Joy.io Routes ─────────────────────────────────────────────────────────────
 app.get('/api/joy/events', requireAuth, (req, res) => {
   const { date, upcoming } = req.query;
-  res.json(db.getJoyEvents({ date, upcoming: upcoming === '1', all: !date && !upcoming }));
+  const events = db.getJoyEvents({ date, upcoming: upcoming === '1', all: !date && !upcoming });
+  res.json(events.map(ev => ({ ...ev, assigned_tables: JSON.parse(ev.assigned_tables || '[]') })));
+});
+
+app.post('/api/joy/assign-table', requireAdminOrManager, (req, res) => {
+  const { table_id, joy_event_id } = req.body;
+  if (!table_id && table_id !== 0) return res.status(400).json({ error: 'table_id manquant' });
+  db.assignTableToJoyEvent(table_id, joy_event_id || null);
+  io.emit('joy:updated');
+  res.json({ ok: true });
 });
 
 app.post('/api/joy/sync', requireAdminOrManager, async (req, res) => {
