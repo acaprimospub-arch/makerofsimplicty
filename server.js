@@ -94,14 +94,25 @@ function parseIcalEvents(raw) {
     }
 
     // Extract space : Joy.io format réel = "Réservation confirmée [ESPACE] +33..."
-    let space = location || '';
-    if (!space) {
+    let spaceRaw = location || '';
+    if (!spaceRaw) {
       const spaceFromConfirm = description.match(/r[eé]servation\s+confirm[eé]e\s+(.*?)\s*\+33/i);
-      if (spaceFromConfirm) space = spaceFromConfirm[1].trim();
+      if (spaceFromConfirm) spaceRaw = spaceFromConfirm[1].trim();
     }
-    if (!space) {
+    if (!spaceRaw) {
       const labeled = description.match(/(?:espace|salle|space|lieu)\s*[:]\s*([^\n\\,]+)/i);
-      if (labeled) space = labeled[1].trim();
+      if (labeled) spaceRaw = labeled[1].trim();
+    }
+    // Mapping des espaces Joy.io → noms internes du bar
+    const spaceMap = {
+      'coin canap': 'Petite mezzanine',
+      'etage':      'Mezzanine',
+      'étage':      'Mezzanine',
+    };
+    const spaceKey = spaceRaw.toLowerCase().trim();
+    let space = spaceRaw;
+    for (const [k, v] of Object.entries(spaceMap)) {
+      if (spaceKey.includes(k)) { space = v; break; }
     }
 
     // Extract phone : Joy.io le place directement sans label ex: +33607124124

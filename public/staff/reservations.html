@@ -209,6 +209,20 @@
       vertical-align: middle;
     }
 
+    /* ── Badge espace Joy.io ── */
+    .res-space-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #f59e0b;
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: 20px;
+      padding: 1px 8px;
+    }
+
     /* ── Drag handle bottom-sheet ── */
     .modal-handle {
       display: none;
@@ -465,6 +479,7 @@
               <div class="res-meta">
                 <span>👥 ${r.party_size} pers.</span>
                 ${r.phone ? `<span>📞 <a href="tel:${r.phone}" onclick="event.stopPropagation()" style="color:var(--text-muted)">${r.phone}</a></span>` : ''}
+                ${r.space ? `<span class="res-space-badge">📍 ${r.space}</span>` : ''}
               </div>
               ${r.notes ? `<div class="res-notes">📝 ${r.notes}</div>` : ''}
             </div>
