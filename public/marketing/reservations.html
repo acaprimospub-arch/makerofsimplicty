@@ -18,65 +18,68 @@
     .week-nav-btn:hover { border-color:var(--primary); color:var(--primary); }
     .week-label { font-weight:700; font-size:.92rem; }
 
+    /* ── Alerte sans table ── */
+    .no-table-banner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(251,146,60,.08);
+      border: 1px solid rgba(251,146,60,.35);
+      border-radius: 12px;
+      padding: 11px 16px;
+      margin-bottom: 16px;
+      cursor: pointer;
+    }
+    .no-table-banner:hover { background: rgba(251,146,60,.13); }
+    .no-table-banner-text { flex:1; font-size:.85rem; }
+    .no-table-banner-text strong { color: #fb923c; }
+
     /* ── Filter bar ── */
     .filter-bar {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px 14px;
-      margin-bottom: 20px;
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px 14px; margin-bottom: 20px;
     }
     .filter-bar input, .filter-bar select {
       background: var(--bg-surface); border: 1px solid var(--border);
-      color: var(--text); border-radius: 8px; padding: 6px 10px; font-size:.83rem; flex:1; min-width:100px;
+      color: var(--text); border-radius: 8px; padding: 6px 10px;
+      font-size:.83rem; flex:1; min-width:100px;
     }
     .filter-bar input::placeholder { color: var(--text-muted); }
+    .filter-toggle {
+      padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
+      background: var(--bg-surface); color: var(--text-muted); cursor: pointer;
+      font-size:.8rem; font-weight:600; white-space:nowrap; transition:.15s;
+    }
+    .filter-toggle.active { background:rgba(251,146,60,.15); border-color:#fb923c; color:#fb923c; }
 
     /* ── Day column ── */
     .week-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 10px;
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px;
     }
     @media (max-width: 1100px) { .week-grid { grid-template-columns: repeat(4, 1fr); } }
     @media (max-width: 700px)  { .week-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 450px)  { .week-grid { grid-template-columns: 1fr; } }
 
     .day-col {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden;
     }
     .day-col.is-today { border-color: var(--primary); }
     .day-head {
-      padding: 10px 12px 8px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      padding: 10px 12px 8px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
     }
     .day-name  { font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); }
     .day-date  { font-size:.82rem; font-weight:700; }
     .day-col.is-today .day-name { color:var(--primary); }
-    .day-count {
-      font-size:.7rem; font-weight:700; padding:2px 7px;
-      border-radius:99px; background:var(--primary-dim); color:var(--primary);
-    }
-    .day-body { padding: 8px; min-height: 60px; }
+    .day-count { font-size:.7rem; font-weight:700; padding:2px 7px; border-radius:99px; background:var(--primary-dim); color:var(--primary); }
+    .day-body  { padding: 8px; min-height: 60px; }
 
     /* ── Resa mini card ── */
     .rmc {
-      border-radius: 8px;
-      padding: 7px 9px;
-      margin-bottom: 6px;
-      cursor: pointer;
-      border-left: 3px solid transparent;
-      transition: opacity .15s;
+      border-radius: 8px; padding: 7px 9px; margin-bottom: 6px;
+      cursor: pointer; border-left: 3px solid transparent; transition: opacity .15s;
     }
     .rmc:last-child { margin-bottom: 0; }
     .rmc:hover { opacity: .8; }
@@ -84,39 +87,72 @@
     .rmc.arrived   { background:rgba(34,197,94,.1);   border-left-color:#22c55e; }
     .rmc.no_show   { background:rgba(239,68,68,.1);   border-left-color:#ef4444; }
     .rmc.cancelled { background:rgba(255,255,255,.04); border-left-color:rgba(255,255,255,.15); opacity:.5; }
-    .rmc-top { display:flex; align-items:center; gap:5px; }
+    .rmc-top  { display:flex; align-items:center; gap:5px; }
     .rmc-time { font-size:.75rem; font-weight:800; min-width:34px; }
     .rmc-name { font-size:.78rem; font-weight:600; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .rmc-pax  { font-size:.7rem; color:var(--text-muted); }
-    .rmc-meta { font-size:.68rem; color:var(--text-muted); margin-top:2px; }
+    .rmc-pax  { font-size:.7rem; color:var(--text-muted); margin-top:2px; display:flex; align-items:center; gap:4px; }
+    .no-table-tag {
+      font-size:.62rem; font-weight:700; color:#fb923c;
+      background:rgba(251,146,60,.15); border-radius:4px; padding:1px 5px;
+    }
+    .table-tag {
+      font-size:.62rem; font-weight:700; color:#22c55e;
+      background:rgba(34,197,94,.12); border-radius:4px; padding:1px 5px;
+    }
     .joy-icon { font-size:.65rem; }
-    .day-add  { text-align:center; padding:6px; font-size:.72rem; color:var(--text-muted); cursor:pointer; border-radius:6px; }
+    .day-add { text-align:center; padding:6px; font-size:.72rem; color:var(--text-muted); cursor:pointer; border-radius:6px; }
     .day-add:hover { background:var(--bg-hover); color:var(--primary); }
 
     /* ── Drawer ── */
     .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s; }
     .drawer-backdrop.open { opacity:1; pointer-events:auto; }
-    .drawer { position:fixed; bottom:0; left:0; right:0; z-index:201; background:var(--bg-card); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.5); transform:translateY(102%); transition:transform .3s cubic-bezier(.32,.72,0,1); max-height:92dvh; display:flex; flex-direction:column; }
+    .drawer {
+      position:fixed; bottom:0; left:0; right:0; z-index:201;
+      background:var(--bg-card); border-radius:20px 20px 0 0;
+      box-shadow:0 -8px 40px rgba(0,0,0,.5); transform:translateY(102%);
+      transition:transform .3s cubic-bezier(.32,.72,0,1); max-height:92dvh; display:flex; flex-direction:column;
+    }
     .drawer.open { transform:translateY(0); }
     @media (min-width:641px) {
-      .drawer { bottom:auto; top:50%; left:50%; right:auto; transform:translate(-50%,-40%); opacity:0; border-radius:var(--radius); width:100%; max-width:440px; transition:transform .25s ease,opacity .25s ease; }
+      .drawer { bottom:auto; top:50%; left:50%; right:auto; transform:translate(-50%,-40%); opacity:0; border-radius:var(--radius); width:100%; max-width:480px; transition:transform .25s ease,opacity .25s ease; }
       .drawer.open { transform:translate(-50%,-50%); opacity:1; }
     }
     .drawer-handle { width:40px; height:4px; background:rgba(255,255,255,.15); border-radius:2px; margin:10px auto 0; flex-shrink:0; }
     @media (min-width:641px) { .drawer-handle { display:none; } }
-    .drawer-head { display:flex; align-items:center; justify-content:space-between; padding:14px 20px 12px; flex-shrink:0; border-bottom:1px solid var(--border); }
-    .drawer-title { font-size:1rem; font-weight:700; }
-    .drawer-close { width:30px; height:30px; border-radius:50%; background:var(--bg-surface); color:var(--text-muted); display:flex; align-items:center; justify-content:center; font-size:.9rem; cursor:pointer; border:none; }
-    .drawer-body  { overflow-y:auto; padding:16px 20px; flex:1; }
+    .drawer-head   { display:flex; align-items:center; justify-content:space-between; padding:14px 20px 12px; flex-shrink:0; border-bottom:1px solid var(--border); }
+    .drawer-title  { font-size:1rem; font-weight:700; }
+    .drawer-close  { width:30px; height:30px; border-radius:50%; background:var(--bg-surface); color:var(--text-muted); display:flex; align-items:center; justify-content:center; font-size:.9rem; cursor:pointer; border:none; }
+    .drawer-body   { overflow-y:auto; padding:16px 20px; flex:1; }
     .drawer-footer { display:flex; gap:8px; padding:10px 20px calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); flex-shrink:0; }
     .drawer-footer .btn { flex:1; justify-content:center; min-height:46px; }
-    .frow  { display:flex; flex-direction:column; gap:14px; }
+    .frow   { display:flex; flex-direction:column; gap:14px; }
     .fgroup { display:flex; flex-direction:column; gap:6px; }
     .fgroup label { font-size:.82rem; font-weight:600; color:var(--text-muted); }
     .f2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 
+    /* ── Table picker ── */
+    .table-picker-zone { margin-bottom:12px; }
+    .table-picker-zone:last-child { margin-bottom:0; }
+    .zone-label {
+      font-size:.7rem; font-weight:700; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:.06em; margin-bottom:7px;
+    }
+    .table-chips { display:flex; flex-wrap:wrap; gap:6px; }
+    .table-chip {
+      padding:5px 11px; border-radius:8px; border:1.5px solid var(--border);
+      background:var(--bg-surface); cursor:pointer; font-size:.78rem; font-weight:600;
+      transition:.15s; display:flex; flex-direction:column; align-items:center; gap:1px;
+      min-width:44px; text-align:center;
+    }
+    .table-chip .tc-cap { font-size:.62rem; color:var(--text-muted); font-weight:400; }
+    .table-chip:hover:not(.taken) { border-color:var(--primary); background:var(--primary-dim); }
+    .table-chip.selected { border-color:#fb923c; background:rgba(251,146,60,.15); color:#fb923c; }
+    .table-chip.selected .tc-cap { color:#fb923c; }
+    .table-chip.taken { opacity:.4; cursor:not-allowed; border-style:dashed; }
+    .table-chip.taken::after { content:'✗'; font-size:.6rem; color:var(--danger); }
+
     /* ── Status pills ── */
-    .status-btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    .status-btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
     .status-btn {
       flex:1; min-width:80px; padding:9px 6px; border-radius:10px; border:1.5px solid transparent;
       font-size:.8rem; font-weight:700; cursor:pointer; text-align:center; transition:.15s;
@@ -144,6 +180,15 @@
         <button class="btn btn-primary" onclick="openCreate()">+ Nouvelle</button>
       </div>
 
+      <!-- Bannière sans table -->
+      <div id="noTableBanner" class="no-table-banner hidden" onclick="toggleNoTable()">
+        <span style="font-size:1.2rem">⚠️</span>
+        <div class="no-table-banner-text">
+          <strong id="noTableCount">0</strong> réservation(s) sans table assignée cette semaine
+        </div>
+        <span id="noTableBannerBtn" style="font-size:.8rem;color:#fb923c;font-weight:700;">Voir →</span>
+      </div>
+
       <!-- Week nav -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap;">
         <div class="week-nav">
@@ -167,6 +212,7 @@
           <option value="no_show">No-shows</option>
           <option value="cancelled">Annulées</option>
         </select>
+        <button class="filter-toggle" id="filterNoTable" onclick="toggleNoTable()">⚠️ Sans table</button>
       </div>
 
       <!-- Grille semaine -->
@@ -189,20 +235,23 @@
       <form id="resaForm" onsubmit="saveResa(event)">
         <input type="hidden" id="resaId">
         <div class="frow">
+
           <div class="fgroup">
             <label>Nom du client</label>
             <input type="text" id="resaName" placeholder="Ex: Dupont" required>
           </div>
+
           <div class="f2">
             <div class="fgroup">
               <label>Date</label>
-              <input type="date" id="resaDate" required>
+              <input type="date" id="resaDate" required onchange="refreshTablePicker()">
             </div>
             <div class="fgroup">
               <label>Heure</label>
               <input type="time" id="resaTime" required>
             </div>
           </div>
+
           <div class="f2">
             <div class="fgroup">
               <label>Nb de personnes</label>
@@ -213,6 +262,7 @@
               <input type="tel" id="resaPhone" placeholder="06…">
             </div>
           </div>
+
           <div class="fgroup">
             <label>Espace</label>
             <select id="resaSpace">
@@ -223,16 +273,25 @@
               <option value="coin_canap">Coin Canapé</option>
             </select>
           </div>
+
+          <!-- Table picker -->
+          <div class="fgroup">
+            <label>Tables assignées <span id="tableSelLabel" style="color:#fb923c;font-weight:400;"></span></label>
+            <div id="tablePicker">
+              <div style="font-size:.8rem;color:var(--text-muted);">Chargement des tables…</div>
+            </div>
+          </div>
+
           <div class="fgroup">
             <label>Notes</label>
             <input type="text" id="resaNotes" placeholder="Allergies, demandes spéciales…">
           </div>
 
-          <!-- Statut (visible en édition seulement) -->
+          <!-- Statut (édition seulement) -->
           <div id="statusSection" style="display:none;">
             <div class="fgroup">
               <label>Statut</label>
-              <div class="status-btns" id="statusBtns">
+              <div class="status-btns">
                 <div class="status-btn confirmed" onclick="setStatus('confirmed')">✉ Confirmée</div>
                 <div class="status-btn arrived"   onclick="setStatus('arrived')">✅ Arrivée</div>
                 <div class="status-btn no_show"   onclick="setStatus('no_show')">❌ No-show</div>
@@ -240,6 +299,7 @@
               </div>
             </div>
           </div>
+
         </div>
       </form>
     </div>
@@ -257,34 +317,39 @@
     buildNav('marketing-reservations');
     const socket = io();
 
-    const DAYS_FR = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-    const DAYS_LONG = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+    const DAYS_FR   = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+    const ZONE_LABELS = { salle_bas:'Salle Bas', etage:'Étage', terrasse:'Terrasse', coin_canap:'Coin Canapé' };
 
     let currentWeekStart = getMonday(new Date());
-    let allResas = [];
-    let currentStatus = 'confirmed';
-    let editId = null;
+    let allResas    = [];
+    let allTables   = [];
+    let selectedTableIds = [];
+    let currentStatus    = 'confirmed';
+    let editId           = null;
+    let filterNoTable    = false;
 
     function getMonday(d) {
-      const dt = new Date(d);
-      const day = dt.getDay();
+      const dt = new Date(d); const day = dt.getDay();
       dt.setDate(dt.getDate() + (day === 0 ? -6 : 1 - day));
       return dt.toISOString().split('T')[0];
     }
     function addDays(s, n) {
-      const d = new Date(s); d.setDate(d.getDate() + n);
-      return d.toISOString().split('T')[0];
+      const d = new Date(s); d.setDate(d.getDate() + n); return d.toISOString().split('T')[0];
     }
     function fmtWeek(ws) {
-      const we = addDays(ws, 6);
-      const s  = new Date(ws + 'T12:00'); const e = new Date(we + 'T12:00');
+      const we = addDays(ws,6); const s = new Date(ws+'T12:00'); const e = new Date(we+'T12:00');
       return `${s.getDate()} ${s.toLocaleDateString('fr-FR',{month:'short'})} → ${e.getDate()} ${e.toLocaleDateString('fr-FR',{month:'short',year:'numeric'})}`;
     }
 
-    function shiftWeek(d) { currentWeekStart = addDays(currentWeekStart, d * 7); loadWeek(); }
+    function shiftWeek(d) { currentWeekStart = addDays(currentWeekStart, d*7); loadWeek(); }
     function goToday()    { currentWeekStart = getMonday(new Date()); loadWeek(); }
 
     // ─── Load ─────────────────────────────────────────────────────
+    async function init() {
+      allTables = await api.get('/api/tables') || [];
+      loadWeek();
+    }
+
     async function loadWeek() {
       document.getElementById('weekLabel').textContent    = fmtWeek(currentWeekStart);
       document.getElementById('weekSubtitle').textContent = `Semaine du ${formatDate(currentWeekStart)}`;
@@ -295,7 +360,18 @@
       if (!data) return;
       allResas = data;
 
-      // Populate space filter
+      // Bannière sans table
+      const noTable = allResas.filter(r => r.status !== 'cancelled' && (!r.table_ids || r.table_ids.length === 0));
+      const banner = document.getElementById('noTableBanner');
+      if (noTable.length > 0) {
+        document.getElementById('noTableCount').textContent = noTable.length;
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+        if (filterNoTable) toggleNoTable(); // reset filter if no more unassigned
+      }
+
+      // Space filter
       const spaces = [...new Set(data.map(r => r.space).filter(Boolean))].sort();
       const sel = document.getElementById('filterSpace');
       const prev = sel.value;
@@ -305,48 +381,60 @@
       applyFilters();
     }
 
-    // ─── Filters + render ─────────────────────────────────────────
+    // ─── Filters ──────────────────────────────────────────────────
+    function toggleNoTable() {
+      filterNoTable = !filterNoTable;
+      document.getElementById('filterNoTable').classList.toggle('active', filterNoTable);
+      document.getElementById('noTableBannerBtn').textContent = filterNoTable ? 'Masquer ✕' : 'Voir →';
+      applyFilters();
+    }
+
     function applyFilters() {
       const name   = document.getElementById('filterName').value.trim().toLowerCase();
       const space  = document.getElementById('filterSpace').value;
       const status = document.getElementById('filterStatus').value;
 
       let filtered = allResas;
-      if (name)   filtered = filtered.filter(r => r.customer_name.toLowerCase().includes(name));
-      if (space)  filtered = filtered.filter(r => r.space === space);
-      if (status) filtered = filtered.filter(r => r.status === status);
+      if (name)         filtered = filtered.filter(r => r.customer_name.toLowerCase().includes(name));
+      if (space)        filtered = filtered.filter(r => r.space === space);
+      if (status)       filtered = filtered.filter(r => r.status === status);
+      if (filterNoTable) filtered = filtered.filter(r => r.status !== 'cancelled' && (!r.table_ids || r.table_ids.length === 0));
 
       renderWeek(filtered);
     }
 
+    // ─── Render week ──────────────────────────────────────────────
     function renderWeek(resas) {
       const todayStr = today();
-      const grid = document.getElementById('weekGrid');
+      const grid     = document.getElementById('weekGrid');
       const dayDates = Array.from({length:7}, (_, i) => addDays(currentWeekStart, i));
 
       grid.innerHTML = dayDates.map(dd => {
-        const isToday = dd === todayStr;
+        const isToday  = dd === todayStr;
         const dayResas = resas.filter(r => r.date === dd);
-        const d = new Date(dd + 'T12:00');
-        const dowIdx = d.getDay();
+        const d        = new Date(dd+'T12:00');
+        const dowIdx   = d.getDay();
 
         const cards = dayResas.map(r => {
-          const spaceStr = r.space ? `${r.space} · ` : '';
+          const noTable  = !r.table_ids || r.table_ids.length === 0;
           const joyIcon  = r.joy_event_id ? `<span class="joy-icon" title="Joy.io">🔗</span> ` : '';
+          const tableTag = noTable
+            ? `<span class="no-table-tag">⚠ sans table</span>`
+            : `<span class="table-tag">T.${r.table_names.join('+')}</span>`;
           return `
             <div class="rmc ${r.status}" onclick="openEdit(${r.id})">
               <div class="rmc-top">
                 <span class="rmc-time">${r.time}</span>
                 <span class="rmc-name">${joyIcon}${r.customer_name}</span>
               </div>
-              <div class="rmc-pax">${spaceStr}${r.party_size} pers.</div>
+              <div class="rmc-pax">
+                ${r.party_size} pers. &nbsp;${tableTag}
+              </div>
             </div>`;
         }).join('');
 
-        const addBtn = `<div class="day-add" onclick="openCreate('${dd}')">+ Ajouter</div>`;
-
         return `
-          <div class="day-col ${isToday ? 'is-today' : ''}">
+          <div class="day-col ${isToday?'is-today':''}">
             <div class="day-head">
               <div>
                 <div class="day-name">${DAYS_FR[dowIdx]}</div>
@@ -355,16 +443,75 @@
               ${dayResas.length ? `<div class="day-count">${dayResas.length}</div>` : ''}
             </div>
             <div class="day-body">
-              ${cards || ''}
-              ${addBtn}
+              ${cards}
+              <div class="day-add" onclick="openCreate('${dd}')">+ Ajouter</div>
             </div>
           </div>`;
       }).join('');
     }
 
+    // ─── Table picker ─────────────────────────────────────────────
+    function refreshTablePicker() {
+      const date = document.getElementById('resaDate').value;
+      if (!date) return;
+
+      // Tables prises par d'AUTRES résas ce jour-là (non annulées, pas la résa en cours d'édition)
+      const takenIds = new Set(
+        allResas
+          .filter(r => r.date === date && r.status !== 'cancelled' && r.id !== editId)
+          .flatMap(r => r.table_ids || [])
+      );
+
+      // Grouper les tables par zone (exclure décorations)
+      const realTables = allTables.filter(t => !t.is_decoration);
+      const zones = [...new Set(realTables.map(t => t.zone))];
+
+      const html = zones.map(zone => {
+        const tables = realTables.filter(t => t.zone === zone);
+        const chips  = tables.map(t => {
+          const isTaken    = takenIds.has(t.id);
+          const isSelected = selectedTableIds.includes(t.id);
+          return `
+            <div class="table-chip ${isSelected?'selected':''} ${isTaken?'taken':''}"
+                 onclick="${isTaken ? '' : `toggleTable(${t.id})`}"
+                 title="${isTaken ? 'Déjà réservée' : `Capacité : ${t.capacity} pers.`}">
+              <span>${t.name}</span>
+              <span class="tc-cap">${t.capacity}p</span>
+            </div>`;
+        }).join('');
+
+        return `
+          <div class="table-picker-zone">
+            <div class="zone-label">${ZONE_LABELS[zone] || zone}</div>
+            <div class="table-chips">${chips}</div>
+          </div>`;
+      }).join('');
+
+      document.getElementById('tablePicker').innerHTML = html || '<div style="font-size:.8rem;color:var(--text-muted);">Aucune table disponible</div>';
+      updateTableSelLabel();
+    }
+
+    function toggleTable(id) {
+      const idx = selectedTableIds.indexOf(id);
+      if (idx === -1) selectedTableIds.push(id);
+      else selectedTableIds.splice(idx, 1);
+      refreshTablePicker();
+    }
+
+    function updateTableSelLabel() {
+      const lbl = document.getElementById('tableSelLabel');
+      if (selectedTableIds.length === 0) {
+        lbl.textContent = '— aucune sélectionnée';
+      } else {
+        const names = selectedTableIds.map(id => allTables.find(t=>t.id===id)?.name || id);
+        lbl.textContent = `→ T.${names.join(' + ')}`;
+      }
+    }
+
     // ─── Drawer create ────────────────────────────────────────────
     function openCreate(date) {
       editId = null;
+      selectedTableIds = [];
       currentStatus = 'confirmed';
       document.getElementById('drawerTitle').textContent = 'Nouvelle réservation';
       document.getElementById('resaId').value    = '';
@@ -376,8 +523,9 @@
       document.getElementById('resaSpace').value = '';
       document.getElementById('resaNotes').value = '';
       document.getElementById('statusSection').style.display = 'none';
-      document.getElementById('btnDelete').style.display = 'none';
+      document.getElementById('btnDelete').style.display     = 'none';
       document.getElementById('btnSave').textContent = 'Créer';
+      refreshTablePicker();
       openDrawer();
     }
 
@@ -385,6 +533,7 @@
       const r = allResas.find(r => r.id === id);
       if (!r) return;
       editId = id;
+      selectedTableIds = [...(r.table_ids || [])];
       currentStatus = r.status;
       document.getElementById('drawerTitle').textContent = `Modifier · ${r.customer_name}`;
       document.getElementById('resaId').value    = r.id;
@@ -399,17 +548,15 @@
       document.getElementById('btnDelete').style.display = r.joy_event_id ? 'none' : 'inline-flex';
       document.getElementById('btnSave').textContent = 'Enregistrer';
       updateStatusBtns();
+      refreshTablePicker();
       openDrawer();
     }
 
-    function setStatus(s) {
-      currentStatus = s;
-      updateStatusBtns();
-    }
+    function setStatus(s) { currentStatus = s; updateStatusBtns(); }
     function updateStatusBtns() {
-      document.querySelectorAll('.status-btn').forEach(b => {
-        b.classList.toggle('active', b.classList.contains(currentStatus));
-      });
+      document.querySelectorAll('.status-btn').forEach(b =>
+        b.classList.toggle('active', b.classList.contains(currentStatus))
+      );
     }
 
     // ─── Save ─────────────────────────────────────────────────────
@@ -423,6 +570,7 @@
         phone:         document.getElementById('resaPhone').value.trim() || null,
         space:         document.getElementById('resaSpace').value || null,
         notes:         document.getElementById('resaNotes').value.trim() || null,
+        table_ids:     selectedTableIds,
         status:        editId ? currentStatus : 'confirmed',
       };
       if (editId) {
@@ -437,8 +585,7 @@
     }
 
     async function deleteResa() {
-      if (!editId) return;
-      if (!confirm('Supprimer cette réservation ?')) return;
+      if (!editId || !confirm('Supprimer cette réservation ?')) return;
       await fetch(`/api/reservations/${editId}`, { method:'DELETE' });
       closeDrawer();
       showToast('Réservation supprimée', 'info');
@@ -466,7 +613,7 @@
     const urlDate = new URLSearchParams(location.search).get('date');
     if (urlDate) currentWeekStart = getMonday(new Date(urlDate));
 
-    loadWeek();
+    init();
   </script>
 </body>
 </html>
