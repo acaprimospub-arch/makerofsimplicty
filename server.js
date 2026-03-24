@@ -68,10 +68,23 @@ function parseIcalEvents(raw) {
     const { date, time: timeStart } = parseDateTime(dtStartRaw);
     const { time: timeEnd }         = parseDateTime(dtEndRaw);
 
-    // Extract participants (look for digits before pers/participant/invité)
+    // Extract participants — plusieurs formats Joy.io possibles
     const combined = summary + ' ' + description;
-    const partMatch = combined.match(/(\d+)\s*(?:participant|pers|invit|person)/i);
-    const participants = partMatch ? parseInt(partMatch[1]) : 0;
+    // Format A : mot AVANT le nombre → "Participants: 30", "Convives : 30", "Nb personnes: 30"
+    const partBefore = combined.match(
+      /(?:participant|personne|convive|couvert|pax|place|nb|nombre|guest|invit[eé]?|person)\w*\s*[:=.]\s*(\d+)/i
+    );
+    // Format B : nombre AVANT le mot → "30 personnes", "30 pax", "30 convives"
+    const partAfter = combined.match(
+      /(\d+)\s*(?:participant|personne|pers(?:\.|s\b|\b)|convive|couvert|pax|place|invit|person)/i
+    );
+    // Format C : nombre entre tirets dans le SUMMARY → "Dupont - 30 - Grande Salle"
+    const partSummary = summary.match(/(?:^|\s-\s)(\d{1,3})\s*(?:-|$|\s)/);
+    const participants = partBefore  ? parseInt(partBefore[1])
+                       : partAfter   ? parseInt(partAfter[1])
+                       : partSummary ? parseInt(partSummary[1])
+                       : 0;
+    console.log(`[Joy] "${summary}" → participants=${participants} | desc="${description.substring(0,80)}"`);
 
     // Extract customer name: first segment before ' - ' in summary, or "Nom: xxx" in desc
     let customerName = summary;
