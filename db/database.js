@@ -765,35 +765,48 @@ function upsertJoyEvent({ joy_uid, customer_name, participants, date, time_start
 }
 
 function upsertReservationFromJoy(joyEventId, { customer_name, participants, date, time_start, status, phone }) {
-  const partySize = participants > 0 ? participants : 2;
-  const time      = time_start || '00:00';
-  const resStatus = status === 'cancelled' ? 'cancelled' : 'confirmed';
+  const partySize  = participants > 0 ? participants : 2;
+  const time       = time_start || '00:00';
+  const resStatus  = status === 'cancelled' ? 'cancelled' : 'confirmed';
 
-  // Récupère TOUS les doublons éventuels
-  const all = db.prepare('SELECT id, table_id FROM reservations WHERE joy_event_id = ?').all(joyEventId);
+  // Récupère la meilleure ligne existante (avec table assignée ou statut manuel staff)
+  const best = db.prepare(`
+    SELECT table_id, status FROM reservations WHERE joy_event_id = ?
+    ORDER BY (table_id IS NOT NULL) DESC, (status IN ('arrived','no_show')) DESC
+    LIMIT 1
+  `).get(joyEventId);
 
-  if (all.length === 0) {
-    // Aucune résa existante → créer
-    db.prepare(`
-      INSERT INTO reservations (customer_name, party_size, date, time, status, phone, notes, joy_event_id)
-      VALUES (?, ?, ?, ?, ?, ?, NULL, ?)
-    `).run(customer_name || '', partySize, date || '', time, resStatus, phone || null, joyEventId);
-  } else {
-    // Garder la résa avec une table assignée (si possible), sinon la première
-    const keeper = all.find(r => r.table_id) || all[0];
-    // Supprimer tous les doublons sauf le keeper
-    const toDelete = all.filter(r => r.id !== keeper.id);
-    if (toDelete.length > 0) {
-      const placeholders = toDelete.map(() => '?').join(',');
-      db.prepare(`DELETE FROM reservations WHERE id IN (${placeholders})`).run(...toDelete.map(r => r.id));
-    }
-    // Mettre à jour le keeper — notes forcées à NULL
-    db.prepare(`
-      UPDATE reservations SET
-        customer_name = ?, party_size = ?, date = ?, time = ?, status = ?, phone = ?, notes = NULL
-      WHERE id = ?
-    `).run(customer_name || '', partySize, date || '', time, resStatus, phone || null, keeper.id);
-  }
+  // Supprime TOUTES les lignes pour ce joy_event_id (élimine les doublons)
+  db.prepare('DELETE FROM reservations WHERE joy_event_id = ?').run(joyEventId);
+
+  // Conserve le statut manuel si le staff a marqué arrivé/no-show (sauf si Joy annule)
+  const finalStatus = resStatus === 'cancelled' ? 'cancelled'
+    : (best && ['arrived', 'no_show'].includes(best.status) ? best.status : resStatus);
+
+  // Insère une ligne propre en préservant la table assignée
+  db.prepare(`
+    INSERT INTO reservations (table_id, customer_name, party_size, date, time, status, phone, notes, joy_event_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)
+  `).run(best?.table_id || null, customer_name || '', partySize, date || '', time, finalStatus, phone || null, joyEventId);
+}
+
+function cleanupJoyReservationDuplicates() {
+  // Supprime les doublons globaux (même joy_event_id, plusieurs lignes) — garde le MIN(id)
+  db.prepare(`
+    DELETE FROM reservations
+    WHERE joy_event_id IS NOT NULL
+    AND id NOT IN (
+      SELECT MIN(id) FROM reservations WHERE joy_event_id IS NOT NULL GROUP BY joy_event_id
+    )
+  `).run();
+}
+
+function cleanupStaleJoyReservations(validJoyIds) {
+  // Supprime les résas Joy dont le joy_event_id n'est plus dans le sync actuel
+  // (cas : Joy.io change les UIDs entre deux exports)
+  if (!validJoyIds.length) return;
+  const ph = validJoyIds.map(() => '?').join(',');
+  db.prepare(`DELETE FROM reservations WHERE joy_event_id IS NOT NULL AND joy_event_id NOT IN (${ph})`).run(...validJoyIds);
 }
 
 function getJoyEvents({ date, upcoming, all: showAll } = {}) {
@@ -837,5 +850,6 @@ module.exports = {
   getStats, getDailyLog, getDashboardData,
   createHrEvent, getHrEvents, deleteHrEvent, getHrSummaryForUser,
   getSetting, setSetting,
-  upsertJoyEvent, upsertReservationFromJoy, getJoyEvents, deleteJoyEvent, assignTableToJoyEvent
+  upsertJoyEvent, upsertReservationFromJoy, cleanupJoyReservationDuplicates, cleanupStaleJoyReservations,
+  getJoyEvents, deleteJoyEvent, assignTableToJoyEvent
 };

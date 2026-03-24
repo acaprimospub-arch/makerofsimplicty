@@ -111,12 +111,28 @@ async function syncJoyEvents() {
   try {
     const raw = await fetchUrl(url);
     const events = parseIcalEvents(raw);
+
+    // Phase 1 : nettoyage préventif des doublons existants en base
+    db.cleanupJoyReservationDuplicates();
+
+    // Phase 2 : upsert de chaque événement + sa résa
     let synced = 0;
+    const syncedJoyIds = [];
     for (const ev of events) {
       const joyId = db.upsertJoyEvent(ev);
-      if (joyId) db.upsertReservationFromJoy(joyId, { ...ev, phone: ev.phone || null });
+      if (joyId) {
+        db.upsertReservationFromJoy(joyId, ev);
+        syncedJoyIds.push(joyId);
+      }
       synced++;
     }
+
+    // Phase 3 : supprime les résas Joy qui n'existent plus dans l'iCal actuel
+    // (gère le cas où Joy.io change les UIDs entre deux exports)
+    if (syncedJoyIds.length > 0) {
+      db.cleanupStaleJoyReservations(syncedJoyIds);
+    }
+
     db.setSetting('joy_last_sync', new Date().toISOString());
     console.log(`[Joy.io] ✅ ${synced} événements synchronisés`);
     return { synced, total: events.length };
