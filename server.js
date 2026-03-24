@@ -337,6 +337,22 @@ app.delete('/api/reservations/:id', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── Shift Messages ─────────────────────────────────────────────────────────────
+app.get('/api/shift-messages', requireAuth, (req, res) => {
+  const date = req.query.date || new Date().toISOString().split('T')[0];
+  res.json(db.getShiftMessages(date));
+});
+
+app.post('/api/shift-messages', requireAuth, (req, res) => {
+  const { message } = req.body;
+  // date for midi→soir : today; date for soir→matin : today (matin reads it as "yesterday")
+  const date = new Date().toISOString().split('T')[0];
+  const from_shift = (req.session.shift === 'soir') ? 'soir' : 'midi';
+  const msg = db.upsertShiftMessage({ from_shift, date, message, author_id: req.session.userId, author_name: req.session.name });
+  io.emit('shift-message:updated', { from_shift, date, msg });
+  res.json(msg);
+});
+
 // ─── Admin: Staff ──────────────────────────────────────────────────────────────
 app.get('/api/admin/staff', requireAdmin, (req, res) => {
   res.json(db.getAllUsers());

@@ -132,6 +132,22 @@ try { db.exec("ALTER TABLE reservations ADD COLUMN table_ids TEXT DEFAULT '[]'")
 // Migration : on peuple table_ids depuis table_id pour les lignes existantes
 try { db.exec("UPDATE reservations SET table_ids = json_array(table_id) WHERE table_id IS NOT NULL AND (table_ids IS NULL OR table_ids = '[]')"); } catch(e) {}
 
+// ─── Table messages d'équipe ───────────────────────────────────────────────────
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS shift_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      from_shift TEXT NOT NULL,
+      date TEXT NOT NULL,
+      message TEXT NOT NULL,
+      author_id INTEGER,
+      author_name TEXT,
+      updated_at TEXT DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(from_shift, date)
+    )
+  `);
+} catch(e) {}
+
 // ─── Nettoyage doublons Joy au démarrage ───────────────────────────────────────
 // Supprime les résas Joy en double (garde celle avec table assignée ou la plus récente)
 db.exec(`
@@ -913,6 +929,31 @@ function assignTableToJoyEvent(tableId, joyEventId) {
   }
 }
 
+// ─── Shift Messages ─────────────────────────────────────────────────────────────
+function getShiftMessages(date) {
+  // midi→soir : message du midi pour le soir d'aujourd'hui
+  // soir→matin : message du soir d'hier pour le matin d'aujourd'hui
+  const prev = new Date(date);
+  prev.setDate(prev.getDate() - 1);
+  const prevDate = prev.toISOString().split('T')[0];
+  return {
+    midiToSoir: db.prepare("SELECT * FROM shift_messages WHERE from_shift='midi' AND date=?").get(date) || null,
+    soirToMatin: db.prepare("SELECT * FROM shift_messages WHERE from_shift='soir' AND date=?").get(prevDate) || null,
+  };
+}
+function upsertShiftMessage({ from_shift, date, message, author_id, author_name }) {
+  db.prepare(`
+    INSERT INTO shift_messages (from_shift, date, message, author_id, author_name, updated_at)
+    VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'))
+    ON CONFLICT(from_shift, date) DO UPDATE SET
+      message = excluded.message,
+      author_id = excluded.author_id,
+      author_name = excluded.author_name,
+      updated_at = datetime('now', 'localtime')
+  `).run(from_shift, date, message, author_id, author_name);
+  return db.prepare("SELECT * FROM shift_messages WHERE from_shift=? AND date=?").get(from_shift, date);
+}
+
 module.exports = {
   getUserByPin, getUserById, getAllUsers, createUser, updateUser, deleteUser,
   getTasksWithCompletions, getTaskById, getAllTasks, completeTask, uncompleteTask, createTask, updateTask, deactivateTask,
@@ -922,5 +963,6 @@ module.exports = {
   createHrEvent, getHrEvents, deleteHrEvent, getHrSummaryForUser,
   getSetting, setSetting,
   upsertJoyEvent, upsertReservationFromJoy, cleanupJoyReservationDuplicates, cleanupStaleJoyReservations,
-  getJoyEvents, deleteJoyEvent, assignTableToJoyEvent
+  getJoyEvents, deleteJoyEvent, assignTableToJoyEvent,
+  getShiftMessages, upsertShiftMessage
 };
