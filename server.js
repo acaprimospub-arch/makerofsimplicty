@@ -233,7 +233,8 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 // ─── Tasks ─────────────────────────────────────────────────────────────────────
 app.get('/api/tasks', requireAuth, (req, res) => {
   const today = new Date().toISOString().split('T')[0];
-  res.json(db.getTasksWithCompletions(today, req.session.userId));
+  const domain = req.session.shift === 'cuisine' ? 'cuisine' : 'salle';
+  res.json(db.getTasksWithCompletions(today, req.session.userId, domain));
 });
 
 app.post('/api/tasks/:id/complete', requireAuth, (req, res) => {

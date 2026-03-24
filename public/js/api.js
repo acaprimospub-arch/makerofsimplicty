@@ -63,6 +63,7 @@ async function buildNav(activePage) {
     { href: '/staff/taches.html',       label: '✅ Tâches',          mobileLabel: 'Tâches',      icon: '✅', key: 'taches' },
     { href: '/staff/reservations.html', label: '📋 Réservations',   mobileLabel: 'Résas',       icon: '📋', key: 'reservations' },
     { href: '/staff/tables.html',       label: '🍽️ Salle',          mobileLabel: 'Salle',       icon: '🍽️', key: 'tables' },
+    { href: '/cuisine/taches.html',     label: '👨‍🍳 Cuisine',       mobileLabel: 'Cuisine',     icon: '👨‍🍳', key: 'cuisine' },
   ];
   const managerMidiLinks = [
     { href: '/admin/dashboard.html',    label: '📊 Dashboard',     mobileLabel: 'Dashboard',   icon: '📊', key: 'dashboard' },
@@ -88,8 +89,12 @@ async function buildNav(activePage) {
     { href: '/staff/reservations.html', label: '📋 Réservations',   mobileLabel: 'Résas',       icon: '📋', key: 'reservations' },
     { href: '/staff/tables.html',       label: '🍽️ Plan de Salle',  mobileLabel: 'Salle',       icon: '🍽️', key: 'tables' },
   ];
+  const cuisineLinks = [
+    { href: '/cuisine/taches.html', label: '🍳 Mes Tâches', mobileLabel: 'Tâches', icon: '🍳', key: 'cuisine' },
+  ];
 
   const links = user.role === 'admin'                          ? adminLinks
+    : user.shift === 'cuisine'                                 ? cuisineLinks
     : user.role === 'manager' && user.shift === 'midi'         ? managerMidiLinks
     : user.role === 'manager' && user.shift === 'soir'         ? managerSoirLinks
     : user.shift === 'midi'                                    ? staffMidiLinks

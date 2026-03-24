@@ -131,6 +131,7 @@ try { db.exec("ALTER TABLE reservations ADD COLUMN space TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE reservations ADD COLUMN table_ids TEXT DEFAULT '[]'"); } catch(e) {}
 // Migration : on peuple table_ids depuis table_id pour les lignes existantes
 try { db.exec("UPDATE reservations SET table_ids = json_array(table_id) WHERE table_id IS NOT NULL AND (table_ids IS NULL OR table_ids = '[]')"); } catch(e) {}
+try { db.exec("ALTER TABLE tasks ADD COLUMN domain TEXT DEFAULT 'salle'"); } catch(e) {}
 
 // ─── Table messages d'équipe ───────────────────────────────────────────────────
 try {
@@ -188,6 +189,7 @@ const _seedUsers = [
   { name: 'Jeanne',   pin: '2001', role: 'staff',   shift: 'soir' },
   { name: 'Rayan',    pin: '1369', role: 'staff',   shift: 'soir' },
   { name: 'Thibaut',  pin: '0402', role: 'staff',   shift: 'soir' },
+  { name: 'Pierre',   pin: '3945', role: 'manager', shift: 'cuisine' },
 ];
 const _insertUser = db.prepare('INSERT OR IGNORE INTO users (name, pin, role, shift) VALUES (?, ?, ?, ?)');
 for (const u of _seedUsers) _insertUser.run(u.name, u.pin, u.role, u.shift);
@@ -420,6 +422,61 @@ if (db.prepare("SELECT COUNT(*) as c FROM tasks WHERE category = 'soir'").get().
   console.log(`✅ Migration : ${soirTasks.length} tâches FERMETURE ajoutées`);
 }
 
+// ─── Seed tâches cuisine ────────────────────────────────────────────────────────
+if (db.prepare("SELECT COUNT(*) as c FROM tasks WHERE domain='cuisine'").get().c === 0) {
+  const insertCuisineTask = db.prepare(
+    'INSERT INTO tasks (category, section, subsection, description, task_order, domain) VALUES (?, ?, ?, ?, ?, ?)'
+  );
+  db.exec('BEGIN');
+  const cuisineTasks = [
+    // ── FERMETURE - Matériel de cuisson ──
+    ['fermeture', 'Cuisine', 'Matériel de cuisson', 'Nettoyer plancha', 1, 'cuisine'],
+    ['fermeture', 'Cuisine', 'Matériel de cuisson', 'Nettoyer 4 feux', 2, 'cuisine'],
+    ['fermeture', 'Cuisine', 'Matériel de cuisson', 'Éteindre friteuse + lécher frites', 3, 'cuisine'],
+    ['fermeture', 'Cuisine', 'Matériel de cuisson', 'Nettoyer lèche frites', 4, 'cuisine'],
+    ['fermeture', 'Cuisine', 'Matériel de cuisson', 'Éteindre four / ou mettre en nettoyage', 5, 'cuisine'],
+    ['fermeture', 'Cuisine', 'Matériel de cuisson', 'Éteindre les deux hottes', 6, 'cuisine'],
+    ['fermeture', 'Cuisine', 'Matériel de cuisson', 'Éteindre rampe chauffante', 7, 'cuisine'],
+    ['fermeture', 'Cuisine', 'Matériel de cuisson', 'Éteindre chauffe assiettes', 8, 'cuisine'],
+    // ── FERMETURE - Plans de travail ──
+    ['fermeture', 'Cuisine', 'Plans de travail', 'Ranger toutes les mises en places, filmer, dater', 1, 'cuisine'],
+    ['fermeture', 'Cuisine', 'Plans de travail', 'Débarrasser tous les plans de travail', 2, 'cuisine'],
+    ['fermeture', 'Cuisine', 'Plans de travail', 'Nettoyer les plans de travail', 3, 'cuisine'],
+    // ── FERMETURE - Plonge ──
+    ['fermeture', 'Cuisine', 'Plonge', 'Faire toute la plonge', 1, 'cuisine'],
+    ['fermeture', 'Cuisine', 'Plonge', 'Nettoyer + vider la plonge', 2, 'cuisine'],
+    ['fermeture', 'Cuisine', 'Plonge', 'Faire le sol et vérifier que rien ne traîne sous la plonge', 3, 'cuisine'],
+    ['fermeture', 'Cuisine', 'Plonge', 'Nettoyer bouche d\'égouts (1 jour sur 2)', 4, 'cuisine'],
+    // ── FERMETURE - Fin de service ──
+    ['fermeture', 'Cuisine', 'Fin de service', 'Vider les poubelles', 1, 'cuisine'],
+    ['fermeture', 'Cuisine', 'Fin de service', 'Plier les cartons si besoin', 2, 'cuisine'],
+    ['fermeture', 'Cuisine', 'Fin de service', 'Éteindre toutes les lumières', 3, 'cuisine'],
+    // ── NETTOYAGE - Tous les 2 jours ──
+    ['nettoyage', 'Plan de Nettoyage', 'Tous les 2 jours', 'Nettoyer bouche égouts', 1, 'cuisine'],
+    ['nettoyage', 'Plan de Nettoyage', 'Tous les 2 jours', 'Nettoyer étagères poste dessert + plonge', 2, 'cuisine'],
+    ['nettoyage', 'Plan de Nettoyage', 'Tous les 2 jours', 'Nettoyer saladette x2', 3, 'cuisine'],
+    // ── NETTOYAGE - Chaque semaine ──
+    ['nettoyage', 'Plan de Nettoyage', 'Chaque semaine', 'Nettoyer chambre froide / frigo 1, 3, 5', 1, 'cuisine'],
+    ['nettoyage', 'Plan de Nettoyage', 'Chaque semaine', 'Nettoyer trancheuse en profondeur', 2, 'cuisine'],
+    ['nettoyage', 'Plan de Nettoyage', 'Chaque semaine', 'Nettoyer hotte + grilles hotte', 3, 'cuisine'],
+    ['nettoyage', 'Plan de Nettoyage', 'Chaque semaine', 'Nettoyer économat', 4, 'cuisine'],
+    ['nettoyage', 'Plan de Nettoyage', 'Chaque semaine', 'Nettoyer machine à plonge (intérieur / extérieur)', 5, 'cuisine'],
+    ['nettoyage', 'Plan de Nettoyage', 'Chaque semaine', 'Nettoyer local poubelle', 6, 'cuisine'],
+    ['nettoyage', 'Plan de Nettoyage', 'Chaque semaine', 'Nettoyer chauffe plat', 7, 'cuisine'],
+    ['nettoyage', 'Plan de Nettoyage', 'Chaque semaine', 'Nettoyer lèche frites en profondeur', 8, 'cuisine'],
+    ['nettoyage', 'Plan de Nettoyage', 'Chaque semaine', 'Nettoyer friteuses', 9, 'cuisine'],
+    ['nettoyage', 'Plan de Nettoyage', 'Chaque semaine', 'Nettoyer tiroir chauffant', 10, 'cuisine'],
+    // ── NETTOYAGE - Chaque mois ──
+    ['nettoyage', 'Plan de Nettoyage', 'Chaque mois', 'Nettoyer étagères économat', 1, 'cuisine'],
+    ['nettoyage', 'Plan de Nettoyage', 'Chaque mois', 'Nettoyer étagères légumerie', 2, 'cuisine'],
+    ['nettoyage', 'Plan de Nettoyage', 'Chaque mois', 'Nettoyer mur cuisine', 3, 'cuisine'],
+    ['nettoyage', 'Plan de Nettoyage', 'Chaque mois', 'Nettoyer chambre froide négative', 4, 'cuisine'],
+  ];
+  for (const t of cuisineTasks) insertCuisineTask.run(...t);
+  db.exec('COMMIT');
+  console.log(`✅ Migration : ${cuisineTasks.length} tâches CUISINE ajoutées`);
+}
+
 // ─── Seed floor plan ───────────────────────────────────────────────────────────
 if (db.prepare('SELECT COUNT(*) as c FROM floor_tables').get().c === 0) {
   const ins = db.prepare(
@@ -565,7 +622,7 @@ function deleteUser(id) {
 }
 
 // ─── Tasks ─────────────────────────────────────────────────────────────────────
-function getTasksWithCompletions(date, userId) {
+function getTasksWithCompletions(date, userId, domain = 'salle') {
   return db.prepare(`
     SELECT t.*,
            COUNT(tc.id) as completion_count,
@@ -575,10 +632,10 @@ function getTasksWithCompletions(date, userId) {
     FROM tasks t
     LEFT JOIN task_completions tc ON t.id = tc.task_id AND tc.date = ?
     LEFT JOIN users u ON tc.user_id = u.id
-    WHERE t.active = 1
+    WHERE t.active = 1 AND t.domain = ?
     GROUP BY t.id
     ORDER BY t.category, t.section, t.task_order, t.id
-  `).all(userId, userId, date);
+  `).all(userId, userId, date, domain);
 }
 function getTaskById(id) {
   return db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
@@ -592,11 +649,11 @@ function completeTask(taskId, userId, date) {
 function uncompleteTask(taskId, userId, date) {
   db.prepare('DELETE FROM task_completions WHERE task_id = ? AND user_id = ? AND date = ?').run(taskId, userId, date);
 }
-function createTask({ category, section, subsection, description, task_order }) {
-  return db.prepare('INSERT INTO tasks (category, section, subsection, description, task_order) VALUES (?, ?, ?, ?, ?)').run(category, section, subsection, description, task_order || 0).lastInsertRowid;
+function createTask({ category, section, subsection, description, task_order, domain }) {
+  return db.prepare('INSERT INTO tasks (category, section, subsection, description, task_order, domain) VALUES (?, ?, ?, ?, ?, ?)').run(category, section, subsection, description, task_order || 0, domain || 'salle').lastInsertRowid;
 }
 function updateTask(id, data) {
-  const fields = ['category', 'section', 'subsection', 'description', 'task_order', 'active'];
+  const fields = ['category', 'section', 'subsection', 'description', 'task_order', 'active', 'domain'];
   const updates = fields.filter(f => data[f] !== undefined).map(f => `${f} = ?`);
   const values = fields.filter(f => data[f] !== undefined).map(f => data[f]);
   if (!updates.length) return;
