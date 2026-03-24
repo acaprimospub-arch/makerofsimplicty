@@ -208,6 +208,61 @@
       margin-left: 6px;
       vertical-align: middle;
     }
+
+    /* ── Drag handle bottom-sheet ── */
+    .modal-handle {
+      display: none;
+      width: 42px;
+      height: 5px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 3px;
+      margin: 0 auto 18px;
+    }
+    @media (max-width: 640px) {
+      .modal-handle { display: block; }
+    }
+
+    /* ── Stepper participants ── */
+    .party-stepper {
+      display: flex;
+      align-items: stretch;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      height: 48px;
+    }
+    .party-stepper .step-btn {
+      width: 52px;
+      background: var(--bg-surface);
+      border: none;
+      color: var(--text);
+      font-size: 1.5rem;
+      font-weight: 300;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.12s;
+      padding: 0;
+    }
+    .party-stepper .step-btn:active { background: var(--border); }
+    .party-stepper .step-input {
+      flex: 1;
+      text-align: center;
+      border: none !important;
+      border-left: 1px solid var(--border) !important;
+      border-right: 1px solid var(--border) !important;
+      border-radius: 0 !important;
+      font-size: 1.25rem !important;
+      font-weight: 700 !important;
+      padding: 0 !important;
+      height: 100% !important;
+      background: var(--bg-card) !important;
+      -moz-appearance: textfield;
+    }
+    .party-stepper .step-input::-webkit-inner-spin-button,
+    .party-stepper .step-input::-webkit-outer-spin-button { -webkit-appearance: none; }
   </style>
 </head>
 <body>
@@ -245,6 +300,8 @@
   <!-- ── Modal Créer / Modifier ─────────────────────────────────────────── -->
   <div class="modal-overlay hidden" id="resModal" onclick="closeOnOverlay(event,'resModal')">
     <div class="modal modal-lg">
+      <div class="modal-handle"></div>
+
       <div class="modal-header">
         <div class="modal-title" id="resModalTitle">Nouvelle réservation</div>
         <button class="modal-close" onclick="hideModal('resModal')">✕</button>
@@ -252,20 +309,19 @@
 
       <form id="resForm" onsubmit="saveRes(event)">
         <input type="hidden" id="resId">
-        <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;flex-direction:column;gap:16px;">
 
-          <div class="form-row form-row-2">
-            <div class="form-group">
-              <label class="form-label">Nom du client *</label>
-              <input type="text" id="resName" placeholder="Ex : Dupont" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Téléphone</label>
-              <input type="tel" id="resPhone" placeholder="06 xx xx xx xx">
-            </div>
+          <div class="form-group">
+            <label class="form-label">Nom du client *</label>
+            <input type="text" id="resName" placeholder="Ex : Dupont" required autocomplete="off">
           </div>
 
-          <div class="form-row form-row-3">
+          <div class="form-group">
+            <label class="form-label">Téléphone</label>
+            <input type="tel" id="resPhone" placeholder="06 xx xx xx xx" autocomplete="tel">
+          </div>
+
+          <div class="form-row form-row-2">
             <div class="form-group">
               <label class="form-label">Date *</label>
               <input type="date" id="resDate" required>
@@ -274,14 +330,19 @@
               <label class="form-label">Heure *</label>
               <input type="time" id="resTime" required>
             </div>
-            <div class="form-group">
-              <label class="form-label">Nombre de personnes</label>
-              <input type="number" id="resParty" min="1" max="50" value="2">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Nombre de personnes</label>
+            <div class="party-stepper">
+              <button type="button" class="step-btn" onclick="adjustParty(-1)">−</button>
+              <input type="number" id="resParty" class="step-input" min="1" max="50" value="2" readonly>
+              <button type="button" class="step-btn" onclick="adjustParty(1)">+</button>
             </div>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Notes <span style="color:var(--text-muted);font-weight:400;">(allergies, occasion, demandes…)</span></label>
+            <label class="form-label">Notes <span style="color:var(--text-muted);font-weight:400;">(demandes, placement, occasion…)</span></label>
             <textarea id="resNotes" rows="3" placeholder="Ex : Allergie aux noix · Anniversaire · Table en terrasse si possible…" style="resize:vertical;"></textarea>
           </div>
 
@@ -392,7 +453,8 @@
         const isJoy = !!r.joy_event_id;
 
         return `
-          <div class="res-card status-${r.status}${isJoy ? ' is-joy' : ''}" id="res-${r.id}">
+          <div class="res-card status-${r.status}${isJoy ? ' is-joy' : ''}" id="res-${r.id}"
+               onclick="openEdit(${r.id})" style="cursor:pointer">
             <div class="res-time">${r.time || '—'}</div>
 
             <div class="res-main">
@@ -402,17 +464,16 @@
               </div>
               <div class="res-meta">
                 <span>👥 ${r.party_size} pers.</span>
-                ${r.phone ? `<span>📞 <a href="tel:${r.phone}" style="color:var(--text-muted)">${r.phone}</a></span>` : ''}
+                ${r.phone ? `<span>📞 <a href="tel:${r.phone}" onclick="event.stopPropagation()" style="color:var(--text-muted)">${r.phone}</a></span>` : ''}
               </div>
               ${r.notes ? `<div class="res-notes">📝 ${r.notes}</div>` : ''}
             </div>
 
             ${tableHtml}
 
-            <div class="res-status-wrap">
+            <div class="res-status-wrap" onclick="event.stopPropagation()">
               <select class="res-status-select ${s.cls}"
-                      onchange="changeStatus(${r.id}, this.value)"
-                      onclick="event.stopPropagation()">
+                      onchange="changeStatus(${r.id}, this.value)">
                 <option value="confirmed" ${r.status==='confirmed'?'selected':''}>📋 Confirmée</option>
                 <option value="arrived"   ${r.status==='arrived'?'selected':''}>✅ Arrivée</option>
                 <option value="no_show"   ${r.status==='no_show'?'selected':''}>⚠️ No show</option>
@@ -420,7 +481,7 @@
               </select>
             </div>
 
-            <div class="res-actions">
+            <div class="res-actions" onclick="event.stopPropagation()">
               <button class="btn btn-secondary btn-sm" onclick="openEdit(${r.id})">✏️</button>
             </div>
           </div>`;
@@ -434,6 +495,14 @@
       if (r) r.status = status;
       render();
       showToast('Statut mis à jour', 'success');
+    }
+
+    // ── Stepper participants ───────────────────────────────────────────────
+    function adjustParty(delta) {
+      const input = document.getElementById('resParty');
+      const val = parseInt(input.value) || 2;
+      const next = Math.min(50, Math.max(1, val + delta));
+      input.value = next;
     }
 
     // ── Créer ─────────────────────────────────────────────────────────────
