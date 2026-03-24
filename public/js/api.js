@@ -59,6 +59,7 @@ async function buildNav(activePage) {
     { href: '/admin/dashboard.html',    label: '📊 Dashboard',     mobileLabel: 'Dashboard',   icon: '📊', key: 'dashboard' },
     { href: '/admin/equipe.html',       label: '👥 Équipe',         mobileLabel: 'Équipe',      icon: '👥', key: 'equipe' },
     { href: '/admin/stats.html',        label: '📈 Stats',          mobileLabel: 'Stats',       icon: '📈', key: 'stats' },
+    { href: '/admin/joy.html',          label: '🎉 Joy.io',         mobileLabel: 'Joy',         icon: '🎉', key: 'joy' },
     { href: '/admin/plan-tables.html',  label: '🗺️ Plan',          mobileLabel: 'Plan',        icon: '🗺️', key: 'plan' },
     { href: '/staff/taches.html',       label: '✅ Tâches',          mobileLabel: 'Tâches',      icon: '✅', key: 'taches' },
     { href: '/staff/reservations.html', label: '📋 Réservations',   mobileLabel: 'Résas',       icon: '📋', key: 'reservations' },
@@ -66,6 +67,7 @@ async function buildNav(activePage) {
   ];
   const managerMidiLinks = [
     { href: '/admin/dashboard.html',    label: '📊 Dashboard',     mobileLabel: 'Dashboard',   icon: '📊', key: 'dashboard' },
+    { href: '/admin/joy.html',          label: '🎉 Joy.io',         mobileLabel: 'Joy',         icon: '🎉', key: 'joy' },
     { href: '/staff/taches.html',       label: '✅ Mes Tâches',     mobileLabel: 'Tâches',      icon: '✅', key: 'taches' },
     { href: '/admin/plan-tables.html',  label: '🗺️ Plan',          mobileLabel: 'Plan',        icon: '🗺️', key: 'plan' },
     { href: '/staff/reservations.html', label: '📋 Réservations',   mobileLabel: 'Résas',       icon: '📋', key: 'reservations' },
@@ -73,6 +75,7 @@ async function buildNav(activePage) {
   ];
   const managerSoirLinks = [
     { href: '/admin/dashboard.html',    label: '📊 Dashboard',     mobileLabel: 'Dashboard',   icon: '📊', key: 'dashboard' },
+    { href: '/admin/joy.html',          label: '🎉 Joy.io',         mobileLabel: 'Joy',         icon: '🎉', key: 'joy' },
     { href: '/staff/taches.html',       label: '🌙 Mes Tâches',    mobileLabel: 'Tâches',      icon: '🌙', key: 'taches' },
     { href: '/admin/plan-tables.html',  label: '🗺️ Plan',          mobileLabel: 'Plan',        icon: '🗺️', key: 'plan' },
     { href: '/staff/reservations.html', label: '📋 Réservations',   mobileLabel: 'Résas',       icon: '📋', key: 'reservations' },

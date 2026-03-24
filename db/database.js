@@ -104,12 +104,30 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (created_by) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS joy_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    joy_uid TEXT UNIQUE NOT NULL,
+    customer_name TEXT,
+    participants INTEGER DEFAULT 0,
+    date TEXT,
+    time_start TEXT,
+    time_end TEXT,
+    space TEXT,
+    raw_summary TEXT,
+    raw_description TEXT,
+    status TEXT DEFAULT 'confirmed',
+    last_sync TEXT DEFAULT (datetime('now', 'localtime'))
+  );
 `);
 
 // ─── Migrations colonnes (BDs existantes) ──────────────────────────────────────
 try { db.exec("ALTER TABLE floor_tables ADD COLUMN zone TEXT DEFAULT 'salle_bas'"); } catch(e) {}
 try { db.exec("ALTER TABLE floor_tables ADD COLUMN is_decoration INTEGER DEFAULT 0"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN email TEXT"); } catch(e) {}
+
+// ─── Seed Joy iCal URL ─────────────────────────────────────────────────────────
+db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('joy_ical_url', 'https://prvt.re/RvuFyy')").run();
 
 // ─── Seed admin ────────────────────────────────────────────────────────────────
 if (!db.prepare('SELECT id FROM users WHERE role = ?').get('admin')) {
@@ -724,6 +742,40 @@ function getHrSummaryForUser(userId, from, to) {
   `).all(userId, from, to);
 }
 
+// ─── Joy.io Events ─────────────────────────────────────────────────────────────
+function upsertJoyEvent({ joy_uid, customer_name, participants, date, time_start, time_end, space, raw_summary, raw_description, status }) {
+  db.prepare(`
+    INSERT INTO joy_events (joy_uid, customer_name, participants, date, time_start, time_end, space, raw_summary, raw_description, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(joy_uid) DO UPDATE SET
+      customer_name   = excluded.customer_name,
+      participants    = excluded.participants,
+      date            = excluded.date,
+      time_start      = excluded.time_start,
+      time_end        = excluded.time_end,
+      space           = excluded.space,
+      raw_summary     = excluded.raw_summary,
+      raw_description = excluded.raw_description,
+      status          = excluded.status,
+      last_sync       = datetime('now', 'localtime')
+  `).run(joy_uid, customer_name || '', participants || 0, date || '', time_start || '', time_end || '', space || '', raw_summary || '', raw_description || '', status || 'confirmed');
+}
+
+function getJoyEvents({ date, upcoming, all: showAll } = {}) {
+  const today = new Date().toISOString().split('T')[0];
+  if (date) {
+    return db.prepare("SELECT * FROM joy_events WHERE date = ? ORDER BY time_start").all(date);
+  }
+  if (upcoming || showAll) {
+    return db.prepare("SELECT * FROM joy_events WHERE date >= ? ORDER BY date, time_start").all(today);
+  }
+  return db.prepare("SELECT * FROM joy_events ORDER BY date DESC, time_start LIMIT 100").all();
+}
+
+function deleteJoyEvent(id) {
+  db.prepare('DELETE FROM joy_events WHERE id = ?').run(id);
+}
+
 module.exports = {
   getUserByPin, getUserById, getAllUsers, createUser, updateUser, deleteUser,
   getTasksWithCompletions, getTaskById, getAllTasks, completeTask, uncompleteTask, createTask, updateTask, deactivateTask,
@@ -731,5 +783,6 @@ module.exports = {
   getReservationsByDate, getReservationById, createReservation, updateReservation, deleteReservation,
   getStats, getDailyLog, getDashboardData,
   createHrEvent, getHrEvents, deleteHrEvent, getHrSummaryForUser,
-  getSetting, setSetting
+  getSetting, setSetting,
+  upsertJoyEvent, getJoyEvents, deleteJoyEvent
 };

@@ -1,9 +1,122 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const { Server } = require('socket.io');
 const session = require('express-session');
 const path = require('path');
 const db = require('./db/database');
+
+// ─── Joy.io iCal Sync ──────────────────────────────────────────────────────────
+function fetchUrl(url, depth = 0) {
+  if (depth > 5) return Promise.reject(new Error('Too many redirects'));
+  return new Promise((resolve, reject) => {
+    const mod = url.startsWith('https') ? https : http;
+    const req = mod.get(url, { headers: { 'User-Agent': 'MosPub-Sync/1.0' } }, (res) => {
+      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
+        return fetchUrl(res.headers.location, depth + 1).then(resolve).catch(reject);
+      }
+      let data = '';
+      res.setEncoding('utf8');
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => resolve(data));
+    });
+    req.on('error', reject);
+    req.setTimeout(15000, () => { req.destroy(new Error('Timeout')); });
+  });
+}
+
+function unfoldIcal(text) {
+  // Unfold lines (continuation lines start with space or tab)
+  return text.replace(/\r\n[ \t]/g, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+}
+
+function getIcalProp(block, key) {
+  const re = new RegExp(`^${key}(?:;[^:]*)?:(.+)`, 'm');
+  const m = block.match(re);
+  if (!m) return '';
+  return m[1].trim()
+    .replace(/\\n/g, ' ').replace(/\\N/g, ' ')
+    .replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+}
+
+function parseDateTime(dtStr) {
+  // DTSTART;TZID=...:20260404T213000 or DTSTART:20260404T213000Z or DTSTART:20260404
+  const m = dtStr.replace(/Z$/, '').match(/(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2}))?/);
+  if (!m) return { date: '', time: '' };
+  return {
+    date: `${m[1]}-${m[2]}-${m[3]}`,
+    time: m[4] ? `${m[4]}:${m[5]}` : ''
+  };
+}
+
+function parseIcalEvents(raw) {
+  const text = unfoldIcal(raw);
+  const events = [];
+  const blocks = text.split(/BEGIN:VEVENT/i);
+  for (let i = 1; i < blocks.length; i++) {
+    const block = blocks[i].split(/END:VEVENT/i)[0];
+    const uid         = getIcalProp(block, 'UID');
+    const summary     = getIcalProp(block, 'SUMMARY');
+    const description = getIcalProp(block, 'DESCRIPTION');
+    const location    = getIcalProp(block, 'LOCATION');
+    const dtStartRaw  = getIcalProp(block, 'DTSTART');
+    const dtEndRaw    = getIcalProp(block, 'DTEND');
+    const icalStatus  = getIcalProp(block, 'STATUS');
+
+    if (!uid) continue;
+
+    const { date, time: timeStart } = parseDateTime(dtStartRaw);
+    const { time: timeEnd }         = parseDateTime(dtEndRaw);
+
+    // Extract participants (look for digits before pers/participant/invité)
+    const combined = summary + ' ' + description;
+    const partMatch = combined.match(/(\d+)\s*(?:participant|pers|invit|person)/i);
+    const participants = partMatch ? parseInt(partMatch[1]) : 0;
+
+    // Extract customer name: first segment before ' - ' in summary, or "Nom: xxx" in desc
+    let customerName = summary;
+    const nomMatch = description.match(/nom\s*[:]\s*([^\n\\,]+)/i);
+    if (nomMatch) {
+      customerName = nomMatch[1].trim();
+    } else if (summary.includes(' - ')) {
+      customerName = summary.split(' - ')[0].trim();
+    }
+
+    // Extract space: from location, or "Espace: xxx" / "Salle: xxx" in desc, or last segment of summary
+    let space = location || '';
+    const espaceMatch = description.match(/(?:espace|salle|space)\s*[:]\s*([^\n\\,]+)/i);
+    if (espaceMatch) space = espaceMatch[1].trim();
+    else if (!space && summary.includes(' - ')) {
+      const parts = summary.split(' - ');
+      space = parts[parts.length - 1].trim();
+    }
+
+    const status = (icalStatus || '').toLowerCase() === 'cancelled' ? 'cancelled' : 'confirmed';
+
+    events.push({ joy_uid: uid, customer_name: customerName, participants, date, time_start: timeStart, time_end: timeEnd, space, raw_summary: summary, raw_description: description, status });
+  }
+  return events;
+}
+
+async function syncJoyEvents() {
+  const url = db.getSetting('joy_ical_url');
+  if (!url) return { synced: 0, error: 'URL iCal non configurée' };
+  try {
+    const raw = await fetchUrl(url);
+    const events = parseIcalEvents(raw);
+    let synced = 0;
+    for (const ev of events) {
+      db.upsertJoyEvent(ev);
+      synced++;
+    }
+    db.setSetting('joy_last_sync', new Date().toISOString());
+    console.log(`[Joy.io] ✅ ${synced} événements synchronisés`);
+    return { synced, total: events.length };
+  } catch (err) {
+    console.error('[Joy.io] ❌ Erreur sync:', err.message);
+    return { error: err.message };
+  }
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -207,6 +320,40 @@ app.get('/api/admin/dashboard', requireAdminOrManager, (req, res) => {
 
 // ─── 15-minute alert system ────────────────────────────────────────────────────
 const alertedReservations = new Set();
+
+// ─── Joy.io Routes ─────────────────────────────────────────────────────────────
+app.get('/api/joy/events', requireAuth, (req, res) => {
+  const { date, upcoming } = req.query;
+  res.json(db.getJoyEvents({ date, upcoming: upcoming === '1', all: !date && !upcoming }));
+});
+
+app.post('/api/joy/sync', requireAdminOrManager, async (req, res) => {
+  const result = await syncJoyEvents();
+  res.json(result);
+});
+
+app.get('/api/joy/config', requireAdminOrManager, (req, res) => {
+  res.json({
+    url: db.getSetting('joy_ical_url') || '',
+    lastSync: db.getSetting('joy_last_sync') || null
+  });
+});
+
+app.put('/api/joy/config', requireAdmin, (req, res) => {
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ error: 'URL manquante' });
+  db.setSetting('joy_ical_url', url);
+  res.json({ ok: true });
+});
+
+app.delete('/api/joy/events/:id', requireAdminOrManager, (req, res) => {
+  db.deleteJoyEvent(req.params.id);
+  res.json({ ok: true });
+});
+
+// Auto-sync Joy.io au démarrage puis toutes les 30 min
+setTimeout(syncJoyEvents, 8000);
+setInterval(syncJoyEvents, 30 * 60 * 1000);
 
 setInterval(() => {
   const now = new Date();
