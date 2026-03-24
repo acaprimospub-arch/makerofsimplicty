@@ -206,6 +206,10 @@ function requireAdminOrManager(req, res, next) {
   if (req.session.userId && (req.session.role === 'admin' || req.session.role === 'manager')) return next();
   res.status(403).json({ error: 'Accès refusé' });
 }
+function requireCuisineManager(req, res, next) {
+  if (req.session.userId && (req.session.role === 'admin' || (req.session.role === 'manager' && req.session.shift === 'cuisine'))) return next();
+  res.status(403).json({ error: 'Accès refusé' });
+}
 
 // ─── Auth ──────────────────────────────────────────────────────────────────────
 app.post('/api/auth/login', (req, res) => {
@@ -280,6 +284,55 @@ app.put('/api/admin/tasks/:id', requireAdmin, (req, res) => {
 
 app.delete('/api/admin/tasks/:id', requireAdmin, (req, res) => {
   db.deactivateTask(req.params.id);
+  res.json({ ok: true });
+});
+
+// ─── Cuisine — Gestion tâches (chef) ───────────────────────────────────────────
+app.get('/api/cuisine/tasks', requireCuisineManager, (req, res) => {
+  res.json(db.getAllTasks().filter(t => t.domain === 'cuisine'));
+});
+
+app.post('/api/cuisine/tasks', requireCuisineManager, (req, res) => {
+  const id = db.createTask({ ...req.body, domain: 'cuisine' });
+  res.json(db.getTaskById(id));
+});
+
+app.put('/api/cuisine/tasks/:id', requireCuisineManager, (req, res) => {
+  db.updateTask(req.params.id, req.body);
+  res.json(db.getTaskById(req.params.id));
+});
+
+app.delete('/api/cuisine/tasks/:id', requireCuisineManager, (req, res) => {
+  db.deactivateTask(req.params.id);
+  res.json({ ok: true });
+});
+
+// ─── Cuisine — Completions (qui fait quoi) ─────────────────────────────────────
+app.get('/api/cuisine/completions', requireCuisineManager, (req, res) => {
+  const date = req.query.date || new Date().toISOString().split('T')[0];
+  res.json(db.getCuisineCompletionsByDate(date));
+});
+
+// ─── Cuisine — Planning ────────────────────────────────────────────────────────
+app.get('/api/cuisine/planning', requireAuth, (req, res) => {
+  const weekStart = req.query.weekStart;
+  if (!weekStart) return res.status(400).json({ error: 'weekStart requis' });
+  res.json(db.getCuisinePlanning(weekStart));
+});
+
+app.put('/api/cuisine/planning', requireCuisineManager, (req, res) => {
+  db.upsertCuisinePlanning(req.body);
+  const weekStart = req.body.week_start;
+  const data = db.getCuisinePlanning(weekStart);
+  io.emit('cuisine:planning:updated', { weekStart, data });
+  res.json({ ok: true });
+});
+
+app.delete('/api/cuisine/planning', requireCuisineManager, (req, res) => {
+  const { user_id, day_date, week_start } = req.body;
+  db.deleteCuisinePlanningShift(user_id, day_date);
+  const data = db.getCuisinePlanning(week_start);
+  io.emit('cuisine:planning:updated', { weekStart: week_start, data });
   res.json({ ok: true });
 });
 

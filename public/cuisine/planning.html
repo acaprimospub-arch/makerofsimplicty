@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Planning Cuisine — Mos Pub Mercière</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MOS">
+  <meta name="theme-color" content="#0b2d3e">
+  <style>
+    /* ── Week nav ── */
+    .week-nav { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:20px; }
+    .week-nav-btn { background:var(--bg-card); border:1px solid var(--border); color:var(--text-muted); border-radius:20px; padding:7px 16px; font-size:.82rem; cursor:pointer; transition:border-color .15s,color .15s; white-space:nowrap; }
+    .week-nav-btn:hover { border-color:var(--primary); color:var(--primary); }
+    .week-label { font-size:.95rem; font-weight:700; text-align:center; flex:1; }
+
+    /* ── Planning grid ── */
+    .planning-grid { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .planning-table { width:100%; border-collapse:collapse; min-width:600px; }
+    .planning-table th {
+      background:var(--bg-surface); border:1px solid var(--border);
+      padding:8px 6px; font-size:.75rem; font-weight:700; text-align:center;
+      color:var(--text-muted); white-space:nowrap;
+    }
+    .planning-table th.today-col { background:var(--primary-dim); color:var(--primary); border-color:var(--primary); }
+    .planning-table td { border:1px solid var(--border); padding:4px; vertical-align:top; min-width:80px; }
+    .staff-cell { background:var(--bg-card); padding:8px 10px; font-weight:700; font-size:.88rem; white-space:nowrap; }
+
+    /* ── Shift cell ── */
+    .shift-cell {
+      background:var(--bg-card); min-height:56px; cursor:pointer;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:2px; border-radius:4px; padding:4px; transition:background .12s;
+      text-align:center;
+    }
+    .shift-cell:hover { background:var(--bg-hover); }
+    .shift-cell.is-work {
+      background:rgba(205,164,67,.12); border:1.5px solid rgba(205,164,67,.35);
+    }
+    .shift-cell.is-off {
+      background:rgba(232,84,84,.07); border:1.5px solid rgba(232,84,84,.25);
+    }
+    .shift-cell.is-empty { border:1.5px dashed var(--border); }
+    .shift-cell .sc-time { font-size:.78rem; font-weight:700; color:var(--primary); line-height:1.2; }
+    .shift-cell .sc-off { font-size:.75rem; font-weight:600; color:var(--danger); }
+    .shift-cell .sc-empty { font-size:.7rem; color:var(--text-muted); }
+    .today-col .shift-cell.is-work { background:rgba(205,164,67,.2); border-color:var(--primary); }
+
+    /* ── Read only badge ── */
+    .readonly-badge {
+      display:inline-flex; align-items:center; gap:5px; font-size:.75rem;
+      color:var(--text-muted); background:var(--bg-surface); border:1px solid var(--border);
+      border-radius:20px; padding:4px 12px; margin-bottom:14px;
+    }
+
+    /* ── Drawer ── */
+    .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s; }
+    .drawer-backdrop.open { opacity:1; pointer-events:auto; }
+    .drawer { position:fixed; bottom:0; left:0; right:0; z-index:201; background:var(--bg-card); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.5); transform:translateY(102%); transition:transform .3s cubic-bezier(.32,.72,0,1); max-height:92dvh; display:flex; flex-direction:column; }
+    .drawer.open { transform:translateY(0); }
+    @media (min-width:641px) {
+      .drawer { bottom:auto; top:50%; left:50%; right:auto; transform:translate(-50%,-40%); opacity:0; border-radius:var(--radius); width:100%; max-width:380px; transition:transform .25s ease,opacity .25s ease; }
+      .drawer.open { transform:translate(-50%,-50%); opacity:1; }
+    }
+    .drawer-handle { width:40px; height:4px; background:rgba(255,255,255,.15); border-radius:2px; margin:10px auto 0; flex-shrink:0; }
+    @media (min-width:641px) { .drawer-handle { display:none; } }
+    .drawer-head { display:flex; align-items:center; justify-content:space-between; padding:14px 20px 12px; flex-shrink:0; border-bottom:1px solid var(--border); }
+    .drawer-title { font-size:1rem; font-weight:700; }
+    .drawer-close { width:30px; height:30px; border-radius:50%; background:var(--bg-surface); color:var(--text-muted); display:flex; align-items:center; justify-content:center; font-size:.9rem; cursor:pointer; border:none; }
+    .drawer-body { overflow-y:auto; padding:16px 20px; flex:1; }
+    .drawer-footer { display:flex; gap:8px; padding:10px 20px calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); flex-shrink:0; }
+    .drawer-footer .btn { flex:1; justify-content:center; min-height:46px; }
+    .frow { display:flex; flex-direction:column; gap:14px; }
+    .fgroup { display:flex; flex-direction:column; gap:6px; }
+    .fgroup label { font-size:.82rem; font-weight:600; color:var(--text-muted); }
+    .f2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .off-toggle { display:flex; align-items:center; gap:12px; background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 16px; cursor:pointer; }
+    .off-toggle input { width:18px; height:18px; cursor:pointer; accent-color:var(--danger); }
+    .off-toggle label { cursor:pointer; font-size:.9rem; }
+  </style>
+</head>
+<body>
+  <nav class="nav" id="nav"></nav>
+
+  <div class="page">
+    <div class="container-sm">
+
+      <div class="page-header">
+        <div>
+          <div class="page-title">📅 Planning Cuisine</div>
+          <div class="page-subtitle" id="weekSubtitle"></div>
+        </div>
+      </div>
+
+      <div class="week-nav">
+        <button class="week-nav-btn" onclick="shiftWeek(-1)">← Semaine préc.</button>
+        <span class="week-label" id="weekLabel"></span>
+        <button class="week-nav-btn" onclick="shiftWeek(1)">Semaine suiv. →</button>
+      </div>
+
+      <div id="readonlyBadge" class="readonly-badge hidden">👁 Lecture seule</div>
+
+      <div class="planning-grid">
+        <table class="planning-table" id="planningTable">
+          <thead id="planningHead"></thead>
+          <tbody id="planningBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Backdrop -->
+  <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+
+  <!-- Shift editor drawer -->
+  <div class="drawer" id="shiftDrawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-head">
+      <div class="drawer-title" id="shiftDrawerTitle">Modifier le shift</div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <form id="shiftForm" onsubmit="saveShift(event)">
+        <input type="hidden" id="shiftUserId">
+        <input type="hidden" id="shiftDayDate">
+        <input type="hidden" id="shiftWeekStart">
+        <div class="frow">
+          <label class="off-toggle" onclick="toggleOff()">
+            <input type="checkbox" id="shiftIsOff">
+            <span>❌ Jour de repos</span>
+          </label>
+          <div id="shiftTimeFields" class="frow">
+            <div class="f2">
+              <div class="fgroup"><label>Début</label><input type="time" id="shiftStart" value="09:00"></div>
+              <div class="fgroup"><label>Fin</label><input type="time" id="shiftEnd" value="17:00"></div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-secondary" id="shiftBtnClear" onclick="clearShift()" style="flex:0 0 auto;padding:0 16px">🗑</button>
+      <button class="btn btn-secondary" onclick="closeDrawer()">Annuler</button>
+      <button type="submit" form="shiftForm" class="btn btn-primary">Enregistrer</button>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/api.js"></script>
+  <script>
+    buildNav('planning');
+    const socket = io();
+
+    let currentWeekStart = getMonday(new Date());
+    let planningData = { users: [], shifts: [] };
+    let isChef = false;
+    let editUserId = null, editDayDate = null;
+
+    const DAYS = [
+      { label: 'Lundi',     short: 'Lun' },
+      { label: 'Mardi',     short: 'Mar' },
+      { label: 'Mercredi',  short: 'Mer' },
+      { label: 'Jeudi',     short: 'Jeu' },
+      { label: 'Vendredi',  short: 'Ven' },
+      { label: 'Samedi',    short: 'Sam' },
+      { label: 'Dimanche',  short: 'Dim' },
+    ];
+
+    function getMonday(d) {
+      const dt = new Date(d);
+      const day = dt.getDay();
+      const diff = (day === 0 ? -6 : 1 - day);
+      dt.setDate(dt.getDate() + diff);
+      return dt.toISOString().split('T')[0];
+    }
+
+    function addDays(dateStr, n) {
+      const d = new Date(dateStr);
+      d.setDate(d.getDate() + n);
+      return d.toISOString().split('T')[0];
+    }
+
+    function fmtWeekLabel(weekStart) {
+      const end = addDays(weekStart, 6);
+      const s = new Date(weekStart);
+      const e = new Date(end);
+      return `${s.getDate()} ${s.toLocaleDateString('fr-FR',{month:'short'})} → ${e.getDate()} ${e.toLocaleDateString('fr-FR',{month:'short',year:'numeric'})}`;
+    }
+
+    function shiftWeek(d) {
+      currentWeekStart = addDays(currentWeekStart, d * 7);
+      load();
+    }
+
+    async function init() {
+      const user = await api.get('/api/auth/me');
+      if (!user) return;
+      isChef = user.role === 'admin' || (user.role === 'manager' && user.shift === 'cuisine');
+      if (!isChef) document.getElementById('readonlyBadge').classList.remove('hidden');
+      await load();
+    }
+
+    async function load() {
+      document.getElementById('weekLabel').textContent = fmtWeekLabel(currentWeekStart);
+      document.getElementById('weekSubtitle').textContent = `Semaine du ${formatDate(currentWeekStart)}`;
+      const data = await api.get(`/api/cuisine/planning?weekStart=${currentWeekStart}`);
+      if (!data) return;
+      planningData = data;
+      render();
+    }
+
+    function render() {
+      const todayStr = today();
+      const head = document.getElementById('planningHead');
+      const body = document.getElementById('planningBody');
+
+      const dayDates = DAYS.map((_, i) => addDays(currentWeekStart, i));
+
+      // Header
+      head.innerHTML = `<tr>
+        <th style="min-width:90px;text-align:left;padding-left:10px">Staff</th>
+        ${DAYS.map((d, i) => {
+          const dd = dayDates[i];
+          const isToday = dd === todayStr;
+          return `<th class="${isToday ? 'today-col' : ''}">${d.short}<br><span style="font-weight:400;font-size:.68rem">${dd.slice(5).replace('-','/')}</span></th>`;
+        }).join('')}
+      </tr>`;
+
+      // Body
+      body.innerHTML = planningData.users.map(u => `
+        <tr>
+          <td class="staff-cell">${u.name}</td>
+          ${dayDates.map(dd => {
+            const shift = planningData.shifts.find(s => s.user_id === u.id && s.day_date === dd);
+            const isToday = dd === todayStr;
+            let cellHtml, cellClass;
+
+            if (!shift) {
+              cellClass = 'shift-cell is-empty';
+              cellHtml = isChef ? `<span class="sc-empty">+</span>` : '';
+            } else if (shift.is_off) {
+              cellClass = 'shift-cell is-off';
+              cellHtml = `<span class="sc-off">Repos</span>`;
+            } else {
+              cellClass = 'shift-cell is-work';
+              const s = shift.start_time ? shift.start_time.slice(0,5) : '';
+              const e = shift.end_time   ? shift.end_time.slice(0,5)   : '';
+              cellHtml = `<span class="sc-time">${s}<br>${e}</span>`;
+            }
+
+            const onclick = isChef ? `onclick="openShiftEditor(${u.id},'${dd}','${u.name}')"` : '';
+            return `<td class="${isToday ? 'today-col' : ''}"><div class="${cellClass}" ${onclick}>${cellHtml}</div></td>`;
+          }).join('')}
+        </tr>
+      `).join('');
+    }
+
+    // ── Shift editor ──────────────────────────────────────────────────────────
+    function openShiftEditor(userId, dayDate, userName) {
+      if (!isChef) return;
+      editUserId  = userId;
+      editDayDate = dayDate;
+
+      const d = new Date(dayDate);
+      const dayName = d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+      document.getElementById('shiftDrawerTitle').textContent = `${userName} — ${dayName}`;
+      document.getElementById('shiftUserId').value   = userId;
+      document.getElementById('shiftDayDate').value  = dayDate;
+      document.getElementById('shiftWeekStart').value = currentWeekStart;
+
+      const shift = planningData.shifts.find(s => s.user_id === userId && s.day_date === dayDate);
+      const isOff = shift?.is_off;
+      document.getElementById('shiftIsOff').checked = !!isOff;
+      document.getElementById('shiftStart').value   = shift?.start_time?.slice(0,5) || '09:00';
+      document.getElementById('shiftEnd').value     = shift?.end_time?.slice(0,5)   || '17:00';
+      document.getElementById('shiftTimeFields').style.display = isOff ? 'none' : 'flex';
+
+      document.getElementById('drawerBackdrop').classList.add('open');
+      document.getElementById('shiftDrawer').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function toggleOff() {
+      setTimeout(() => {
+        const isOff = document.getElementById('shiftIsOff').checked;
+        document.getElementById('shiftTimeFields').style.display = isOff ? 'none' : 'flex';
+      }, 10);
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawerBackdrop').classList.remove('open');
+      document.getElementById('shiftDrawer').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    async function saveShift(e) {
+      e.preventDefault();
+      const userId    = parseInt(document.getElementById('shiftUserId').value);
+      const dayDate   = document.getElementById('shiftDayDate').value;
+      const weekStart = document.getElementById('shiftWeekStart').value;
+      const isOff     = document.getElementById('shiftIsOff').checked;
+      const startTime = document.getElementById('shiftStart').value;
+      const endTime   = document.getElementById('shiftEnd').value;
+
+      await api.put('/api/cuisine/planning', {
+        user_id:    userId,
+        day_date:   dayDate,
+        week_start: weekStart,
+        start_time: isOff ? null : startTime,
+        end_time:   isOff ? null : endTime,
+        is_off:     isOff ? 1 : 0,
+      });
+      closeDrawer();
+      await load();
+      showToast('Planning mis à jour ✓', 'success');
+    }
+
+    async function clearShift() {
+      if (!confirm('Effacer ce créneau ?')) return;
+      const userId  = parseInt(document.getElementById('shiftUserId').value);
+      const dayDate = document.getElementById('shiftDayDate').value;
+      const ws      = document.getElementById('shiftWeekStart').value;
+      const r = await fetch('/api/cuisine/planning', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, day_date: dayDate, week_start: ws })
+      });
+      if (r.status === 401) { window.location.href = '/'; return; }
+      closeDrawer();
+      await load();
+      showToast('Créneau supprimé', 'info');
+    }
+
+    socket.on('cuisine:planning:updated', ({ weekStart, data }) => {
+      if (weekStart === currentWeekStart) {
+        planningData = data;
+        render();
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

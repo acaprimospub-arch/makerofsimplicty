@@ -43,7 +43,8 @@
       "Bash(node --check server.js)",
       "Bash(node --experimental-sqlite -e \"require\\(''''./server.js''''\\)\")",
       "Bash(pkill -f 'node --experimental-sqlite')",
-      "Bash(grep -E \"gitignore|git$\")"
+      "Bash(grep -E \"gitignore|git$\")",
+      "Bash(timeout 3 node --experimental-sqlite server.js)"
     ]
   }
 }

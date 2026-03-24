@@ -37,6 +37,45 @@
 
     .subsection-count { font-size: 0.72rem; color: var(--text-muted); font-weight: 400; margin-left: 8px; }
     .subsection-count .done-count { color: var(--gold); font-weight: 600; }
+
+    /* ── Qui fait quoi ── */
+    .team-overview { margin-top: 28px; }
+    .team-overview-title { font-size: .82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+    .team-member-row { display: flex; align-items: center; gap: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 8px; }
+    .tm-name { font-weight: 700; font-size: .95rem; flex: 1; }
+    .tm-count { font-size: .82rem; color: var(--text-muted); }
+    .tm-count b { color: var(--text); }
+    .tm-bar { flex: 2; height: 6px; background: var(--bg-surface); border-radius: 3px; overflow: hidden; }
+    .tm-bar-fill { height: 100%; border-radius: 3px; background: var(--primary); transition: width .4s; }
+
+    /* ── Gestion tâches (chef) ── */
+    .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s; }
+    .drawer-backdrop.open { opacity:1; pointer-events:auto; }
+    .drawer { position:fixed; bottom:0; left:0; right:0; z-index:201; background:var(--bg-card); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.5); transform:translateY(102%); transition:transform .3s cubic-bezier(.32,.72,0,1); max-height:92dvh; display:flex; flex-direction:column; }
+    .drawer.open { transform:translateY(0); }
+    @media (min-width:641px) {
+      .drawer { bottom:auto; top:50%; left:50%; right:auto; transform:translate(-50%,-40%); opacity:0; border-radius:var(--radius); width:100%; max-width:480px; transition:transform .25s ease,opacity .25s ease; }
+      .drawer.open { transform:translate(-50%,-50%); opacity:1; }
+    }
+    .drawer-handle { width:40px; height:4px; background:rgba(255,255,255,.15); border-radius:2px; margin:10px auto 0; flex-shrink:0; }
+    @media (min-width:641px) { .drawer-handle { display:none; } }
+    .drawer-head { display:flex; align-items:center; justify-content:space-between; padding:14px 20px 12px; flex-shrink:0; border-bottom:1px solid var(--border); }
+    .drawer-title { font-size:1rem; font-weight:700; }
+    .drawer-close { width:30px; height:30px; border-radius:50%; background:var(--bg-surface); color:var(--text-muted); display:flex; align-items:center; justify-content:center; font-size:.9rem; cursor:pointer; border:none; }
+    .drawer-body { overflow-y:auto; padding:16px 20px; flex:1; }
+    .drawer-footer { display:flex; gap:8px; padding:10px 20px calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); flex-shrink:0; }
+    .drawer-footer .btn { flex:1; justify-content:center; min-height:46px; }
+    .frow { display:flex; flex-direction:column; gap:14px; }
+    .fgroup { display:flex; flex-direction:column; gap:6px; }
+    .fgroup label { font-size:.82rem; font-weight:600; color:var(--text-muted); }
+    .task-manage-list { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+    .task-manage-item { display:flex; align-items:center; gap:10px; background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 14px; }
+    .task-manage-desc { flex:1; font-size:.88rem; }
+    .task-manage-cat { font-size:.7rem; color:var(--text-muted); margin-top:2px; }
+    .task-manage-actions { display:flex; gap:6px; flex-shrink:0; }
+    .btn-icon { width:32px; height:32px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--bg-card); color:var(--text-muted); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:.85rem; }
+    .btn-icon:hover { border-color:var(--primary); color:var(--primary); }
+    .btn-icon.danger:hover { border-color:var(--danger); color:var(--danger); }
   </style>
 </head>
 <body>
@@ -82,6 +121,72 @@
       </div>
 
       <div id="tasksList"></div>
+
+      <!-- Qui fait quoi (chef only) -->
+      <div class="team-overview hidden" id="teamOverview">
+        <div class="team-overview-title">👥 Qui fait quoi aujourd'hui</div>
+        <div id="teamOverviewList"></div>
+      </div>
+
+      <!-- Gestion tâches (chef only) -->
+      <div class="hidden" id="chefControls" style="margin-top:20px;">
+        <button class="btn btn-secondary" style="width:100%" onclick="openTaskManager()">⚙️ Gérer les tâches</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Backdrop -->
+  <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+
+  <!-- Drawer: gestion tâches -->
+  <div class="drawer" id="taskManagerDrawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-head">
+      <div class="drawer-title">⚙️ Gestion des tâches</div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <button class="btn btn-primary" style="width:100%;margin-bottom:14px" onclick="openTaskForm()">+ Nouvelle tâche</button>
+      <div class="task-manage-list" id="taskManageList"></div>
+    </div>
+  </div>
+
+  <!-- Drawer: formulaire tâche -->
+  <div class="drawer" id="taskFormDrawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-head">
+      <div class="drawer-title" id="taskFormTitle">Nouvelle tâche</div>
+      <button class="drawer-close" onclick="closeTaskForm()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <form id="taskForm" onsubmit="saveTask(event)">
+        <input type="hidden" id="taskId">
+        <div class="frow">
+          <div class="fgroup">
+            <label>Description *</label>
+            <input type="text" id="taskDesc" placeholder="Ex : Nettoyer le grill" required autocomplete="off">
+          </div>
+          <div class="fgroup">
+            <label>Catégorie</label>
+            <select id="taskCat">
+              <option value="fermeture">🔒 Fermeture</option>
+              <option value="nettoyage">🧽 Nettoyage</option>
+            </select>
+          </div>
+          <div class="fgroup">
+            <label>Section</label>
+            <input type="text" id="taskSection" placeholder="Ex : Cuisine" value="Cuisine">
+          </div>
+          <div class="fgroup">
+            <label>Sous-section</label>
+            <input type="text" id="taskSubsection" placeholder="Ex : Matériel de cuisson">
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-secondary" onclick="closeTaskForm()">Annuler</button>
+      <button type="submit" form="taskForm" class="btn btn-primary">Enregistrer</button>
     </div>
   </div>
 
@@ -111,6 +216,8 @@
       currentUser = await api.get('/api/auth/me');
       if (!currentUser) return;
 
+      isChef = currentUser.role === 'admin' || (currentUser.role === 'manager' && currentUser.shift === 'cuisine');
+
       document.getElementById('tabBar').innerHTML = TABS.map(t => `
         <button class="tab ${t.key === currentTab ? 'active' : ''}"
                 id="tab-${t.key}"
@@ -118,6 +225,12 @@
       `).join('');
 
       await loadTasks();
+
+      if (isChef) {
+        document.getElementById('teamOverview').classList.remove('hidden');
+        document.getElementById('chefControls').classList.remove('hidden');
+        await loadTeamOverview();
+      }
     }
 
     async function loadTasks() {
@@ -261,7 +374,127 @@
       }
       task.completers = names.join(', ') || null;
       renderTab();
+      if (isChef) loadTeamOverview();
     });
+
+    // ── Gestion tâches (chef) ──────────────────────────────────────────────────
+    let managedTasks = [];
+    let editingTaskId = null;
+    let isChef = false;
+
+    function openDrawer(id) {
+      document.getElementById('drawerBackdrop').classList.add('open');
+      document.getElementById(id).classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeDrawer() {
+      document.getElementById('drawerBackdrop').classList.remove('open');
+      document.querySelectorAll('.drawer').forEach(d => d.classList.remove('open'));
+      document.body.style.overflow = '';
+    }
+    function closeTaskForm() {
+      closeDrawer();
+      setTimeout(() => openTaskManager(), 50);
+    }
+
+    async function openTaskManager() {
+      closeDrawer();
+      const data = await api.get('/api/cuisine/tasks');
+      if (!data) return;
+      managedTasks = data;
+      renderTaskManageList();
+      openDrawer('taskManagerDrawer');
+    }
+
+    function renderTaskManageList() {
+      const catLabel = { fermeture: '🔒 Fermeture', nettoyage: '🧽 Nettoyage' };
+      const el = document.getElementById('taskManageList');
+      if (!managedTasks.length) {
+        el.innerHTML = '<div style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:20px">Aucune tâche</div>';
+        return;
+      }
+      el.innerHTML = managedTasks.map(t => `
+        <div class="task-manage-item">
+          <div style="flex:1;min-width:0">
+            <div class="task-manage-desc">${t.description}</div>
+            <div class="task-manage-cat">${catLabel[t.category] || t.category} · ${t.section || ''} · ${t.subsection || ''}</div>
+          </div>
+          <div class="task-manage-actions">
+            <button class="btn-icon" onclick="openTaskForm(${t.id})" title="Modifier">✏️</button>
+            <button class="btn-icon danger" onclick="deleteTask(${t.id})" title="Supprimer">🗑</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openTaskForm(id = null) {
+      closeDrawer();
+      editingTaskId = id;
+      document.getElementById('taskFormTitle').textContent = id ? 'Modifier la tâche' : 'Nouvelle tâche';
+      if (id) {
+        const t = managedTasks.find(x => x.id === id);
+        if (t) {
+          document.getElementById('taskId').value = t.id;
+          document.getElementById('taskDesc').value = t.description;
+          document.getElementById('taskCat').value = t.category;
+          document.getElementById('taskSection').value = t.section || '';
+          document.getElementById('taskSubsection').value = t.subsection || '';
+        }
+      } else {
+        document.getElementById('taskId').value = '';
+        document.getElementById('taskDesc').value = '';
+        document.getElementById('taskCat').value = 'fermeture';
+        document.getElementById('taskSection').value = 'Cuisine';
+        document.getElementById('taskSubsection').value = '';
+      }
+      openDrawer('taskFormDrawer');
+      setTimeout(() => document.getElementById('taskDesc').focus(), 350);
+    }
+
+    async function saveTask(e) {
+      e.preventDefault();
+      const id = document.getElementById('taskId').value;
+      const body = {
+        description: document.getElementById('taskDesc').value.trim(),
+        category:    document.getElementById('taskCat').value,
+        section:     document.getElementById('taskSection').value.trim() || 'Cuisine',
+        subsection:  document.getElementById('taskSubsection').value.trim() || null,
+        domain:      'cuisine',
+      };
+      if (id) {
+        await api.put(`/api/cuisine/tasks/${id}`, body);
+        showToast('Tâche modifiée ✓', 'success');
+      } else {
+        await api.post('/api/cuisine/tasks', body);
+        showToast('Tâche créée ✓', 'success');
+      }
+      closeDrawer();
+      await loadTasks();
+    }
+
+    async function deleteTask(id) {
+      if (!confirm('Supprimer cette tâche ?')) return;
+      await api.delete(`/api/cuisine/tasks/${id}`);
+      showToast('Tâche supprimée', 'info');
+      closeDrawer();
+      await loadTasks();
+    }
+
+    // ── Qui fait quoi ─────────────────────────────────────────────────────────
+    async function loadTeamOverview() {
+      const data = await api.get(`/api/cuisine/completions?date=${today()}`);
+      if (!data) return;
+      const el = document.getElementById('teamOverviewList');
+      el.innerHTML = data.map(m => {
+        const pct = m.total > 0 ? Math.round(m.done / m.total * 100) : 0;
+        return `
+          <div class="team-member-row">
+            <div class="tm-name">${m.name}</div>
+            <div class="tm-bar"><div class="tm-bar-fill" style="width:${pct}%"></div></div>
+            <div class="tm-count"><b>${m.done}</b>/${m.total}</div>
+          </div>`;
+      }).join('');
+    }
 
     init();
   </script>

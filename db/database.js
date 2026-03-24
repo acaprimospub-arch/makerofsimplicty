@@ -149,6 +149,22 @@ try {
   `);
 } catch(e) {}
 
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS cuisine_planning (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      week_start TEXT NOT NULL,
+      day_date TEXT NOT NULL,
+      start_time TEXT,
+      end_time TEXT,
+      is_off INTEGER DEFAULT 0,
+      UNIQUE(user_id, day_date),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+} catch(e) {}
+
 // ─── Nettoyage doublons Joy au démarrage ───────────────────────────────────────
 // Supprime les résas Joy en double (garde celle avec table assignée ou la plus récente)
 db.exec(`
@@ -190,6 +206,9 @@ const _seedUsers = [
   { name: 'Rayan',    pin: '1369', role: 'staff',   shift: 'soir' },
   { name: 'Thibaut',  pin: '0402', role: 'staff',   shift: 'soir' },
   { name: 'Pierre',   pin: '3945', role: 'manager', shift: 'cuisine' },
+  { name: 'Noah',   pin: '5284', role: 'staff', shift: 'cuisine' },
+  { name: 'Thomas', pin: '7163', role: 'staff', shift: 'cuisine' },
+  { name: 'Moha',   pin: '8452', role: 'staff', shift: 'cuisine' },
 ];
 const _insertUser = db.prepare('INSERT OR IGNORE INTO users (name, pin, role, shift) VALUES (?, ?, ?, ?)');
 for (const u of _seedUsers) _insertUser.run(u.name, u.pin, u.role, u.shift);
@@ -1020,6 +1039,46 @@ function upsertShiftMessage({ from_shift, date, message, author_id, author_name 
   return db.prepare("SELECT * FROM shift_messages WHERE from_shift=? AND date=?").get(from_shift, date);
 }
 
+// ─── Cuisine Planning ──────────────────────────────────────────────────────────
+function getCuisinePlanning(weekStart) {
+  // Get all cuisine users with their shifts for this week
+  const users = db.prepare("SELECT id, name FROM users WHERE shift = 'cuisine' AND active = 1 ORDER BY role DESC, name").all();
+  const shifts = db.prepare("SELECT * FROM cuisine_planning WHERE week_start = ?").all(weekStart);
+  return { users, shifts };
+}
+
+function upsertCuisinePlanning({ user_id, week_start, day_date, start_time, end_time, is_off }) {
+  db.prepare(`
+    INSERT INTO cuisine_planning (user_id, week_start, day_date, start_time, end_time, is_off)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(user_id, day_date) DO UPDATE SET
+      week_start = excluded.week_start,
+      start_time = excluded.start_time,
+      end_time   = excluded.end_time,
+      is_off     = excluded.is_off
+  `).run(user_id, week_start, day_date, start_time || null, end_time || null, is_off ? 1 : 0);
+}
+
+function deleteCuisinePlanningShift(userId, dayDate) {
+  db.prepare("DELETE FROM cuisine_planning WHERE user_id = ? AND day_date = ?").run(userId, dayDate);
+}
+
+function getCuisineCompletionsByDate(date) {
+  const users = db.prepare("SELECT id, name FROM users WHERE shift = 'cuisine' AND active = 1 ORDER BY role DESC, name").all();
+  const total = db.prepare("SELECT COUNT(*) as c FROM tasks WHERE domain = 'cuisine' AND active = 1").get().c;
+  const completions = db.prepare(`
+    SELECT tc.user_id, COUNT(*) as done
+    FROM task_completions tc
+    JOIN tasks t ON tc.task_id = t.id
+    WHERE tc.date = ? AND t.domain = 'cuisine' AND t.active = 1
+    GROUP BY tc.user_id
+  `).all(date);
+  return users.map(u => {
+    const found = completions.find(c => c.user_id === u.id);
+    return { ...u, done: found?.done || 0, total };
+  });
+}
+
 module.exports = {
   getUserByPin, getUserById, getAllUsers, createUser, updateUser, deleteUser,
   getTasksWithCompletions, getTaskById, getAllTasks, completeTask, uncompleteTask, createTask, updateTask, deactivateTask,
@@ -1030,5 +1089,7 @@ module.exports = {
   getSetting, setSetting,
   upsertJoyEvent, upsertReservationFromJoy, cleanupJoyReservationDuplicates, cleanupStaleJoyReservations,
   getJoyEvents, deleteJoyEvent, assignTableToJoyEvent,
-  getShiftMessages, upsertShiftMessage
+  getShiftMessages, upsertShiftMessage,
+  getCuisinePlanning, upsertCuisinePlanning, deleteCuisinePlanningShift,
+  getCuisineCompletionsByDate,
 };
