@@ -19,8 +19,8 @@
       gap: 12px;
       margin-bottom: 24px;
     }
-    @media (max-width: 1000px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
-    @media (max-width: 600px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 900px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
 
     .kpi-chip {
       background: var(--bg-card);
@@ -193,6 +193,66 @@
     .cuisine-info { flex: 1; min-width: 0; }
     .cuisine-name { font-size: 0.85rem; font-weight: 500; }
     .cuisine-val { font-size: 0.78rem; color: var(--text-muted); }
+
+    /* ── Séparateurs de section ── */
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 28px 0 18px;
+    }
+    .section-divider-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .section-divider-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      white-space: nowrap;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      background: var(--bg-card);
+    }
+    .section-divider-label.cuisine-label {
+      color: #f59e0b;
+      border-color: rgba(245,158,11,0.4);
+      background: rgba(245,158,11,0.08);
+    }
+
+    /* ── Nav cuisine rapide ── */
+    .cuisine-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .cuisine-nav a {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      transition: all .15s;
+    }
+    .cuisine-nav a:hover {
+      border-color: rgba(245,158,11,0.5);
+      color: #f59e0b;
+      background: rgba(245,158,11,0.06);
+    }
+    .cuisine-nav a .cn-icon { font-size: 1.4rem; }
+    @media (max-width: 600px) { .cuisine-nav a { padding: 10px 6px; } }
   </style>
 </head>
 <body>
@@ -217,8 +277,15 @@
         </div>
       </div>
 
-      <!-- KPI chips -->
-      <div class="kpi-grid" id="kpiGrid">
+      <!-- ══════════════════ PARTIE SALLE ══════════════════ -->
+      <div class="section-divider">
+        <div class="section-divider-line"></div>
+        <div class="section-divider-label">🍽️ Salle</div>
+        <div class="section-divider-line"></div>
+      </div>
+
+      <!-- KPI Salle -->
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="kpiGrid">
         <div class="kpi-chip blue">
           <div class="kpi-label">📅 Réservations</div>
           <div class="kpi-value" id="kpiTotal">—</div>
@@ -239,17 +306,12 @@
           <div class="kpi-value" id="kpiTasks">—</div>
           <div class="kpi-sub" id="kpiTasksSub">complétées</div>
         </div>
-        <div class="kpi-chip cuisine">
-          <div class="kpi-label">🍳 Tâches cuisine</div>
-          <div class="kpi-value" id="kpiCuisine">—</div>
-          <div class="kpi-sub" id="kpiCuisineSub">complétées</div>
-        </div>
       </div>
 
       <!-- Section alertes no-show -->
       <div id="alertsSection"></div>
 
-      <!-- Grille principale -->
+      <!-- Grille salle -->
       <div class="dashboard-grid">
 
         <!-- Col 1 : tâches salle -->
@@ -289,24 +351,9 @@
           </div>
         </div>
 
-        <!-- Col 3 : cuisine + stats résas rapides -->
-        <div style="display:flex;flex-direction:column;gap:20px;">
-
-          <div class="card">
-            <div class="card-header" style="flex-direction:column;align-items:flex-start;gap:10px;">
-              <div class="card-title">🍳 Cuisine</div>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;">
-                <a href="/cuisine/dashboard.html" class="btn btn-secondary btn-sm" style="flex:1;text-align:center;white-space:nowrap;">📊 Dash</a>
-                <a href="/cuisine/taches.html"    class="btn btn-secondary btn-sm" style="flex:1;text-align:center;white-space:nowrap;">✅ Tâches</a>
-                <a href="/cuisine/planning.html"  class="btn btn-secondary btn-sm" style="flex:1;text-align:center;white-space:nowrap;">📅 Planning</a>
-              </div>
-            </div>
-            <div id="cuisineSection">
-              <div class="empty-state"><div class="empty-state-icon">🍳</div><div class="empty-state-text">Chargement…</div></div>
-            </div>
-          </div>
-
-          <div class="card">
+        <!-- Col 3 : stats résas -->
+        <div>
+          <div class="card" style="height:100%;">
             <div class="card-header">
               <div class="card-title">📊 Résas par statut</div>
             </div>
@@ -314,7 +361,55 @@
               <div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-text">Chargement…</div></div>
             </div>
           </div>
+        </div>
 
+      </div>
+
+      <!-- ══════════════════ PARTIE CUISINE ══════════════════ -->
+      <div class="section-divider">
+        <div class="section-divider-line"></div>
+        <div class="section-divider-label cuisine-label">🍳 Cuisine</div>
+        <div class="section-divider-line"></div>
+      </div>
+
+      <!-- Nav rapide cuisine -->
+      <div class="cuisine-nav">
+        <a href="/cuisine/dashboard.html">
+          <span class="cn-icon">📊</span>
+          Dashboard
+        </a>
+        <a href="/cuisine/taches.html">
+          <span class="cn-icon">✅</span>
+          Tâches
+        </a>
+        <a href="/cuisine/planning.html">
+          <span class="cn-icon">📅</span>
+          Planning
+        </a>
+      </div>
+
+      <!-- KPI Cuisine + contenu du jour -->
+      <div class="dashboard-grid" style="grid-template-columns:1fr 2fr;">
+
+        <!-- KPI cuisine -->
+        <div>
+          <div class="kpi-chip cuisine" style="height:100%;box-sizing:border-box;">
+            <div class="kpi-label">🍳 Tâches cuisine</div>
+            <div class="kpi-value" id="kpiCuisine">—</div>
+            <div class="kpi-sub" id="kpiCuisineSub">complétées</div>
+          </div>
+        </div>
+
+        <!-- Détail cuisine du jour -->
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Aujourd'hui</div>
+            </div>
+            <div id="cuisineSection">
+              <div class="empty-state"><div class="empty-state-icon">🍳</div><div class="empty-state-text">Chargement…</div></div>
+            </div>
+          </div>
         </div>
 
       </div>
