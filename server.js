@@ -534,9 +534,9 @@ app.delete('/api/joy/events/:id', requireAdminOrManager, (req, res) => {
   res.json({ ok: true });
 });
 
-// Auto-sync Joy.io au démarrage puis toutes les 5 min
+// Auto-sync Joy.io au démarrage puis toutes les 2 min
 setTimeout(syncJoyEvents, 8000);
-setInterval(syncJoyEvents, 5 * 60 * 1000);
+setInterval(syncJoyEvents, 2 * 60 * 1000);
 
 setInterval(() => {
   const now = new Date();
