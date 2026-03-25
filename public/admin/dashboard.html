@@ -293,9 +293,13 @@
         <div style="display:flex;flex-direction:column;gap:20px;">
 
           <div class="card">
-            <div class="card-header">
-              <div class="card-title">🍳 Cuisine du jour</div>
-              <a href="/cuisine/dashboard.html" class="btn btn-secondary btn-sm">Voir →</a>
+            <div class="card-header" style="flex-direction:column;align-items:flex-start;gap:10px;">
+              <div class="card-title">🍳 Cuisine</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;">
+                <a href="/cuisine/dashboard.html" class="btn btn-secondary btn-sm" style="flex:1;text-align:center;white-space:nowrap;">📊 Dash</a>
+                <a href="/cuisine/taches.html"    class="btn btn-secondary btn-sm" style="flex:1;text-align:center;white-space:nowrap;">✅ Tâches</a>
+                <a href="/cuisine/planning.html"  class="btn btn-secondary btn-sm" style="flex:1;text-align:center;white-space:nowrap;">📅 Planning</a>
+              </div>
             </div>
             <div id="cuisineSection">
               <div class="empty-state"><div class="empty-state-icon">🍳</div><div class="empty-state-text">Chargement…</div></div>
