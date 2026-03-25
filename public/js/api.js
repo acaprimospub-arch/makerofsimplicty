@@ -93,9 +93,7 @@ async function buildNav(activePage) {
     { href: '/staff/tables.html',       label: '🍽️ Plan de Salle',  mobileLabel: 'Salle',       icon: '🍽️', key: 'tables' },
   ];
   const cuisineLinks = [
-    { href: '/cuisine/dashboard.html', label: '👨‍🍳 Dashboard', mobileLabel: 'Dashboard', icon: '👨‍🍳', key: 'dashboard-cuisine' },
-    { href: '/cuisine/taches.html',    label: '🍳 Tâches',     mobileLabel: 'Tâches',    icon: '🍳', key: 'cuisine' },
-    { href: '/cuisine/planning.html',  label: '📅 Planning',   mobileLabel: 'Planning',  icon: '📅', key: 'planning' },
+    { href: '/cuisine/index.html', label: '🍳 Cuisine', mobileLabel: 'Cuisine', icon: '🍳', key: 'cuisine' },
   ];
   const marketingLinks = [
     { href: '/marketing/dashboard.html',     label: '📊 Dashboard',      mobileLabel: 'Dashboard', icon: '📊', key: 'marketing-dashboard' },
