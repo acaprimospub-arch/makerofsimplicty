@@ -4,6 +4,7 @@ const https = require('https');
 const { Server } = require('socket.io');
 const session = require('express-session');
 const path = require('path');
+const { exec } = require('child_process');
 const db = require('./db/database');
 
 // ─── Joy.io iCal Sync ──────────────────────────────────────────────────────────
@@ -532,6 +533,24 @@ app.put('/api/joy/config', requireAdmin, (req, res) => {
 app.delete('/api/joy/events/:id', requireAdminOrManager, (req, res) => {
   db.deleteJoyEvent(req.params.id);
   res.json({ ok: true });
+});
+
+// ─── Webhook déploiement automatique ───────────────────────────────────────────
+const DEPLOY_TOKEN = process.env.DEPLOY_TOKEN || 'mos-deploy-secret';
+app.post('/webhook/deploy', express.json(), (req, res) => {
+  const token = req.headers['x-deploy-token'] || req.query.token;
+  if (token !== DEPLOY_TOKEN) {
+    return res.status(403).json({ error: 'Token invalide' });
+  }
+  res.json({ ok: true, message: 'Déploiement en cours…' });
+  console.log('[Deploy] 🚀 Webhook reçu — git pull + pm2 restart');
+  exec(
+    'cd /var/www/mos && git pull origin main && pm2 restart mos-pub',
+    (err, stdout, stderr) => {
+      if (err) console.error('[Deploy] ❌', err.message);
+      else console.log('[Deploy] ✅\n', stdout);
+    }
+  );
 });
 
 // Auto-sync Joy.io au démarrage puis toutes les 2 min
