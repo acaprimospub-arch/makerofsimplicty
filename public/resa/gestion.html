@@ -506,8 +506,9 @@
       list.innerHTML = sorted.map(r => {
         const tableIds = JSON.parse(r.table_ids || '[]');
         const isJoy = !!r.joy_event_id;
+        const hasFiles = (r.attach_count || 0) > 0;
         return `
-          <div class="res-card st-${r.status}" id="card-${r.id}" style="${isJoy ? 'border-top:2px solid rgba(205,164,67,.4)' : ''}">
+          <div class="res-card st-${r.status}" id="card-${r.id}" style="${isJoy ? 'border-top:2px solid rgba(205,164,67,.4)' : ''}${hasFiles ? ';border-right:3px solid rgba(205,164,67,.6)' : ''}">
             <div class="res-top">
               <span class="res-time">${r.time}</span>
               <span class="res-name">
@@ -520,12 +521,13 @@
               ${r.phone ? `<a href="tel:${r.phone}">📞 ${r.phone}</a>` : ''}
               ${r.space ? `<span>📍 ${r.space}</span>` : ''}
               ${tableIds.length ? `<span>🍽️ Table(s) assignée(s)</span>` : '<span style="color:var(--orange)">⚠️ Pas de table</span>'}
+              ${hasFiles ? `<span class="devis-badge">📎 ${r.attach_count} fichier${r.attach_count > 1 ? 's' : ''}</span>` : ''}
             </div>
             ${r.notes ? `<div class="res-notes">${r.notes}</div>` : ''}
             ${r.admin_notes ? `<div class="res-notes" style="color:var(--primary)">📌 ${r.admin_notes}</div>` : ''}
             <div class="res-actions">
               <button class="btn-edit" onclick="openEdit(${r.id})">✏️ Modifier</button>
-              <button class="btn-devis" onclick="openEdit(${r.id}, true)">📎 Devis</button>
+              <button class="btn-devis" onclick="openEdit(${r.id}, true)">📎 ${hasFiles ? `Devis (${r.attach_count})` : 'Devis'}</button>
               <select style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text)" onchange="quickStatus(${r.id}, this.value)">
                 <option value="confirmed" ${r.status==='confirmed'?'selected':''}>Confirmée</option>
                 <option value="arrived"   ${r.status==='arrived'?'selected':''}>Arrivée</option>
@@ -673,13 +675,14 @@
         const size = a.size > 1048576 ? (a.size/1048576).toFixed(1)+' Mo'
           : a.size > 1024 ? Math.round(a.size/1024)+' Ko'
           : a.size+' o';
+        const viewerUrl = `/resa/viewer.html?id=${a.id}&name=${encodeURIComponent(a.original_name)}&mime=${encodeURIComponent(a.mimetype||'')}&size=${a.size}&from=/resa/gestion.html`;
         return `
           <div class="attach-item">
             <span class="attach-icon">${icon}</span>
             <span class="attach-name" title="${a.original_name}">${a.original_name}</span>
             <span class="attach-size">${size}</span>
             <div class="attach-actions">
-              <a href="/api/attachments/${a.id}/file" target="_blank">Voir</a>
+              <a href="${viewerUrl}">Voir</a>
               <button onclick="deleteAttachment(${a.id})">🗑</button>
             </div>
           </div>

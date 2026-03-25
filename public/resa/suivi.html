@@ -372,7 +372,7 @@
             </div>
             ${resas.map(r => {
               const tableIds = JSON.parse(r.table_ids || '[]');
-              const hasDevis = r._attachCount > 0;
+              const hasDevis = (r.attach_count || 0) > 0;
               const noTable  = r.status === 'confirmed' && tableIds.length === 0;
               const statusLabels = { confirmed:'Confirmée', arrived:'Arrivée', no_show:'No show', cancelled:'Annulée' };
               return `

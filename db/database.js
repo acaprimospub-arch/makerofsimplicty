@@ -733,7 +733,14 @@ function _enrichRes(r) {
 }
 
 function getReservationsByDate(date) {
-  return db.prepare(`SELECT r.* FROM reservations r WHERE r.date = ? ORDER BY r.time`).all(date).map(_enrichRes);
+  return db.prepare(`
+    SELECT r.*, COUNT(a.id) as attach_count
+    FROM reservations r
+    LEFT JOIN reservation_attachments a ON a.reservation_id = r.id
+    WHERE r.date = ?
+    GROUP BY r.id
+    ORDER BY r.time
+  `).all(date).map(_enrichRes);
 }
 function getReservationById(id) {
   return _enrichRes(db.prepare(`SELECT r.* FROM reservations r WHERE r.id = ?`).get(id));
@@ -770,8 +777,11 @@ function deleteReservation(id) {
 }
 function getReservationsByRange(from, to) {
   return db.prepare(`
-    SELECT r.* FROM reservations r
+    SELECT r.*, COUNT(a.id) as attach_count
+    FROM reservations r
+    LEFT JOIN reservation_attachments a ON a.reservation_id = r.id
     WHERE r.date BETWEEN ? AND ?
+    GROUP BY r.id
     ORDER BY r.date, r.time
   `).all(from, to).map(_enrichRes);
 }
