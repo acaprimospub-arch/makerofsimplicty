@@ -176,6 +176,36 @@
       font-size: 13px;
       cursor: pointer;
     }
+
+    @media(min-width: 900px) {
+      .container-sm { max-width: 1100px !important; }
+
+      /* Summary en grille au lieu du scroll horizontal */
+      .summary-bar {
+        display: grid !important;
+        grid-template-columns: repeat(6, 1fr);
+        overflow: visible;
+      }
+      .summary-item { min-width: 0; }
+
+      /* Contrôles sur une ligne */
+      .suivi-top-bar {
+        display: grid;
+        grid-template-columns: auto auto 1fr;
+        gap: 12px;
+        align-items: start;
+        margin-bottom: 16px;
+      }
+      .period-tabs { margin-bottom: 0; }
+      .filter-row  { margin-bottom: 0; justify-content: flex-end; }
+
+      /* Liste en 2 colonnes par date */
+      .suivi-cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 24px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -188,35 +218,37 @@
         <h1 class="card-title">📈 Suivi des réservations</h1>
       </div>
 
-      <!-- Sélecteur de période -->
-      <div class="period-tabs">
-        <button class="period-tab active" onclick="setPeriod('week', this)">Cette semaine</button>
-        <button class="period-tab" onclick="setPeriod('month', this)">Ce mois</button>
-        <button class="period-tab" onclick="setPeriod('custom', this)">Période…</button>
-      </div>
+      <div class="suivi-top-bar">
+        <!-- Sélecteur de période -->
+        <div class="period-tabs">
+          <button class="period-tab active" onclick="setPeriod('week', this)">Cette semaine</button>
+          <button class="period-tab" onclick="setPeriod('month', this)">Ce mois</button>
+          <button class="period-tab" onclick="setPeriod('custom', this)">Période…</button>
+        </div>
 
-      <!-- Range custom -->
-      <div class="custom-range" id="customRange">
-        <input type="date" id="rangeFrom">
-        <span style="color:var(--text-muted);font-size:12px">→</span>
-        <input type="date" id="rangeTo">
-        <button onclick="loadCustom()">OK</button>
-      </div>
+        <!-- Range custom -->
+        <div class="custom-range" id="customRange">
+          <input type="date" id="rangeFrom">
+          <span style="color:var(--text-muted);font-size:12px">→</span>
+          <input type="date" id="rangeTo">
+          <button onclick="loadCustom()">OK</button>
+        </div>
 
-      <!-- Filtres statut -->
-      <div class="filter-row">
-        <button class="filter-btn active" onclick="setFilter('all', this)">Tous</button>
-        <button class="filter-btn" onclick="setFilter('confirmed', this)">Confirmées</button>
-        <button class="filter-btn" onclick="setFilter('arrived', this)">Arrivées</button>
-        <button class="filter-btn" onclick="setFilter('no_show', this)">No show</button>
-        <button class="filter-btn" onclick="setFilter('cancelled', this)">Annulées</button>
+        <!-- Filtres statut -->
+        <div class="filter-row">
+          <button class="filter-btn active" onclick="setFilter('all', this)">Tous</button>
+          <button class="filter-btn" onclick="setFilter('confirmed', this)">Confirmées</button>
+          <button class="filter-btn" onclick="setFilter('arrived', this)">Arrivées</button>
+          <button class="filter-btn" onclick="setFilter('no_show', this)">No show</button>
+          <button class="filter-btn" onclick="setFilter('cancelled', this)">Annulées</button>
+        </div>
       </div>
 
       <!-- Résumé KPIs -->
-      <div class="summary-bar" id="summaryBar"></div>
+      <div class="summary-bar" id="summaryBar" style="margin-bottom:16px"></div>
 
       <!-- Liste groupée par date -->
-      <div id="suiviList"><div class="empty-state">Chargement…</div></div>
+      <div class="suivi-cols" id="suiviList"><div class="empty-state">Chargement…</div></div>
 
     </div>
   </div>

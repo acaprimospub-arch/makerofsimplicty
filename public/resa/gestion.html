@@ -247,6 +247,46 @@
 
     .empty-state { text-align:center; color:var(--text-muted); font-size:13px; padding:24px 0; }
     .section-sep { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+    @media(min-width: 900px) {
+      /* Conteneur élargi */
+      .container-sm { max-width: 1100px !important; }
+
+      /* Masque l'overlay sur desktop */
+      .drawer-overlay { display: none !important; }
+
+      /* Panel latéral droit */
+      .drawer {
+        left: auto !important;
+        right: -480px !important;
+        bottom: 0 !important;
+        top: 56px !important;
+        width: 460px !important;
+        max-width: 460px !important;
+        max-height: calc(100vh - 56px) !important;
+        border-radius: 0 !important;
+        border-left: 1px solid var(--border) !important;
+        transform: none !important;
+        opacity: 1 !important;
+        transition: right .3s ease !important;
+        pointer-events: none !important;
+        box-shadow: -4px 0 24px rgba(0,0,0,.18) !important;
+      }
+      .drawer.open {
+        right: 0 !important;
+        pointer-events: auto !important;
+      }
+      /* Décale le contenu quand le panel est ouvert */
+      .page { transition: padding-right .3s ease; }
+      .page.panel-open { padding-right: 460px; }
+
+      /* Masque la poignée mobile sur desktop */
+      .drawer-handle { display: none; }
+
+      /* Liste en 2 colonnes si beaucoup de résas */
+      #resaList { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      #resaList .empty-state { grid-column: 1 / -1; }
+    }
   </style>
 </head>
 <body>
@@ -535,8 +575,7 @@
       // Pièces jointes
       await loadAttachments(id);
 
-      document.getElementById('editOverlay').classList.add('open');
-      document.getElementById('editDrawer').classList.add('open');
+      openPanel();
 
       if (scrollToAttach) {
         setTimeout(() => {
@@ -557,14 +596,22 @@
       document.getElementById('eNotes').value = '';
       document.getElementById('eAdminNotes').value = '';
       document.getElementById('eStatus').value = 'confirmed';
-      document.getElementById('attachList').innerHTML = '';
+      document.getElementById('attachList').innerHTML = '<div style="font-size:12px;color:var(--text-muted)">Aucun fichier</div>';
+      document.getElementById('joyNote').style.display = 'none';
+      document.getElementById('deleteBtn').style.display = 'none';
+      openPanel();
+    }
+
+    function openPanel() {
       document.getElementById('editOverlay').classList.add('open');
       document.getElementById('editDrawer').classList.add('open');
+      document.querySelector('.page').classList.add('panel-open');
     }
 
     function closeEdit() {
       document.getElementById('editOverlay').classList.remove('open');
       document.getElementById('editDrawer').classList.remove('open');
+      document.querySelector('.page').classList.remove('panel-open');
       editingId = null;
     }
 

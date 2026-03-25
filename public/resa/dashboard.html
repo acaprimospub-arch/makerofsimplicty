@@ -109,6 +109,17 @@
       font-size: 13px;
       padding: 20px 0;
     }
+
+    @media(min-width: 900px) {
+      .container-sm { max-width: 1100px !important; }
+      .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+      .dash-cols {
+        display: grid;
+        grid-template-columns: 1fr 1.8fr;
+        gap: 16px;
+        align-items: start;
+      }
+    }
   </style>
 </head>
 <body>
@@ -136,20 +147,22 @@
         </div>
       </div>
 
-      <!-- Alertes -->
-      <div class="card" style="margin-bottom:16px" id="alertsCard">
-        <div class="card-header">
-          <span class="card-title">⚠️ Alertes</span>
+      <div class="dash-cols">
+        <!-- Alertes -->
+        <div class="card" id="alertsCard">
+          <div class="card-header">
+            <span class="card-title">⚠️ Alertes</span>
+          </div>
+          <div id="alertsList"><div class="empty-state">Aucune alerte</div></div>
         </div>
-        <div id="alertsList"><div class="empty-state">Aucune alerte</div></div>
-      </div>
 
-      <!-- 7 prochains jours -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">📅 7 prochains jours</span>
+        <!-- 7 prochains jours -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📅 7 prochains jours</span>
+          </div>
+          <div id="weekList"><div class="empty-state">Chargement…</div></div>
         </div>
-        <div id="weekList"><div class="empty-state">Chargement…</div></div>
       </div>
 
     </div>
