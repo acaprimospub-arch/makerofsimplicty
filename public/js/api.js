@@ -99,6 +99,7 @@ async function buildNav(activePage) {
     { href: '/resa/dashboard.html',  label: '📊 Dashboard',  mobileLabel: 'Dashboard', icon: '📊', key: 'resa-dashboard' },
     { href: '/resa/gestion.html',    label: '📋 Gestion',    mobileLabel: 'Gestion',   icon: '📋', key: 'resa-gestion'   },
     { href: '/resa/suivi.html',      label: '📈 Suivi',      mobileLabel: 'Suivi',     icon: '📈', key: 'resa-suivi'     },
+    { href: '/resa/devis.html',      label: '📝 Devis',      mobileLabel: 'Devis',     icon: '📝', key: 'resa-devis'     },
   ];
 
   const links = user.role === 'admin'                               ? adminLinks
