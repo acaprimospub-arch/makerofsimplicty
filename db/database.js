@@ -132,6 +132,7 @@ try { db.exec("ALTER TABLE reservations ADD COLUMN table_ids TEXT DEFAULT '[]'")
 // Migration : on peuple table_ids depuis table_id pour les lignes existantes
 try { db.exec("UPDATE reservations SET table_ids = json_array(table_id) WHERE table_id IS NOT NULL AND (table_ids IS NULL OR table_ids = '[]')"); } catch(e) {}
 try { db.exec("ALTER TABLE tasks ADD COLUMN domain TEXT DEFAULT 'salle'"); } catch(e) {}
+try { db.exec("ALTER TABLE reservations ADD COLUMN admin_notes TEXT"); } catch(e) {}
 
 // ─── Table messages d'équipe ───────────────────────────────────────────────────
 try {
@@ -758,7 +759,7 @@ function updateReservation(id, data) {
   } else if (d.table_id !== undefined) {
     d.table_ids = JSON.stringify(d.table_id ? [d.table_id] : []);
   }
-  const fields = ['table_id', 'table_ids', 'customer_name', 'phone', 'party_size', 'date', 'time', 'notes', 'status', 'space'];
+  const fields = ['table_id', 'table_ids', 'customer_name', 'phone', 'party_size', 'date', 'time', 'notes', 'admin_notes', 'status', 'space'];
   const updates = fields.filter(f => d[f] !== undefined).map(f => `${f} = ?`);
   const values  = fields.filter(f => d[f] !== undefined).map(f => d[f]);
   if (!updates.length) return;
@@ -1036,7 +1037,7 @@ function upsertReservationFromJoy(joyEventId, { customer_name, participants, dat
   // Récupère la meilleure ligne existante (avec table assignée ou statut manuel staff)
   const best = db.prepare(`
     SELECT table_id, status FROM reservations WHERE joy_event_id = ?
-    ORDER BY (table_id IS NOT NULL) DESC, (status IN ('arrived','no_show')) DESC
+    ORDER BY (table_id IS NOT NULL) DESC, (status IN ('arrived','no_show','cancelled')) DESC
     LIMIT 1
   `).get(joyEventId);
 
@@ -1044,10 +1045,11 @@ function upsertReservationFromJoy(joyEventId, { customer_name, participants, dat
   db.prepare('DELETE FROM reservations WHERE joy_event_id = ?').run(joyEventId);
 
   // Conserve le statut manuel si le staff a marqué arrivé/no-show (sauf si Joy annule)
+  // Si Joy annule → toujours cancelled, peu importe le statut précédent
   const finalStatus = resStatus === 'cancelled' ? 'cancelled'
     : (best && ['arrived', 'no_show'].includes(best.status) ? best.status : resStatus);
 
-  // Si annulée par Joy → libérer les tables, sinon conserver l'assignation
+  // Si annulée → libérer les tables, sinon conserver l'assignation précédente
   const finalTableId  = finalStatus === 'cancelled' ? null : (best?.table_id || null);
   const finalTableIds = finalStatus === 'cancelled' ? '[]'
     : (finalTableId ? JSON.stringify([finalTableId]) : '[]');
@@ -1071,14 +1073,20 @@ function cleanupJoyReservationDuplicates() {
 }
 
 function cleanupStaleJoyReservations(validJoyIds) {
-  // Supprime uniquement les résas Joy FUTURES dont l'event_id n'est plus dans le sync
-  // Joy.io n'exporte que les événements à venir → ne jamais effacer les résas passées
+  // Les résas Joy FUTURES absentes du flux iCal actuel → marquées annulées (pas supprimées)
+  // Joy.io peut soit envoyer STATUS:CANCELLED, soit retirer l'événement du flux
+  // Dans les deux cas on veut afficher la résa comme annulée, pas la faire disparaître
   if (!validJoyIds.length) return;
   const today = new Date().toISOString().split('T')[0];
   const ph = validJoyIds.map(() => '?').join(',');
-  db.prepare(
-    `DELETE FROM reservations WHERE joy_event_id IS NOT NULL AND date >= ? AND joy_event_id NOT IN (${ph})`
-  ).run(today, ...validJoyIds);
+  db.prepare(`
+    UPDATE reservations
+    SET status = 'cancelled', table_id = NULL, table_ids = '[]'
+    WHERE joy_event_id IS NOT NULL
+      AND date >= ?
+      AND joy_event_id NOT IN (${ph})
+      AND status NOT IN ('arrived', 'no_show')
+  `).run(today, ...validJoyIds);
 }
 
 function getJoyEvents({ date, upcoming, all: showAll } = {}) {
@@ -1179,6 +1187,48 @@ function getCuisineCompletionsByDate(date) {
   });
 }
 
+// ─── Reservation Attachments ───────────────────────────────────────────────────
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS reservation_attachments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      reservation_id INTEGER NOT NULL,
+      filename TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      mimetype TEXT,
+      size INTEGER DEFAULT 0,
+      uploaded_by INTEGER,
+      uploaded_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE,
+      FOREIGN KEY (uploaded_by) REFERENCES users(id)
+    )
+  `);
+} catch(e) {}
+
+function addReservationAttachment({ reservation_id, filename, original_name, mimetype, size, uploaded_by }) {
+  return db.prepare(
+    'INSERT INTO reservation_attachments (reservation_id, filename, original_name, mimetype, size, uploaded_by) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(reservation_id, filename, original_name, mimetype || null, size || 0, uploaded_by || null).lastInsertRowid;
+}
+
+function getReservationAttachments(reservation_id) {
+  return db.prepare(`
+    SELECT ra.*, u.name as uploader_name
+    FROM reservation_attachments ra
+    LEFT JOIN users u ON ra.uploaded_by = u.id
+    WHERE ra.reservation_id = ?
+    ORDER BY ra.uploaded_at ASC
+  `).all(reservation_id);
+}
+
+function getAttachmentById(id) {
+  return db.prepare('SELECT * FROM reservation_attachments WHERE id = ?').get(id);
+}
+
+function deleteAttachment(id) {
+  db.prepare('DELETE FROM reservation_attachments WHERE id = ?').run(id);
+}
+
 // ─── Cuisine Time Events ───────────────────────────────────────────────────────
 function logTimeEvent({ user_id, date, type, minutes, note }) {
   return db.prepare(
@@ -1226,4 +1276,5 @@ module.exports = {
   getCuisinePlanning, upsertCuisinePlanning, deleteCuisinePlanningShift,
   getCuisineCompletionsByDate,
   logTimeEvent, getTimeEventsByDate, getTimeEventsRange, deleteTimeEvent,
+  addReservationAttachment, getReservationAttachments, getAttachmentById, deleteAttachment,
 };

@@ -57,10 +57,16 @@
     .floor-table.is-deco { cursor: default !important; border-style: dashed !important; background: rgba(255,255,255,.03) !important; color: rgba(255,255,255,.2) !important; border-color: rgba(255,255,255,.12) !important; }
     .floor-table.is-deco:hover { transform: none !important; box-shadow: none !important; }
 
+    /* Couleurs tables selon statut visuel des réservations */
+    :root { --orange: #F5A624; --orange-bg: rgba(245,166,36,.12); }
     .s-available { background: var(--bg-surface); border-color: var(--border); color: var(--text-muted); }
+    .s-unplaced  { background: var(--orange-bg);  border-color: var(--orange);   color: var(--orange); }
+    .s-placed    { background: var(--info-bg);     border-color: var(--info);     color: var(--info); }
+    .s-arrived   { background: var(--success-bg);  border-color: var(--success);  color: var(--success); }
+    .s-late      { background: var(--danger-bg);   border-color: var(--danger);   color: var(--danger); animation: pulse 1s infinite; }
+    /* Rétro-compatibilité */
     .s-reserved  { background: var(--info-bg); border-color: var(--info); color: var(--info); }
-    .s-setup     { background: var(--warning-bg); border-color: var(--warning); color: var(--warning); }
-    .s-arrived   { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+    .s-setup     { background: var(--orange-bg); border-color: var(--orange); color: var(--orange); }
     .s-alert     { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); animation: pulse 1s infinite; }
 
     /* En mode assignation */
@@ -97,12 +103,27 @@
       transition: background .12s;
     }
     .res-card:active { background: var(--bg-surface); }
+    /* Statuts visuels (nouveau système) */
+    .res-card.vs-unplaced  { border-left-color: var(--orange); }
+    .res-card.vs-placed    { border-left-color: var(--info); }
+    .res-card.vs-arrived   { border-left-color: var(--success); }
+    .res-card.vs-late      { border-left-color: var(--danger); animation: blink-card 1.5s ease-in-out infinite; }
+    .res-card.vs-no_show   { border-left-color: var(--danger); opacity: .7; }
+    .res-card.vs-cancelled { border-left-color: #555; opacity: .55; }
+    .res-card.vs-cancelled .rc-time,.res-card.vs-cancelled .rc-name { text-decoration:line-through; color:#666; }
+    @keyframes blink-card  { 0%,100%{opacity:1} 50%{opacity:.55} }
+    /* Couleurs select statut */
+    .vs-unplaced  { border-color:var(--orange)!important;  color:var(--orange)!important; }
+    .vs-placed    { border-color:var(--info)!important;    color:var(--info)!important; }
+    .vs-arrived   { border-color:var(--success)!important; color:var(--success)!important; }
+    .vs-late      { border-color:var(--danger)!important;  color:var(--danger)!important; }
+    .vs-no_show   { border-color:var(--danger)!important;  color:var(--danger)!important; }
+    .vs-cancelled { border-color:#555!important;           color:#555!important; }
+    /* Rétro-compatibilité */
     .res-card.st-confirmed { border-left-color: var(--info); }
     .res-card.st-arrived   { border-left-color: var(--success); }
     .res-card.st-no_show   { border-left-color: var(--danger); }
     .res-card.st-cancelled { border-left-color: var(--danger); background: rgba(232,84,84,.04); opacity: .7; }
-    .res-card.st-cancelled .rc-time { text-decoration: line-through; color: var(--danger); }
-    .res-card.st-cancelled .rc-name { text-decoration: line-through; color: var(--danger); }
     .rc-time { font-size: 1.2rem; font-weight: 800; letter-spacing: -.5px; padding-top: 2px; line-height: 1; }
     .rc-body { min-width: 0; }
     .rc-name { font-size: .95rem; font-weight: 700; }
@@ -117,6 +138,13 @@
     .sp-arrived   { border-color: var(--success); color: var(--success); }
     .sp-no_show   { border-color: var(--danger);  color: var(--danger); }
     .sp-cancelled { border-color: #555;           color: #555; }
+
+    /* ══ MODE ÉDITION ══ */
+    .edit-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; padding: 10px 14px; background: rgba(205,164,67,.08); border: 1.5px solid rgba(205,164,67,.3); border-radius: var(--radius); }
+    .floor-canvas.edit-mode { background: repeating-linear-gradient(var(--bg-card) 0 39px, var(--border) 39px 40px), repeating-linear-gradient(90deg, var(--bg-card) 0 39px, var(--border) 39px 40px) !important; }
+    .edit-mode .floor-table:not(.is-deco) { cursor: grab !important; }
+    .edit-mode .floor-table:not(.is-deco):active { cursor: grabbing !important; }
+    .s-edit-selected { background: rgba(205,164,67,.18) !important; border-color: var(--primary) !important; color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(205,164,67,.35); }
 
     /* ══ DRAWER (table modal + new res) ══ */
     .drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; opacity: 0; pointer-events: none; transition: opacity .25s; }
@@ -171,6 +199,7 @@
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <input type="date" id="viewDate" style="width:auto" onchange="loadAll()">
+          <button class="btn btn-secondary btn-sm" id="editModeBtn" onclick="toggleEditMode()" style="display:none">🔧 Modifier le plan</button>
           <button class="btn btn-primary" onclick="openNewRes()">+ Réservation</button>
         </div>
       </div>
@@ -185,6 +214,15 @@
         <button class="assign-banner-cancel" onclick="cancelAssign()">✕ Annuler</button>
       </div>
 
+      <!-- Barre mode édition -->
+      <div id="editToolbar" style="display:none;" class="edit-toolbar">
+        <span style="font-size:.82rem;font-weight:700;color:var(--primary);">🔧 Mode édition</span>
+        <button class="btn btn-primary btn-sm" onclick="addTable('square')">+ Table</button>
+        <button class="btn btn-secondary btn-sm" onclick="addTable('round')">⬤ Ronde</button>
+        <button class="btn btn-secondary btn-sm" onclick="addDeco()">+ Décoration</button>
+        <button class="btn btn-danger btn-sm" id="btnDelTable" style="display:none" onclick="deleteSelected()">🗑 Supprimer</button>
+      </div>
+
       <div class="zone-tabs" id="zoneTabs"></div>
 
       <div class="zoom-bar">
@@ -196,10 +234,10 @@
 
       <div class="legend">
         <div class="legend-item"><div class="legend-dot" style="background:var(--bg-surface);border-color:var(--border)"></div>Libre</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--info-bg);border-color:var(--info)"></div>Réservée</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--warning-bg);border-color:var(--warning)"></div>Mise en place</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--success-bg);border-color:var(--success)"></div>Arrivés</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--danger-bg);border-color:var(--danger)"></div>⚠️ Alerte</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--orange-bg);border-color:var(--orange)"></div>À placer</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--info-bg);border-color:var(--info)"></div>Placé</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--success-bg);border-color:var(--success)"></div>Arrivé</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--danger-bg);border-color:var(--danger)"></div>En retard</div>
       </div>
 
       <div class="floor-wrap" id="floorWrap">
@@ -295,6 +333,48 @@
     </div>
   </div>
 
+  <!-- ══ DRAWER PROPRIÉTÉS TABLE (mode édition) ══ -->
+  <div class="drawer" id="propDrawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-head">
+      <div class="drawer-title">✏️ Propriétés</div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="frow">
+        <div class="fgroup"><label>Nom</label><input type="text" id="propName" oninput="updateSelected()"></div>
+        <div class="f2">
+          <div class="fgroup"><label>Capacité</label><input type="number" id="propCapacity" min="0" max="50" oninput="updateSelected()"></div>
+          <div class="fgroup"><label>Forme</label>
+            <select id="propShape" onchange="updateSelected()">
+              <option value="square">Carré</option>
+              <option value="round">Rond</option>
+            </select>
+          </div>
+        </div>
+        <div class="f2">
+          <div class="fgroup"><label>Largeur (px)</label><input type="number" id="propWidth" min="40" max="200" oninput="updateSelected()"></div>
+          <div class="fgroup"><label>Hauteur (px)</label><input type="number" id="propHeight" min="40" max="200" oninput="updateSelected()"></div>
+        </div>
+        <div class="fgroup"><label>Zone</label>
+          <select id="propZone" onchange="updateSelected()">
+            <option value="salle_bas">Salle Bas</option>
+            <option value="etage">Étage</option>
+            <option value="coin_canap">Coin Canapé</option>
+            <option value="terrasse">Terrasse</option>
+          </select>
+        </div>
+        <div class="fgroup" style="flex-direction:row;align-items:center;gap:10px;">
+          <input type="checkbox" id="propDeco" onchange="updateSelected()" style="width:20px;height:20px;flex-shrink:0;">
+          <label style="margin:0;font-size:.82rem;">Élément décoratif</label>
+        </div>
+      </div>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-secondary" onclick="closeDrawer()">Fermer</button>
+    </div>
+  </div>
+
   <div id="toast-container"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/api.js"></script>
@@ -381,16 +461,33 @@
       populateAssignSelect();
     }
 
+    // Calcule le statut visuel d'une réservation (identique à reservations.html)
+    function computeVS(r) {
+      if (r.status === 'cancelled') return 'cancelled';
+      if (r.status === 'no_show')   return 'no_show';
+      if (r.status === 'arrived')   return 'arrived';
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (r.date === todayStr && r.time) {
+        const resMs = new Date(r.date + 'T' + r.time + ':00').getTime();
+        if (!isNaN(resMs) && Date.now() - resMs > 15 * 60 * 1000) return 'late';
+      }
+      const ids = Array.isArray(r.table_ids) ? r.table_ids : [];
+      return ids.length > 0 ? 'placed' : 'unplaced';
+    }
+
     function computeStatuses() {
       tableStatuses = {};
       tables.forEach(t => { tableStatuses[t.id] = 'available'; });
+      // Priorité : arrived > late > placed > unplaced
+      const PRIORITY = { arrived:4, late:3, placed:2, unplaced:1 };
       reservations.forEach(r => {
-        // Support multi-tables
-        const ids = r.table_ids?.length ? r.table_ids : (r.table_id ? [r.table_id] : []);
+        const ids = Array.isArray(r.table_ids) && r.table_ids.length ? r.table_ids
+                  : (r.table_id ? [r.table_id] : []);
         if (!ids.length || r.status === 'cancelled') return;
+        const vs = computeVS(r);
         ids.forEach(tid => {
-          if (r.status === 'arrived') tableStatuses[tid] = 'arrived';
-          else if (tableStatuses[tid] !== 'arrived') tableStatuses[tid] = r.status === 'confirmed' ? 'reserved' : r.status;
+          const cur = tableStatuses[tid];
+          if ((PRIORITY[vs]||0) > (PRIORITY[cur]||0)) tableStatuses[tid] = vs;
         });
       });
     }
@@ -467,7 +564,7 @@
       const zone = ZONES.find(z => z.key === currentZone);
       canvas.style.width  = (zone?.canvasW ?? 1150) + 'px';
       canvas.style.height = (zone?.canvasH ?? 660) + 'px';
-      canvas.className = 'floor-canvas' + (isAssignMode ? ' assign-mode' : '');
+      canvas.className = 'floor-canvas' + (isAssignMode ? ' assign-mode' : '') + (editMode ? ' edit-mode' : '');
       canvas.innerHTML = '';
 
       const zoneTables = tables.filter(t => t.zone === currentZone);
@@ -477,18 +574,32 @@
         scaleToFit(); return;
       }
 
-      const statusIcon = { available:'', reserved:'📋', setup:'🪑', arrived:'✅', alert:'⚠️' };
+      const statusIcon = { available:'', unplaced:'🟠', placed:'📋', arrived:'✅', late:'🔴', no_show:'⚠️' };
 
       zoneTables.forEach(t => {
         const status = t.is_decoration ? 'deco' : (tableStatuses[t.id] || 'available');
-        const res = !t.is_decoration ? reservations.find(r => r.table_id === t.id && r.status !== 'cancelled') : null;
+        const res = !t.is_decoration ? reservations.find(r => {
+          const ids = Array.isArray(r.table_ids) && r.table_ids.length ? r.table_ids : (r.table_id ? [r.table_id] : []);
+          return ids.includes(t.id) && r.status !== 'cancelled';
+        }) : null;
         const fs = Math.min(t.width, t.height) > 75 ? '.78rem' : '.62rem';
 
+        const isEditSelected = editMode && editSelectedId === t.id;
+        const displayStatus  = editMode ? 'available' : status;
+
         const el = document.createElement('div');
-        el.className = `floor-table${t.is_decoration ? ' is-deco' : ' s-'+status}`;
+        el.id = 'tbl-' + t.id;
+        el.className = `floor-table${t.is_decoration && !editMode ? ' is-deco' : (isEditSelected ? ' s-edit-selected' : ' s-'+displayStatus)}`;
         el.style.cssText = `left:${t.x}px;top:${t.y}px;width:${t.width}px;height:${t.height}px;border-radius:${t.shape==='round'?'50%':'10px'};border:2px solid;`;
 
-        if (t.is_decoration) {
+        if (editMode) {
+          // Mode édition : affichage simplifié + drag & drop
+          el.innerHTML = `<div style="font-size:${fs};font-weight:700;text-align:center;padding:2px">${t.name}</div>
+            ${!t.is_decoration ? `<div style="font-size:.6rem;opacity:.6">${t.capacity}p</div>` : ''}`;
+          el.addEventListener('mousedown',  e => startDrag(e, t.id));
+          el.addEventListener('touchstart', e => startDrag(e, t.id), { passive: false });
+          el.addEventListener('click',      e => { e.stopPropagation(); selectTableEdit(t.id); });
+        } else if (t.is_decoration) {
           el.innerHTML = `<div style="font-size:${fs};font-weight:700;text-align:center;padding:2px">${t.name}</div>`;
         } else {
           el.innerHTML = `
@@ -498,12 +609,10 @@
             <div style="font-size:.72rem;margin-top:1px">${statusIcon[status]||''}</div>`;
 
           if (isAssignMode) {
-            // Tables déjà sélectionnées → classe spéciale
             if (selectedTableIds.has(t.id)) {
               el.classList.remove('s-' + status);
               el.classList.add('s-selected');
             }
-            // Cliquable si libre OU déjà sélectionnée
             if (status === 'available' || selectedTableIds.has(t.id)) {
               el.addEventListener('click', () => toggleTableSelection(t.id, t.name, el, status));
             }
@@ -540,12 +649,15 @@
         el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">Aucune réservation ce jour</div></div>`;
         return;
       }
+      // Couleurs statut visuel (identique à reservations.html)
+      const VS_CLS = { unplaced:'vs-unplaced', placed:'vs-placed', arrived:'vs-arrived', late:'vs-late', no_show:'vs-no_show', cancelled:'vs-cancelled' };
       el.innerHTML = reservations.map(r => {
-        const st = ST[r.status] || ST.confirmed;
-        const tbl = r.table_name
-          ? `<span class="rc-tbl-ok">🪑 ${r.table_name}</span>`
+        const vs = computeVS(r);
+        const tableNames = Array.isArray(r.table_names) && r.table_names.length ? r.table_names : (r.table_name ? [r.table_name] : []);
+        const tbl = tableNames.length
+          ? tableNames.map(n=>`<span class="rc-tbl-ok">🪑 ${n}</span>`).join(' ')
           : `<span class="rc-tbl-nok">Sans table</span>`;
-        return `<div class="res-card st-${r.status}" onclick="editRes(${r.id})">
+        return `<div class="res-card ${VS_CLS[vs]||''}" onclick="editRes(${r.id})">
           <div class="rc-time">${r.time||'—'}</div>
           <div class="rc-body">
             <div class="rc-name">${r.customer_name}</div>
@@ -558,7 +670,7 @@
             ${r.notes?`<div class="rc-notes">📝 ${r.notes}</div>`:''}
           </div>
           <div class="rc-status-col" onclick="event.stopPropagation()">
-            <select class="status-pill ${st.cls}" onchange="changeResStatus(${r.id},this.value)">
+            <select class="status-pill ${VS_CLS[vs]||''}" onchange="changeResStatus(${r.id},this.value)">
               <option value="confirmed" ${r.status==='confirmed'?'selected':''}>📋 Confirmée</option>
               <option value="arrived"   ${r.status==='arrived'?'selected':''}>✅ Arrivée</option>
               <option value="no_show"   ${r.status==='no_show'?'selected':''}>⚠️ No show</option>
@@ -581,7 +693,10 @@
     function openTableDrawer(tableId) {
       selectedTableId = tableId;
       const t = tables.find(x => x.id === tableId);
-      const res = reservations.find(r => r.table_id === tableId && r.status !== 'cancelled');
+      const res = reservations.find(r => {
+        const ids = Array.isArray(r.table_ids) && r.table_ids.length ? r.table_ids : (r.table_id ? [r.table_id] : []);
+        return ids.includes(tableId) && r.status !== 'cancelled';
+      });
 
       document.getElementById('tblName').textContent = t.name;
       document.getElementById('tblCap').textContent = `Capacité : ${t.capacity} personnes`;
@@ -610,7 +725,10 @@
 
     async function setTableStatus(status) {
       if (!selectedTableId) return;
-      const res = reservations.find(r => r.table_id === selectedTableId && r.status !== 'cancelled');
+      const res = reservations.find(r => {
+        const ids = Array.isArray(r.table_ids) && r.table_ids.length ? r.table_ids : (r.table_id ? [r.table_id] : []);
+        return ids.includes(selectedTableId) && r.status !== 'cancelled';
+      });
       if (res) {
         const mapped = status==='available'?'confirmed':status==='arrived'?'arrived':'confirmed';
         await changeResStatus(res.id, mapped);
@@ -718,7 +836,7 @@
       document.body.style.overflow = 'hidden';
     }
     function closeDrawer() {
-      ['tableDrawer','resDrawer'].forEach(id => document.getElementById(id).classList.remove('open'));
+      ['tableDrawer','resDrawer','propDrawer'].forEach(id => document.getElementById(id).classList.remove('open'));
       document.getElementById('backdrop').classList.remove('open');
       document.body.style.overflow = '';
     }
@@ -773,7 +891,155 @@
     socket.on('table:updated', t => { const i=tables.findIndex(x=>x.id===t.id); if(i>=0) tables[i]=t; renderZoneTabs(); renderFloor(); });
     socket.on('table:deleted', ({id}) => { tables=tables.filter(t=>t.id!==id); renderZoneTabs(); renderFloor(); });
 
-    loadAll();
+    // ── Mode édition ─────────────────────────────────────────────────────────
+    let editMode = false, editSelectedId = null;
+    let dragging = null, dragOffset = { x:0, y:0 }, saveTimer = null;
+
+    function toggleEditMode() {
+      editMode = !editMode;
+      const btn = document.getElementById('editModeBtn');
+      btn.textContent  = editMode ? '✓ Terminer' : '🔧 Modifier le plan';
+      btn.className    = editMode ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm';
+      document.getElementById('editToolbar').style.display = editMode ? 'flex' : 'none';
+      if (!editMode) { editSelectedId = null; closeDrawer(); }
+      document.getElementById('btnDelTable').style.display = 'none';
+      renderZoneTabs(); renderFloor();
+    }
+
+    function selectTableEdit(id) {
+      editSelectedId = id;
+      document.getElementById('btnDelTable').style.display = 'flex';
+      const t = tables.find(x => x.id === id);
+      if (!t) return;
+      document.getElementById('propName').value     = t.name     || '';
+      document.getElementById('propCapacity').value = t.capacity || 0;
+      document.getElementById('propShape').value    = t.shape    || 'square';
+      document.getElementById('propWidth').value    = t.width    || 65;
+      document.getElementById('propHeight').value   = t.height   || 65;
+      document.getElementById('propZone').value     = t.zone     || 'salle_bas';
+      document.getElementById('propDeco').checked   = !!t.is_decoration;
+      openDrawer('propDrawer');
+      renderFloor();
+    }
+
+    function updateSelected() {
+      if (!editSelectedId) return;
+      const t = tables.find(x => x.id === editSelectedId);
+      if (!t) return;
+      t.name          = document.getElementById('propName').value;
+      t.capacity      = parseInt(document.getElementById('propCapacity').value) || 0;
+      t.shape         = document.getElementById('propShape').value;
+      t.width         = parseInt(document.getElementById('propWidth').value)    || 65;
+      t.height        = parseInt(document.getElementById('propHeight').value)   || 65;
+      t.zone          = document.getElementById('propZone').value;
+      t.is_decoration = document.getElementById('propDeco').checked ? 1 : 0;
+      const old = document.getElementById('tbl-' + editSelectedId);
+      if (old) old.remove();
+      if (t.zone === currentZone) {
+        const canvas = document.getElementById('floorCanvas');
+        const isEditSelected = true;
+        const fs = Math.min(t.width, t.height) > 75 ? '.78rem' : '.62rem';
+        const el = document.createElement('div');
+        el.id = 'tbl-' + t.id;
+        el.className = `floor-table s-edit-selected`;
+        el.style.cssText = `left:${t.x}px;top:${t.y}px;width:${t.width}px;height:${t.height}px;border-radius:${t.shape==='round'?'50%':'10px'};border:2px solid;`;
+        el.innerHTML = `<div style="font-size:${fs};font-weight:700;text-align:center;padding:2px">${t.name}</div>${!t.is_decoration?`<div style="font-size:.6rem;opacity:.6">${t.capacity}p</div>`:''}`;
+        el.addEventListener('mousedown',  e => startDrag(e, t.id));
+        el.addEventListener('touchstart', e => startDrag(e, t.id), { passive: false });
+        el.addEventListener('click', e => { e.stopPropagation(); selectTableEdit(t.id); });
+        canvas.appendChild(el);
+      }
+      scheduleSave(editSelectedId, t);
+      renderZoneTabs();
+    }
+
+    function scheduleSave(id, data) {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(async () => { await api.put(`/api/tables/${id}`, data); }, 600);
+    }
+
+    async function addTable(shape) {
+      const count = tables.filter(t => t.zone === currentZone && !t.is_decoration).length + 1;
+      const t = await api.post('/api/tables', {
+        name: `T${count}`, zone: currentZone,
+        x: 50, y: 50,
+        width: shape === 'round' ? 80 : 65,
+        height: shape === 'round' ? 80 : 65,
+        shape, capacity: 2, is_decoration: 0
+      });
+      if (!t) return;
+      tables.push(t);
+      renderZoneTabs(); renderFloor();
+      selectTableEdit(t.id);
+    }
+
+    async function addDeco() {
+      const t = await api.post('/api/tables', {
+        name: 'Bar', zone: currentZone,
+        x: 50, y: 50, width: 120, height: 40,
+        shape: 'square', capacity: 0, is_decoration: 1
+      });
+      if (!t) return;
+      tables.push(t);
+      renderZoneTabs(); renderFloor();
+      selectTableEdit(t.id);
+    }
+
+    async function deleteSelected() {
+      if (!editSelectedId || !confirm('Supprimer cette table ?')) return;
+      await api.delete(`/api/tables/${editSelectedId}`);
+      tables = tables.filter(t => t.id !== editSelectedId);
+      editSelectedId = null;
+      document.getElementById('btnDelTable').style.display = 'none';
+      closeDrawer();
+      renderZoneTabs(); renderFloor();
+    }
+
+    // Drag & drop
+    function startDrag(e, id) {
+      if (!editMode) return;
+      e.stopPropagation(); e.preventDefault();
+      dragging = id;
+      const el     = document.getElementById('tbl-' + id);
+      const canvas = document.getElementById('floorCanvas').getBoundingClientRect();
+      const cx = e.touches ? e.touches[0].clientX : e.clientX;
+      const cy = e.touches ? e.touches[0].clientY : e.clientY;
+      dragOffset.x = cx - canvas.left - parseFloat(el.style.left);
+      dragOffset.y = cy - canvas.top  - parseFloat(el.style.top);
+    }
+    function moveDrag(cx, cy) {
+      if (!dragging) return;
+      const canvas = document.getElementById('floorCanvas').getBoundingClientRect();
+      const el = document.getElementById('tbl-' + dragging);
+      if (!el) return;
+      const x = Math.max(0, Math.round((cx - canvas.left - dragOffset.x) / 5) * 5);
+      const y = Math.max(0, Math.round((cy - canvas.top  - dragOffset.y) / 5) * 5);
+      el.style.left = x + 'px';
+      el.style.top  = y + 'px';
+    }
+    function endDrag() {
+      if (!dragging) return;
+      const el = document.getElementById('tbl-' + dragging);
+      if (el) {
+        const x = parseFloat(el.style.left), y = parseFloat(el.style.top);
+        const t = tables.find(t => t.id === dragging);
+        if (t) { t.x = x; t.y = y; }
+        scheduleSave(dragging, { x, y });
+      }
+      dragging = null;
+    }
+    document.addEventListener('mousemove', e => moveDrag(e.clientX, e.clientY));
+    document.addEventListener('touchmove', e => { if (dragging) { e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); } }, { passive: false });
+    document.addEventListener('mouseup',  endDrag);
+    document.addEventListener('touchend', endDrag);
+
+    loadAll().then(() => {
+      // Afficher le bouton édition aux admins/managers uniquement
+      const u = window.__mosUser;
+      if (u?.role === 'admin' || u?.role === 'manager') {
+        document.getElementById('editModeBtn').style.display = '';
+      }
+    });
   </script>
 </body>
 </html>

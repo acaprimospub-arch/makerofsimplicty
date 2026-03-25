@@ -105,6 +105,8 @@
         // Redirect based on role
         if (data.role === 'admin') {
           window.location.href = '/admin/dashboard.html';
+        } else if (data.shift === 'resa') {
+          window.location.href = '/resa/dashboard.html';
         } else if (data.shift === 'midi') {
           window.location.href = '/staff/taches.html';
         } else {
@@ -128,6 +130,7 @@
     fetch('/api/auth/me').then(r => r.json()).then(user => {
       if (user.id) {
         if (user.role === 'admin') window.location.href = '/admin/dashboard.html';
+        else if (user.shift === 'resa') window.location.href = '/resa/dashboard.html';
         else if (user.shift === 'midi') window.location.href = '/staff/taches.html';
         else window.location.href = '/staff/tables.html';
       }

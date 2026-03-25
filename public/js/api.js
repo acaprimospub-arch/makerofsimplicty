@@ -50,6 +50,7 @@ function showToast(msg, type = 'info') {
 async function buildNav(activePage) {
   const user = await api.get('/api/auth/me');
   if (!user) return;
+  window.__mosUser = user;   // disponible globalement sur toutes les pages
 
   const nav = document.getElementById('nav');
   if (!nav) return;
@@ -57,11 +58,7 @@ async function buildNav(activePage) {
   // ── Liens avec icônes séparées pour la bottom nav mobile ──
   const adminLinks = [
     { href: '/admin/dashboard.html',    label: '📊 Dashboard',     mobileLabel: 'Dashboard',   icon: '📊', key: 'dashboard' },
-    { href: '/admin/analytics.html',    label: '📈 Analytics',     mobileLabel: 'Analytics',   icon: '📈', key: 'analytics' },
-    { href: '/admin/equipe.html',       label: '👥 Équipe',         mobileLabel: 'Équipe',      icon: '👥', key: 'equipe' },
-    { href: '/admin/stats.html',        label: '🏆 Stats',          mobileLabel: 'Stats',       icon: '🏆', key: 'stats' },
-    { href: '/admin/plan-tables.html',  label: '🗺️ Plan',          mobileLabel: 'Plan',        icon: '🗺️', key: 'plan' },
-    { href: '/staff/taches.html',       label: '✅ Tâches',          mobileLabel: 'Tâches',      icon: '✅', key: 'taches' },
+    { href: '/admin/manager.html',      label: '📋 Manager',        mobileLabel: 'Manager',     icon: '📋', key: 'manager' },
     { href: '/staff/reservations.html', label: '📋 Réservations',   mobileLabel: 'Résas',       icon: '📋', key: 'reservations' },
     { href: '/staff/tables.html',       label: '🍽️ Salle',          mobileLabel: 'Salle',       icon: '🍽️', key: 'tables' },
     { href: '/cuisine/index.html',      label: '🍳 Cuisine',           mobileLabel: 'Cuisine',    icon: '🍳',   key: 'cuisine' },
@@ -70,14 +67,12 @@ async function buildNav(activePage) {
   const managerMidiLinks = [
     { href: '/admin/dashboard.html',    label: '📊 Dashboard',     mobileLabel: 'Dashboard',   icon: '📊', key: 'dashboard' },
     { href: '/staff/taches.html',       label: '✅ Mes Tâches',     mobileLabel: 'Tâches',      icon: '✅', key: 'taches' },
-    { href: '/admin/plan-tables.html',  label: '🗺️ Plan',          mobileLabel: 'Plan',        icon: '🗺️', key: 'plan' },
     { href: '/staff/reservations.html', label: '📋 Réservations',   mobileLabel: 'Résas',       icon: '📋', key: 'reservations' },
     { href: '/staff/tables.html',       label: '🍽️ Plan de Salle',  mobileLabel: 'Salle',       icon: '🍽️', key: 'tables' },
   ];
   const managerSoirLinks = [
     { href: '/admin/dashboard.html',    label: '📊 Dashboard',     mobileLabel: 'Dashboard',   icon: '📊', key: 'dashboard' },
     { href: '/staff/taches.html',       label: '🌙 Mes Tâches',    mobileLabel: 'Tâches',      icon: '🌙', key: 'taches' },
-    { href: '/admin/plan-tables.html',  label: '🗺️ Plan',          mobileLabel: 'Plan',        icon: '🗺️', key: 'plan' },
     { href: '/staff/reservations.html', label: '📋 Réservations',   mobileLabel: 'Résas',       icon: '📋', key: 'reservations' },
     { href: '/staff/tables.html',       label: '🍽️ Plan de Salle',  mobileLabel: 'Salle',       icon: '🍽️', key: 'tables' },
   ];
@@ -98,10 +93,16 @@ async function buildNav(activePage) {
     { href: '/marketing/dashboard.html',     label: '📊 Dashboard',      mobileLabel: 'Dashboard', icon: '📊', key: 'marketing-dashboard' },
     { href: '/marketing/reservations.html',  label: '📋 Réservations',   mobileLabel: 'Résas',     icon: '📋', key: 'marketing-reservations' },
     { href: '/admin/joy.html',               label: '🔗 Joy.io',          mobileLabel: 'Joy',       icon: '🔗', key: 'joy' },
-    { href: '/admin/analytics.html',         label: '📈 Analytics',       mobileLabel: 'Analytics', icon: '📈', key: 'analytics' },
+    { href: '/admin/manager.html',           label: '📋 Manager',         mobileLabel: 'Manager',   icon: '📋', key: 'manager' },
+  ];
+  const resaLinks = [
+    { href: '/resa/dashboard.html',  label: '📊 Dashboard',  mobileLabel: 'Dashboard', icon: '📊', key: 'resa-dashboard' },
+    { href: '/resa/gestion.html',    label: '📋 Gestion',    mobileLabel: 'Gestion',   icon: '📋', key: 'resa-gestion'   },
+    { href: '/resa/suivi.html',      label: '📈 Suivi',      mobileLabel: 'Suivi',     icon: '📈', key: 'resa-suivi'     },
   ];
 
   const links = user.role === 'admin'                               ? adminLinks
+    : user.shift === 'resa'                                         ? resaLinks
     : user.shift === 'marketing'                                    ? marketingLinks
     : user.shift === 'cuisine'                                      ? cuisineLinks
     : user.role === 'manager' && user.shift === 'midi'              ? managerMidiLinks

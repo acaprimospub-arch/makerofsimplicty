@@ -154,6 +154,21 @@
     }
     .btn-assign-plan:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-dim); }
 
+    /* ── Pièces jointes ── */
+    .attach-section { margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
+    .attach-title { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+    .attach-list { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+    .attach-item { display:flex; align-items:center; gap:10px; padding:8px 10px; background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; }
+    .attach-icon { font-size:1.1rem; flex-shrink:0; }
+    .attach-info { flex:1; min-width:0; }
+    .attach-name { font-size:.82rem; font-weight:600; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .attach-meta { font-size:.72rem; color:var(--text-muted); }
+    .attach-btn-open { background:rgba(205,164,67,.12); border:1.5px solid rgba(205,164,67,.3); color:var(--primary); border-radius:6px; padding:4px 10px; font-size:.75rem; font-weight:600; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+    .attach-btn-del  { background:rgba(232,84,84,.1); border:1.5px solid rgba(232,84,84,.3); color:var(--danger); border-radius:6px; padding:4px 8px; font-size:.75rem; cursor:pointer; flex-shrink:0; }
+    .attach-upload-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:10px; background:var(--bg-surface); border:1.5px dashed var(--border); border-radius:8px; color:var(--text-muted); font-size:.83rem; font-weight:600; cursor:pointer; transition:border-color .15s,color .15s; }
+    .attach-upload-btn:hover { border-color:var(--primary); color:var(--primary); }
+    .attach-upload-btn input[type="file"] { display:none; }
+
     /* ── Status pills ── */
     .status-btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
     .status-btn {
@@ -310,6 +325,17 @@
 
         </div>
       </form>
+
+      <!-- Pièces jointes (visibles en mode édition seulement) -->
+      <div class="attach-section" id="attachSection" style="display:none;">
+        <div class="attach-title">📎 Pièces jointes</div>
+        <div id="attachList" class="attach-list"></div>
+        <label class="attach-upload-btn">
+          <input type="file" id="attachInput" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" onchange="uploadAttachment(this)">
+          📎 Ajouter un fichier
+        </label>
+      </div>
+
     </div>
     <div class="drawer-footer">
       <button class="btn btn-danger btn-sm" id="btnDelete" style="flex:0 0 auto;padding:0 16px;display:none;" onclick="deleteResa()">🗑</button>
@@ -324,6 +350,11 @@
   <script>
     buildNav('marketing-reservations');
     const socket = io();
+
+    function _canManageAttachments() {
+      const u = window.__mosUser;
+      return u && (u.role === 'admin' || u.role === 'manager');
+    }
 
     const DAYS_FR   = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
     const ZONE_LABELS = { salle_bas:'Salle Bas', etage:'Étage', terrasse:'Terrasse', coin_canap:'Coin Canapé' };
@@ -521,8 +552,9 @@
       document.getElementById('resaPhone').value = '';
       document.getElementById('resaSpace').value = '';
       document.getElementById('resaNotes').value = '';
-      document.getElementById('statusSection').style.display = 'none';
-      document.getElementById('btnDelete').style.display     = 'none';
+      document.getElementById('statusSection').style.display  = 'none';
+      document.getElementById('btnDelete').style.display      = 'none';
+      document.getElementById('attachSection').style.display  = 'none';
       document.getElementById('btnSave').textContent = 'Créer';
       refreshAssignedDisplay([]);
       openDrawer();
@@ -546,9 +578,80 @@
       document.getElementById('statusSection').style.display = 'block';
       document.getElementById('btnDelete').style.display = r.joy_event_id ? 'none' : 'inline-flex';
       document.getElementById('btnSave').textContent = 'Enregistrer';
+      document.getElementById('attachSection').style.display = 'block';
       updateStatusBtns();
       refreshAssignedDisplay(r.table_ids || []);
       openDrawer();
+      loadAttachments(id);
+    }
+
+    // ─── Pièces jointes ───────────────────────────────────────────
+    function _attachIcon(mime) {
+      if (!mime) return '📄';
+      if (mime.startsWith('image/')) return '🖼️';
+      if (mime === 'application/pdf') return '📕';
+      if (mime.includes('word') || mime.includes('document')) return '📝';
+      if (mime.includes('excel') || mime.includes('spreadsheet')) return '📊';
+      return '📄';
+    }
+    function _fmtSize(bytes) {
+      if (bytes < 1024) return bytes + ' o';
+      if (bytes < 1024*1024) return (bytes/1024).toFixed(0) + ' Ko';
+      return (bytes/1024/1024).toFixed(1) + ' Mo';
+    }
+
+    async function loadAttachments(resId) {
+      const list = document.getElementById('attachList');
+      if (!list) return;
+      const atts = await api.get(`/api/reservations/${resId}/attachments`);
+      if (!atts) return;
+
+      const canManage = _canManageAttachments();
+
+      // Bouton upload : visible seulement pour admin/manager
+      const uploadBtn = document.querySelector('#attachSection .attach-upload-btn');
+      if (uploadBtn) uploadBtn.style.display = canManage ? 'flex' : 'none';
+
+      if (!atts.length) {
+        list.innerHTML = `<div style="font-size:.78rem;color:var(--text-muted);font-style:italic;">Aucune pièce jointe</div>`;
+        return;
+      }
+      list.innerHTML = atts.map(a => `
+        <div class="attach-item" id="att-${a.id}">
+          <div class="attach-icon">${_attachIcon(a.mimetype)}</div>
+          <div class="attach-info">
+            <div class="attach-name" title="${a.original_name}">${a.original_name}</div>
+            <div class="attach-meta">${_fmtSize(a.size)}${a.uploader_name ? ' · ' + a.uploader_name : ''}</div>
+          </div>
+          <button class="attach-btn-open" onclick="window.open('/api/attachments/${a.id}/file','_blank')">Voir</button>
+          ${canManage ? `<button class="attach-btn-del" onclick="deleteAttachment(${a.id},${resId})" title="Supprimer">✕</button>` : ''}
+        </div>
+      `).join('');
+    }
+
+    async function uploadAttachment(input) {
+      if (!input.files.length || !editId) return;
+      const file = input.files[0];
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`/api/reservations/${editId}/attachments`, { method:'POST', body:fd });
+      input.value = '';
+      if (!res.ok) {
+        const err = await res.json().catch(()=>({}));
+        showToast(err.error || 'Erreur upload', 'error');
+        return;
+      }
+      showToast('Fichier ajouté ✓', 'success');
+      loadAttachments(editId);
+    }
+
+    async function deleteAttachment(attId, resId) {
+      if (!confirm('Supprimer cette pièce jointe ?')) return;
+      const res = await api.delete(`/api/attachments/${attId}`);
+      if (res?.ok) {
+        showToast('Pièce jointe supprimée', 'info');
+        loadAttachments(resId);
+      }
     }
 
     function setStatus(s) { currentStatus = s; updateStatusBtns(); }

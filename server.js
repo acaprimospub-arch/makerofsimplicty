@@ -4,10 +4,34 @@ const https = require('https');
 const { Server } = require('socket.io');
 const session = require('express-session');
 const path = require('path');
+const fs = require('fs');
 const { exec } = require('child_process');
 const nodemailer = require('nodemailer');
 const ExcelJS = require('exceljs');
+const multer = require('multer');
 const db = require('./db/database');
+
+// ─── Multer (pièces jointes réservations) ──────────────────────────────────────
+const UPLOADS_DIR = path.join(__dirname, 'uploads', 'reservations');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const _multerStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  filename: (_req, file, cb) => {
+    const ext  = path.extname(file.originalname);
+    const base = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+    cb(null, base);
+  }
+});
+const upload = multer({
+  storage: _multerStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 Mo max
+  fileFilter: (_req, file, cb) => {
+    // Autorise : images, PDF, Word, Excel, texte
+    const ok = /^(image\/|application\/pdf|application\/msword|application\/vnd\.|text\/)/.test(file.mimetype);
+    cb(null, ok);
+  }
+});
 
 // ─── Joy.io iCal Sync ──────────────────────────────────────────────────────────
 function fetchUrl(url, depth = 0) {
@@ -406,7 +430,10 @@ app.post('/api/reservations', requireAuth, (req, res) => {
 });
 
 app.put('/api/reservations/:id', requireAuth, (req, res) => {
-  db.updateReservation(req.params.id, req.body);
+  // admin_notes réservé aux admins et managers
+  const body = { ...req.body };
+  if (req.session.role !== 'admin' && req.session.role !== 'manager') delete body.admin_notes;
+  db.updateReservation(req.params.id, body);
   const r = db.getReservationById(req.params.id);
   io.emit('reservation:updated', r);
   if (req.body.status === 'arrived') {
@@ -417,8 +444,46 @@ app.put('/api/reservations/:id', requireAuth, (req, res) => {
 
 app.delete('/api/reservations/:id', requireAuth, (req, res) => {
   const r = db.getReservationById(req.params.id);
+  // Supprimer aussi les fichiers liés
+  const atts = db.getReservationAttachments(req.params.id);
+  atts.forEach(a => { try { fs.unlinkSync(path.join(UPLOADS_DIR, a.filename)); } catch(e) {} });
   db.deleteReservation(req.params.id);
   io.emit('reservation:deleted', { id: parseInt(req.params.id), table_id: r?.table_id });
+  res.json({ ok: true });
+});
+
+// ─── Pièces jointes réservations ───────────────────────────────────────────────
+app.get('/api/reservations/:id/attachments', requireAuth, (req, res) => {
+  res.json(db.getReservationAttachments(req.params.id));
+});
+
+app.post('/api/reservations/:id/attachments', requireAdminOrManager, upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Fichier manquant ou type non autorisé (max 10 Mo)' });
+  const id = db.addReservationAttachment({
+    reservation_id: req.params.id,
+    filename:       req.file.filename,
+    original_name:  req.file.originalname,
+    mimetype:       req.file.mimetype,
+    size:           req.file.size,
+    uploaded_by:    req.session.userId,
+  });
+  res.json(db.getAttachmentById(id));
+});
+
+app.get('/api/attachments/:id/file', requireAuth, (req, res) => {
+  const att = db.getAttachmentById(req.params.id);
+  if (!att) return res.status(404).json({ error: 'Fichier introuvable' });
+  const filePath = path.join(UPLOADS_DIR, att.filename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Fichier introuvable sur le disque' });
+  res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(att.original_name)}"`);
+  res.sendFile(filePath);
+});
+
+app.delete('/api/attachments/:id', requireAdminOrManager, (req, res) => {
+  const att = db.getAttachmentById(req.params.id);
+  if (!att) return res.status(404).json({ error: 'Introuvable' });
+  try { fs.unlinkSync(path.join(UPLOADS_DIR, att.filename)); } catch(e) {}
+  db.deleteAttachment(req.params.id);
   res.json({ ok: true });
 });
 
