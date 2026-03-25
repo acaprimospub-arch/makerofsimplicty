@@ -64,9 +64,8 @@ async function buildNav(activePage) {
     { href: '/staff/taches.html',       label: '✅ Tâches',          mobileLabel: 'Tâches',      icon: '✅', key: 'taches' },
     { href: '/staff/reservations.html', label: '📋 Réservations',   mobileLabel: 'Résas',       icon: '📋', key: 'reservations' },
     { href: '/staff/tables.html',       label: '🍽️ Salle',          mobileLabel: 'Salle',       icon: '🍽️', key: 'tables' },
-    { href: '/cuisine/dashboard.html',  label: '👨‍🍳 Dash. Cuisine',   mobileLabel: 'Dash.Cuis',  icon: '👨‍🍳', key: 'dashboard-cuisine' },
-    { href: '/cuisine/taches.html',     label: '🍳 Tâches Cuisine',    mobileLabel: 'Cuisine',    icon: '🍳',   key: 'cuisine' },
-    { href: '/cuisine/planning.html',   label: '📅 Planning Cuisine',  mobileLabel: 'Planning',   icon: '📅',   key: 'planning' },
+    { href: '/cuisine/index.html',      label: '🍳 Cuisine',           mobileLabel: 'Cuisine',    icon: '🍳',   key: 'cuisine' },
+    { href: '/admin/email.html',        label: '📧 Email',             mobileLabel: 'Email',      icon: '📧',   key: 'email' },
   ];
   const managerMidiLinks = [
     { href: '/admin/dashboard.html',    label: '📊 Dashboard',     mobileLabel: 'Dashboard',   icon: '📊', key: 'dashboard' },

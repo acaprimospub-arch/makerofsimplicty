@@ -5,6 +5,8 @@ const { Server } = require('socket.io');
 const session = require('express-session');
 const path = require('path');
 const { exec } = require('child_process');
+const nodemailer = require('nodemailer');
+const ExcelJS = require('exceljs');
 const db = require('./db/database');
 
 // ─── Joy.io iCal Sync ──────────────────────────────────────────────────────────
@@ -533,6 +535,258 @@ app.put('/api/joy/config', requireAdmin, (req, res) => {
 app.delete('/api/joy/events/:id', requireAdminOrManager, (req, res) => {
   db.deleteJoyEvent(req.params.id);
   res.json({ ok: true });
+});
+
+// ─── Email Planning Cuisine ────────────────────────────────────────────────────
+const PLANNING_RECIPIENT = 'pverdier.mospub@gmail.com';
+const DAYS_LABEL = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+
+function _getMonday(dateStr) {
+  const d = new Date(dateStr); const day = d.getDay();
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+  return d.toISOString().split('T')[0];
+}
+function _addDays(dateStr, n) {
+  const d = new Date(dateStr); d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+function _minsBetween(start, end) {
+  if (!start || !end) return 0;
+  const [sh, sm] = start.slice(0,5).split(':').map(Number);
+  const [eh, em] = end.slice(0,5).split(':').map(Number);
+  return Math.max(0, (eh*60+em) - (sh*60+sm));
+}
+function _fmtH(mins) {
+  if (!mins) return '—';
+  const h = Math.floor(mins/60), m = mins%60;
+  return h > 0 ? (m > 0 ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`) : `${m}min`;
+}
+
+async function generatePlanningExcel(weekStart) {
+  const weekEnd = _addDays(weekStart, 6);
+  const { users, shifts } = db.getCuisinePlanning(weekStart);
+  const events = db.getTimeEventsRange(weekStart, weekEnd);
+  const dayDates = Array.from({length:7}, (_,i) => _addDays(weekStart, i));
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Mos Pub Mercière';
+
+  // ── Sheet 1 : Planning ──────────────────────────────────────────────────────
+  const ws = wb.addWorksheet('Planning');
+
+  const C = {
+    DARK:   'FF1A3A4A', GOLD:  'FFCDA443', GOLD_L: 'FFF9F1DC',
+    GREEN_L:'FFE8F5E9', RED_L: 'FFFCE8E8', GREY_L: 'FFF5F5F5',
+    WHITE:  'FFFFFFFF', TEXT_M:'FF888888', GREEN_D:'FF2E7D32', RED_D:'FFD32F2F',
+  };
+
+  const border = (color='FFD0D0D0') => (['top','bottom','left','right'].reduce((o,s)=>({...o,[s]:{style:'thin',color:{argb:color}}}),{}));
+
+  // Titre
+  ws.mergeCells('A1:J1');
+  const s = new Date(weekStart), e = new Date(weekEnd);
+  const fmt = d => `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
+  ws.getCell('A1').value = `Planning Cuisine — Semaine du ${fmt(s)} au ${fmt(e)}`;
+  ws.getCell('A1').font  = { bold:true, size:13, color:{argb:C.DARK} };
+  ws.getCell('A1').fill  = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFFF8E7'} };
+  ws.getCell('A1').alignment = { horizontal:'center', vertical:'middle' };
+  ws.getRow(1).height = 32;
+  ws.getRow(2).height = 6;
+
+  // En-têtes (ligne 3)
+  const hdr = ws.getRow(3);
+  hdr.height = 42;
+  const hdrVals = ['Nom', ...dayDates.map((dd,i) => {
+    const d = new Date(dd);
+    return `${DAYS_LABEL[i]}\n${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
+  }), 'Total\nHeures', 'H. Supp'];
+  hdrVals.forEach((v,i) => {
+    const c = hdr.getCell(i+1);
+    c.value = v;
+    c.font  = { bold:true, color:{argb:C.WHITE}, size:10 };
+    c.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.DARK} };
+    c.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+    c.border = border(C.GOLD);
+  });
+  hdr.getCell(1).alignment = { horizontal:'left', vertical:'middle', wrapText:true };
+
+  // Données
+  users.forEach((u, idx) => {
+    const row = ws.getRow(4 + idx);
+    row.height = 26;
+
+    // Nom
+    const nc = row.getCell(1);
+    nc.value = u.name;
+    nc.font  = { bold:true, size:10 };
+    nc.fill  = { type:'pattern', pattern:'solid', fgColor:{argb: idx%2===0 ? C.WHITE : 'FFF8F8F8'} };
+    nc.alignment = { vertical:'middle' };
+    nc.border = border();
+
+    // Jours
+    let totalMins = 0;
+    dayDates.forEach((dd, i) => {
+      const cell  = row.getCell(i+2);
+      const shift = shifts.find(s => s.user_id===u.id && s.day_date===dd);
+      if (!shift) {
+        cell.value = '—';
+        cell.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.GREY_L} };
+        cell.font  = { color:{argb:C.TEXT_M}, size:10 };
+      } else if (shift.is_off) {
+        cell.value = 'Repos';
+        cell.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.RED_L} };
+        cell.font  = { bold:true, color:{argb:C.RED_D}, size:10 };
+      } else {
+        const st = shift.start_time?.slice(0,5)||'?', en = shift.end_time?.slice(0,5)||'?';
+        cell.value = `${st} → ${en}`;
+        cell.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.GREEN_L} };
+        cell.font  = { bold:true, color:{argb:C.GREEN_D}, size:10 };
+        totalMins += _minsBetween(shift.start_time, shift.end_time);
+      }
+      cell.alignment = { horizontal:'center', vertical:'middle' };
+      cell.border = border();
+    });
+
+    // Total heures
+    const tc = row.getCell(9);
+    tc.value = _fmtH(totalMins);
+    tc.font  = { bold:true, color:{argb:C.DARK}, size:11 };
+    tc.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.GOLD_L} };
+    tc.alignment = { horizontal:'center', vertical:'middle' };
+    tc.border = border(C.GOLD);
+
+    // Heures supp
+    const suppMins = events.filter(ev=>ev.user_id===u.id&&ev.type==='supp').reduce((s,ev)=>s+(ev.minutes||0),0);
+    const sc = row.getCell(10);
+    if (suppMins > 0) {
+      sc.value = `+${_fmtH(suppMins)}`;
+      sc.font  = { bold:true, color:{argb:C.GREEN_D}, size:10 };
+      sc.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.GREEN_L} };
+    } else {
+      sc.value = '—';
+      sc.font  = { color:{argb:C.TEXT_M}, size:10 };
+    }
+    sc.alignment = { horizontal:'center', vertical:'middle' };
+    sc.border = border();
+  });
+
+  // Largeurs colonnes
+  ws.getColumn(1).width = 16;
+  for (let i=2; i<=8; i++) ws.getColumn(i).width = 13;
+  ws.getColumn(9).width  = 12;
+  ws.getColumn(10).width = 10;
+
+  // ── Sheet 2 : Signalements ──────────────────────────────────────────────────
+  const ws2 = wb.addWorksheet('Signalements');
+  ws2.getRow(1).height = 28;
+  const hdr2 = ['Nom', 'Date', 'Type', 'Durée', 'Note'];
+  hdr2.forEach((v,i) => {
+    const c = ws2.getRow(1).getCell(i+1);
+    c.value = v; c.font = { bold:true, color:{argb:C.WHITE} };
+    c.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.DARK} };
+    c.alignment = { horizontal:'center', vertical:'middle' };
+    c.border = border(C.GOLD);
+  });
+  ws2.getColumn(1).width = 16; ws2.getColumn(2).width = 12; ws2.getColumn(3).width = 14;
+  ws2.getColumn(4).width = 10; ws2.getColumn(5).width = 30;
+
+  if (events.length === 0) {
+    ws2.getRow(2).getCell(1).value = 'Aucun signalement cette semaine';
+    ws2.getRow(2).getCell(1).font = { italic:true, color:{argb:C.TEXT_M} };
+  } else {
+    events.forEach((ev, i) => {
+      const row = ws2.getRow(i+2);
+      row.height = 22;
+      const typeLabel = ev.type === 'retard' ? '⏰ Retard' : '➕ H. Supp';
+      const bg = ev.type === 'retard' ? C.RED_L : C.GREEN_L;
+      const fg = ev.type === 'retard' ? C.RED_D  : C.GREEN_D;
+      [ev.user_name, ev.date, typeLabel, `${ev.minutes} min`, ev.note||''].forEach((v,j)=>{
+        const c = row.getCell(j+1);
+        c.value = v;
+        c.font  = { size:10, color: j===2 ? {argb:fg} : {argb:C.DARK} };
+        c.fill  = { type:'pattern', pattern:'solid', fgColor:{argb: j===2 ? bg : (i%2===0?C.WHITE:'FFF8F8F8')} };
+        c.alignment = { vertical:'middle', horizontal: j>=2 ? 'center' : 'left' };
+        c.border = border();
+      });
+    });
+  }
+
+  const buf = await wb.xlsx.writeBuffer();
+  return buf;
+}
+
+function createMailTransporter() {
+  const user = db.getSetting('email_smtp_user');
+  const pass = db.getSetting('email_smtp_pass');
+  if (!user || !pass) return null;
+  return nodemailer.createTransport({ host:'smtp.gmail.com', port:587, secure:false, auth:{ user, pass } });
+}
+
+async function sendWeeklyPlanningEmail(weekStart) {
+  const transporter = createMailTransporter();
+  if (!transporter) {
+    console.log('[Email] ⚠️  Config SMTP absente — configurez email_smtp_user/pass dans les réglages admin');
+    return { ok:false, error:'SMTP non configuré' };
+  }
+  try {
+    const buf = await generatePlanningExcel(weekStart);
+    const s = new Date(weekStart), e = new Date(_addDays(weekStart,6));
+    const fmt = d => d.toLocaleDateString('fr-FR');
+    const weekLabel = `${fmt(s)} → ${fmt(e)}`;
+    const sender = db.getSetting('email_smtp_user');
+
+    await transporter.sendMail({
+      from: `"Mos Pub Mercière" <${sender}>`,
+      to:   PLANNING_RECIPIENT,
+      subject: `📅 Planning Cuisine — Semaine du ${weekLabel}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:500px">
+        <h2 style="color:#1a3a4a">📅 Planning Cuisine</h2>
+        <p>Bonjour,</p>
+        <p>Veuillez trouver en pièce jointe le planning cuisine de la semaine du <strong>${weekLabel}</strong>, avec le total des heures et les signalements.</p>
+        <p style="color:#888;font-size:12px">— Mos Pub Mercière</p>
+      </div>`,
+      attachments: [{
+        filename: `Planning-Cuisine-${weekStart}.xlsx`,
+        content:  buf,
+        contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      }],
+    });
+    db.setSetting('email_planning_last_sent', weekStart);
+    console.log(`[Email] ✅ Planning envoyé à ${PLANNING_RECIPIENT} pour la semaine du ${weekStart}`);
+    return { ok:true };
+  } catch(err) {
+    console.error('[Email] ❌', err.message);
+    return { ok:false, error:err.message };
+  }
+}
+
+// Cron : chaque lundi entre 8h et 10h (vérifié toutes les 15 min)
+setInterval(async () => {
+  const now = new Date();
+  if (now.getDay() !== 1) return;                               // pas lundi
+  if (now.getHours() < 8 || now.getHours() >= 10) return;      // hors fenêtre
+  const monday = now.toISOString().split('T')[0];
+  if (db.getSetting('email_planning_last_sent') === monday) return; // déjà envoyé
+  console.log('[Email] 📅 Lundi matin — envoi automatique du planning');
+  await sendWeeklyPlanningEmail(monday);
+}, 15 * 60 * 1000);
+
+// Routes admin email config
+app.get('/api/admin/email-config', requireAdmin, (req, res) => {
+  const user = db.getSetting('email_smtp_user') || '';
+  const pass = db.getSetting('email_smtp_pass') || '';
+  res.json({ user, configured: !!(user && pass), lastSent: db.getSetting('email_planning_last_sent') });
+});
+app.put('/api/admin/email-config', requireAdmin, (req, res) => {
+  const { user, pass } = req.body;
+  if (user) db.setSetting('email_smtp_user', user.trim());
+  if (pass) db.setSetting('email_smtp_pass', pass.trim());
+  res.json({ ok:true });
+});
+app.post('/api/admin/email-test', requireAdmin, async (req, res) => {
+  const monday = _getMonday(new Date().toISOString().split('T')[0]);
+  const result = await sendWeeklyPlanningEmail(monday);
+  res.json(result);
 });
 
 // ─── Webhook déploiement automatique ───────────────────────────────────────────
