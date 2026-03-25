@@ -95,6 +95,7 @@ async function buildNav(activePage) {
     { href: '/marketing/reservations.html',  label: '📋 Réservations',   mobileLabel: 'Résas',     icon: '📋', key: 'marketing-reservations' },
     { href: '/admin/joy.html',               label: '🔗 Joy.io',          mobileLabel: 'Joy',       icon: '🔗', key: 'joy' },
     { href: '/admin/manager.html',           label: '📋 Manager',         mobileLabel: 'Manager',   icon: '📋', key: 'manager' },
+    { href: '/resa/devis.html',              label: '📝 Devis',            mobileLabel: 'Devis',     icon: '📝', key: 'resa-devis' },
   ];
   const resaLinks = [
     { href: '/resa/dashboard.html',  label: '📊 Dashboard',  mobileLabel: 'Dashboard', icon: '📊', key: 'resa-dashboard' },
