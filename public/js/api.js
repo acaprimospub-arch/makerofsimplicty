@@ -63,6 +63,7 @@ async function buildNav(activePage) {
     { href: '/staff/tables.html',       label: '🍽️ Salle',          mobileLabel: 'Salle',       icon: '🍽️', key: 'tables' },
     { href: '/cuisine/index.html',      label: '🍳 Cuisine',           mobileLabel: 'Cuisine',    icon: '🍳',   key: 'cuisine' },
     { href: '/admin/email.html',        label: '📧 Email',             mobileLabel: 'Email',      icon: '📧',   key: 'email' },
+    { href: '/resa/devis.html',         label: '📝 Devis',             mobileLabel: 'Devis',      icon: '📝',   key: 'resa-devis' },
   ];
   const managerMidiLinks = [
     { href: '/admin/dashboard.html',    label: '📊 Dashboard',     mobileLabel: 'Dashboard',   icon: '📊', key: 'dashboard' },
