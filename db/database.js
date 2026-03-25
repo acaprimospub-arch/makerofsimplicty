@@ -1056,19 +1056,26 @@ function upsertReservationFromJoy(joyEventId, { customer_name, participants, dat
 
   // Conserve le statut manuel si le staff a marqué arrivé/no-show (sauf si Joy annule)
   // Si Joy annule → toujours cancelled, peu importe le statut précédent
+  const prevStatus  = best?.status || 'confirmed';
   const finalStatus = resStatus === 'cancelled' ? 'cancelled'
-    : (best && ['arrived', 'no_show'].includes(best.status) ? best.status : resStatus);
+    : (best && ['arrived', 'no_show'].includes(prevStatus) ? prevStatus : resStatus);
 
   // Si annulée → libérer les tables, sinon conserver l'assignation précédente
   const finalTableId  = finalStatus === 'cancelled' ? null : (best?.table_id || null);
   const finalTableIds = finalStatus === 'cancelled' ? '[]'
     : (finalTableId ? JSON.stringify([finalTableId]) : '[]');
 
+  // Note automatique si Joy annule une résa qui ne l'était pas encore
+  const wasCancelled = prevStatus === 'cancelled';
+  const joyAdminNote = (finalStatus === 'cancelled' && !wasCancelled)
+    ? `❌ Annulée par le client (Joy.io — ${new Date().toLocaleDateString('fr-FR')})`
+    : (best?.admin_notes || null);
+
   // Insère une ligne propre avec l'espace réservé et les notes clients
   db.prepare(`
-    INSERT INTO reservations (table_id, table_ids, customer_name, party_size, date, time, status, phone, notes, joy_event_id, space)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(finalTableId, finalTableIds, customer_name || '', partySize, date || '', time, finalStatus, phone || null, notes || null, joyEventId, space || null);
+    INSERT INTO reservations (table_id, table_ids, customer_name, party_size, date, time, status, phone, notes, admin_notes, joy_event_id, space)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(finalTableId, finalTableIds, customer_name || '', partySize, date || '', time, finalStatus, phone || null, notes || null, joyAdminNote, joyEventId, space || null);
 }
 
 function cleanupJoyReservationDuplicates() {
@@ -1089,14 +1096,16 @@ function cleanupStaleJoyReservations(validJoyIds) {
   if (!validJoyIds.length) return;
   const today = new Date().toISOString().split('T')[0];
   const ph = validJoyIds.map(() => '?').join(',');
+  const cancelNote = `❌ Annulée par le client (Joy.io — ${new Date().toLocaleDateString('fr-FR')})`;
   db.prepare(`
     UPDATE reservations
-    SET status = 'cancelled', table_id = NULL, table_ids = '[]'
+    SET status = 'cancelled', table_id = NULL, table_ids = '[]',
+        admin_notes = CASE WHEN (admin_notes IS NULL OR admin_notes = '') THEN ? ELSE admin_notes END
     WHERE joy_event_id IS NOT NULL
       AND date >= ?
       AND joy_event_id NOT IN (${ph})
-      AND status NOT IN ('arrived', 'no_show')
-  `).run(today, ...validJoyIds);
+      AND status NOT IN ('arrived', 'no_show', 'cancelled')
+  `).run(cancelNote, today, ...validJoyIds);
 }
 
 function getJoyEvents({ date, upcoming, all: showAll } = {}) {
