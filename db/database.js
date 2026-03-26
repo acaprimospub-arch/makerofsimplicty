@@ -1248,6 +1248,49 @@ function deleteAttachment(id) {
   db.prepare('DELETE FROM reservation_attachments WHERE id = ?').run(id);
 }
 
+// ─── Demandes de congés ────────────────────────────────────────────────────────
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS conge_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      user_name TEXT NOT NULL,
+      date_from TEXT NOT NULL,
+      date_to TEXT NOT NULL,
+      motif TEXT,
+      status TEXT DEFAULT 'pending',
+      requested_at TEXT DEFAULT (datetime('now', 'localtime')),
+      reviewed_at TEXT,
+      reviewed_by TEXT,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+} catch(e) {}
+
+function createCongeRequest({ user_id, user_name, date_from, date_to, motif }) {
+  return db.prepare(
+    'INSERT INTO conge_requests (user_id, user_name, date_from, date_to, motif) VALUES (?, ?, ?, ?, ?)'
+  ).run(user_id, user_name, date_from, date_to, motif || null).lastInsertRowid;
+}
+
+function getCongeRequestsByUser(user_id) {
+  return db.prepare(
+    'SELECT * FROM conge_requests WHERE user_id = ? ORDER BY requested_at DESC'
+  ).all(user_id);
+}
+
+function getAllCongeRequests() {
+  return db.prepare(
+    'SELECT * FROM conge_requests ORDER BY requested_at DESC'
+  ).all();
+}
+
+function updateCongeRequestStatus(id, status, reviewed_by) {
+  db.prepare(
+    `UPDATE conge_requests SET status = ?, reviewed_by = ?, reviewed_at = datetime('now','localtime') WHERE id = ?`
+  ).run(status, reviewed_by, id);
+}
+
 // ─── Cuisine Time Events ───────────────────────────────────────────────────────
 function logTimeEvent({ user_id, date, type, minutes, note }) {
   return db.prepare(
@@ -1296,4 +1339,5 @@ module.exports = {
   getCuisineCompletionsByDate,
   logTimeEvent, getTimeEventsByDate, getTimeEventsRange, deleteTimeEvent,
   addReservationAttachment, getReservationAttachments, getAttachmentById, deleteAttachment,
+  createCongeRequest, getCongeRequestsByUser, getAllCongeRequests, updateCongeRequestStatus,
 };

@@ -64,6 +64,7 @@ async function buildNav(activePage) {
     { href: '/cuisine/index.html',      label: '🍳 Cuisine',           mobileLabel: 'Cuisine',    icon: '🍳',   key: 'cuisine' },
     { href: '/admin/email.html',        label: '📧 Email',             mobileLabel: 'Email',      icon: '📧',   key: 'email' },
     { href: '/resa/devis.html',         label: '📝 Devis',             mobileLabel: 'Devis',      icon: '📝',   key: 'resa-devis' },
+    { href: '/staff/planning.html',     label: '📅 Planning',           mobileLabel: 'Planning',   icon: '📅',   key: 'planning' },
   ];
   const managerMidiLinks = [
     { href: '/admin/dashboard.html',    label: '📊 Dashboard',     mobileLabel: 'Dashboard',   icon: '📊', key: 'dashboard' },
@@ -76,19 +77,23 @@ async function buildNav(activePage) {
     { href: '/staff/taches.html',       label: '🌙 Mes Tâches',    mobileLabel: 'Tâches',      icon: '🌙', key: 'taches' },
     { href: '/staff/reservations.html', label: '📋 Réservations',   mobileLabel: 'Résas',       icon: '📋', key: 'reservations' },
     { href: '/staff/tables.html',       label: '🍽️ Plan de Salle',  mobileLabel: 'Salle',       icon: '🍽️', key: 'tables' },
+    { href: '/staff/planning.html',     label: '📅 Planning',         mobileLabel: 'Planning',    icon: '📅', key: 'planning' },
   ];
   const staffMidiLinks = [
     { href: '/staff/taches.html',       label: '✅ Mes Tâches',     mobileLabel: 'Tâches',      icon: '✅', key: 'taches' },
     { href: '/staff/reservations.html', label: '📋 Réservations',   mobileLabel: 'Résas',       icon: '📋', key: 'reservations' },
     { href: '/staff/tables.html',       label: '🍽️ Plan de Salle',  mobileLabel: 'Salle',       icon: '🍽️', key: 'tables' },
+    { href: '/staff/planning.html',     label: '📅 Planning',        mobileLabel: 'Planning',    icon: '📅', key: 'planning' },
   ];
   const staffSoirLinks = [
     { href: '/staff/taches.html',       label: '🌙 Mes Tâches',    mobileLabel: 'Tâches',      icon: '🌙', key: 'taches' },
     { href: '/staff/reservations.html', label: '📋 Réservations',   mobileLabel: 'Résas',       icon: '📋', key: 'reservations' },
     { href: '/staff/tables.html',       label: '🍽️ Plan de Salle',  mobileLabel: 'Salle',       icon: '🍽️', key: 'tables' },
+    { href: '/staff/planning.html',     label: '📅 Planning',        mobileLabel: 'Planning',    icon: '📅', key: 'planning' },
   ];
   const cuisineLinks = [
-    { href: '/cuisine/index.html', label: '🍳 Cuisine', mobileLabel: 'Cuisine', icon: '🍳', key: 'cuisine' },
+    { href: '/cuisine/index.html',      label: '🍳 Cuisine',        mobileLabel: 'Cuisine',     icon: '🍳', key: 'cuisine' },
+    { href: '/staff/planning.html',     label: '📅 Planning',        mobileLabel: 'Planning',    icon: '📅', key: 'planning' },
   ];
   const marketingLinks = [
     { href: '/marketing/dashboard.html',     label: '📊 Dashboard',      mobileLabel: 'Dashboard', icon: '📊', key: 'marketing-dashboard' },
@@ -96,12 +101,14 @@ async function buildNav(activePage) {
     { href: '/admin/joy.html',               label: '🔗 Joy.io',          mobileLabel: 'Joy',       icon: '🔗', key: 'joy' },
     { href: '/admin/manager.html',           label: '📋 Manager',         mobileLabel: 'Manager',   icon: '📋', key: 'manager' },
     { href: '/resa/devis.html',              label: '📝 Devis',            mobileLabel: 'Devis',     icon: '📝', key: 'resa-devis' },
+    { href: '/staff/planning.html',          label: '📅 Planning',          mobileLabel: 'Planning',  icon: '📅', key: 'planning' },
   ];
   const resaLinks = [
     { href: '/resa/dashboard.html',  label: '📊 Dashboard',  mobileLabel: 'Dashboard', icon: '📊', key: 'resa-dashboard' },
     { href: '/resa/gestion.html',    label: '📋 Gestion',    mobileLabel: 'Gestion',   icon: '📋', key: 'resa-gestion'   },
     { href: '/resa/suivi.html',      label: '📈 Suivi',      mobileLabel: 'Suivi',     icon: '📈', key: 'resa-suivi'     },
     { href: '/resa/devis.html',      label: '📝 Devis',      mobileLabel: 'Devis',     icon: '📝', key: 'resa-devis'     },
+    { href: '/staff/planning.html',  label: '📅 Planning',   mobileLabel: 'Planning',  icon: '📅', key: 'planning'       },
   ];
 
   const links = user.role === 'admin'                               ? adminLinks

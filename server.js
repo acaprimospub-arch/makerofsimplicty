@@ -854,6 +854,64 @@ app.post('/api/admin/email-test', requireAdmin, async (req, res) => {
   res.json(result);
 });
 
+// ─── Demandes de congés ────────────────────────────────────────────────────────
+app.post('/api/staff/conge-request', requireAuth, async (req, res) => {
+  const { dateFrom, dateTo, motif, signature } = req.body;
+  const user = req.session.user;
+  if (!dateFrom || !dateTo) return res.status(400).json({ error: 'Dates manquantes' });
+
+  // Sauvegarder en base
+  const requestId = db.createCongeRequest({ user_id: user.id, user_name: user.name, date_from: dateFrom, date_to: dateTo, motif });
+
+  // Envoyer l'email
+  const transporter = createMailTransporter();
+  if (transporter) {
+    const fmt = d => new Date(d).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    const todayFr = new Date().toLocaleDateString('fr-FR');
+    const sigHtml = signature
+      ? `<p style="margin-top:16px"><strong>Signature :</strong></p><img src="${signature}" style="max-width:320px;border:1px solid #ccc;border-radius:4px;">`
+      : '';
+    try {
+      const sender = db.getSetting('email_smtp_user');
+      await transporter.sendMail({
+        from: `"Mos Pub Mercière" <${sender}>`,
+        to:   PLANNING_RECIPIENT,
+        subject: `📋 Demande de congés — ${user.name}`,
+        html: `<div style="font-family:Arial,sans-serif;max-width:600px;padding:20px">
+          <h2 style="color:#1a3a4a;margin-bottom:16px">📋 Demande de congés</h2>
+          <table style="border-collapse:collapse;width:100%;font-size:14px">
+            <tr><td style="padding:10px 12px;color:#666;width:180px;background:#f5f5f5">Employé(e)</td><td style="padding:10px 12px;font-weight:700">${user.name}</td></tr>
+            <tr><td style="padding:10px 12px;color:#666">Date de la demande</td><td style="padding:10px 12px">${todayFr}</td></tr>
+            <tr><td style="padding:10px 12px;color:#666;background:#f5f5f5">Début souhaité</td><td style="padding:10px 12px;font-weight:700;background:#f5f5f5">${fmt(dateFrom)}</td></tr>
+            <tr><td style="padding:10px 12px;color:#666">Fin souhaitée</td><td style="padding:10px 12px;font-weight:700">${fmt(dateTo)}</td></tr>
+            ${motif ? `<tr><td style="padding:10px 12px;color:#666;background:#f5f5f5">Motif</td><td style="padding:10px 12px;background:#f5f5f5">${motif}</td></tr>` : ''}
+          </table>
+          ${sigHtml}
+          <p style="color:#aaa;font-size:11px;margin-top:24px">— Mos Pub Mercière</p>
+        </div>`,
+      });
+    } catch(err) {
+      console.error('[Congé] ❌ Email:', err.message);
+    }
+  }
+  res.json({ ok: true, id: requestId });
+});
+
+app.get('/api/staff/conge-requests', requireAuth, (req, res) => {
+  res.json(db.getCongeRequestsByUser(req.session.user.id));
+});
+
+app.get('/api/admin/conge-requests', requireAdminOrManager, (req, res) => {
+  res.json(db.getAllCongeRequests());
+});
+
+app.put('/api/admin/conge-requests/:id', requireAdminOrManager, (req, res) => {
+  const { status } = req.body;
+  if (!['pending', 'approved', 'rejected'].includes(status)) return res.status(400).json({ error: 'Statut invalide' });
+  db.updateCongeRequestStatus(req.params.id, status, req.session.user.name);
+  res.json({ ok: true });
+});
+
 // ─── Webhook déploiement automatique ───────────────────────────────────────────
 const DEPLOY_TOKEN = process.env.DEPLOY_TOKEN || 'mos-deploy-secret';
 app.post('/webhook/deploy', express.json(), (req, res) => {
