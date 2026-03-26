@@ -925,13 +925,14 @@ function generateCongePDF({ userName, requestedAt, dateFrom, dateTo, motif, sign
 app.post('/api/staff/conge-request', requireAuth, async (req, res) => {
   try {
     const { dateFrom, dateTo, motif, signature } = req.body;
-    const user = req.session.user;
+    const userId   = req.session.userId;
+    const userName = req.session.name;
     if (!dateFrom || !dateTo) return res.status(400).json({ error: 'Dates manquantes' });
 
     // Sauvegarder en base
     let requestId = null;
     try {
-      requestId = db.createCongeRequest({ user_id: user.id, user_name: user.name, date_from: dateFrom, date_to: dateTo, motif });
+      requestId = db.createCongeRequest({ user_id: userId, user_name: userName, date_from: dateFrom, date_to: dateTo, motif });
     } catch(e) {
       console.error('[Congé] DB error:', e.message);
       return res.status(500).json({ error: 'Erreur base de données: ' + e.message });
@@ -946,7 +947,7 @@ app.post('/api/staff/conge-request', requireAuth, async (req, res) => {
       let pdfBuf = null;
       try {
         pdfBuf = await generateCongePDF({
-          userName: user.name, requestedAt: todayFr,
+          userName: userName, requestedAt: todayFr,
           dateFrom, dateTo, motif, signatureDataUrl: signature,
         });
       } catch(e) { console.error('[Congé] PDF error:', e.message); }
@@ -960,10 +961,10 @@ app.post('/api/staff/conge-request', requireAuth, async (req, res) => {
         const mailOpts = {
           from: `"Mos Pub Mercière" <${sender}>`,
           to:   PLANNING_RECIPIENT,
-          subject: `📋 Demande de congés — ${user.name}`,
+          subject: `📋 Demande de congés — ${userName}`,
           html: `<div style="font-family:Arial,sans-serif;max-width:500px;padding:20px">
             <h2 style="color:#1a3a4a">📋 Demande de congés</h2>
-            <p><strong>${user.name}</strong> a soumis une demande de congés.</p>
+            <p><strong>${userName}</strong> a soumis une demande de congés.</p>
             <p>📅 Du <strong>${fmtShort(dateFrom)}</strong> au <strong>${fmtShort(dateTo)}</strong></p>
             ${motif ? `<p>Motif : ${motif}</p>` : ''}
             <p style="color:#888;font-size:12px">Voir le détail et la signature dans le PDF ci-joint.</p>
@@ -972,7 +973,7 @@ app.post('/api/staff/conge-request', requireAuth, async (req, res) => {
         };
         if (pdfBuf) {
           mailOpts.attachments = [{
-            filename: `Conge-${user.name.replace(/\s+/g,'-')}-${dateFrom}.pdf`,
+            filename: `Conge-${userName.replace(/\s+/g,'-')}-${dateFrom}.pdf`,
             content:  pdfBuf,
             contentType: 'application/pdf',
           }];
