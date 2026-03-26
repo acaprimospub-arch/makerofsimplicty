@@ -329,26 +329,31 @@
     async function submitConge() {
       const dateFrom = document.getElementById('fFrom').value;
       const dateTo   = document.getElementById('fTo').value;
-      if (!dateFrom || !dateTo)                    { showToast('Veuillez renseigner les dates', 'warning'); return; }
-      if (new Date(dateFrom) > new Date(dateTo))   { showToast('La date de fin doit être après le début', 'warning'); return; }
-      if (!hasSig)                                 { showToast('Veuillez signer le formulaire', 'warning'); return; }
+      if (!dateFrom || !dateTo)                  { showToast('Veuillez renseigner les dates', 'warning'); return; }
+      if (new Date(dateFrom) > new Date(dateTo)) { showToast('La date de fin doit être après le début', 'warning'); return; }
+      if (!hasSig)                               { showToast('Veuillez signer le formulaire', 'warning'); return; }
 
       const btn = document.querySelector('.btn-primary');
       btn.disabled = true; btn.textContent = 'Envoi…';
 
-      const res = await api.post('/api/staff/conge-request', {
-        dateFrom,
-        dateTo,
-        motif:     document.getElementById('fMotif').value.trim(),
-        signature: canvas.toDataURL('image/png'),
-      });
+      try {
+        const res = await api.post('/api/staff/conge-request', {
+          dateFrom,
+          dateTo,
+          motif:     document.getElementById('fMotif').value.trim(),
+          signature: canvas.toDataURL('image/png'),
+        });
 
-      if (res && res.ok) {
-        document.getElementById('congeForm').style.display = 'none';
-        document.getElementById('sentState').style.display = 'block';
-        loadDemandes();
-      } else {
-        showToast(res?.error || 'Erreur lors de l\'envoi', 'error');
+        if (res && res.ok) {
+          document.getElementById('congeForm').style.display = 'none';
+          document.getElementById('sentState').style.display = 'block';
+          loadDemandes();
+        } else {
+          showToast(res?.error || 'Erreur lors de l\'envoi', 'error');
+          btn.disabled = false; btn.textContent = '📨 Envoyer la demande';
+        }
+      } catch(e) {
+        showToast('Erreur : ' + e.message, 'error');
         btn.disabled = false; btn.textContent = '📨 Envoyer la demande';
       }
     }

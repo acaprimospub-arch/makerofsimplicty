@@ -6,13 +6,15 @@ const api = {
     return r.json();
   },
   async post(url, body) {
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    if (r.status === 401) { window.location.href = '/'; return null; }
-    return r.json();
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (r.status === 401) { window.location.href = '/'; return null; }
+      try { return await r.json(); } catch { return { ok: false, error: `Erreur serveur (${r.status})` }; }
+    } catch(e) { return { ok: false, error: e.message }; }
   },
   async put(url, body) {
     const r = await fetch(url, {
