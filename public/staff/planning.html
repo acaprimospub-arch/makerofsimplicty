@@ -214,8 +214,11 @@
     let currentUser = null;
 
     // Pré-remplir le nom + afficher section admin si besoin
-    (async () => {
-      currentUser = window.__mosUser || await api.get('/api/auth/me');
+    async function initUser() {
+      // Attendre que buildNav ait défini window.__mosUser, sinon appeler l'API
+      if (!window.__mosUser) await api.get('/api/auth/me'); // force la résolution de buildNav
+      currentUser = window.__mosUser;
+      if (!currentUser) currentUser = await api.get('/api/auth/me');
       if (currentUser) {
         document.getElementById('fName').value = currentUser.name;
         if (currentUser.role === 'admin' || currentUser.role === 'manager') {
@@ -223,7 +226,8 @@
           loadAllDemandes();
         }
       }
-    })();
+    }
+    initUser();
 
     const labels  = { pending:'En attente', approved:'Validée', rejected:'Refusée' };
     const classes = { pending:'sp-pending', approved:'sp-approved', rejected:'sp-rejected' };
@@ -281,9 +285,11 @@
     async function reviewDemande(id, status) {
       const res = await api.put(`/api/admin/conge-requests/${id}`, { status });
       if (res && res.ok) {
-        showToast(status === 'approved' ? 'Demande validée' : 'Demande refusée', status === 'approved' ? 'success' : 'error');
+        showToast(status === 'approved' ? '✓ Demande validée' : '✕ Demande refusée', status === 'approved' ? 'success' : 'error');
         loadAllDemandes();
         loadDemandes();
+      } else {
+        showToast(res?.error || 'Erreur lors de la mise à jour', 'error');
       }
     }
 
