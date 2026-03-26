@@ -1002,7 +1002,7 @@ app.get('/api/admin/conge-requests', requireAdminOrManager, (req, res) => {
 app.put('/api/admin/conge-requests/:id', requireAdminOrManager, (req, res) => {
   const { status } = req.body;
   if (!['pending', 'approved', 'rejected'].includes(status)) return res.status(400).json({ error: 'Statut invalide' });
-  db.updateCongeRequestStatus(req.params.id, status, req.session.user.name);
+  db.updateCongeRequestStatus(req.params.id, status, req.session.name);
   res.json({ ok: true });
 });
 
