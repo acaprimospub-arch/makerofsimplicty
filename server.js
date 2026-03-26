@@ -69,8 +69,26 @@ function getIcalProp(block, key) {
 
 function parseDateTime(dtStr) {
   // DTSTART;TZID=...:20260404T213000 or DTSTART:20260404T213000Z or DTSTART:20260404
+  const isUTC = dtStr.endsWith('Z');
   const m = dtStr.replace(/Z$/, '').match(/(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2}))?/);
   if (!m) return { date: '', time: '' };
+
+  // Si heure UTC (suffixe Z), convertir en heure de Paris
+  if (isUTC && m[4]) {
+    const d = new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00Z`);
+    const fmt = new Intl.DateTimeFormat('fr-FR', {
+      timeZone: 'Europe/Paris',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false
+    });
+    const parts = fmt.formatToParts(d);
+    const get = t => parts.find(p => p.type === t)?.value || '';
+    return {
+      date: `${get('year')}-${get('month')}-${get('day')}`,
+      time: `${get('hour')}:${get('minute')}`
+    };
+  }
+
   return {
     date: `${m[1]}-${m[2]}-${m[3]}`,
     time: m[4] ? `${m[4]}:${m[5]}` : ''
