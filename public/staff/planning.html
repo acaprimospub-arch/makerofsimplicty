@@ -75,7 +75,10 @@
     .sent-state .sent-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
     .sent-state .sent-sub   { font-size: 13px; color: var(--text-muted); }
 
-    /* ── Mes demandes ── */
+    /* ── Admin section ── */
+    .admin-section { margin-top: 24px; }
+
+    /* ── Demandes ── */
     .demande-item {
       display: flex;
       align-items: center;
@@ -87,10 +90,15 @@
       margin-bottom: 8px;
       font-size: 13px;
     }
-    .demande-dates { flex: 1; }
-    .demande-dates strong { display: block; font-size: 13px; }
-    .demande-dates small  { color: var(--text-muted); font-size: 11px; }
-    .demande-motif { font-size: 11px; color: var(--text-muted); font-style: italic; margin-top: 2px; }
+    .demande-info { flex: 1; min-width: 0; }
+    .demande-info strong { display: block; font-size: 13px; }
+    .demande-info small  { color: var(--text-muted); font-size: 11px; }
+    .demande-motif { font-size: 11px; color: var(--text-muted); font-style: italic; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .demande-name  { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 2px; }
+
+    .demande-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .btn-approve { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--success); background: var(--success-bg); color: var(--success); font-size: 11px; font-weight: 700; cursor: pointer; }
+    .btn-reject  { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--danger);  background: rgba(232,84,84,.08); color: var(--danger);  font-size: 11px; font-weight: 700; cursor: pointer; }
 
     .status-pill {
       display: inline-block;
@@ -173,12 +181,24 @@
           </div>
         </div>
 
-        <!-- ── Colonne droite : mes demandes ── -->
-        <div class="card">
-          <div class="card-header" style="margin-bottom:16px">
-            <span class="card-title" style="font-size:13px">📋 Mes demandes</span>
+        <!-- ── Colonne droite : mes demandes + admin ── -->
+        <div>
+          <!-- Mes demandes -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-header" style="margin-bottom:16px">
+              <span class="card-title" style="font-size:13px">📋 Mes demandes</span>
+            </div>
+            <div id="demandesList"><div class="empty-state">Chargement…</div></div>
           </div>
-          <div id="demandesList"><div class="empty-state">Chargement…</div></div>
+
+          <!-- Section admin (visible uniquement admin/manager) -->
+          <div class="card admin-section" id="adminSection" style="display:none">
+            <div class="card-header" style="margin-bottom:16px">
+              <span class="card-title" style="font-size:13px">🔐 Toutes les demandes</span>
+              <button class="btn" style="font-size:11px;padding:5px 10px" onclick="loadAllDemandes()">↺ Actualiser</button>
+            </div>
+            <div id="allDemandesList"><div class="empty-state">Chargement…</div></div>
+          </div>
         </div>
 
       </div>
@@ -191,13 +211,25 @@
 
     document.getElementById('fToday').value = new Date().toLocaleDateString('fr-FR');
 
-    // Pré-remplir le nom
+    let currentUser = null;
+
+    // Pré-remplir le nom + afficher section admin si besoin
     (async () => {
-      const user = window.__mosUser || await api.get('/api/auth/me');
-      if (user) document.getElementById('fName').value = user.name;
+      currentUser = window.__mosUser || await api.get('/api/auth/me');
+      if (currentUser) {
+        document.getElementById('fName').value = currentUser.name;
+        if (currentUser.role === 'admin' || currentUser.role === 'manager') {
+          document.getElementById('adminSection').style.display = '';
+          loadAllDemandes();
+        }
+      }
     })();
 
-    // ── Charger les demandes ──
+    const labels  = { pending:'En attente', approved:'Validée', rejected:'Refusée' };
+    const classes = { pending:'sp-pending', approved:'sp-approved', rejected:'sp-rejected' };
+    const fmtDate = d => new Date(d).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' });
+
+    // ── Mes demandes ──
     async function loadDemandes() {
       const data = await api.get('/api/staff/conge-requests');
       const el   = document.getElementById('demandesList');
@@ -205,13 +237,9 @@
         el.innerHTML = '<div class="empty-state">Aucune demande pour le moment</div>';
         return;
       }
-      const labels  = { pending:'En attente', approved:'Validée', rejected:'Refusée' };
-      const classes = { pending:'sp-pending', approved:'sp-approved', rejected:'sp-rejected' };
-      const fmtDate = d => new Date(d).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' });
-
       el.innerHTML = data.map(d => `
         <div class="demande-item">
-          <div class="demande-dates">
+          <div class="demande-info">
             <strong>${fmtDate(d.date_from)} → ${fmtDate(d.date_to)}</strong>
             <small>Demandé le ${new Date(d.requested_at).toLocaleDateString('fr-FR')}</small>
             ${d.motif ? `<div class="demande-motif">${d.motif}</div>` : ''}
@@ -221,6 +249,43 @@
       `).join('');
     }
     loadDemandes();
+
+    // ── Toutes les demandes (admin) ──
+    async function loadAllDemandes() {
+      const data = await api.get('/api/admin/conge-requests');
+      const el   = document.getElementById('allDemandesList');
+      if (!data || !data.length) {
+        el.innerHTML = '<div class="empty-state">Aucune demande</div>';
+        return;
+      }
+      el.innerHTML = data.map(d => `
+        <div class="demande-item" id="adm-${d.id}">
+          <div class="demande-info">
+            <div class="demande-name">${d.user_name}</div>
+            <strong>${fmtDate(d.date_from)} → ${fmtDate(d.date_to)}</strong>
+            <small>Demandé le ${new Date(d.requested_at).toLocaleDateString('fr-FR')}${d.reviewed_by ? ` · Par ${d.reviewed_by}` : ''}</small>
+            ${d.motif ? `<div class="demande-motif">${d.motif}</div>` : ''}
+          </div>
+          ${d.status === 'pending' ? `
+            <div class="demande-actions">
+              <button class="btn-approve" onclick="reviewDemande(${d.id}, 'approved')">✓ Valider</button>
+              <button class="btn-reject"  onclick="reviewDemande(${d.id}, 'rejected')">✕ Refuser</button>
+            </div>
+          ` : `
+            <span class="status-pill ${classes[d.status]}">${labels[d.status]}</span>
+          `}
+        </div>
+      `).join('');
+    }
+
+    async function reviewDemande(id, status) {
+      const res = await api.put(`/api/admin/conge-requests/${id}`, { status });
+      if (res && res.ok) {
+        showToast(status === 'approved' ? 'Demande validée' : 'Demande refusée', status === 'approved' ? 'success' : 'error');
+        loadAllDemandes();
+        loadDemandes();
+      }
+    }
 
     // ── Signature canvas ──
     const canvas = document.getElementById('sigCanvas');

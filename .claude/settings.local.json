@@ -46,7 +46,13 @@
       "Bash(grep -E \"gitignore|git$\")",
       "Bash(timeout 3 node --experimental-sqlite server.js)",
       "Bash(node --experimental-sqlite --check \"/Users/arthurcapri/Documents/Maker of Simplicity/server.js\")",
-      "Bash(node --experimental-sqlite --check \"/Users/arthurcapri/Documents/Maker of Simplicity/db/database.js\")"
+      "Bash(node --experimental-sqlite --check \"/Users/arthurcapri/Documents/Maker of Simplicity/db/database.js\")",
+      "Bash(ssh root@46.202.128.32 \"cd /var/www/mos && git pull origin main && pm2 restart mos-pub\")",
+      "Bash(ssh -i ~/.ssh/id_rsa root@46.202.128.32 \"cd /var/www/mos && git pull origin main && pm2 restart mos-pub\")",
+      "Bash(ssh -i ~/.ssh/id_ed25519 root@46.202.128.32 \"cd /var/www/mos && git pull origin main && pm2 restart mos-pub\")",
+      "Bash(SSH_AUTH_SOCK=~/.ssh/agent ssh root@46.202.128.32 \"cd /var/www/mos && git pull origin main && pm2 restart mos-pub\")",
+      "Bash(node --check \"/Users/arthurcapri/Documents/Maker of Simplicity/server.js\")",
+      "Bash(curl -s http://localhost:3000/staff/reservations.html)"
     ]
   }
 }

@@ -8,6 +8,7 @@ const fs = require('fs');
 const { exec } = require('child_process');
 const nodemailer = require('nodemailer');
 const ExcelJS = require('exceljs');
+const PDFDocument = require('pdfkit');
 const multer = require('multer');
 const db = require('./db/database');
 
@@ -854,6 +855,72 @@ app.post('/api/admin/email-test', requireAdmin, async (req, res) => {
   res.json(result);
 });
 
+// ─── Génération PDF demande de congés ──────────────────────────────────────────
+function generateCongePDF({ userName, requestedAt, dateFrom, dateTo, motif, signatureDataUrl }) {
+  return new Promise((resolve, reject) => {
+    const doc    = new PDFDocument({ size: 'A4', margin: 50 });
+    const chunks = [];
+    doc.on('data',  c => chunks.push(c));
+    doc.on('end',   () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    const fmtDate = d => new Date(d).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    const primary = '#CDA443';
+    const dark    = '#1a3a4a';
+
+    // ── En-tête ──
+    doc.rect(0, 0, doc.page.width, 80).fill(dark);
+    doc.fillColor('#ffffff').fontSize(20).font('Helvetica-Bold')
+       .text('MOS PUB MERCIÈRE', 50, 28);
+    doc.fillColor(primary).fontSize(11).font('Helvetica')
+       .text('Demande de congés', 50, 52);
+
+    // ── Titre ──
+    doc.fillColor(dark).fontSize(16).font('Helvetica-Bold')
+       .text('DEMANDE DE CONGÉS', 50, 110);
+    doc.moveTo(50, 132).lineTo(545, 132).strokeColor(primary).lineWidth(2).stroke();
+
+    // ── Champs ──
+    const rows = [
+      ['Employé(e)',          userName],
+      ['Date de la demande',  requestedAt],
+      ['Début souhaité',      fmtDate(dateFrom)],
+      ['Fin souhaitée',       fmtDate(dateTo)],
+    ];
+    if (motif) rows.push(['Motif', motif]);
+
+    let y = 150;
+    rows.forEach(([label, value], i) => {
+      if (i % 2 === 0) doc.rect(50, y, 495, 28).fill('#f5f7fa');
+      doc.fillColor('#666666').fontSize(10).font('Helvetica').text(label, 60, y + 9);
+      doc.fillColor(dark).fontSize(11).font('Helvetica-Bold').text(value, 220, y + 9);
+      y += 28;
+    });
+
+    // ── Signature ──
+    y += 20;
+    doc.fillColor(dark).fontSize(11).font('Helvetica-Bold').text('Signature :', 50, y);
+    y += 20;
+
+    if (signatureDataUrl) {
+      try {
+        const b64 = signatureDataUrl.replace(/^data:image\/\w+;base64,/, '');
+        const imgBuf = Buffer.from(b64, 'base64');
+        doc.rect(50, y, 300, 100).strokeColor('#cccccc').lineWidth(1).stroke();
+        doc.image(imgBuf, 55, y + 5, { width: 290, height: 90, fit: [290, 90] });
+      } catch(e) {
+        doc.fillColor('#aaa').fontSize(10).text('[Signature non disponible]', 60, y + 40);
+      }
+    }
+
+    // ── Pied de page ──
+    doc.fillColor('#aaaaaa').fontSize(9).font('Helvetica')
+       .text('Document généré automatiquement — Mos Pub Mercière', 50, 760, { align: 'center' });
+
+    doc.end();
+  });
+}
+
 // ─── Demandes de congés ────────────────────────────────────────────────────────
 app.post('/api/staff/conge-request', requireAuth, async (req, res) => {
   const { dateFrom, dateTo, motif, signature } = req.body;
@@ -863,33 +930,43 @@ app.post('/api/staff/conge-request', requireAuth, async (req, res) => {
   // Sauvegarder en base
   const requestId = db.createCongeRequest({ user_id: user.id, user_name: user.name, date_from: dateFrom, date_to: dateTo, motif });
 
-  // Envoyer l'email
+  // Générer le PDF
+  const todayFr = new Date().toLocaleDateString('fr-FR');
+  let pdfBuf = null;
+  try {
+    pdfBuf = await generateCongePDF({
+      userName: user.name, requestedAt: todayFr,
+      dateFrom, dateTo, motif, signatureDataUrl: signature,
+    });
+  } catch(e) { console.error('[Congé] PDF error:', e.message); }
+
+  // Envoyer l'email avec le PDF en pièce jointe
   const transporter = createMailTransporter();
   if (transporter) {
-    const fmt = d => new Date(d).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-    const todayFr = new Date().toLocaleDateString('fr-FR');
-    const sigHtml = signature
-      ? `<p style="margin-top:16px"><strong>Signature :</strong></p><img src="${signature}" style="max-width:320px;border:1px solid #ccc;border-radius:4px;">`
-      : '';
+    const fmtShort = d => new Date(d).toLocaleDateString('fr-FR');
     try {
       const sender = db.getSetting('email_smtp_user');
-      await transporter.sendMail({
+      const mailOpts = {
         from: `"Mos Pub Mercière" <${sender}>`,
         to:   PLANNING_RECIPIENT,
         subject: `📋 Demande de congés — ${user.name}`,
-        html: `<div style="font-family:Arial,sans-serif;max-width:600px;padding:20px">
-          <h2 style="color:#1a3a4a;margin-bottom:16px">📋 Demande de congés</h2>
-          <table style="border-collapse:collapse;width:100%;font-size:14px">
-            <tr><td style="padding:10px 12px;color:#666;width:180px;background:#f5f5f5">Employé(e)</td><td style="padding:10px 12px;font-weight:700">${user.name}</td></tr>
-            <tr><td style="padding:10px 12px;color:#666">Date de la demande</td><td style="padding:10px 12px">${todayFr}</td></tr>
-            <tr><td style="padding:10px 12px;color:#666;background:#f5f5f5">Début souhaité</td><td style="padding:10px 12px;font-weight:700;background:#f5f5f5">${fmt(dateFrom)}</td></tr>
-            <tr><td style="padding:10px 12px;color:#666">Fin souhaitée</td><td style="padding:10px 12px;font-weight:700">${fmt(dateTo)}</td></tr>
-            ${motif ? `<tr><td style="padding:10px 12px;color:#666;background:#f5f5f5">Motif</td><td style="padding:10px 12px;background:#f5f5f5">${motif}</td></tr>` : ''}
-          </table>
-          ${sigHtml}
-          <p style="color:#aaa;font-size:11px;margin-top:24px">— Mos Pub Mercière</p>
+        html: `<div style="font-family:Arial,sans-serif;max-width:500px;padding:20px">
+          <h2 style="color:#1a3a4a">📋 Demande de congés</h2>
+          <p><strong>${user.name}</strong> a soumis une demande de congés.</p>
+          <p>📅 Du <strong>${fmtShort(dateFrom)}</strong> au <strong>${fmtShort(dateTo)}</strong></p>
+          ${motif ? `<p>Motif : ${motif}</p>` : ''}
+          <p style="color:#888;font-size:12px">Voir le détail et la signature dans le PDF ci-joint.</p>
+          <p style="color:#aaa;font-size:11px;margin-top:20px">— Mos Pub Mercière</p>
         </div>`,
-      });
+      };
+      if (pdfBuf) {
+        mailOpts.attachments = [{
+          filename: `Conge-${user.name.replace(/\s+/g,'-')}-${dateFrom}.pdf`,
+          content:  pdfBuf,
+          contentType: 'application/pdf',
+        }];
+      }
+      await transporter.sendMail(mailOpts);
     } catch(err) {
       console.error('[Congé] ❌ Email:', err.message);
     }
