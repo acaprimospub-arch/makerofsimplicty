@@ -923,55 +923,71 @@ function generateCongePDF({ userName, requestedAt, dateFrom, dateTo, motif, sign
 
 // ─── Demandes de congés ────────────────────────────────────────────────────────
 app.post('/api/staff/conge-request', requireAuth, async (req, res) => {
-  const { dateFrom, dateTo, motif, signature } = req.body;
-  const user = req.session.user;
-  if (!dateFrom || !dateTo) return res.status(400).json({ error: 'Dates manquantes' });
-
-  // Sauvegarder en base
-  const requestId = db.createCongeRequest({ user_id: user.id, user_name: user.name, date_from: dateFrom, date_to: dateTo, motif });
-
-  // Générer le PDF
-  const todayFr = new Date().toLocaleDateString('fr-FR');
-  let pdfBuf = null;
   try {
-    pdfBuf = await generateCongePDF({
-      userName: user.name, requestedAt: todayFr,
-      dateFrom, dateTo, motif, signatureDataUrl: signature,
-    });
-  } catch(e) { console.error('[Congé] PDF error:', e.message); }
+    const { dateFrom, dateTo, motif, signature } = req.body;
+    const user = req.session.user;
+    if (!dateFrom || !dateTo) return res.status(400).json({ error: 'Dates manquantes' });
 
-  // Envoyer l'email avec le PDF en pièce jointe
-  const transporter = createMailTransporter();
-  if (transporter) {
-    const fmtShort = d => new Date(d).toLocaleDateString('fr-FR');
+    // Sauvegarder en base
+    let requestId = null;
     try {
-      const sender = db.getSetting('email_smtp_user');
-      const mailOpts = {
-        from: `"Mos Pub Mercière" <${sender}>`,
-        to:   PLANNING_RECIPIENT,
-        subject: `📋 Demande de congés — ${user.name}`,
-        html: `<div style="font-family:Arial,sans-serif;max-width:500px;padding:20px">
-          <h2 style="color:#1a3a4a">📋 Demande de congés</h2>
-          <p><strong>${user.name}</strong> a soumis une demande de congés.</p>
-          <p>📅 Du <strong>${fmtShort(dateFrom)}</strong> au <strong>${fmtShort(dateTo)}</strong></p>
-          ${motif ? `<p>Motif : ${motif}</p>` : ''}
-          <p style="color:#888;font-size:12px">Voir le détail et la signature dans le PDF ci-joint.</p>
-          <p style="color:#aaa;font-size:11px;margin-top:20px">— Mos Pub Mercière</p>
-        </div>`,
-      };
-      if (pdfBuf) {
-        mailOpts.attachments = [{
-          filename: `Conge-${user.name.replace(/\s+/g,'-')}-${dateFrom}.pdf`,
-          content:  pdfBuf,
-          contentType: 'application/pdf',
-        }];
-      }
-      await transporter.sendMail(mailOpts);
-    } catch(err) {
-      console.error('[Congé] ❌ Email:', err.message);
+      requestId = db.createCongeRequest({ user_id: user.id, user_name: user.name, date_from: dateFrom, date_to: dateTo, motif });
+    } catch(e) {
+      console.error('[Congé] DB error:', e.message);
+      return res.status(500).json({ error: 'Erreur base de données: ' + e.message });
     }
+
+    // Répondre immédiatement — email/PDF en arrière-plan
+    res.json({ ok: true, id: requestId });
+
+    // Générer le PDF + envoyer l'email en async (non-bloquant)
+    setImmediate(async () => {
+      const todayFr = new Date().toLocaleDateString('fr-FR');
+      let pdfBuf = null;
+      try {
+        pdfBuf = await generateCongePDF({
+          userName: user.name, requestedAt: todayFr,
+          dateFrom, dateTo, motif, signatureDataUrl: signature,
+        });
+      } catch(e) { console.error('[Congé] PDF error:', e.message); }
+
+      const transporter = createMailTransporter();
+      if (!transporter) { console.log('[Congé] SMTP non configuré'); return; }
+
+      const fmtShort = d => new Date(d).toLocaleDateString('fr-FR');
+      try {
+        const sender = db.getSetting('email_smtp_user');
+        const mailOpts = {
+          from: `"Mos Pub Mercière" <${sender}>`,
+          to:   PLANNING_RECIPIENT,
+          subject: `📋 Demande de congés — ${user.name}`,
+          html: `<div style="font-family:Arial,sans-serif;max-width:500px;padding:20px">
+            <h2 style="color:#1a3a4a">📋 Demande de congés</h2>
+            <p><strong>${user.name}</strong> a soumis une demande de congés.</p>
+            <p>📅 Du <strong>${fmtShort(dateFrom)}</strong> au <strong>${fmtShort(dateTo)}</strong></p>
+            ${motif ? `<p>Motif : ${motif}</p>` : ''}
+            <p style="color:#888;font-size:12px">Voir le détail et la signature dans le PDF ci-joint.</p>
+            <p style="color:#aaa;font-size:11px;margin-top:20px">— Mos Pub Mercière</p>
+          </div>`,
+        };
+        if (pdfBuf) {
+          mailOpts.attachments = [{
+            filename: `Conge-${user.name.replace(/\s+/g,'-')}-${dateFrom}.pdf`,
+            content:  pdfBuf,
+            contentType: 'application/pdf',
+          }];
+        }
+        await transporter.sendMail(mailOpts);
+        console.log(`[Congé] ✅ Email envoyé pour ${user.name}`);
+      } catch(err) {
+        console.error('[Congé] ❌ Email:', err.message);
+      }
+    });
+
+  } catch(e) {
+    console.error('[Congé] ❌ Route error:', e.message);
+    if (!res.headersSent) res.status(500).json({ error: e.message });
   }
-  res.json({ ok: true, id: requestId });
 });
 
 app.get('/api/staff/conge-requests', requireAuth, (req, res) => {
