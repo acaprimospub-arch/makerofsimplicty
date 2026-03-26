@@ -93,8 +93,8 @@
     .drawer.open { transform:translateY(0); }
     @media (min-width:641px) {
       .drawer-backdrop { backdrop-filter:blur(2px); }
-      .drawer { bottom:auto; top:50%; left:50%; right:auto; transform:translate(-50%,-40%); opacity:0; border-radius:var(--radius); width:100%; max-width:520px; max-height:90vh; transition:transform .25s ease,opacity .25s ease; }
-      .drawer.open { transform:translate(-50%,-50%); opacity:1; }
+      .drawer { bottom:auto; top:50%; left:50%; right:auto; transform:translate(-50%,-40%); opacity:0; pointer-events:none; border-radius:var(--radius); width:100%; max-width:520px; max-height:90vh; transition:transform .25s ease,opacity .25s ease; }
+      .drawer.open { transform:translate(-50%,-50%); opacity:1; pointer-events:auto; }
     }
     .drawer-handle { width:40px; height:4px; background:rgba(255,255,255,.15); border-radius:2px; margin:10px auto 0; flex-shrink:0; }
     @media (min-width:641px) { .drawer-handle { display:none; } }

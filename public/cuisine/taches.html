@@ -54,8 +54,8 @@
     .drawer { position:fixed; bottom:0; left:0; right:0; z-index:201; background:var(--bg-card); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.5); transform:translateY(102%); transition:transform .3s cubic-bezier(.32,.72,0,1); max-height:92dvh; display:flex; flex-direction:column; }
     .drawer.open { transform:translateY(0); }
     @media (min-width:641px) {
-      .drawer { bottom:auto; top:50%; left:50%; right:auto; transform:translate(-50%,-40%); opacity:0; border-radius:var(--radius); width:100%; max-width:480px; transition:transform .25s ease,opacity .25s ease; }
-      .drawer.open { transform:translate(-50%,-50%); opacity:1; }
+      .drawer { bottom:auto; top:50%; left:50%; right:auto; transform:translate(-50%,-40%); opacity:0; pointer-events:none; border-radius:var(--radius); width:100%; max-width:480px; transition:transform .25s ease,opacity .25s ease; }
+      .drawer.open { transform:translate(-50%,-50%); opacity:1; pointer-events:auto; }
     }
     .drawer-handle { width:40px; height:4px; background:rgba(255,255,255,.15); border-radius:2px; margin:10px auto 0; flex-shrink:0; }
     @media (min-width:641px) { .drawer-handle { display:none; } }
