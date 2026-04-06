@@ -40,6 +40,9 @@ function showToast(msg, type = 'info') {
   if (!container) {
     container = document.createElement('div');
     container.id = 'toast-container';
+    container.setAttribute('role', 'status');
+    container.setAttribute('aria-live', 'polite');
+    container.setAttribute('aria-atomic', 'false');
     document.body.appendChild(container);
   }
   const t = document.createElement('div');
@@ -127,30 +130,40 @@ async function buildNav(activePage) {
     : user.shift === 'midi'                                         ? staffMidiLinks
     :                                                                 staffSoirLinks;
 
-  // ── Top nav (desktop) ──
+  // ── Top nav (desktop) — admin avec groupes séparés ──
+  const isAdmin = user.role === 'admin';
+  const navLinksHTML = isAdmin
+    ? [
+        ...links.slice(0, 5).map(l => `<a href="${l.href}" class="nav-link ${l.key===activePage?'active':''}" ${l.key===activePage?'aria-current="page"':''}>${l.label}</a>`),
+        `<span class="nav-group-sep" aria-hidden="true"></span>`,
+        ...links.slice(5).map(l => `<a href="${l.href}" class="nav-link ${l.key===activePage?'active':''}" ${l.key===activePage?'aria-current="page"':''}>${l.label}</a>`),
+      ].join('')
+    : links.map(l => `<a href="${l.href}" class="nav-link ${l.key===activePage?'active':''}" ${l.key===activePage?'aria-current="page"':''}>${l.label}</a>`).join('');
+
+  nav.setAttribute('aria-label', 'Navigation principale');
   nav.innerHTML = `
-    <a href="/" class="nav-logo">
+    <a href="/" class="nav-logo" aria-label="Accueil MOS Pub Mercière">
       <img src="/images/logo.png" alt="MOS" class="nav-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
       <span class="nav-logo-text" style="display:none;">MOS</span>
     </a>
     <div class="nav-links">
-      ${links.map(l => `<a href="${l.href}" class="nav-link ${l.key === activePage ? 'active' : ''}">${l.label}</a>`).join('')}
+      ${navLinksHTML}
     </div>
     <div class="nav-right">
-      <span class="nav-user">${user.name}</span>
-      <button class="btn-logout" onclick="logout()">Déco.</button>
+      <span class="nav-user" aria-label="Connecté en tant que ${user.name}">${user.name}</span>
+      <button class="btn-logout" aria-label="Se déconnecter" onclick="logout()">Déco.</button>
     </div>
   `;
 
-  // ── Bottom nav (mobile) — max 5 items ──
-  const mobileLinks = links.slice(0, 5);
+  // ── Bottom nav (mobile) — tous les liens défilables ──
   const bottomNav = document.createElement('nav');
   bottomNav.className = 'bottom-nav';
+  bottomNav.setAttribute('aria-label', 'Navigation mobile');
   bottomNav.innerHTML = `
     <div class="bottom-nav-inner">
-      ${mobileLinks.map(l => `
-        <a href="${l.href}" class="bottom-nav-item ${l.key === activePage ? 'active' : ''}">
-          <div class="bottom-nav-icon">${l.icon}</div>
+      ${links.map(l => `
+        <a href="${l.href}" class="bottom-nav-item ${l.key === activePage ? 'active' : ''}" ${l.key===activePage?'aria-current="page"':''}>
+          <div class="bottom-nav-icon" aria-hidden="true">${l.icon}</div>
           <div class="bottom-nav-label">${l.mobileLabel}</div>
         </a>
       `).join('')}

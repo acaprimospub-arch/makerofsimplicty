@@ -12,7 +12,7 @@
   --primary-dim: rgba(205, 164, 67, 0.15);
   --gold: #cda443;
   --text: #ffffff;
-  --text-muted: rgba(255,255,255,0.5);
+  --text-muted: rgba(255,255,255,0.65);
   --border: rgba(255,255,255,0.12);
   --success: #4caf6a;
   --success-bg: rgba(76, 175, 106, 0.12);
@@ -73,7 +73,25 @@ input, select, textarea {
   transition: border-color 0.2s;
   outline: none;
 }
-input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; }
+
+/* ─── Focus visible (accessibilité clavier) ─────────────────── */
+*:focus:not(:focus-visible) { outline: none; }
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none; /* Le border-color suffit pour les champs */
+}
+
+/* ─── Screen reader only ─────────────────────────────────────── */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border-width: 0;
+}
 input::placeholder { color: var(--text-muted); }
 select option { background: var(--bg-surface); }
 
@@ -111,12 +129,19 @@ select option { background: var(--bg-surface); }
 }
 .nav-links {
   display: flex;
+  align-items: center;
   gap: 4px;
   flex: 1;
   overflow-x: auto;
   scrollbar-width: none;
 }
 .nav-links::-webkit-scrollbar { display: none; }
+.nav-group-sep {
+  width: 1px; height: 20px;
+  background: var(--border);
+  margin: 0 6px;
+  flex-shrink: 0;
+}
 .nav-link {
   padding: 8px 14px;
   border-radius: var(--radius-sm);
@@ -242,6 +267,7 @@ select option { background: var(--bg-surface); }
 .grid-2 { grid-template-columns: repeat(2, 1fr); }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
 .grid-4 { grid-template-columns: repeat(4, 1fr); }
+.kpi-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
 
 /* ─── Form ──────────────────────────────────────────────────── */
 .form-group { display: flex; flex-direction: column; gap: 6px; }
@@ -697,7 +723,11 @@ tr:hover td { background: var(--bg-hover); }
   display: flex;
   height: 100%;
   align-items: stretch;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+.bottom-nav-inner::-webkit-scrollbar { display: none; }
 .bottom-nav-item {
   flex: 1;
   display: flex;
@@ -779,4 +809,13 @@ tr:hover td { background: var(--bg-hover); }
   /* Toast en bas à gauche sur mobile */
   #toast-container { bottom: calc(var(--bottom-nav-height) + 16px + env(safe-area-inset-bottom)); right: 12px; left: 12px; }
   .toast { max-width: 100%; }
+}
+
+/* ─── Respect prefers-reduced-motion ───────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

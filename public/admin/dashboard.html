@@ -270,9 +270,9 @@
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <a href="/admin/manager.html" class="btn btn-secondary btn-sm">📋 Vue Manager</a>
           <div class="date-nav">
-            <button onclick="shiftDate(-1)" title="Jour précédent">‹</button>
-            <input type="date" id="logDate" onchange="loadAll()">
-            <button onclick="shiftDate(1)" title="Jour suivant">›</button>
+            <button onclick="shiftDate(-1)" aria-label="Jour précédent">‹</button>
+            <input type="date" id="logDate" aria-label="Date sélectionnée" onchange="loadAll()">
+            <button onclick="shiftDate(1)" aria-label="Jour suivant">›</button>
           </div>
         </div>
       </div>
@@ -285,7 +285,7 @@
       </div>
 
       <!-- KPI Salle -->
-      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);" id="kpiGrid">
+      <div class="kpi-grid" id="kpiGrid">
         <div class="kpi-chip blue">
           <div class="kpi-label">📅 Réservations</div>
           <div class="kpi-value" id="kpiTotal">—</div>

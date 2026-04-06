@@ -203,7 +203,7 @@
           </div>
           <div class="joy-actions">
             <span class="joy-status ${ev.status}">${ev.status === 'confirmed' ? '✅ Confirmé' : '❌ Annulé'}</span>
-            ${userRole === 'admin' || userRole === 'manager' ? `<button class="btn-del" onclick="deleteEvent(${ev.id})" title="Supprimer">🗑</button>` : ''}
+            ${userRole === 'admin' || userRole === 'manager' ? `<button class="btn-del" onclick="deleteEvent(${ev.id})" aria-label="Supprimer cet événement">🗑</button>` : ''}
           </div>
         </div>`;
       }).join('')}</div>`;
