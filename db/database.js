@@ -1323,6 +1323,157 @@ function deleteTimeEvent(id, userId) {
   db.prepare('DELETE FROM cuisine_time_events WHERE id = ?').run(id);
 }
 
+// ─── Instagram Planificateur ───────────────────────────────────────────────────
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS instagram_accounts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      username TEXT,
+      account_type TEXT DEFAULT 'business',
+      ig_user_id TEXT,
+      ig_page_id TEXT,
+      access_token TEXT,
+      token_expires_at TEXT,
+      avatar_url TEXT,
+      is_active INTEGER DEFAULT 1,
+      created_by INTEGER,
+      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (created_by) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS instagram_posts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_id INTEGER NOT NULL,
+      caption TEXT,
+      status TEXT NOT NULL DEFAULT 'draft',
+      scheduled_at TEXT,
+      published_at TEXT,
+      ig_media_id TEXT,
+      ig_permalink TEXT,
+      error_message TEXT,
+      created_by INTEGER,
+      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      updated_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (account_id) REFERENCES instagram_accounts(id),
+      FOREIGN KEY (created_by) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS instagram_media (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      post_id INTEGER NOT NULL,
+      filename TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      mimetype TEXT NOT NULL,
+      size INTEGER,
+      sort_order INTEGER DEFAULT 0,
+      FOREIGN KEY (post_id) REFERENCES instagram_posts(id) ON DELETE CASCADE
+    );
+  `);
+} catch(e) {}
+
+// ─── Instagram — Comptes ───────────────────────────────────────────────────────
+function getInstagramAccounts() {
+  return db.prepare('SELECT * FROM instagram_accounts WHERE is_active = 1 ORDER BY name').all();
+}
+function getInstagramAccountById(id) {
+  return db.prepare('SELECT * FROM instagram_accounts WHERE id = ?').get(id);
+}
+function createInstagramAccount({ name, username, account_type, ig_user_id, ig_page_id, access_token, token_expires_at, avatar_url, created_by }) {
+  return db.prepare(
+    'INSERT INTO instagram_accounts (name, username, account_type, ig_user_id, ig_page_id, access_token, token_expires_at, avatar_url, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(name, username || null, account_type || 'business', ig_user_id || null, ig_page_id || null, access_token || null, token_expires_at || null, avatar_url || null, created_by || null).lastInsertRowid;
+}
+function updateInstagramAccount(id, data) {
+  const fields = ['name', 'username', 'account_type', 'ig_user_id', 'ig_page_id', 'access_token', 'token_expires_at', 'avatar_url'];
+  const updates = fields.filter(f => data[f] !== undefined).map(f => `${f} = ?`);
+  const values  = fields.filter(f => data[f] !== undefined).map(f => data[f]);
+  if (!updates.length) return;
+  db.prepare(`UPDATE instagram_accounts SET ${updates.join(', ')} WHERE id = ?`).run(...values, id);
+}
+function deleteInstagramAccount(id) {
+  db.prepare('UPDATE instagram_accounts SET is_active = 0 WHERE id = ?').run(id);
+}
+
+// ─── Instagram — Posts ─────────────────────────────────────────────────────────
+function getInstagramPosts({ accountId, status, from, to } = {}) {
+  let q = `
+    SELECT p.*, a.name as account_name, a.username as account_username,
+           (SELECT COUNT(*) FROM instagram_media m WHERE m.post_id = p.id) as media_count,
+           (SELECT filename FROM instagram_media m WHERE m.post_id = p.id ORDER BY m.sort_order ASC LIMIT 1) as first_media
+    FROM instagram_posts p
+    JOIN instagram_accounts a ON a.id = p.account_id
+    WHERE 1=1
+  `;
+  const params = [];
+  if (accountId) { q += ' AND p.account_id = ?'; params.push(accountId); }
+  if (status)    { q += ' AND p.status = ?';     params.push(status); }
+  if (from)      { q += ' AND (p.scheduled_at >= ? OR p.published_at >= ?)'; params.push(from, from); }
+  if (to)        { q += ' AND (p.scheduled_at <= ? OR p.published_at <= ?)'; params.push(to, to); }
+  q += ' ORDER BY COALESCE(p.scheduled_at, p.created_at) DESC';
+  return db.prepare(q).all(...params);
+}
+function getInstagramPostById(id) {
+  return db.prepare(`
+    SELECT p.*, a.name as account_name, a.username as account_username,
+           a.ig_user_id, a.access_token, a.token_expires_at
+    FROM instagram_posts p
+    JOIN instagram_accounts a ON a.id = p.account_id
+    WHERE p.id = ?
+  `).get(id);
+}
+function createInstagramPost({ account_id, caption, status, scheduled_at, created_by }) {
+  return db.prepare(
+    "INSERT INTO instagram_posts (account_id, caption, status, scheduled_at, created_by, updated_at) VALUES (?, ?, ?, ?, ?, datetime('now','localtime'))"
+  ).run(account_id, caption || null, status || 'draft', scheduled_at || null, created_by || null).lastInsertRowid;
+}
+function updateInstagramPost(id, data) {
+  const fields = ['account_id', 'caption', 'status', 'scheduled_at', 'published_at', 'ig_media_id', 'ig_permalink', 'error_message'];
+  const updates = fields.filter(f => data[f] !== undefined).map(f => `${f} = ?`);
+  const values  = fields.filter(f => data[f] !== undefined).map(f => data[f]);
+  if (!updates.length) return;
+  updates.push("updated_at = datetime('now','localtime')");
+  db.prepare(`UPDATE instagram_posts SET ${updates.join(', ')} WHERE id = ?`).run(...values, id);
+}
+function deleteInstagramPost(id) {
+  const media = db.prepare('SELECT filename FROM instagram_media WHERE post_id = ?').all(id);
+  db.prepare('DELETE FROM instagram_posts WHERE id = ?').run(id);
+  return media; // retourne les noms de fichiers pour suppression disque
+}
+function getDueInstagramPosts() {
+  return db.prepare(`
+    SELECT p.*, a.ig_user_id, a.access_token, a.token_expires_at, a.name as account_name
+    FROM instagram_posts p
+    JOIN instagram_accounts a ON a.id = p.account_id
+    WHERE p.status = 'scheduled'
+      AND p.scheduled_at <= datetime('now','localtime')
+      AND a.is_active = 1
+  `).all();
+}
+
+// ─── Instagram — Médias ────────────────────────────────────────────────────────
+function addInstagramMedia(post_id, { filename, original_name, mimetype, size, sort_order }) {
+  return db.prepare(
+    'INSERT INTO instagram_media (post_id, filename, original_name, mimetype, size, sort_order) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(post_id, filename, original_name, mimetype, size || 0, sort_order || 0).lastInsertRowid;
+}
+function getInstagramMedia(post_id) {
+  return db.prepare('SELECT * FROM instagram_media WHERE post_id = ? ORDER BY sort_order ASC').all(post_id);
+}
+function getInstagramMediaById(id) {
+  return db.prepare('SELECT * FROM instagram_media WHERE id = ?').get(id);
+}
+function deleteInstagramMedia(id) {
+  const row = db.prepare('SELECT filename FROM instagram_media WHERE id = ?').get(id);
+  db.prepare('DELETE FROM instagram_media WHERE id = ?').run(id);
+  return row; // retourne le filename pour suppression disque
+}
+function reorderInstagramMedia(post_id, orderedIds) {
+  orderedIds.forEach((mid, idx) => {
+    db.prepare('UPDATE instagram_media SET sort_order = ? WHERE id = ? AND post_id = ?').run(idx, mid, post_id);
+  });
+}
+
 module.exports = {
   getUserByPin, getUserById, getAllUsers, createUser, updateUser, deleteUser,
   getTasksWithCompletions, getTaskById, getAllTasks, completeTask, uncompleteTask, createTask, updateTask, deactivateTask,
@@ -1340,4 +1491,7 @@ module.exports = {
   logTimeEvent, getTimeEventsByDate, getTimeEventsRange, deleteTimeEvent,
   addReservationAttachment, getReservationAttachments, getAttachmentById, deleteAttachment,
   createCongeRequest, getCongeRequestsByUser, getAllCongeRequests, updateCongeRequestStatus,
+  getInstagramAccounts, getInstagramAccountById, createInstagramAccount, updateInstagramAccount, deleteInstagramAccount,
+  getInstagramPosts, getInstagramPostById, createInstagramPost, updateInstagramPost, deleteInstagramPost, getDueInstagramPosts,
+  addInstagramMedia, getInstagramMedia, getInstagramMediaById, deleteInstagramMedia, reorderInstagramMedia,
 };

@@ -69,6 +69,7 @@ async function buildNav(activePage) {
     { href: '/admin/email.html',        label: '📧 Email',             mobileLabel: 'Email',      icon: '📧',   key: 'email' },
     { href: '/resa/devis.html',         label: '📝 Devis',             mobileLabel: 'Devis',      icon: '📝',   key: 'resa-devis' },
     { href: '/staff/planning.html',     label: '📅 Planning',           mobileLabel: 'Planning',   icon: '📅',   key: 'planning' },
+    { href: '/instagram/index.html',    label: '📸 Instagram',          mobileLabel: 'Insta',      icon: '📸',   key: 'instagram' },
   ];
   const managerMidiLinks = [
     { href: '/admin/dashboard.html',    label: '📊 Dashboard',     mobileLabel: 'Dashboard',   icon: '📊', key: 'dashboard' },
@@ -101,6 +102,7 @@ async function buildNav(activePage) {
   ];
   const marketingLinks = [
     { href: '/marketing/dashboard.html',     label: '📊 Dashboard',      mobileLabel: 'Dashboard', icon: '📊', key: 'marketing-dashboard' },
+    { href: '/instagram/index.html',         label: '📸 Instagram',       mobileLabel: 'Insta',     icon: '📸', key: 'instagram' },
     { href: '/marketing/reservations.html',  label: '📋 Réservations',   mobileLabel: 'Résas',     icon: '📋', key: 'marketing-reservations' },
     { href: '/admin/joy.html',               label: '🔗 Joy.io',          mobileLabel: 'Joy',       icon: '🔗', key: 'joy' },
     { href: '/admin/manager.html',           label: '📋 Manager',         mobileLabel: 'Manager',   icon: '📋', key: 'manager' },

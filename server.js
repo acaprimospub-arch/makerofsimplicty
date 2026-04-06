@@ -34,6 +34,27 @@ const upload = multer({
   }
 });
 
+// ─── Multer (médias Instagram) ─────────────────────────────────────────────────
+const INSTAGRAM_DIR = path.join(__dirname, 'uploads', 'instagram');
+if (!fs.existsSync(INSTAGRAM_DIR)) fs.mkdirSync(INSTAGRAM_DIR, { recursive: true });
+
+const _igStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, INSTAGRAM_DIR),
+  filename: (_req, file, cb) => {
+    const ext  = path.extname(file.originalname);
+    const base = `ig-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+    cb(null, base);
+  }
+});
+const uploadInstagram = multer({
+  storage: _igStorage,
+  limits: { fileSize: 30 * 1024 * 1024 }, // 30 Mo max
+  fileFilter: (_req, file, cb) => {
+    const ok = /^image\/(jpeg|jpg|png|webp)$/.test(file.mimetype);
+    cb(null, ok);
+  }
+});
+
 // ─── Joy.io iCal Sync ──────────────────────────────────────────────────────────
 function fetchUrl(url, depth = 0) {
   if (depth > 5) return Promise.reject(new Error('Too many redirects'));
@@ -1024,6 +1045,168 @@ app.put('/api/admin/conge-requests/:id', requireAdminOrManager, (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── Instagram Planificateur ───────────────────────────────────────────────────
+function requireMarketing(req, res, next) {
+  if (req.session.userId && (req.session.role === 'admin' || req.session.shift === 'marketing'))
+    return next();
+  res.status(403).json({ error: 'Accès réservé marketing/admin' });
+}
+
+// Sert les médias Instagram
+app.use('/uploads/instagram', requireMarketing, express.static(INSTAGRAM_DIR));
+
+// ── Comptes ──
+app.get('/api/instagram/accounts', requireMarketing, (req, res) => {
+  res.json(db.getInstagramAccounts());
+});
+
+app.post('/api/instagram/accounts', requireMarketing, (req, res) => {
+  const { name, username, account_type, ig_user_id, ig_page_id, access_token, token_expires_at, avatar_url } = req.body;
+  if (!name) return res.status(400).json({ error: 'Nom requis' });
+  const id = db.createInstagramAccount({ name, username, account_type, ig_user_id, ig_page_id, access_token, token_expires_at, avatar_url, created_by: req.session.userId });
+  const account = db.getInstagramAccountById(id);
+  io.emit('instagram:account:created', account);
+  res.json(account);
+});
+
+app.put('/api/instagram/accounts/:id', requireMarketing, (req, res) => {
+  db.updateInstagramAccount(req.params.id, req.body);
+  const account = db.getInstagramAccountById(req.params.id);
+  io.emit('instagram:account:updated', account);
+  res.json(account);
+});
+
+app.delete('/api/instagram/accounts/:id', requireMarketing, (req, res) => {
+  db.deleteInstagramAccount(req.params.id);
+  io.emit('instagram:account:deleted', { id: parseInt(req.params.id) });
+  res.json({ ok: true });
+});
+
+// Test connexion compte Instagram
+app.get('/api/instagram/accounts/:id/check', requireMarketing, async (req, res) => {
+  const account = db.getInstagramAccountById(req.params.id);
+  if (!account) return res.status(404).json({ error: 'Compte introuvable' });
+  if (!account.ig_user_id || !account.access_token) {
+    return res.json({ ok: false, error: 'Identifiants manquants' });
+  }
+  try {
+    const data = await new Promise((resolve, reject) => {
+      const url = `https://graph.facebook.com/v21.0/${account.ig_user_id}?fields=name,username&access_token=${account.access_token}`;
+      https.get(url, { headers: { 'User-Agent': 'MosPub/1.0' } }, (r) => {
+        let body = '';
+        r.on('data', c => body += c);
+        r.on('end', () => {
+          try { resolve(JSON.parse(body)); } catch { reject(new Error('Réponse invalide')); }
+        });
+      }).on('error', reject);
+    });
+    if (data.error) return res.json({ ok: false, error: data.error.message });
+    res.json({ ok: true, name: data.name, username: data.username });
+  } catch(e) {
+    res.json({ ok: false, error: e.message });
+  }
+});
+
+// ── Posts ──
+app.get('/api/instagram/posts', requireMarketing, (req, res) => {
+  const { accountId, status, from, to } = req.query;
+  res.json(db.getInstagramPosts({ accountId, status, from, to }));
+});
+
+app.get('/api/instagram/posts/:id', requireMarketing, (req, res) => {
+  const post = db.getInstagramPostById(req.params.id);
+  if (!post) return res.status(404).json({ error: 'Post introuvable' });
+  const media = db.getInstagramMedia(req.params.id);
+  res.json({ ...post, media });
+});
+
+app.post('/api/instagram/posts', requireMarketing, (req, res) => {
+  const { account_id, caption, status, scheduled_at } = req.body;
+  if (!account_id) return res.status(400).json({ error: 'Compte requis' });
+  if (status === 'scheduled' && !scheduled_at) return res.status(400).json({ error: 'Date requise pour planification' });
+  const id = db.createInstagramPost({ account_id, caption, status: status || 'draft', scheduled_at, created_by: req.session.userId });
+  const post = db.getInstagramPostById(id);
+  io.emit('instagram:post:created', post);
+  res.json(post);
+});
+
+app.put('/api/instagram/posts/:id', requireMarketing, (req, res) => {
+  const { account_id, caption, status, scheduled_at } = req.body;
+  if (status === 'scheduled' && !scheduled_at) return res.status(400).json({ error: 'Date requise pour planification' });
+  db.updateInstagramPost(req.params.id, { account_id, caption, status, scheduled_at });
+  const post = db.getInstagramPostById(req.params.id);
+  io.emit('instagram:post:updated', post);
+  res.json(post);
+});
+
+app.delete('/api/instagram/posts/:id', requireMarketing, (req, res) => {
+  const media = db.deleteInstagramPost(req.params.id);
+  media.forEach(m => { try { fs.unlinkSync(path.join(INSTAGRAM_DIR, m.filename)); } catch(e) {} });
+  io.emit('instagram:post:deleted', { id: parseInt(req.params.id) });
+  res.json({ ok: true });
+});
+
+// Publication manuelle
+app.post('/api/instagram/posts/:id/publish', requireMarketing, async (req, res) => {
+  const post = db.getInstagramPostById(req.params.id);
+  if (!post) return res.status(404).json({ error: 'Post introuvable' });
+  if (['publishing', 'published'].includes(post.status)) return res.status(400).json({ error: 'Post déjà en cours de publication ou publié' });
+  db.updateInstagramPost(req.params.id, { status: 'scheduled', scheduled_at: post.scheduled_at || new Date().toISOString().slice(0,16).replace('T',' ') });
+  res.json({ ok: true, message: 'Publication en cours…' });
+  publishInstagramPost(parseInt(req.params.id));
+});
+
+// ── Médias ──
+app.post('/api/instagram/posts/:id/media', requireMarketing, uploadInstagram.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Fichier requis (JPEG/PNG/WebP)' });
+  const post = db.getInstagramPostById(req.params.id);
+  if (!post) {
+    fs.unlinkSync(req.file.path);
+    return res.status(404).json({ error: 'Post introuvable' });
+  }
+  const existing = db.getInstagramMedia(req.params.id);
+  if (existing.length >= 10) {
+    fs.unlinkSync(req.file.path);
+    return res.status(400).json({ error: 'Maximum 10 images par post (carrousel)' });
+  }
+  const id = db.addInstagramMedia(req.params.id, {
+    filename: req.file.filename,
+    original_name: req.file.originalname,
+    mimetype: req.file.mimetype,
+    size: req.file.size,
+    sort_order: existing.length
+  });
+  res.json(db.getInstagramMediaById(id));
+});
+
+app.delete('/api/instagram/media/:mediaId', requireMarketing, (req, res) => {
+  const row = db.deleteInstagramMedia(req.params.mediaId);
+  if (row) { try { fs.unlinkSync(path.join(INSTAGRAM_DIR, row.filename)); } catch(e) {} }
+  res.json({ ok: true });
+});
+
+app.put('/api/instagram/posts/:id/media/reorder', requireMarketing, (req, res) => {
+  const { order } = req.body;
+  if (!Array.isArray(order)) return res.status(400).json({ error: 'order[] requis' });
+  db.reorderInstagramMedia(req.params.id, order);
+  res.json({ ok: true });
+});
+
+// Config Instagram (admin)
+app.get('/api/instagram/config', requireAdmin, (req, res) => {
+  res.json({
+    server_public_url: db.getSetting('server_public_url') || '',
+    instagram_api_configured: db.getSetting('instagram_api_configured') || '0',
+  });
+});
+
+app.put('/api/instagram/config', requireAdmin, (req, res) => {
+  const { server_public_url, instagram_api_configured } = req.body;
+  if (server_public_url !== undefined) db.setSetting('server_public_url', server_public_url);
+  if (instagram_api_configured !== undefined) db.setSetting('instagram_api_configured', instagram_api_configured);
+  res.json({ ok: true });
+});
+
 // ─── Webhook déploiement automatique ───────────────────────────────────────────
 const DEPLOY_TOKEN = process.env.DEPLOY_TOKEN || 'mos-deploy-secret';
 app.post('/webhook/deploy', express.json(), (req, res) => {
@@ -1041,6 +1224,131 @@ app.post('/webhook/deploy', express.json(), (req, res) => {
     }
   );
 });
+
+// ─── Instagram — Publication automatique ───────────────────────────────────────
+async function igHttpPost(urlStr, bodyObj) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify(bodyObj);
+    const urlParsed = new URL(urlStr);
+    const options = {
+      hostname: urlParsed.hostname,
+      path: urlParsed.pathname + urlParsed.search,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
+    };
+    const req = https.request(options, (r) => {
+      let data = '';
+      r.on('data', c => data += c);
+      r.on('end', () => {
+        try { resolve(JSON.parse(data)); } catch { reject(new Error('Réponse API invalide')); }
+      });
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+async function publishInstagramPost(postId) {
+  const post = db.getInstagramPostById(postId);
+  if (!post || post.status !== 'scheduled') return;
+
+  // Marquer comme en cours pour éviter le double-déclenchement
+  db.updateInstagramPost(postId, { status: 'publishing' });
+  io.emit('instagram:post:publishing', { id: postId });
+
+  const media = db.getInstagramMedia(postId);
+
+  if (!post.ig_user_id || !post.access_token) {
+    db.updateInstagramPost(postId, { status: 'failed', error_message: 'Compte Instagram non configuré (token manquant)' });
+    io.emit('instagram:post:failed', { id: postId, error: 'Token manquant — configurez le compte dans Instagram > Comptes' });
+    return;
+  }
+  if (!media.length) {
+    db.updateInstagramPost(postId, { status: 'failed', error_message: 'Aucun média attaché au post' });
+    io.emit('instagram:post:failed', { id: postId, error: 'Aucun média attaché' });
+    return;
+  }
+
+  try {
+    const baseUrl = db.getSetting('server_public_url') || '';
+    if (!baseUrl) throw new Error('URL publique du serveur non configurée (Instagram > Config)');
+
+    const token  = post.access_token;
+    const igId   = post.ig_user_id;
+    const apiBase = `https://graph.facebook.com/v21.0`;
+
+    let containerId;
+
+    if (media.length === 1) {
+      // Post simple
+      const imageUrl = `${baseUrl}/uploads/instagram/${media[0].filename}`;
+      const r = await igHttpPost(`${apiBase}/${igId}/media?access_token=${token}`, {
+        image_url: imageUrl,
+        caption: post.caption || ''
+      });
+      if (r.error) throw new Error(r.error.message);
+      containerId = r.id;
+    } else {
+      // Carrousel
+      const childIds = [];
+      for (const m of media) {
+        const imageUrl = `${baseUrl}/uploads/instagram/${m.filename}`;
+        const r = await igHttpPost(`${apiBase}/${igId}/media?access_token=${token}`, {
+          image_url: imageUrl,
+          is_carousel_item: true
+        });
+        if (r.error) throw new Error(r.error.message);
+        childIds.push(r.id);
+      }
+      const rc = await igHttpPost(`${apiBase}/${igId}/media?access_token=${token}`, {
+        media_type: 'CAROUSEL',
+        children: childIds.join(','),
+        caption: post.caption || ''
+      });
+      if (rc.error) throw new Error(rc.error.message);
+      containerId = rc.id;
+    }
+
+    // Publier le container
+    const rp = await igHttpPost(`${apiBase}/${igId}/media_publish?access_token=${token}`, {
+      creation_id: containerId
+    });
+    if (rp.error) throw new Error(rp.error.message);
+
+    const permalink = `https://www.instagram.com/p/${rp.id}/`;
+    const publishedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    db.updateInstagramPost(postId, { status: 'published', published_at: publishedAt, ig_media_id: containerId, ig_permalink: permalink });
+    io.emit('instagram:post:published', { id: postId, permalink });
+    console.log(`[Instagram] ✅ Post #${postId} publié — ${permalink}`);
+
+  } catch(err) {
+    console.error(`[Instagram] ❌ Erreur publication post #${postId}:`, err.message);
+    db.updateInstagramPost(postId, { status: 'failed', error_message: err.message.substring(0, 500) });
+    io.emit('instagram:post:failed', { id: postId, error: err.message });
+  }
+}
+
+// Cron : publication auto toutes les minutes
+setInterval(async () => {
+  const due = db.getDueInstagramPosts();
+  for (const post of due) {
+    await publishInstagramPost(post.id);
+  }
+}, 60 * 1000);
+
+// Cron : alerte token expirant (une fois par jour)
+setInterval(() => {
+  const accounts = db.getInstagramAccounts();
+  const now = new Date();
+  accounts.forEach(acc => {
+    if (!acc.token_expires_at) return;
+    const daysLeft = Math.ceil((new Date(acc.token_expires_at) - now) / (1000 * 60 * 60 * 24));
+    if (daysLeft <= 7 && daysLeft > 0) {
+      io.emit('instagram:token_expiring', { accountId: acc.id, accountName: acc.name, daysLeft });
+    }
+  });
+}, 24 * 60 * 60 * 1000);
 
 // Auto-sync Joy.io au démarrage puis toutes les 2 min
 setTimeout(syncJoyEvents, 8000);

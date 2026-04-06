@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Instagram — Mos Pub Mercière</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0b2d3e">
+  <style>
+    /* ── Account strip ── */
+    .account-strip {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .account-pill {
+      padding: 6px 16px; border-radius: 999px; font-size: .82rem; font-weight: 600;
+      border: 1.5px solid var(--border); color: var(--text-muted); cursor: pointer;
+      transition: border-color .15s, color .15s, background .15s;
+      background: transparent;
+    }
+    .account-pill.active {
+      border-color: var(--primary); color: var(--primary);
+      background: rgba(205,164,67,.12);
+    }
+
+    /* ── View toggle ── */
+    .view-toggle { display: flex; gap: 4px; }
+    .view-toggle .btn { font-size: .78rem; padding: 5px 12px; }
+    .view-toggle .btn.active { background: var(--primary); color: #000; border-color: var(--primary); }
+
+    /* ── Calendar ── */
+    .cal-wrapper { overflow-x: auto; }
+    .cal-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .cal-month-label { font-weight: 700; font-size: 1rem; color: var(--text); flex: 1; text-align: center; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; min-width: 560px; }
+    .cal-head { background: var(--bg-surface); text-align: center; font-size: .72rem; font-weight: 700; color: var(--text-muted); padding: 8px 4px; text-transform: uppercase; }
+    .cal-day { background: var(--bg-card); padding: 6px 6px 8px; min-height: 80px; cursor: pointer; transition: background .12s; }
+    .cal-day:hover { background: var(--bg-surface); }
+    .cal-day.other-month { opacity: .38; pointer-events: none; }
+    .cal-day.today .cal-day-num { color: var(--primary); font-weight: 800; }
+    .cal-day-num { font-size: .72rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+    .post-chip {
+      display: block; font-size: .68rem; padding: 2px 5px; border-radius: 4px;
+      margin-bottom: 2px; cursor: pointer; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; font-weight: 600;
+      transition: opacity .1s;
+    }
+    .post-chip:hover { opacity: .8; }
+    .post-chip.draft     { background: var(--bg-surface); color: var(--text-muted); border: 1px solid var(--border); }
+    .post-chip.scheduled { background: rgba(96,165,250,.18); color: #60a5fa; }
+    .post-chip.publishing{ background: rgba(240,180,41,.18); color: #f0b429; }
+    .post-chip.published { background: rgba(76,175,106,.18); color: #4caf6a; }
+    .post-chip.failed    { background: rgba(232,84,84,.18);  color: #e85454; }
+    .more-chip { font-size: .65rem; color: var(--text-muted); padding: 1px 4px; cursor: pointer; }
+
+    /* ── List view ── */
+    .week-group { margin-bottom: 24px; }
+    .week-label { font-size: .78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    .post-row {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 14px;
+      margin-bottom: 8px; cursor: pointer; transition: border-color .15s;
+    }
+    .post-row:hover { border-color: var(--primary); }
+    .post-thumb {
+      width: 52px; height: 52px; border-radius: 8px;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      flex-shrink: 0; overflow: hidden; display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; color: var(--text-muted);
+    }
+    .post-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .post-row-info { flex: 1; min-width: 0; }
+    .post-row-caption { font-size: .85rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+    .post-row-meta { font-size: .73rem; color: var(--text-muted); display: flex; gap: 10px; flex-wrap: wrap; }
+    .post-row-status { flex-shrink: 0; }
+    .status-badge { font-size: .7rem; font-weight: 700; padding: 3px 9px; border-radius: 99px; }
+    .status-badge.draft     { background: var(--bg-surface); color: var(--text-muted); }
+    .status-badge.scheduled { background: rgba(96,165,250,.15); color: #60a5fa; }
+    .status-badge.publishing{ background: rgba(240,180,41,.15); color: #f0b429; }
+    .status-badge.published { background: rgba(76,175,106,.15); color: #4caf6a; }
+    .status-badge.failed    { background: rgba(232,84,84,.15);  color: #e85454; }
+
+    /* ── Drawer ── */
+    .drawer {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: min(500px, 100vw);
+      background: var(--bg-card);
+      border-left: 1px solid var(--border);
+      z-index: 200;
+      transform: translateX(100%);
+      transition: transform .25s ease;
+      display: flex; flex-direction: column;
+    }
+    .drawer.open { transform: translateX(0); }
+    .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 199; display: none; }
+    .drawer-overlay.open { display: block; }
+    .drawer-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .drawer-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .drawer-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+    .drawer-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-size: .76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+    .form-group select, .form-group textarea, .form-group input[type="datetime-local"] {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      padding: 9px 12px; font-size: .88rem; width: 100%; font-family: inherit;
+    }
+    .form-group textarea { resize: vertical; min-height: 90px; }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media(max-width:480px) { .form-row-2 { grid-template-columns: 1fr; } }
+
+    /* Media dropzone */
+    .media-dropzone {
+      border: 2px dashed var(--border); border-radius: var(--radius-sm);
+      padding: 12px; text-align: center; cursor: pointer; transition: border-color .15s;
+    }
+    .media-dropzone:hover, .media-dropzone.drag-over { border-color: var(--primary); }
+    .media-preview-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .media-thumb-wrap {
+      position: relative; width: 72px; height: 72px;
+    }
+    .media-thumb {
+      width: 72px; height: 72px; object-fit: cover;
+      border-radius: 8px; border: 1px solid var(--border); display: block;
+    }
+    .media-thumb-del {
+      position: absolute; top: -6px; right: -6px;
+      background: var(--danger, #e85454); color: #fff;
+      border-radius: 50%; width: 18px; height: 18px;
+      font-size: .65rem; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border: none; font-weight: 700;
+    }
+    .media-order-badge {
+      position: absolute; bottom: -2px; left: -2px;
+      background: rgba(0,0,0,.7); color: #fff; border-radius: 4px;
+      font-size: .6rem; padding: 1px 5px; font-weight: 700;
+    }
+    .caption-count { font-size: .72rem; color: var(--text-muted); text-align: right; }
+    .error-msg { font-size: .8rem; color: #e85454; background: rgba(232,84,84,.1); border-radius: 6px; padding: 8px 12px; }
+    .permalink-link { font-size: .8rem; color: var(--primary); word-break: break-all; }
+  </style>
+</head>
+<body>
+  <nav class="nav" id="nav"></nav>
+  <div class="page">
+    <div class="container">
+
+      <!-- Header -->
+      <div class="page-header">
+        <div>
+          <div class="page-title">📸 Planificateur Instagram</div>
+          <div class="page-subtitle" id="calSubtitle"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <div class="view-toggle">
+            <button class="btn btn-secondary active" id="btnViewCal" onclick="setView('calendar')">Calendrier</button>
+            <button class="btn btn-secondary" id="btnViewList" onclick="setView('list')">Liste</button>
+          </div>
+          <a href="/instagram/accounts.html" class="btn btn-secondary btn-sm">⚙️ Comptes</a>
+          <button class="btn btn-primary" id="btnNewPost" onclick="openDrawer(null)">+ Nouveau post</button>
+        </div>
+      </div>
+
+      <!-- Account filter strip -->
+      <div class="account-strip" id="accountStrip"></div>
+
+      <!-- Calendar view -->
+      <div id="viewCalendar">
+        <div class="cal-nav">
+          <button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">‹</button>
+          <div class="cal-month-label" id="calMonthLabel"></div>
+          <button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">›</button>
+        </div>
+        <div class="cal-wrapper">
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+      </div>
+
+      <!-- List view -->
+      <div id="viewList" style="display:none">
+        <div id="listContent"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Drawer overlay -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+  <!-- Drawer composition -->
+  <div class="drawer" id="drawer">
+    <div class="drawer-header">
+      <div class="drawer-title" id="drawerTitle">Nouveau post</div>
+      <button class="btn-icon" onclick="closeDrawer()">✕</button>
+    </div>
+    <div class="drawer-body" id="drawerBody">
+
+      <div class="form-group">
+        <label class="form-label">Compte Instagram *</label>
+        <select id="dAccount"></select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Image(s) — max 10 (carrousel)</label>
+        <div class="media-dropzone" id="mediaDropzone">
+          <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp" multiple hidden>
+          <div class="media-preview-row" id="mediaPreviewRow"></div>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('mediaInput').click()">+ Ajouter une image</button>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:6px">JPEG · PNG · WebP · 30 Mo max</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Légende</label>
+        <textarea id="dCaption" placeholder="Votre texte, emojis, hashtags…" maxlength="2200"></textarea>
+        <div class="caption-count"><span id="captionCount">0</span>/2200</div>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">Statut</label>
+          <select id="dStatus" onchange="onStatusChange()">
+            <option value="draft">Brouillon</option>
+            <option value="scheduled">Planifié</option>
+          </select>
+        </div>
+        <div class="form-group" id="scheduleGroup" style="display:none">
+          <label class="form-label">Date & heure</label>
+          <input type="datetime-local" id="dScheduledAt">
+        </div>
+      </div>
+
+      <div id="postInfo"></div>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-danger btn-sm" id="btnDeletePost" style="display:none;margin-right:auto" onclick="deleteCurrentPost()">🗑️ Supprimer</button>
+      <button class="btn btn-secondary" onclick="savePost('draft')">Brouillon</button>
+      <button class="btn btn-primary" id="btnPlanify" onclick="savePost('scheduled')">Planifier</button>
+      <button class="btn btn-success btn-sm" id="btnPublishNow" style="display:none" onclick="publishNow()">▶ Publier maintenant</button>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // ── État global ──────────────────────────────────────────────────────────────
+    let currentView = 'calendar';
+    let currentMonthOffset = 0;
+    let activeAccountFilter = null;
+    let allPosts = [];
+    let allAccounts = [];
+    let currentPostId = null;
+    let pendingMediaUploads = []; // fichiers à uploader après création du post
+    let currentMediaItems = [];  // médias déjà attachés (mode édition)
+
+    // ── Init ─────────────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      await buildNav('instagram');
+      await Promise.all([loadAccounts(), loadPosts()]);
+      renderAccountStrip();
+      renderCalendar();
+      connectSocket();
+      // Drag & drop
+      const dz = document.getElementById('mediaDropzone');
+      dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+      dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+      dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFileSelect(e.dataTransfer.files); });
+      document.getElementById('mediaInput').addEventListener('change', e => handleFileSelect(e.target.files));
+      document.getElementById('dCaption').addEventListener('input', e => {
+        document.getElementById('captionCount').textContent = e.target.value.length;
+      });
+    });
+
+    async function loadAccounts() {
+      allAccounts = await api.get('/api/instagram/accounts') || [];
+    }
+    async function loadPosts() {
+      allPosts = await api.get('/api/instagram/posts') || [];
+    }
+
+    // ── Filtre compte ────────────────────────────────────────────────────────────
+    function renderAccountStrip() {
+      const strip = document.getElementById('accountStrip');
+      const pills = [
+        `<button class="account-pill ${activeAccountFilter === null ? 'active' : ''}" onclick="filterAccount(null)">Tous les comptes</button>`
+      ];
+      allAccounts.forEach(acc => {
+        pills.push(`<button class="account-pill ${activeAccountFilter === acc.id ? 'active' : ''}" onclick="filterAccount(${acc.id})">${escHtml(acc.name)}</button>`);
+      });
+      strip.innerHTML = pills.join('');
+    }
+    function filterAccount(id) {
+      activeAccountFilter = id;
+      renderAccountStrip();
+      if (currentView === 'calendar') renderCalendar();
+      else renderList();
+    }
+
+    // ── Vue ──────────────────────────────────────────────────────────────────────
+    function setView(v) {
+      currentView = v;
+      document.getElementById('viewCalendar').style.display = v === 'calendar' ? '' : 'none';
+      document.getElementById('viewList').style.display = v === 'list' ? '' : 'none';
+      document.getElementById('btnViewCal').classList.toggle('active', v === 'calendar');
+      document.getElementById('btnViewList').classList.toggle('active', v === 'list');
+      if (v === 'list') renderList();
+      else renderCalendar();
+    }
+
+    // ── Calendrier ───────────────────────────────────────────────────────────────
+    function changeMonth(delta) {
+      currentMonthOffset += delta;
+      renderCalendar();
+    }
+
+    function filteredPosts() {
+      if (activeAccountFilter === null) return allPosts;
+      return allPosts.filter(p => p.account_id === activeAccountFilter);
+    }
+
+    function renderCalendar() {
+      const now = new Date();
+      const target = new Date(now.getFullYear(), now.getMonth() + currentMonthOffset, 1);
+      const year = target.getFullYear();
+      const month = target.getMonth();
+      const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+      document.getElementById('calMonthLabel').textContent = `${MONTHS_FR[month]} ${year}`;
+      document.getElementById('calSubtitle').textContent = filteredPosts().length + ' post(s) total';
+
+      const firstDay = new Date(year, month, 1);
+      let startOffset = firstDay.getDay() - 1; // Lundi = 0
+      if (startOffset < 0) startOffset = 6;
+
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const daysInPrev  = new Date(year, month, 0).getDate();
+      const todayStr = now.toISOString().split('T')[0];
+
+      // Indexer les posts par date
+      const postsByDate = {};
+      filteredPosts().forEach(p => {
+        const d = (p.scheduled_at || p.published_at || p.created_at || '').split(' ')[0].split('T')[0];
+        if (d) { if (!postsByDate[d]) postsByDate[d] = []; postsByDate[d].push(p); }
+      });
+
+      const DAYS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+      let html = DAYS.map(d => `<div class="cal-head">${d}</div>`).join('');
+
+      let day = 1;
+      let nextDay = 1;
+      const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+
+      for (let i = 0; i < totalCells; i++) {
+        let dateStr, isCurrentMonth = true;
+        if (i < startOffset) {
+          const d = daysInPrev - startOffset + i + 1;
+          const prevMonth = month === 0 ? 11 : month - 1;
+          const prevYear  = month === 0 ? year - 1 : year;
+          dateStr = `${prevYear}-${String(prevMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          isCurrentMonth = false;
+        } else if (i < startOffset + daysInMonth) {
+          dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+          day++;
+        } else {
+          const nextMonth = month === 11 ? 0 : month + 1;
+          const nextYear  = month === 11 ? year + 1 : year;
+          dateStr = `${nextYear}-${String(nextMonth + 1).padStart(2,'0')}-${String(nextDay).padStart(2,'0')}`;
+          nextDay++;
+          isCurrentMonth = false;
+        }
+
+        const dayNum = parseInt(dateStr.split('-')[2]);
+        const isToday = dateStr === todayStr;
+        const dayPosts = postsByDate[dateStr] || [];
+
+        const chipsHtml = dayPosts.slice(0, 3).map(p =>
+          `<span class="post-chip ${p.status}" onclick="openDrawer(${p.id});event.stopPropagation()" title="${escHtml(p.caption || '(sans légende)')} — ${escHtml(p.account_name || '')}">${escHtml((p.caption || '(sans légende)').substring(0, 18))}</span>`
+        ).join('');
+        const moreHtml = dayPosts.length > 3 ? `<span class="more-chip" onclick="filterDay('${dateStr}')">+${dayPosts.length - 3} autres</span>` : '';
+
+        html += `
+          <div class="cal-day${isCurrentMonth ? '' : ' other-month'}${isToday ? ' today' : ''}" onclick="quickAddOnDay('${dateStr}')">
+            <div class="cal-day-num">${dayNum}</div>
+            ${chipsHtml}${moreHtml}
+          </div>
+        `;
+      }
+
+      document.getElementById('calGrid').innerHTML = html;
+    }
+
+    function quickAddOnDay(dateStr) {
+      openDrawer(null, dateStr);
+    }
+
+    // ── Vue Liste ────────────────────────────────────────────────────────────────
+    function renderList() {
+      const posts = filteredPosts().slice().sort((a,b) => {
+        const da = a.scheduled_at || a.published_at || a.created_at || '';
+        const db2 = b.scheduled_at || b.published_at || b.created_at || '';
+        return da < db2 ? 1 : -1;
+      });
+
+      if (!posts.length) {
+        document.getElementById('listContent').innerHTML = `<div class="card" style="text-align:center;padding:32px;color:var(--text-muted)">Aucun post trouvé</div>`;
+        return;
+      }
+
+      const byWeek = {};
+      posts.forEach(p => {
+        const d = new Date((p.scheduled_at || p.published_at || p.created_at || '').split(' ')[0]);
+        const weekKey = getWeekStart(d);
+        if (!byWeek[weekKey]) byWeek[weekKey] = [];
+        byWeek[weekKey].push(p);
+      });
+
+      const STATUS_LABELS = { draft: 'Brouillon', scheduled: 'Planifié', publishing: 'En cours…', published: 'Publié', failed: 'Échoué' };
+
+      let html = '';
+      Object.keys(byWeek).sort((a,b) => b.localeCompare(a)).forEach(weekKey => {
+        const weekPosts = byWeek[weekKey];
+        const wDate = new Date(weekKey);
+        html += `<div class="week-group">
+          <div class="week-label">Semaine du ${wDate.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</div>`;
+        weekPosts.forEach(p => {
+          const dateDisplay = p.scheduled_at
+            ? new Date(p.scheduled_at).toLocaleString('fr-FR', {weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
+            : (p.published_at ? new Date(p.published_at).toLocaleString('fr-FR',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Brouillon');
+          html += `
+            <div class="post-row" onclick="openDrawer(${p.id})">
+              <div class="post-thumb">
+                ${p.first_media ? `<img src="/uploads/instagram/${escHtml(p.first_media)}" alt="">` : '📷'}
+                ${p.media_count > 1 ? `<span style="position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,.7);color:#fff;font-size:.6rem;padding:1px 4px;border-radius:3px">+${p.media_count}</span>` : ''}
+              </div>
+              <div class="post-row-info">
+                <div class="post-row-caption">${escHtml(p.caption || '(sans légende)')}</div>
+                <div class="post-row-meta">
+                  <span>📸 ${escHtml(p.account_name || '')}</span>
+                  <span>🗓 ${dateDisplay}</span>
+                  ${p.media_count ? `<span>🖼 ${p.media_count} image${p.media_count > 1 ? 's' : ''}</span>` : ''}
+                </div>
+              </div>
+              <div class="post-row-status">
+                <span class="status-badge ${p.status}">${STATUS_LABELS[p.status] || p.status}</span>
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+      });
+      document.getElementById('listContent').innerHTML = html;
+    }
+
+    function getWeekStart(date) {
+      const d = new Date(date);
+      const day = d.getDay() || 7;
+      d.setDate(d.getDate() - day + 1);
+      return d.toISOString().split('T')[0];
+    }
+
+    // ── Drawer ───────────────────────────────────────────────────────────────────
+    async function openDrawer(postId, prefillDate = null) {
+      currentPostId = postId;
+      pendingMediaUploads = [];
+      currentMediaItems = [];
+
+      // Populate accounts select
+      const sel = document.getElementById('dAccount');
+      sel.innerHTML = allAccounts.map(a => `<option value="${a.id}">${escHtml(a.name)}</option>`).join('');
+      if (!allAccounts.length) sel.innerHTML = '<option value="">Aucun compte configuré</option>';
+
+      const infoEl = document.getElementById('postInfo');
+      infoEl.innerHTML = '';
+      document.getElementById('btnDeletePost').style.display = 'none';
+      document.getElementById('btnPublishNow').style.display = 'none';
+      document.getElementById('mediaPreviewRow').innerHTML = '';
+
+      if (postId) {
+        // Mode édition
+        document.getElementById('drawerTitle').textContent = 'Modifier le post';
+        const post = await api.get(`/api/instagram/posts/${postId}`);
+        if (!post) { showToast('Post introuvable', 'error'); return; }
+
+        sel.value = post.account_id;
+        document.getElementById('dCaption').value = post.caption || '';
+        document.getElementById('captionCount').textContent = (post.caption || '').length;
+        document.getElementById('dStatus').value = (post.status === 'published' || post.status === 'failed' || post.status === 'publishing') ? 'draft' : post.status;
+        document.getElementById('dScheduledAt').value = post.scheduled_at ? post.scheduled_at.replace(' ','T').substring(0,16) : '';
+        onStatusChange();
+        document.getElementById('btnDeletePost').style.display = '';
+
+        // Médias existants
+        currentMediaItems = post.media || [];
+        renderMediaPreviews();
+
+        // Infos statut
+        if (post.status === 'published' && post.ig_permalink) {
+          infoEl.innerHTML = `<div style="font-size:.8rem;color:#4caf6a">✅ Publié — <a class="permalink-link" href="${escHtml(post.ig_permalink)}" target="_blank">Voir sur Instagram</a></div>`;
+        } else if (post.status === 'failed') {
+          infoEl.innerHTML = `<div class="error-msg">❌ Échec : ${escHtml(post.error_message || 'Erreur inconnue')}</div>`;
+          document.getElementById('btnPublishNow').style.display = '';
+        } else if (post.status === 'publishing') {
+          infoEl.innerHTML = `<div style="font-size:.8rem;color:#f0b429">⏳ Publication en cours…</div>`;
+        } else if (post.status === 'scheduled') {
+          document.getElementById('btnPublishNow').style.display = '';
+        }
+      } else {
+        // Mode création
+        document.getElementById('drawerTitle').textContent = 'Nouveau post';
+        document.getElementById('dCaption').value = '';
+        document.getElementById('captionCount').textContent = '0';
+        document.getElementById('dStatus').value = 'draft';
+        if (prefillDate) {
+          document.getElementById('dStatus').value = 'scheduled';
+          document.getElementById('dScheduledAt').value = prefillDate + 'T12:00';
+        }
+        onStatusChange();
+      }
+
+      document.getElementById('drawer').classList.add('open');
+      document.getElementById('drawerOverlay').classList.add('open');
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawer').classList.remove('open');
+      document.getElementById('drawerOverlay').classList.remove('open');
+      currentPostId = null;
+    }
+
+    function onStatusChange() {
+      const v = document.getElementById('dStatus').value;
+      document.getElementById('scheduleGroup').style.display = v === 'scheduled' ? '' : 'none';
+      document.getElementById('btnPlanify').style.display = v === 'scheduled' ? '' : 'none';
+    }
+
+    // ── Médias ───────────────────────────────────────────────────────────────────
+    function handleFileSelect(fileList) {
+      const files = Array.from(fileList);
+      const total = currentMediaItems.length + pendingMediaUploads.length + files.length;
+      if (total > 10) { showToast('Maximum 10 images par post', 'warning'); return; }
+      files.forEach(f => pendingMediaUploads.push(f));
+      renderMediaPreviews();
+    }
+
+    function renderMediaPreviews() {
+      const row = document.getElementById('mediaPreviewRow');
+      let html = '';
+      // Médias existants (post en édition)
+      currentMediaItems.forEach((m, i) => {
+        html += `
+          <div class="media-thumb-wrap">
+            <img class="media-thumb" src="/uploads/instagram/${escHtml(m.filename)}" alt="">
+            <span class="media-order-badge">${i+1}</span>
+            <button class="media-thumb-del" onclick="removeExistingMedia(${m.id})" title="Supprimer">×</button>
+          </div>`;
+      });
+      // Fichiers en attente
+      pendingMediaUploads.forEach((f, i) => {
+        const url = URL.createObjectURL(f);
+        const idx = currentMediaItems.length + i + 1;
+        html += `
+          <div class="media-thumb-wrap">
+            <img class="media-thumb" src="${url}" alt="">
+            <span class="media-order-badge">${idx}</span>
+            <button class="media-thumb-del" onclick="removePendingMedia(${i})" title="Supprimer">×</button>
+          </div>`;
+      });
+      row.innerHTML = html;
+    }
+
+    async function removeExistingMedia(mediaId) {
+      await api.delete(`/api/instagram/media/${mediaId}`);
+      currentMediaItems = currentMediaItems.filter(m => m.id !== mediaId);
+      renderMediaPreviews();
+    }
+
+    function removePendingMedia(idx) {
+      pendingMediaUploads.splice(idx, 1);
+      renderMediaPreviews();
+    }
+
+    // ── Sauvegarder un post ───────────────────────────────────────────────────────
+    async function savePost(forceStatus) {
+      const account_id = parseInt(document.getElementById('dAccount').value);
+      if (!account_id) { showToast('Sélectionnez un compte Instagram', 'error'); return; }
+      const caption     = document.getElementById('dCaption').value.trim();
+      const status      = forceStatus || document.getElementById('dStatus').value;
+      const scheduled_at = status === 'scheduled'
+        ? document.getElementById('dScheduledAt').value.replace('T', ' ')
+        : null;
+      if (status === 'scheduled' && !scheduled_at) { showToast('Choisissez une date de publication', 'error'); return; }
+
+      let postId = currentPostId;
+      if (postId) {
+        const r = await api.put(`/api/instagram/posts/${postId}`, { account_id, caption, status, scheduled_at });
+        if (r?.error) { showToast(r.error, 'error'); return; }
+      } else {
+        const r = await api.post('/api/instagram/posts', { account_id, caption, status, scheduled_at });
+        if (r?.error) { showToast(r.error, 'error'); return; }
+        postId = r.id;
+        currentPostId = postId;
+      }
+
+      // Uploader les médias en attente
+      for (const file of pendingMediaUploads) {
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+          const resp = await fetch(`/api/instagram/posts/${postId}/media`, { method: 'POST', body: formData });
+          if (!resp.ok) { const e = await resp.json().catch(() => ({})); showToast(`Erreur upload : ${e.error || resp.status}`, 'warning'); }
+        } catch(e) { showToast(`Erreur upload : ${e.message}`, 'warning'); }
+      }
+      pendingMediaUploads = [];
+
+      showToast(status === 'scheduled' ? 'Post planifié ✅' : 'Brouillon sauvegardé', 'success');
+      closeDrawer();
+      await loadPosts();
+      if (currentView === 'calendar') renderCalendar();
+      else renderList();
+    }
+
+    async function deleteCurrentPost() {
+      if (!currentPostId) return;
+      if (!confirm('Supprimer ce post ?')) return;
+      await api.delete(`/api/instagram/posts/${currentPostId}`);
+      showToast('Post supprimé', 'success');
+      closeDrawer();
+      await loadPosts();
+      if (currentView === 'calendar') renderCalendar();
+      else renderList();
+    }
+
+    async function publishNow() {
+      if (!currentPostId) return;
+      const r = await api.post(`/api/instagram/posts/${currentPostId}/publish`, {});
+      if (r?.error) { showToast(r.error, 'error'); return; }
+      showToast('Publication en cours…', 'info');
+      closeDrawer();
+    }
+
+    // ── Socket.io temps réel ──────────────────────────────────────────────────────
+    function connectSocket() {
+      const sock = io();
+      sock.on('instagram:post:published', async ({ id, permalink }) => {
+        showToast('✅ Post publié sur Instagram !', 'success');
+        await loadPosts();
+        if (currentView === 'calendar') renderCalendar(); else renderList();
+      });
+      sock.on('instagram:post:failed', async ({ id, error }) => {
+        showToast(`❌ Échec publication : ${error}`, 'error');
+        await loadPosts();
+        if (currentView === 'calendar') renderCalendar(); else renderList();
+      });
+      sock.on('instagram:post:publishing', () => {
+        // Optionnel : indicateur visuel
+      });
+      sock.on('instagram:post:created', async () => { await loadPosts(); if (currentView==='calendar') renderCalendar(); else renderList(); });
+      sock.on('instagram:post:updated', async () => { await loadPosts(); if (currentView==='calendar') renderCalendar(); else renderList(); });
+      sock.on('instagram:post:deleted', async () => { await loadPosts(); if (currentView==='calendar') renderCalendar(); else renderList(); });
+      sock.on('instagram:token_expiring', ({ accountName, daysLeft }) => {
+        showToast(`⚠️ Token "${accountName}" expire dans ${daysLeft} jours — mettez à jour dans Comptes`, 'warning');
+      });
+    }
+
+    // ── Utils ────────────────────────────────────────────────────────────────────
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>
