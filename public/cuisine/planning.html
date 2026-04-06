@@ -300,7 +300,8 @@
         ${DAYS.map((d, i) => {
           const dd = dayDates[i];
           const isToday = dd === todayStr;
-          return `<th class="${isToday ? 'today-col' : ''}">${d.short}<br><span style="font-weight:400;font-size:.68rem">${dd.slice(8)}/${dd.slice(5,7)}</span></th>`;
+          const [,dm,dj] = dd.split('-');
+          return `<th class="${isToday ? 'today-col' : ''}">${d.short}<br><span style="font-weight:400;font-size:.68rem">${dj}/${dm}</span></th>`;
         }).join('')}
       </tr>`;
 
@@ -402,7 +403,7 @@
           if (!shift) return;
           hasAny = true;
           const dayShort = DAYS[i].short;
-          const dateStr  = `${dd.slice(8)}/${dd.slice(5,7)}`;
+          const [,wm,wj] = dd.split('-'); const dateStr = `${wj}/${wm}`;
           if (shift.is_off) {
             msg += `• ${dayShort} ${dateStr} : 📴 Repos\n`;
           } else {
