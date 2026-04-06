@@ -97,8 +97,9 @@ async function buildNav(activePage) {
     { href: '/staff/planning.html',     label: '📅 Planning',        mobileLabel: 'Planning',    icon: '📅', key: 'planning' },
   ];
   const cuisineLinks = [
-    { href: '/cuisine/index.html',      label: '🍳 Cuisine',        mobileLabel: 'Cuisine',     icon: '🍳', key: 'cuisine' },
-    { href: '/staff/planning.html',     label: '📅 Planning',        mobileLabel: 'Planning',    icon: '📅', key: 'planning' },
+    { href: '/cuisine/taches.html',   label: '✅ Tâches',    mobileLabel: 'Tâches',   icon: '✅', key: 'cuisine-taches'   },
+    { href: '/cuisine/planning.html', label: '📅 Planning',  mobileLabel: 'Planning', icon: '📅', key: 'cuisine-planning' },
+    { href: '/staff/planning.html',   label: '🏖️ Congés',   mobileLabel: 'Congés',  icon: '🏖️', key: 'planning'         },
   ];
   const marketingLinks = [
     { href: '/marketing/dashboard.html',     label: '📊 Dashboard',      mobileLabel: 'Dashboard', icon: '📊', key: 'marketing-dashboard' },
