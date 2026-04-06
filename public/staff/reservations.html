@@ -60,7 +60,21 @@
     .rc-table-nok { font-size:.72rem; font-weight:600; color:var(--orange); background:var(--orange-bg); border:1px solid rgba(245,166,36,.3); border-radius:20px; padding:1px 7px; }
     .rc-notes { font-size:.73rem; color:var(--text-muted); font-style:italic; margin-top:3px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 
-    .rc-status { grid-column:3; align-self:center; }
+    .rc-status { grid-column:3; align-self:center; display:flex; align-items:center; gap:6px; }
+    .btn-arrived-quick {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: 2px solid var(--success);
+      background: var(--success-bg);
+      color: var(--success);
+      font-size: 1.15rem;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+      transition: background .15s, transform .1s;
+      touch-action: manipulation;
+    }
+    .btn-arrived-quick:active { background: rgba(76,175,106,.3); transform: scale(0.9); }
+    .btn-today.not-today { border-color: var(--primary) !important; color: var(--primary) !important; font-weight: 600; }
     .status-pill {
       font-size:.7rem; font-weight:600; border-radius:20px; padding:4px 9px;
       border:1.5px solid; background:transparent; cursor:pointer; white-space:nowrap;
@@ -184,7 +198,7 @@
       <div class="date-bar">
         <button class="btn-nav" onclick="shiftDate(-1)">← Hier</button>
         <input type="date" id="viewDate" onchange="load()">
-        <button class="btn-nav" onclick="goToday()">Aujourd'hui</button>
+        <button class="btn-nav btn-today" id="btnToday" onclick="goToday()">Aujourd'hui</button>
         <button class="btn-nav" onclick="shiftDate(1)">Demain →</button>
       </div>
 
@@ -323,6 +337,8 @@
 
     function updateLabel() {
       document.getElementById('dateLabel').textContent = formatDate(viewDate.value);
+      const btnToday = document.getElementById('btnToday');
+      if (btnToday) btnToday.classList.toggle('not-today', viewDate.value !== today());
     }
     function shiftDate(d) {
       const dt = new Date(viewDate.value);
@@ -379,6 +395,9 @@
               ${r.notes?`<div class="rc-notes">📝 ${r.notes}</div>`:''}
             </div>
             <div class="rc-status" onclick="event.stopPropagation()">
+              ${vs !== 'arrived' && vs !== 'cancelled' && vs !== 'no_show' ? `
+                <button class="btn-arrived-quick" onclick="changeStatus(${r.id},'arrived')" title="Marquer arrivé" aria-label="Marquer arrivé">✅</button>
+              ` : ''}
               <select class="status-pill vs-${vs}" onchange="changeStatus(${r.id},this.value)">
                 <option value="confirmed" ${r.status==='confirmed'?'selected':''}>📋 Conf.</option>
                 <option value="arrived"   ${r.status==='arrived'?'selected':''}>✅ Arrivé</option>

@@ -20,10 +20,16 @@
     .task-item.others-done .task-desc { text-decoration: line-through; color: var(--text-muted); }
     .task-item.others-done .task-checkbox { background: rgba(91,141,238,0.18); color: #5b8dee; border-color: #5b8dee; }
 
-    .task-completers { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
-    .completer-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 20px; letter-spacing: 0.2px; }
-    .completer-badge.me { background: rgba(212,175,55,0.22); color: var(--gold); border: 1px solid var(--gold); }
-    .completer-badge.other { background: rgba(91,141,238,0.15); color: #5b8dee; border: 1px solid rgba(91,141,238,0.45); }
+    .task-completers { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .completer-avatar { width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; flex-shrink:0; cursor:default; }
+    .completer-avatar.me { background:rgba(212,175,55,0.25); color:var(--gold); border:2px solid var(--gold); }
+    .completer-avatar.other { background:rgba(91,141,238,0.18); color:#5b8dee; border:2px solid rgba(91,141,238,0.6); }
+    .tab-count { display:inline-block; font-size:0.72rem; font-weight:700; opacity:0.6; margin-left:5px; }
+    .tab.active .tab-count { opacity:1; color:var(--primary); }
+    .task-item { padding: 16px 14px !important; min-height: 60px !important; }
+    .task-checkbox { width: 28px !important; height: 28px !important; font-size: 1rem !important; border-radius: 8px !important; }
+    @keyframes task-check { 0%{transform:scale(1)} 35%{transform:scale(.93)} 100%{transform:scale(1)} }
+    .task-item.toggling { animation: task-check 0.2s ease-out; }
 
     .team-stats-bar { display: flex; align-items: center; gap: 6px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 16px; margin-bottom: 16px; flex-wrap: wrap; }
     .team-stat-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; white-space: nowrap; }
@@ -329,7 +335,17 @@
       const fill = document.getElementById('progressFill');
       fill.style.width = pct + '%';
       fill.className = 'progress-fill' + (pct === 100 ? ' success' : '');
-      document.getElementById('progressLabel').textContent = `${totalDone}/${tasks.length}`;
+      document.getElementById('progressLabel').innerHTML =
+        `<span style="font-size:1.05rem;font-weight:800;color:var(--text)">${pct}%</span>` +
+        `<span style="color:var(--text-muted);font-size:.8rem;margin-left:5px">${totalDone}/${tasks.length}</span>`;
+
+      // Compteurs dans les onglets
+      TABS.forEach(tabCfg => {
+        const tabTasks = allTasks.filter(t => t.category === tabCfg.key);
+        const tabDone  = tabTasks.filter(t => t.completion_count > 0).length;
+        const tabEl    = document.getElementById(`tab-${tabCfg.key}`);
+        if (tabEl) tabEl.innerHTML = `${tabCfg.label} <span class="tab-count">${tabDone}/${tabTasks.length}</span>`;
+      });
 
       document.getElementById('statMe').textContent   = myDone;
       document.getElementById('statTeam').textContent = onlyTeam;
@@ -384,7 +400,8 @@
         badgesHtml = `<div class="task-completers">
           ${names.map(name => {
             const isMe = currentUser && name === currentUser.name;
-            return `<span class="completer-badge ${isMe ? 'me' : 'other'}">✓ ${name}</span>`;
+            const initials = name.split(' ').map(n => n[0] || '').join('').toUpperCase().slice(0, 2);
+            return `<span class="completer-avatar ${isMe ? 'me' : 'other'}" title="${name}">${initials}</span>`;
           }).join('')}
         </div>`;
       }
@@ -424,7 +441,13 @@
           task.completers = names.join(', ');
         }
       }
-      renderTab();
+      const el = document.getElementById(`task-${id}`);
+      if (el) {
+        el.classList.add('toggling');
+        setTimeout(() => { el.classList.remove('toggling'); renderTab(); }, 200);
+      } else {
+        renderTab();
+      }
     }
 
     socket.on('task:updated', ({ taskId, userId, userName, completed }) => {
