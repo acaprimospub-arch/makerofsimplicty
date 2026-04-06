@@ -133,6 +133,8 @@ try { db.exec("ALTER TABLE reservations ADD COLUMN table_ids TEXT DEFAULT '[]'")
 try { db.exec("UPDATE reservations SET table_ids = json_array(table_id) WHERE table_id IS NOT NULL AND (table_ids IS NULL OR table_ids = '[]')"); } catch(e) {}
 try { db.exec("ALTER TABLE tasks ADD COLUMN domain TEXT DEFAULT 'salle'"); } catch(e) {}
 try { db.exec("ALTER TABLE reservations ADD COLUMN admin_notes TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN sort_order INTEGER DEFAULT 99"); } catch(e) {}
+try { db.exec("UPDATE users SET sort_order = CASE name WHEN 'Pierre' THEN 1 WHEN 'Thomas' THEN 2 WHEN 'Moha' THEN 3 WHEN 'Noah' THEN 4 ELSE 99 END WHERE shift = 'cuisine' AND sort_order = 99"); } catch(e) {}
 
 // ─── Table messages d'équipe ───────────────────────────────────────────────────
 try {
@@ -1169,7 +1171,7 @@ function upsertShiftMessage({ from_shift, date, message, author_id, author_name 
 // ─── Cuisine Planning ──────────────────────────────────────────────────────────
 function getCuisinePlanning(weekStart) {
   // Get all cuisine users with their shifts for this week
-  const users = db.prepare("SELECT id, name FROM users WHERE shift = 'cuisine' AND active = 1 ORDER BY role DESC, name").all();
+  const users = db.prepare("SELECT id, name FROM users WHERE shift = 'cuisine' AND active = 1 ORDER BY sort_order ASC, name").all();
   const shifts = db.prepare("SELECT * FROM cuisine_planning WHERE week_start = ?").all(weekStart);
   return { users, shifts };
 }
@@ -1191,7 +1193,7 @@ function deleteCuisinePlanningShift(userId, dayDate) {
 }
 
 function getCuisineCompletionsByDate(date) {
-  const users = db.prepare("SELECT id, name FROM users WHERE shift = 'cuisine' AND active = 1 ORDER BY role DESC, name").all();
+  const users = db.prepare("SELECT id, name FROM users WHERE shift = 'cuisine' AND active = 1 ORDER BY sort_order ASC, name").all();
   const total = db.prepare("SELECT COUNT(*) as c FROM tasks WHERE domain = 'cuisine' AND active = 1").get().c;
   const completions = db.prepare(`
     SELECT tc.user_id, COUNT(*) as done
