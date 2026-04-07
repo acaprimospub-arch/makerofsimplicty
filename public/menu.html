@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Menu — Mos Pub Mercière</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MOS">
+  <meta name="theme-color" content="#0b2d3e">
+</head>
+<body>
+  <nav id="nav"></nav>
+
+  <div class="page">
+    <div style="padding:24px 20px 16px">
+      <div class="menu-greeting">Bonjour, <span id="menuName">…</span> 👋</div>
+      <div class="menu-subtitle" id="menuSubtitle"></div>
+    </div>
+    <div class="menu-grid" id="menuGrid">
+      <!-- Tuiles générées dynamiquement -->
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    const MENU_ITEMS = {
+      admin: [
+        { icon: '📊', label: 'Dashboard',     href: '/admin/dashboard.html' },
+        { icon: '👔', label: 'Manager',        href: '/admin/manager.html' },
+        { icon: '📅', label: 'Réservations',   href: '/staff/reservations.html' },
+        { icon: '🗺️', label: 'Plan de salle',  href: '/staff/tables.html' },
+        { icon: '🍳', label: 'Cuisine',         href: '/cuisine/index.html' },
+        { icon: '📸', label: 'Instagram',       href: '/instagram/index.html' },
+        { icon: '✉️', label: 'Email',           href: '/admin/email.html' },
+        { icon: '📄', label: 'Devis',           href: '/resa/devis.html' },
+        { icon: '🗓️', label: 'Planning',        href: '/staff/planning.html' },
+      ],
+      manager_midi: [
+        { icon: '📊', label: 'Dashboard',     href: '/admin/dashboard.html' },
+        { icon: '✅', label: 'Tâches',         href: '/staff/taches.html' },
+        { icon: '📅', label: 'Réservations',   href: '/staff/reservations.html' },
+        { icon: '🗺️', label: 'Plan de salle',  href: '/staff/tables.html' },
+      ],
+      manager_soir: [
+        { icon: '📊', label: 'Dashboard',     href: '/admin/dashboard.html' },
+        { icon: '✅', label: 'Tâches',         href: '/staff/taches.html' },
+        { icon: '📅', label: 'Réservations',   href: '/staff/reservations.html' },
+        { icon: '🗺️', label: 'Plan de salle',  href: '/staff/tables.html' },
+        { icon: '🗓️', label: 'Planning',        href: '/staff/planning.html' },
+      ],
+      staff_midi: [
+        { icon: '✅', label: 'Tâches',         href: '/staff/taches.html' },
+        { icon: '📅', label: 'Réservations',   href: '/staff/reservations.html' },
+        { icon: '🗺️', label: 'Plan de salle',  href: '/staff/tables.html' },
+        { icon: '🗓️', label: 'Planning',        href: '/staff/planning.html' },
+      ],
+      staff_soir: [
+        { icon: '✅', label: 'Tâches',         href: '/staff/taches.html' },
+        { icon: '📅', label: 'Réservations',   href: '/staff/reservations.html' },
+        { icon: '🗺️', label: 'Plan de salle',  href: '/staff/tables.html' },
+        { icon: '🗓️', label: 'Planning',        href: '/staff/planning.html' },
+      ],
+      cuisine: [
+        { icon: '✅', label: 'Tâches',         href: '/cuisine/taches.html' },
+        { icon: '🗓️', label: 'Planning',        href: '/cuisine/planning.html' },
+        { icon: '🏖️', label: 'Congés',          href: '/staff/planning.html' },
+      ],
+      marketing: [
+        { icon: '📊', label: 'Dashboard',     href: '/marketing/dashboard.html' },
+        { icon: '📸', label: 'Instagram',       href: '/instagram/index.html' },
+        { icon: '📅', label: 'Réservations',   href: '/marketing/reservations.html' },
+        { icon: '🎉', label: 'Joy.io',          href: '/admin/joy.html' },
+        { icon: '📄', label: 'Devis',           href: '/resa/devis.html' },
+        { icon: '🗓️', label: 'Planning',        href: '/staff/planning.html' },
+      ],
+      resa: [
+        { icon: '📊', label: 'Dashboard',     href: '/resa/dashboard.html' },
+        { icon: '📋', label: 'Gestion',        href: '/resa/gestion.html' },
+        { icon: '🔍', label: 'Suivi',           href: '/resa/suivi.html' },
+        { icon: '📄', label: 'Devis',           href: '/resa/devis.html' },
+        { icon: '🗓️', label: 'Planning',        href: '/staff/planning.html' },
+      ],
+    };
+
+    const SUBTITLES = {
+      admin:        'Accès administrateur',
+      manager_midi: 'Service du midi',
+      manager_soir: 'Service du soir',
+      staff_midi:   'Service du midi',
+      staff_soir:   'Service du soir',
+      cuisine:      'Équipe cuisine',
+      marketing:    'Marketing',
+      resa:         'Réservations',
+    };
+
+    async function init() {
+      const user = await api.get('/api/auth/me');
+      if (!user || !user.id) { window.location.href = '/'; return; }
+      window.__mosUser = user;
+
+      // Déterminer la clé de menu
+      let menuKey;
+      if (user.role === 'admin')                                    menuKey = 'admin';
+      else if (user.shift === 'resa')                               menuKey = 'resa';
+      else if (user.shift === 'marketing')                          menuKey = 'marketing';
+      else if (user.shift === 'cuisine')                            menuKey = 'cuisine';
+      else if (user.role === 'manager' && user.shift === 'midi')    menuKey = 'manager_midi';
+      else if (user.role === 'manager' && user.shift === 'soir')    menuKey = 'manager_soir';
+      else if (user.shift === 'midi')                               menuKey = 'staff_midi';
+      else                                                           menuKey = 'staff_soir';
+
+      // Remplir le greeting
+      document.getElementById('menuName').textContent = user.name;
+      document.getElementById('menuSubtitle').textContent = SUBTITLES[menuKey] || '';
+      document.title = `Menu — ${user.name}`;
+
+      // Rendre les tuiles
+      const items = MENU_ITEMS[menuKey] || [];
+      document.getElementById('menuGrid').innerHTML = items.map(item => `
+        <a href="${item.href}" class="menu-tile">
+          <div class="menu-tile-icon" aria-hidden="true">${item.icon}</div>
+          <div class="menu-tile-label">${item.label}</div>
+        </a>
+      `).join('');
+
+      // Barre nav (logo + user + logout uniquement, sans liens)
+      const nav = document.getElementById('nav');
+      nav.setAttribute('aria-label', 'Navigation principale');
+      nav.innerHTML = `
+        <a href="/menu.html" class="nav-logo" aria-label="Menu — MOS Pub Mercière">
+          <img src="/images/logo.png" alt="MOS" class="nav-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+          <span class="nav-logo-text" style="display:none;">MOS</span>
+        </a>
+        <div class="nav-links"></div>
+        <div class="nav-right">
+          <span class="nav-user" aria-label="Connecté en tant que ${user.name}">${user.name}</span>
+          <button class="btn-logout" aria-label="Se déconnecter" onclick="logout()">Déco.</button>
+        </div>
+      `;
+    }
+
+    init();
+  </script>
+</body>
+</html>

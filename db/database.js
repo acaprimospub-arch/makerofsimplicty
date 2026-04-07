@@ -135,6 +135,7 @@ try { db.exec("ALTER TABLE tasks ADD COLUMN domain TEXT DEFAULT 'salle'"); } cat
 try { db.exec("ALTER TABLE reservations ADD COLUMN admin_notes TEXT"); } catch(e) {}
 try { db.exec("ALTER TABLE users ADD COLUMN sort_order INTEGER DEFAULT 99"); } catch(e) {}
 try { db.exec("UPDATE users SET sort_order = CASE name WHEN 'Pierre' THEN 1 WHEN 'Thomas' THEN 2 WHEN 'Moha' THEN 3 WHEN 'Noah' THEN 4 ELSE 99 END WHERE shift = 'cuisine' AND sort_order = 99"); } catch(e) {}
+try { db.exec("ALTER TABLE floor_tables ADD COLUMN note TEXT DEFAULT ''"); } catch(e) {}
 
 // ─── Table messages d'équipe ───────────────────────────────────────────────────
 try {
@@ -712,7 +713,7 @@ function createTable({ name, zone, x, y, width, height, shape, capacity, is_deco
   return db.prepare('INSERT INTO floor_tables (name, zone, x, y, width, height, shape, capacity, is_decoration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(name, zone ?? 'salle_bas', x ?? 50, y ?? 50, width ?? 65, height ?? 65, shape ?? 'square', capacity ?? 2, is_decoration ?? 0).lastInsertRowid;
 }
 function updateTable(id, data) {
-  const fields = ['name', 'zone', 'x', 'y', 'width', 'height', 'shape', 'capacity', 'is_decoration'];
+  const fields = ['name', 'zone', 'x', 'y', 'width', 'height', 'shape', 'capacity', 'is_decoration', 'note'];
   const updates = fields.filter(f => data[f] !== undefined).map(f => `${f} = ?`);
   const values = fields.filter(f => data[f] !== undefined).map(f => data[f]);
   if (!updates.length) return;

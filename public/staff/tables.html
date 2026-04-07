@@ -290,6 +290,15 @@
         <select id="assignResSelect" style="margin-bottom:10px"></select>
         <button class="btn btn-secondary btn-full btn-sm" onclick="assignReservation()">Associer à cette table</button>
       </div>
+      <div class="divider"></div>
+      <div id="tblNoteSection" style="margin-top:14px;">
+        <div style="font-size:.8rem;font-weight:600;color:var(--text-muted);margin-bottom:8px">📝 Note de service</div>
+        <textarea id="tblNoteInput" rows="3"
+          style="width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px;font-size:.85rem;resize:none;box-sizing:border-box;"
+          placeholder="Allergie, anniversaire, bouteille…"
+          oninput="scheduleNoteSave()"></textarea>
+        <div id="tblNoteSaved" style="font-size:.7rem;color:var(--success);opacity:0;text-align:right;margin-top:2px;transition:opacity .3s;">✓ Sauvegardé</div>
+      </div>
     </div>
     <div class="drawer-footer">
       <button class="btn btn-secondary" onclick="closeDrawer()">Fermer</button>
@@ -606,7 +615,7 @@
             <div style="font-size:${fs};font-weight:700;">${t.name}</div>
             ${res ? `<div style="font-size:.55rem;text-align:center;line-height:1.2;padding:0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${res.customer_name}<br>${res.time}·${res.party_size}p</div>`
                   : `<div style="font-size:.62rem;opacity:.6">${t.capacity}p</div>`}
-            <div style="font-size:.72rem;margin-top:1px">${statusIcon[status]||''}</div>`;
+            <div style="font-size:.72rem;margin-top:1px;display:flex;align-items:center;justify-content:center;gap:2px;">${statusIcon[status]||''}${t.note?`<span title="${t.note.replace(/"/g,'&quot;')}">📝</span>`:''}</div>`;
 
           if (isAssignMode) {
             if (selectedTableIds.has(t.id)) {
@@ -719,6 +728,12 @@
         detail.innerHTML = `<div style="color:var(--text-muted);font-size:.85rem;margin-bottom:14px">Aucune réservation pour cette table.</div>`;
         document.getElementById('assignResSelect').value = '';
       }
+
+      // Pré-remplir la note de table
+      const noteInput = document.getElementById('tblNoteInput');
+      noteInput.value = t.note || '';
+      noteInput._tableId = t.id;
+      document.getElementById('tblNoteSaved').style.opacity = '0';
 
       openDrawer('tableDrawer');
     }
@@ -841,6 +856,21 @@
       document.body.style.overflow = '';
     }
 
+    // ── Note de table ─────────────────────────────────────────────────────────
+    let _noteSaveTimer = null;
+    function scheduleNoteSave() {
+      clearTimeout(_noteSaveTimer);
+      _noteSaveTimer = setTimeout(saveTableNote, 800);
+    }
+    async function saveTableNote() {
+      const inp = document.getElementById('tblNoteInput');
+      if (!inp || !inp._tableId) return;
+      await api.put(`/api/tables/${inp._tableId}/note`, { note: inp.value });
+      const saved = document.getElementById('tblNoteSaved');
+      saved.style.opacity = '1';
+      setTimeout(() => { saved.style.opacity = '0'; }, 1500);
+    }
+
     // ── Alertes 15min ─────────────────────────────────────────────────────────
     socket.on('alert:no_show', data => {
       if (activeAlerts.has(data.reservationId)) return;
@@ -888,7 +918,16 @@
       computeStatuses(); renderZoneTabs(); renderFloor(); renderResList(); populateAssignSelect();
     });
     socket.on('table:created', t => { tables.push(t); renderZoneTabs(); renderFloor(); });
-    socket.on('table:updated', t => { const i=tables.findIndex(x=>x.id===t.id); if(i>=0) tables[i]=t; renderZoneTabs(); renderFloor(); });
+    socket.on('table:updated', t => {
+      const i = tables.findIndex(x => x.id === t.id);
+      if (i >= 0) tables[i] = t;
+      // Mettre à jour la note dans le drawer si cette table est ouverte et que l'utilisateur n'est pas en train de taper
+      const inp = document.getElementById('tblNoteInput');
+      if (inp && inp._tableId === t.id && document.activeElement !== inp) {
+        inp.value = t.note || '';
+      }
+      renderZoneTabs(); renderFloor();
+    });
     socket.on('table:deleted', ({id}) => { tables=tables.filter(t=>t.id!==id); renderZoneTabs(); renderFloor(); });
 
     // ── Mode édition ─────────────────────────────────────────────────────────

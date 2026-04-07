@@ -456,6 +456,14 @@ app.delete('/api/tables/:id', requireAdminOrManager, (req, res) => {
   res.json({ ok: true });
 });
 
+app.put('/api/tables/:id/note', requireAuth, (req, res) => {
+  const { note } = req.body;
+  db.prepare("UPDATE floor_tables SET note = ? WHERE id = ?").run(note ?? '', Number(req.params.id));
+  const table = db.getTableById(Number(req.params.id));
+  io.emit('table:updated', table);
+  res.json({ ok: true });
+});
+
 // ─── Reservations ──────────────────────────────────────────────────────────────
 app.get('/api/reservations', requireAuth, (req, res) => {
   const date = req.query.date || new Date().toISOString().split('T')[0];

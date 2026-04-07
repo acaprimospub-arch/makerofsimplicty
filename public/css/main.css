@@ -811,6 +811,82 @@ tr:hover td { background: var(--bg-hover); }
   .toast { max-width: 100%; }
 }
 
+/* ─── Menu d'accueil ───────────────────────────────────────── */
+.menu-greeting {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+}
+.menu-subtitle {
+  font-size: .85rem;
+  color: var(--text-muted);
+  margin-top: 5px;
+}
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  padding: 16px 20px 32px;
+}
+@media (max-width: 768px) {
+  .menu-grid {
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 24px);
+  }
+}
+@media (min-width: 600px) and (max-width: 768px) {
+  .menu-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 769px) {
+  .menu-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.menu-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 28px 16px;
+  text-decoration: none;
+  color: var(--text);
+  transition: background .15s, border-color .15s, transform .1s;
+  min-height: 110px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.menu-tile:hover { background: var(--bg-surface); border-color: var(--primary-dim); }
+.menu-tile:active { background: var(--bg-surface); border-color: var(--primary); transform: scale(.96); }
+.menu-tile-icon { font-size: 2.2rem; line-height: 1; }
+.menu-tile-label { font-size: .9rem; font-weight: 700; text-align: center; }
+
+/* ─── Bottom nav — bouton retour menu ──────────────────────── */
+.bottom-nav-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+.btn-back-menu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: .95rem;
+  font-weight: 600;
+  padding: 10px 32px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: background .15s, border-color .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-back-menu:active { background: var(--primary-dim); border-color: var(--primary); }
+.btn-back-arrow { font-size: 1.1rem; }
+
 /* ─── Respect prefers-reduced-motion ───────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

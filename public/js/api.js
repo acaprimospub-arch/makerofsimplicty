@@ -142,7 +142,7 @@ async function buildNav(activePage) {
 
   nav.setAttribute('aria-label', 'Navigation principale');
   nav.innerHTML = `
-    <a href="/" class="nav-logo" aria-label="Accueil MOS Pub Mercière">
+    <a href="/menu.html" class="nav-logo" aria-label="Retour au menu — MOS Pub Mercière">
       <img src="/images/logo.png" alt="MOS" class="nav-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
       <span class="nav-logo-text" style="display:none;">MOS</span>
     </a>
@@ -155,21 +155,21 @@ async function buildNav(activePage) {
     </div>
   `;
 
-  // ── Bottom nav (mobile) — tous les liens défilables ──
-  const bottomNav = document.createElement('nav');
-  bottomNav.className = 'bottom-nav';
-  bottomNav.setAttribute('aria-label', 'Navigation mobile');
-  bottomNav.innerHTML = `
-    <div class="bottom-nav-inner">
-      ${links.map(l => `
-        <a href="${l.href}" class="bottom-nav-item ${l.key === activePage ? 'active' : ''}" ${l.key===activePage?'aria-current="page"':''}>
-          <div class="bottom-nav-icon" aria-hidden="true">${l.icon}</div>
-          <div class="bottom-nav-label">${l.mobileLabel}</div>
+  // ── Bottom nav (mobile) — bouton retour menu (sauf sur la page menu) ──
+  if (activePage !== 'menu') {
+    const bottomNav = document.createElement('nav');
+    bottomNav.className = 'bottom-nav';
+    bottomNav.setAttribute('aria-label', 'Navigation mobile');
+    bottomNav.innerHTML = `
+      <div class="bottom-nav-back">
+        <a href="/menu.html" class="btn-back-menu">
+          <span class="btn-back-arrow">←</span>
+          <span>Menu</span>
         </a>
-      `).join('')}
-    </div>
-  `;
-  document.body.appendChild(bottomNav);
+      </div>
+    `;
+    document.body.appendChild(bottomNav);
+  }
 }
 
 async function logout() {
