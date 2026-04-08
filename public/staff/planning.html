@@ -125,6 +125,15 @@
         <h1 class="card-title">📅 Planning & Congés</h1>
       </div>
 
+      <!-- ── Planning de service ── -->
+      <div class="card" id="planningPDFCard" style="margin-bottom:20px;display:none">
+        <div class="card-header">
+          <div class="card-title" style="font-size:13px">📋 Planning de service</div>
+          <div id="planningPDFDate" style="font-size:.72rem;color:var(--text-muted)"></div>
+        </div>
+        <div id="planningPDFBody" style="margin-top:12px"></div>
+      </div>
+
       <div class="planning-layout">
 
         <!-- ── Colonne gauche : formulaire ── -->
@@ -212,6 +221,22 @@
     document.getElementById('fToday').value = new Date().toLocaleDateString('fr-FR');
 
     let currentUser = null;
+
+    // ── Planning PDF de service ──────────────────────────────────────────────
+    async function loadPlanningPDF() {
+      const pdf = await api.get('/api/staff/planning-pdf');
+      if (!pdf) return;
+      document.getElementById('planningPDFCard').style.display = '';
+      document.getElementById('planningPDFDate').textContent =
+        'Mis à jour le ' + (pdf.uploaded_at || '').slice(0, 16).replace('T', ' ');
+      document.getElementById('planningPDFBody').innerHTML = `
+        <iframe src="${pdf.url}" style="width:100%;height:480px;border:none;border-radius:var(--radius-sm);background:#fff;" title="Planning de service"></iframe>
+        <a href="${pdf.url}" download="${pdf.original_name}" class="btn btn-secondary btn-sm" style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;">
+          ⬇️ Télécharger le PDF
+        </a>
+      `;
+    }
+    loadPlanningPDF();
 
     // Pré-remplir le nom + afficher section admin si besoin
     async function initUser() {

@@ -55,6 +55,27 @@ const uploadInstagram = multer({
   }
 });
 
+// ─── Multer (Planning PDF salle) ───────────────────────────────────────────────
+const PLANNING_DIR = path.join(__dirname, 'uploads', 'planning');
+if (!fs.existsSync(PLANNING_DIR)) fs.mkdirSync(PLANNING_DIR, { recursive: true });
+
+const _planningStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, PLANNING_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `planning-${Date.now()}${ext}`);
+  }
+});
+const uploadPlanning = multer({
+  storage: _planningStorage,
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => cb(null, file.mimetype === 'application/pdf')
+});
+
+// ─── Pointages (photos time-clock) ────────────────────────────────────────────
+const POINTAGES_DIR = path.join(__dirname, 'uploads', 'pointages');
+if (!fs.existsSync(POINTAGES_DIR)) fs.mkdirSync(POINTAGES_DIR, { recursive: true });
+
 // ─── Joy.io iCal Sync ──────────────────────────────────────────────────────────
 function fetchUrl(url, depth = 0) {
   if (depth > 5) return Promise.reject(new Error('Too many redirects'));
@@ -1053,6 +1074,32 @@ app.put('/api/admin/conge-requests/:id', requireAdminOrManager, (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── Planning PDF salle ────────────────────────────────────────────────────────
+app.use('/uploads/planning', requireAuth, express.static(PLANNING_DIR));
+app.use('/uploads/pointages', requireAdmin, express.static(POINTAGES_DIR));
+
+app.post('/api/admin/planning-pdf', requireAdminOrManager, uploadPlanning.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'PDF requis (max 20 Mo)' });
+  // Supprimer l'ancien fichier
+  const old = db.getLatestPlanningPDF();
+  if (old) {
+    const oldPath = path.join(PLANNING_DIR, old.filename);
+    if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    db.deletePlanningPDF(old.id);
+  }
+  db.addPlanningPDF({
+    filename: req.file.filename,
+    original_name: req.file.originalname,
+    uploaded_by: req.session.userId,
+  });
+  res.json(db.getLatestPlanningPDF());
+});
+
+app.get('/api/staff/planning-pdf', requireAuth, (req, res) => {
+  const pdf = db.getLatestPlanningPDF();
+  res.json(pdf ? { ...pdf, url: `/uploads/planning/${pdf.filename}` } : null);
+});
+
 // ─── Instagram Planificateur ───────────────────────────────────────────────────
 function requireMarketing(req, res, next) {
   if (req.session.userId && (req.session.role === 'admin' || req.session.shift === 'marketing'))
@@ -1386,6 +1433,154 @@ setInterval(() => {
     }
   });
 }, 30000); // Check every 30 seconds
+
+// ─── Pointeuse Routes ──────────────────────────────────────────────────────────
+
+// Vérifie le statut (arrivée ou départ attendu) pour un PIN — sans session
+app.get('/api/pointage/check/:pin', (req, res) => {
+  const user = db.getUserByPin(req.params.pin);
+  if (!user) return res.status(404).json({ error: 'PIN inconnu' });
+  const today = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
+  const last = db.getLastPointageToday(user.id, today);
+  const next_type = (!last || last.type === 'depart') ? 'arrivee' : 'depart';
+  res.json({ name: user.name, next_type, last: last || null });
+});
+
+// Pointe arrivée ou départ avec capture photo — sans session
+app.post('/api/pointage/clock', (req, res) => {
+  const { pin, photo_base64 } = req.body;
+  if (!pin) return res.status(400).json({ error: 'PIN requis' });
+
+  const user = db.getUserByPin(pin);
+  if (!user) return res.status(401).json({ error: 'PIN invalide' });
+
+  const nowStr = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).replace('T', ' ');
+  const today = nowStr.slice(0, 10);
+  const timeNow = nowStr.slice(11, 16); // HH:MM
+
+  const last = db.getLastPointageToday(user.id, today);
+  const type = (!last || last.type === 'depart') ? 'arrivee' : 'depart';
+
+  // Sauvegarde de la photo
+  let photo_filename = null;
+  if (photo_base64) {
+    try {
+      const b64 = photo_base64.replace(/^data:image\/\w+;base64,/, '');
+      const dayDir = path.join(POINTAGES_DIR, today);
+      if (!fs.existsSync(dayDir)) fs.mkdirSync(dayDir, { recursive: true });
+      const safeName = user.name.replace(/[^a-zA-Z0-9]/g, '_');
+      const filename = `${safeName}-${user.id}-${type}-${Date.now()}.jpg`;
+      fs.writeFileSync(path.join(dayDir, filename), Buffer.from(b64, 'base64'));
+      photo_filename = `${today}/${filename}`;
+    } catch (e) {
+      console.error('[Pointage] Erreur sauvegarde photo:', e.message);
+    }
+  }
+
+  // Vérification retard (uniquement à l'arrivée)
+  let late_min = 0;
+  if (type === 'arrivee') {
+    try {
+      const graceMin = parseInt(db.getSetting('pointage_grace_min') || '10');
+      let shiftStart = null;
+
+      const schedShift = db.prepare(`
+        SELECT ss.start_time FROM schedule_shifts ss
+        JOIN schedules sc ON sc.id = ss.schedule_id
+        WHERE ss.user_id = ? AND ss.day_date = ? AND ss.start_time IS NOT NULL
+        LIMIT 1
+      `).get(user.id, today);
+
+      if (schedShift) {
+        shiftStart = schedShift.start_time;
+      } else {
+        const cuisineShift = db.prepare(
+          `SELECT start_time FROM cuisine_planning WHERE user_id = ? AND day_date = ? AND is_off = 0 AND start_time IS NOT NULL`
+        ).get(user.id, today);
+        if (cuisineShift) shiftStart = cuisineShift.start_time;
+      }
+
+      if (shiftStart) {
+        const [sh, sm] = shiftStart.slice(0, 5).split(':').map(Number);
+        const [ah, am] = timeNow.split(':').map(Number);
+        const diff = (ah * 60 + am) - (sh * 60 + sm);
+        if (diff > graceMin) {
+          late_min = diff;
+          db.createHrEvent({
+            user_id: user.id,
+            date: today,
+            type: 'retard',
+            duration_min: late_min,
+            note: `Retard pointeuse — prévu ${shiftStart.slice(0, 5)}, arrivée ${timeNow}`,
+            created_by: null
+          });
+        }
+      }
+    } catch (e) {
+      console.error('[Pointage] Erreur vérification retard:', e.message);
+    }
+  }
+
+  const id = db.createPointage({ user_id: user.id, type, timestamp: nowStr, photo_filename, late_min });
+
+  res.json({ ok: true, id, type, name: user.name, timestamp: nowStr, late_min, photo_filename });
+});
+
+// Liste des pointages d'une date (admin)
+app.get('/api/admin/pointages', requireAdmin, (req, res) => {
+  const date = req.query.date || new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
+  const user_id = req.query.user_id ? parseInt(req.query.user_id) : null;
+  res.json(db.getPointagesByDate(date, user_id));
+});
+
+// Stats hebdomadaires : heures travaillées + retards (admin)
+app.get('/api/admin/pointages/stats', requireAdmin, (req, res) => {
+  const today = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
+  const d = new Date(today);
+  const dow = d.getDay();
+  d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
+  const weekStart = d.toISOString().split('T')[0];
+  const from = req.query.from || weekStart;
+  const to   = req.query.to   || today;
+
+  const rows = db.getPointagesRange(from, to, null);
+
+  // Grouper par user → par jour → paires arrivee/depart
+  const byUser = {};
+  for (const row of rows) {
+    if (!byUser[row.user_id]) {
+      byUser[row.user_id] = { user_id: row.user_id, name: row.user_name, shift: row.shift, days: {} };
+    }
+    const day = row.timestamp.slice(0, 10);
+    if (!byUser[row.user_id].days[day]) byUser[row.user_id].days[day] = [];
+    byUser[row.user_id].days[day].push(row);
+  }
+
+  const stats = Object.values(byUser).map(u => {
+    let worked_min = 0, late_count = 0, total_late_min = 0;
+    const daily = [];
+    for (const [day, events] of Object.entries(u.days)) {
+      const arrivees = events.filter(e => e.type === 'arrivee').sort((a, b) => a.timestamp > b.timestamp ? 1 : -1);
+      const departs  = events.filter(e => e.type === 'depart').sort((a, b) => a.timestamp > b.timestamp ? 1 : -1);
+      let day_min = 0;
+      const pairs = Math.min(arrivees.length, departs.length);
+      for (let i = 0; i < pairs; i++) {
+        const a = new Date(arrivees[i].timestamp.replace(' ', 'T'));
+        const dp = new Date(departs[i].timestamp.replace(' ', 'T'));
+        day_min += Math.max(0, Math.round((dp - a) / 60000));
+      }
+      const late = arrivees.reduce((acc, e) => acc + (e.late_min || 0), 0);
+      if (late > 0) { late_count++; total_late_min += late; }
+      worked_min += day_min;
+      daily.push({ date: day, worked_min: day_min, late_min: late, arrivees, departs });
+    }
+    return { ...u, worked_min, late_count, total_late_min, daily };
+  });
+
+  res.json({ from, to, stats });
+});
+
+// ─── Fin routes Pointeuse ───────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {

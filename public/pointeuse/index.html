@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Pointeuse — Mos Pub Mercière</title>
+  <style>
+    :root {
+      --bg: #0b2d3e;
+      --bg-card: #0e3d54;
+      --bg-surface: #125571;
+      --bg-hover: #166185;
+      --primary: #cda443;
+      --primary-light: #dbb855;
+      --text: #ffffff;
+      --text-muted: rgba(255,255,255,0.65);
+      --border: rgba(255,255,255,0.12);
+      --success: #4caf6a;
+      --warning: #f0b429;
+      --danger: #e85454;
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      overscroll-behavior: none;
+      user-select: none;
+    }
+
+    /* ── Layout principal ─────────────────────────────── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      padding: 16px;
+    }
+
+    /* ── Écrans (visibilité par data-state) ───────────── */
+    .screen { display: none; width: 100%; max-width: 440px; flex-direction: column; align-items: center; gap: 20px; }
+    [data-state="pin"]        .screen-pin        { display: flex; }
+    [data-state="checking"]   .screen-checking   { display: flex; }
+    [data-state="camera"]     .screen-camera     { display: flex; }
+    [data-state="submitting"] .screen-submitting { display: flex; }
+    [data-state="result"]     .screen-result     { display: flex; }
+
+    /* ── Logo / titre ────────────────────────────────── */
+    .brand {
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .brand-logo {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 8px;
+    }
+    .brand-logo img { width: 100%; height: 100%; object-fit: contain; }
+    .brand-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .brand-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ── Horloge ─────────────────────────────────────── */
+    .clock {
+      font-size: 3rem;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      text-align: center;
+      line-height: 1;
+    }
+    .clock-date {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 4px;
+      text-transform: capitalize;
+    }
+
+    /* ── Affichage PIN ───────────────────────────────── */
+    .pin-dots {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin: 4px 0;
+    }
+    .pin-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: transparent;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+    .pin-dot.filled {
+      background: var(--primary);
+      border-color: var(--primary);
+      transform: scale(1.15);
+    }
+
+    /* ── Clavier PIN ─────────────────────────────────── */
+    .pin-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 100%;
+    }
+    .pin-key {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 1.6rem;
+      font-weight: 400;
+      height: 72px;
+      cursor: pointer;
+      transition: background 0.12s, transform 0.08s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pin-key:active { background: var(--bg-hover); transform: scale(0.95); }
+    .pin-key.del { font-size: 1.3rem; color: var(--text-muted); }
+    .pin-key.ok {
+      background: var(--primary);
+      color: var(--bg);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      border-color: var(--primary);
+    }
+    .pin-key.ok:active { background: var(--primary-light); }
+
+    /* ── Message d'erreur PIN ───────────────────────── */
+    .pin-error {
+      min-height: 20px;
+      font-size: 0.85rem;
+      color: var(--danger);
+      text-align: center;
+      transition: opacity 0.2s;
+    }
+
+    /* ── Caméra ──────────────────────────────────────── */
+    .camera-label {
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-align: center;
+      color: var(--primary);
+    }
+    .camera-sub {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: -12px;
+    }
+    .camera-wrapper {
+      position: relative;
+      width: 100%;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #000;
+      aspect-ratio: 4/3;
+    }
+    #video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transform: scaleX(-1); /* miroir pour front cam */
+    }
+    .countdown-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.35);
+      font-size: 5rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-shadow: 0 0 20px rgba(205,164,67,0.6);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .countdown-overlay.visible { opacity: 1; }
+
+    .btn-cancel {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      padding: 12px 24px;
+      cursor: pointer;
+      transition: background 0.12s;
+      width: 100%;
+    }
+    .btn-cancel:active { background: var(--bg-surface); }
+
+    /* ── Spinner ─────────────────────────────────────── */
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-label { color: var(--text-muted); font-size: 0.9rem; }
+
+    /* ── Résultat ────────────────────────────────────── */
+    .result-card {
+      width: 100%;
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .result-icon { font-size: 3.5rem; margin-bottom: 12px; }
+    .result-name { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+    .result-type { font-size: 1rem; color: var(--text-muted); margin-top: 4px; }
+    .result-time { font-size: 2rem; font-weight: 300; margin-top: 8px; }
+    .result-late {
+      display: inline-block;
+      margin-top: 10px;
+      background: rgba(232,84,84,0.15);
+      color: var(--danger);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.85rem;
+    }
+    .result-bar {
+      height: 4px;
+      background: var(--bg-surface);
+      border-radius: 2px;
+      margin-top: 20px;
+      overflow: hidden;
+    }
+    .result-bar-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 2px;
+      width: 100%;
+      transform-origin: left;
+      animation: shrink 4s linear forwards;
+    }
+    @keyframes shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+  </style>
+</head>
+<body>
+<div id="app" data-state="pin">
+
+  <!-- ═══ ÉTAT : PIN ══════════════════════════════════════════════════════════ -->
+  <div class="screen screen-pin">
+    <div class="brand">
+      <div class="brand-logo">
+        <img src="/images/logo.png" alt="MOS" onerror="this.style.display='none'">
+      </div>
+      <div class="brand-title">Mos Pub Mercière</div>
+      <div class="brand-sub">Pointeuse</div>
+    </div>
+
+    <div class="clock" id="clockDisplay">--:--</div>
+    <div class="clock-date" id="dateDisplay"></div>
+
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+      <div class="pin-dot" id="d4"></div>
+      <div class="pin-dot" id="d5"></div>
+    </div>
+
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pressKey('1')">1</button>
+      <button class="pin-key" onclick="pressKey('2')">2</button>
+      <button class="pin-key" onclick="pressKey('3')">3</button>
+      <button class="pin-key" onclick="pressKey('4')">4</button>
+      <button class="pin-key" onclick="pressKey('5')">5</button>
+      <button class="pin-key" onclick="pressKey('6')">6</button>
+      <button class="pin-key" onclick="pressKey('7')">7</button>
+      <button class="pin-key" onclick="pressKey('8')">8</button>
+      <button class="pin-key" onclick="pressKey('9')">9</button>
+      <button class="pin-key del" onclick="deleteKey()">⌫</button>
+      <button class="pin-key" onclick="pressKey('0')">0</button>
+      <button class="pin-key ok" onclick="submitPin()">OK</button>
+    </div>
+
+    <div class="pin-error" id="pinError"></div>
+  </div>
+
+  <!-- ═══ ÉTAT : VÉRIFICATION ════════════════════════════════════════════════ -->
+  <div class="screen screen-checking">
+    <div class="spinner"></div>
+    <div class="spinner-label">Vérification...</div>
+  </div>
+
+  <!-- ═══ ÉTAT : CAMÉRA ══════════════════════════════════════════════════════ -->
+  <div class="screen screen-camera">
+    <div class="camera-label" id="cameraLabel">Pointage arrivée</div>
+    <div class="camera-sub" id="cameraName"></div>
+
+    <div class="camera-wrapper">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="countdown-overlay" id="countdownOverlay">
+        <span id="countdownNum"></span>
+      </div>
+    </div>
+
+    <button class="btn-cancel" onclick="resetToPin()">Annuler</button>
+  </div>
+
+  <!-- ═══ ÉTAT : ENVOI ════════════════════════════════════════════════════════ -->
+  <div class="screen screen-submitting">
+    <div class="spinner"></div>
+    <div class="spinner-label">Enregistrement...</div>
+  </div>
+
+  <!-- ═══ ÉTAT : RÉSULTAT ════════════════════════════════════════════════════ -->
+  <div class="screen screen-result">
+    <div class="result-card" id="resultCard">
+      <div class="result-icon" id="resultIcon"></div>
+      <div class="result-name" id="resultName"></div>
+      <div class="result-type" id="resultType"></div>
+      <div class="result-time" id="resultTime"></div>
+      <div id="resultLate"></div>
+      <div class="result-bar"><div class="result-bar-fill" id="resultBar"></div></div>
+    </div>
+  </div>
+
+</div>
+
+<canvas id="canvas" style="display:none"></canvas>
+
+<script>
+  const app = document.getElementById('app');
+  let currentPin = '';
+  let pendingName = '';
+  let pendingType = '';
+  let stream = null;
+  let countdownTimer = null;
+  let resetTimer = null;
+  let isSubmitting = false;
+
+  // ── Horloge ──────────────────────────────────────────────────────────────
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clockDisplay').textContent =
+      now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('dateDisplay').textContent =
+      now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ── Gestion état ─────────────────────────────────────────────────────────
+  function setState(state) {
+    app.setAttribute('data-state', state);
+  }
+
+  // ── Saisie PIN ────────────────────────────────────────────────────────────
+  function pressKey(k) {
+    if (currentPin.length >= 6) return;
+    currentPin += k;
+    updatePinDisplay();
+    if (currentPin.length === 6) submitPin();
+  }
+
+  function deleteKey() {
+    currentPin = currentPin.slice(0, -1);
+    updatePinDisplay();
+    clearPinError();
+  }
+
+  function updatePinDisplay() {
+    for (let i = 0; i < 6; i++) {
+      document.getElementById('d' + i).classList.toggle('filled', i < currentPin.length);
+    }
+  }
+
+  function clearPinError() {
+    document.getElementById('pinError').textContent = '';
+  }
+
+  function showPinError(msg) {
+    const el = document.getElementById('pinError');
+    el.textContent = msg;
+    // Shake animation
+    el.animate([{ transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(0)' }], { duration: 300 });
+  }
+
+  async function submitPin() {
+    if (currentPin.length < 4) {
+      showPinError('Code PIN trop court');
+      return;
+    }
+    if (isSubmitting) return;
+    isSubmitting = true;
+    setState('checking');
+
+    try {
+      const res = await fetch(`/api/pointage/check/${encodeURIComponent(currentPin)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'PIN inconnu');
+      pendingName = data.name;
+      pendingType = data.next_type;
+      await startCamera();
+    } catch (e) {
+      isSubmitting = false;
+      setState('pin');
+      showPinError(e.message || 'Erreur réseau');
+      currentPin = '';
+      updatePinDisplay();
+    }
+  }
+
+  // ── Caméra ────────────────────────────────────────────────────────────────
+  async function startCamera() {
+    setState('camera');
+    document.getElementById('cameraLabel').textContent =
+      pendingType === 'arrivee' ? 'Pointage arrivée' : 'Pointage départ';
+    document.getElementById('cameraName').textContent = pendingName;
+
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false
+      });
+      const video = document.getElementById('video');
+      video.srcObject = stream;
+      await video.play();
+      startCountdown();
+    } catch (err) {
+      stopCamera();
+      isSubmitting = false;
+      setState('pin');
+      if (err.name === 'NotAllowedError') {
+        showPinError('Accès caméra refusé — autorisez la caméra dans les réglages');
+      } else {
+        // Pas de caméra disponible : on soumet quand même sans photo
+        await captureAndSubmit(null);
+      }
+    }
+  }
+
+  function startCountdown() {
+    let count = 3;
+    const overlay = document.getElementById('countdownOverlay');
+    const num = document.getElementById('countdownNum');
+    overlay.classList.add('visible');
+    num.textContent = count;
+
+    countdownTimer = setInterval(() => {
+      count--;
+      if (count <= 0) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+        overlay.classList.remove('visible');
+        captureAndSubmit(capturePhoto());
+      } else {
+        num.textContent = count;
+      }
+    }, 1000);
+  }
+
+  function capturePhoto() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    canvas.width  = video.videoWidth  || 640;
+    canvas.height = video.videoHeight || 480;
+    // Miroir horizontal (cohérent avec le CSS transform: scaleX(-1))
+    const ctx = canvas.getContext('2d');
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0);
+    return canvas.toDataURL('image/jpeg', 0.85);
+  }
+
+  async function captureAndSubmit(photo_base64) {
+    stopCamera();
+    setState('submitting');
+
+    try {
+      const res = await fetch('/api/pointage/clock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: currentPin, photo_base64 })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      showResult(data);
+    } catch (e) {
+      isSubmitting = false;
+      setState('pin');
+      showPinError(e.message || 'Erreur réseau');
+      currentPin = '';
+      updatePinDisplay();
+    }
+  }
+
+  function stopCamera() {
+    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    const video = document.getElementById('video');
+    video.srcObject = null;
+    document.getElementById('countdownOverlay').classList.remove('visible');
+  }
+
+  // ── Résultat ──────────────────────────────────────────────────────────────
+  function showResult(data) {
+    setState('result');
+    const isArrivee = data.type === 'arrivee';
+    document.getElementById('resultIcon').textContent = isArrivee ? '✅' : '👋';
+    document.getElementById('resultName').textContent = data.name;
+    document.getElementById('resultType').textContent = isArrivee ? 'Arrivée enregistrée' : 'Départ enregistré';
+    document.getElementById('resultTime').textContent = data.timestamp.slice(11, 16);
+    const lateEl = document.getElementById('resultLate');
+    lateEl.innerHTML = data.late_min > 0
+      ? `<div class="result-late">Retard : ${data.late_min} min</div>`
+      : '';
+
+    // Réinitialiser l'animation de la barre
+    const bar = document.getElementById('resultBar');
+    bar.style.animation = 'none';
+    bar.offsetHeight; // reflow
+    bar.style.animation = '';
+
+    if (resetTimer) clearTimeout(resetTimer);
+    resetTimer = setTimeout(resetToPin, 4000);
+  }
+
+  // ── Reset ─────────────────────────────────────────────────────────────────
+  function resetToPin() {
+    if (resetTimer) { clearTimeout(resetTimer); resetTimer = null; }
+    stopCamera();
+    currentPin = '';
+    pendingName = '';
+    pendingType = '';
+    isSubmitting = false;
+    updatePinDisplay();
+    clearPinError();
+    setState('pin');
+  }
+
+  // ── Clavier physique ─────────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (app.getAttribute('data-state') !== 'pin') return;
+    if (e.key >= '0' && e.key <= '9') pressKey(e.key);
+    else if (e.key === 'Backspace') deleteKey();
+    else if (e.key === 'Enter') submitPin();
+  });
+</script>
+</body>
+</html>

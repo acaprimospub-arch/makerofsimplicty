@@ -284,6 +284,19 @@
         <div class="section-divider-line"></div>
       </div>
 
+      <!-- Planning PDF salle -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header">
+          <div class="card-title">📋 Planning staff (salle)</div>
+        </div>
+        <div id="currentPlanningInfo" style="font-size:.82rem;color:var(--text-muted);margin:10px 0 14px;">Chargement…</div>
+        <label class="btn btn-secondary" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
+          ⬆️ Importer un PDF
+          <input type="file" accept=".pdf,application/pdf" style="display:none" onchange="uploadPlanningPDF(this)">
+        </label>
+        <div id="planningUploadStatus" style="font-size:.8rem;margin-top:8px;"></div>
+      </div>
+
       <!-- KPI Salle -->
       <div class="kpi-grid" id="kpiGrid">
         <div class="kpi-chip blue">
@@ -737,8 +750,38 @@
       showToast(`⚠️ No-show : ${data.customerName} — ${data.time}`, 'warning');
     });
 
+    // ─── Planning PDF ─────────────────────────────────────────────
+    async function loadCurrentPlanning() {
+      const pdf = await api.get('/api/staff/planning-pdf');
+      const el = document.getElementById('currentPlanningInfo');
+      if (!pdf) { el.textContent = 'Aucun planning importé.'; return; }
+      el.innerHTML = `Planning actuel : <strong>${pdf.original_name}</strong><br>
+        Importé le ${(pdf.uploaded_at || '').slice(0, 16).replace('T', ' ')}`;
+    }
+
+    async function uploadPlanningPDF(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const status = document.getElementById('planningUploadStatus');
+      status.textContent = 'Envoi en cours…';
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const r = await fetch('/api/admin/planning-pdf', { method: 'POST', body: fd });
+        const data = await r.json();
+        if (!r.ok) { status.textContent = '❌ ' + (data.error || 'Erreur'); return; }
+        status.textContent = '✅ Planning mis à jour';
+        input.value = '';
+        loadCurrentPlanning();
+        setTimeout(() => { status.textContent = ''; }, 3000);
+      } catch(e) {
+        status.textContent = '❌ Erreur réseau';
+      }
+    }
+
     // ─── Init ─────────────────────────────────────────────────────
     loadAll();
+    loadCurrentPlanning();
     setInterval(() => loadAll(), 60000);
   </script>
 </body>

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Pointeuse — Mos Pub Mercière</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0b2d3e">
+  <style>
+    /* ── KPI chips (même style que dashboard) ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 600px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .kpi-chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-chip::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--kpi-accent, var(--primary));
+      border-radius: 14px 14px 0 0;
+    }
+    .kpi-chip.success { --kpi-accent: #22c55e; }
+    .kpi-chip.danger  { --kpi-accent: #ef4444; }
+    .kpi-chip.blue    { --kpi-accent: #60a5fa; }
+    .kpi-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+    .kpi-value { font-size: 1.9rem; font-weight: 800; color: var(--text); line-height: 1; }
+    .kpi-chip.success .kpi-value { color: #22c55e; }
+    .kpi-chip.danger  .kpi-value { color: #ef4444; }
+
+    /* ── Filtres ── */
+    .filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .filters label { font-size: 0.82rem; color: var(--text-muted); margin-right: -4px; }
+    .filters input[type="date"],
+    .filters select {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 0.9rem;
+    }
+    .filters input[type="date"]:focus,
+    .filters select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .btn-filter {
+      background: var(--primary);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-filter:hover { background: var(--primary-light); }
+
+    /* ── Tableau pointages ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr { border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg-surface); }
+    tbody td { padding: 10px 12px; font-size: 0.88rem; vertical-align: middle; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .badge-arrivee { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .badge-depart  { background: rgba(96,165,250,0.15); color: #60a5fa; }
+    .badge-late    { background: rgba(239,68,68,0.15);  color: #ef4444; }
+
+    /* ── Miniature photo ── */
+    .photo-thumb {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .photo-thumb:hover { opacity: 0.85; transform: scale(1.05); }
+    .no-photo { color: var(--text-muted); font-size: 0.8rem; }
+
+    /* ── Section heures travaillées ── */
+    .hours-table td:nth-child(3),
+    .hours-table td:nth-child(4) { font-family: monospace; }
+
+    /* ── Section divider ── */
+    .section-divider {
+      display: flex; align-items: center; gap: 12px; margin: 28px 0 18px;
+    }
+    .section-divider-line { flex: 1; height: 1px; background: var(--border); }
+    .section-divider-label {
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-muted); white-space: nowrap;
+      padding: 4px 10px; border: 1px solid var(--border);
+      border-radius: 99px; background: var(--bg-card);
+    }
+
+    /* ── Lightbox photo ── */
+    #photoOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      cursor: pointer;
+    }
+    #photoOverlay.open { display: flex; }
+    #photoOverlay img {
+      max-width: 90vw;
+      max-height: 80vh;
+      border-radius: 12px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.8);
+    }
+    #photoOverlayCaption {
+      color: rgba(255,255,255,0.8);
+      font-size: 0.9rem;
+      text-align: center;
+    }
+    #photoOverlayClose {
+      position: absolute;
+      top: 16px; right: 20px;
+      font-size: 2rem;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .empty-state { text-align: center; color: var(--text-muted); padding: 40px; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <nav class="nav" id="nav"></nav>
+
+  <div class="page">
+    <div class="container">
+
+      <!-- Header -->
+      <div class="page-header" style="margin-bottom:24px;">
+        <div>
+          <div class="page-title">⏱️ Pointeuse</div>
+          <div class="page-subtitle" id="pageSubtitle">Suivi des arrivées et départs du staff</div>
+        </div>
+        <a href="/pointeuse/" target="_blank" class="btn btn-secondary btn-sm">📷 Ouvrir tablette</a>
+      </div>
+
+      <!-- KPI -->
+      <div class="kpi-grid">
+        <div class="kpi-chip">
+          <span class="kpi-label">Pointages aujourd'hui</span>
+          <span class="kpi-value" id="kpiTotal">—</span>
+        </div>
+        <div class="kpi-chip success">
+          <span class="kpi-label">Présents actuellement</span>
+          <span class="kpi-value" id="kpiPresent">—</span>
+        </div>
+        <div class="kpi-chip danger">
+          <span class="kpi-label">Retards du jour</span>
+          <span class="kpi-value" id="kpiLate">—</span>
+        </div>
+      </div>
+
+      <!-- Filtres -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="filters">
+          <label for="filterDate">Date :</label>
+          <input type="date" id="filterDate" onchange="loadPointages()">
+
+          <label for="filterUser">Staff :</label>
+          <select id="filterUser" onchange="loadPointages()">
+            <option value="">Tout le monde</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tableau pointages du jour -->
+      <div class="card" style="margin-bottom:24px;">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="card-title" id="tableTitle">Pointages</div>
+        </div>
+        <div class="table-wrap">
+          <table id="pointagesTable">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Shift</th>
+                <th>Type</th>
+                <th>Heure</th>
+                <th>Retard</th>
+                <th>Photo</th>
+              </tr>
+            </thead>
+            <tbody id="pointagesTbody">
+              <tr><td colspan="6" class="empty-state">Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Heures travaillées cette semaine -->
+      <div class="section-divider">
+        <div class="section-divider-line"></div>
+        <div class="section-divider-label">📊 Heures travaillées — semaine en cours</div>
+        <div class="section-divider-line"></div>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table class="hours-table">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Shift</th>
+                <th>Heures</th>
+                <th>Retards</th>
+                <th>Total retard</th>
+              </tr>
+            </thead>
+            <tbody id="statsTbody">
+              <tr><td colspan="5" class="empty-state">Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Lightbox photo -->
+  <div id="photoOverlay">
+    <span id="photoOverlayClose" onclick="closePhoto()">✕</span>
+    <img id="photoOverlayImg" src="" alt="Photo pointage">
+    <div id="photoOverlayCaption"></div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    // ── Init ──────────────────────────────────────────────────────────────────
+    buildNav('pointages');
+    checkAuth();
+
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('filterDate').value = today;
+
+    async function init() {
+      await loadStaffList();
+      loadPointages();
+      loadStats();
+    }
+
+    // ── Liste du staff ────────────────────────────────────────────────────────
+    async function loadStaffList() {
+      const res = await api.get('/api/admin/staff');
+      if (!res.ok) return;
+      const sel = document.getElementById('filterUser');
+      (res.data || []).forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = u.id;
+        opt.textContent = u.name + (u.shift ? ` (${u.shift})` : '');
+        sel.appendChild(opt);
+      });
+    }
+
+    // ── Pointages ─────────────────────────────────────────────────────────────
+    async function loadPointages() {
+      const date   = document.getElementById('filterDate').value || today;
+      const userId = document.getElementById('filterUser').value;
+      const url    = `/api/admin/pointages?date=${date}${userId ? `&user_id=${userId}` : ''}`;
+
+      const res = await api.get(url);
+      if (!res.ok) return;
+      const rows = res.data || [];
+
+      // Mise à jour titre
+      const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+      document.getElementById('tableTitle').textContent = `Pointages — ${dateLabel}`;
+
+      // KPI (aujourd'hui seulement)
+      if (date === today) {
+        document.getElementById('kpiTotal').textContent = rows.length;
+        // Présents = ceux dont le dernier pointage de la journée est 'arrivee'
+        const byUser = {};
+        rows.forEach(r => { byUser[r.user_id] = r.type; });
+        const present = Object.values(byUser).filter(t => t === 'arrivee').length;
+        document.getElementById('kpiPresent').textContent = present;
+        const lateCount = rows.filter(r => r.late_min > 0).length;
+        document.getElementById('kpiLate').textContent = lateCount;
+      }
+
+      // Tableau
+      const tbody = document.getElementById('pointagesTbody');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Aucun pointage pour cette date</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(r => {
+        const heure = r.timestamp.slice(11, 16);
+        const typeEl = r.type === 'arrivee'
+          ? '<span class="badge badge-arrivee">Arrivée</span>'
+          : '<span class="badge badge-depart">Départ</span>';
+        const retardEl = r.late_min > 0
+          ? `<span class="badge badge-late">+${r.late_min} min</span>`
+          : '<span style="color:var(--text-muted)">—</span>';
+        const photoEl = r.photo_filename
+          ? `<img class="photo-thumb" src="/uploads/pointages/${r.photo_filename}" loading="lazy"
+               onclick="openPhoto('/uploads/pointages/${r.photo_filename}', '${escHtml(r.user_name)} — ${heure}')"
+               alt="Photo ${escHtml(r.user_name)}">`
+          : '<span class="no-photo">Aucune</span>';
+        const shift = r.shift || '—';
+        return `<tr>
+          <td><strong>${escHtml(r.user_name)}</strong></td>
+          <td style="color:var(--text-muted)">${shift}</td>
+          <td>${typeEl}</td>
+          <td style="font-weight:600">${heure}</td>
+          <td>${retardEl}</td>
+          <td>${photoEl}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // ── Stats hebdomadaires ───────────────────────────────────────────────────
+    async function loadStats() {
+      const res = await api.get('/api/admin/pointages/stats');
+      if (!res.ok) return;
+      const { stats, from, to } = res.data;
+
+      const fromLabel = new Date(from + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+      const toLabel   = new Date(to   + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+      document.querySelector('.section-divider-label').textContent =
+        `📊 Heures travaillées — ${fromLabel} au ${toLabel}`;
+
+      const tbody = document.getElementById('statsTbody');
+      if (!stats.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Aucune donnée cette semaine</td></tr>';
+        return;
+      }
+      tbody.innerHTML = stats.map(s => {
+        const retardCell = s.late_count > 0
+          ? `<span class="badge badge-late">${s.late_count}x</span>`
+          : '<span style="color:var(--text-muted)">—</span>';
+        const totalRetard = s.total_late_min > 0
+          ? `<span style="color:#ef4444">${fmtH(s.total_late_min)}</span>`
+          : '<span style="color:var(--text-muted)">—</span>';
+        return `<tr>
+          <td><strong>${escHtml(s.name)}</strong></td>
+          <td style="color:var(--text-muted)">${s.shift || '—'}</td>
+          <td style="font-weight:600">${fmtH(s.worked_min)}</td>
+          <td>${retardCell}</td>
+          <td>${totalRetard}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // ── Lightbox ──────────────────────────────────────────────────────────────
+    function openPhoto(url, caption) {
+      document.getElementById('photoOverlayImg').src = url;
+      document.getElementById('photoOverlayCaption').textContent = caption || '';
+      document.getElementById('photoOverlay').classList.add('open');
+    }
+    function closePhoto() {
+      document.getElementById('photoOverlay').classList.remove('open');
+      document.getElementById('photoOverlayImg').src = '';
+    }
+    document.getElementById('photoOverlay').addEventListener('click', function(e) {
+      if (e.target === this) closePhoto();
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closePhoto(); });
+
+    // ── Utilitaires ───────────────────────────────────────────────────────────
+    function fmtH(mins) {
+      if (!mins) return '—';
+      const h = Math.floor(mins / 60), m = mins % 60;
+      return h > 0 ? (m > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${h}h`) : `${m}min`;
+    }
+    function escHtml(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    init();
+  </script>
+</body>
+</html>

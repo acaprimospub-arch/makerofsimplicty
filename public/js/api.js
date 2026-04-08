@@ -73,6 +73,7 @@ async function buildNav(activePage) {
     { href: '/resa/devis.html',         label: '📝 Devis',             mobileLabel: 'Devis',      icon: '📝',   key: 'resa-devis' },
     { href: '/staff/planning.html',     label: '📅 Planning',           mobileLabel: 'Planning',   icon: '📅',   key: 'planning' },
     { href: '/instagram/index.html',    label: '📸 Instagram',          mobileLabel: 'Insta',      icon: '📸',   key: 'instagram' },
+    { href: '/admin/pointages.html',    label: '⏱️ Pointeuse',          mobileLabel: 'Pointeuse',  icon: '⏱️',   key: 'pointages' },
   ];
   const managerMidiLinks = [
     { href: '/admin/dashboard.html',    label: '📊 Dashboard',     mobileLabel: 'Dashboard',   icon: '📊', key: 'dashboard' },

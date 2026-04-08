@@ -184,6 +184,23 @@ try {
   `);
 } catch(e) {}
 
+// ─── Table pointages (time-clock) ─────────────────────────────────────────────
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS pointages (
+      id             INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id        INTEGER NOT NULL,
+      type           TEXT NOT NULL CHECK(type IN ('arrivee','depart')),
+      timestamp      TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+      photo_filename TEXT,
+      late_min       INTEGER DEFAULT 0,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_pointages_user_ts ON pointages(user_id, timestamp)`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_pointages_date ON pointages(date(timestamp))`);
+} catch(e) {}
+
 // ─── Nettoyage doublons Joy au démarrage ───────────────────────────────────────
 // Supprime les résas Joy en double (garde celle avec table assignée ou la plus récente)
 db.exec(`
@@ -1477,6 +1494,71 @@ function reorderInstagramMedia(post_id, orderedIds) {
   });
 }
 
+// ─── Planning PDF (salle staff) ────────────────────────────────────────────────
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS planning_pdfs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      filename TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      uploaded_by INTEGER,
+      uploaded_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (uploaded_by) REFERENCES users(id)
+    )
+  `);
+} catch(e) {}
+
+function addPlanningPDF({ filename, original_name, uploaded_by }) {
+  return db.prepare(
+    'INSERT INTO planning_pdfs (filename, original_name, uploaded_by) VALUES (?, ?, ?)'
+  ).run(filename, original_name, uploaded_by).lastInsertRowid;
+}
+function getLatestPlanningPDF() {
+  return db.prepare('SELECT * FROM planning_pdfs ORDER BY id DESC LIMIT 1').get();
+}
+function deletePlanningPDF(id) {
+  return db.prepare('DELETE FROM planning_pdfs WHERE id = ?').run(id);
+}
+
+// ─── Pointages ─────────────────────────────────────────────────────────────────
+function createPointage({ user_id, type, timestamp, photo_filename, late_min }) {
+  return db.prepare(
+    `INSERT INTO pointages (user_id, type, timestamp, photo_filename, late_min)
+     VALUES (?, ?, ?, ?, ?)`
+  ).run(user_id, type, timestamp || null, photo_filename || null, late_min || 0).lastInsertRowid;
+}
+
+function getLastPointageToday(user_id, date) {
+  return db.prepare(
+    `SELECT * FROM pointages WHERE user_id = ? AND date(timestamp) = ?
+     ORDER BY timestamp DESC LIMIT 1`
+  ).get(user_id, date);
+}
+
+function getPointagesByDate(date, user_id) {
+  let q = `
+    SELECT p.*, u.name AS user_name, u.shift
+    FROM pointages p
+    JOIN users u ON u.id = p.user_id
+    WHERE date(p.timestamp) = ?`;
+  const params = [date];
+  if (user_id) { q += ' AND p.user_id = ?'; params.push(user_id); }
+  q += ' ORDER BY p.timestamp ASC';
+  return db.prepare(q).all(...params);
+}
+
+function getPointagesRange(from, to, user_id) {
+  let q = `
+    SELECT p.*, u.name AS user_name, u.shift
+    FROM pointages p
+    JOIN users u ON u.id = p.user_id
+    WHERE date(p.timestamp) BETWEEN ? AND ?`;
+  const params = [from, to];
+  if (user_id) { q += ' AND p.user_id = ?'; params.push(user_id); }
+  q += ' ORDER BY p.timestamp ASC';
+  return db.prepare(q).all(...params);
+}
+
 module.exports = {
   getUserByPin, getUserById, getAllUsers, createUser, updateUser, deleteUser,
   getTasksWithCompletions, getTaskById, getAllTasks, completeTask, uncompleteTask, createTask, updateTask, deactivateTask,
@@ -1497,4 +1579,6 @@ module.exports = {
   getInstagramAccounts, getInstagramAccountById, createInstagramAccount, updateInstagramAccount, deleteInstagramAccount,
   getInstagramPosts, getInstagramPostById, createInstagramPost, updateInstagramPost, deleteInstagramPost, getDueInstagramPosts,
   addInstagramMedia, getInstagramMedia, getInstagramMediaById, deleteInstagramMedia, reorderInstagramMedia,
+  addPlanningPDF, getLatestPlanningPDF, deletePlanningPDF,
+  createPointage, getLastPointageToday, getPointagesByDate, getPointagesRange,
 };
