@@ -1076,7 +1076,7 @@ app.put('/api/admin/conge-requests/:id', requireAdminOrManager, (req, res) => {
 
 // ─── Planning PDF salle ────────────────────────────────────────────────────────
 app.use('/uploads/planning', requireAuth, express.static(PLANNING_DIR));
-app.use('/uploads/pointages', requireAdmin, express.static(POINTAGES_DIR));
+app.use('/uploads/pointages', requireAdminOrManager, express.static(POINTAGES_DIR));
 
 app.post('/api/admin/planning-pdf', requireAdminOrManager, uploadPlanning.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'PDF requis (max 20 Mo)' });
@@ -1510,15 +1510,15 @@ app.post('/api/pointage/clock', (req, res) => {
   res.json({ ok: true, id, type, name: user.name, timestamp: nowStr, late_min, photo_filename });
 });
 
-// Liste des pointages d'une date (admin)
-app.get('/api/admin/pointages', requireAdmin, (req, res) => {
+// Liste des pointages d'une date (admin/manager)
+app.get('/api/admin/pointages', requireAdminOrManager, (req, res) => {
   const date = req.query.date || new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
   const user_id = req.query.user_id ? parseInt(req.query.user_id) : null;
   res.json(db.getPointagesByDate(date, user_id));
 });
 
-// Stats hebdomadaires : heures travaillées + retards (admin)
-app.get('/api/admin/pointages/stats', requireAdmin, (req, res) => {
+// Stats hebdomadaires : heures travaillées + retards (admin/manager)
+app.get('/api/admin/pointages/stats', requireAdminOrManager, (req, res) => {
   const today = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
   const d = new Date(today);
   const dow = d.getDay();

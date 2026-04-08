@@ -80,6 +80,7 @@ async function buildNav(activePage) {
     { href: '/staff/taches.html',       label: '✅ Mes Tâches',     mobileLabel: 'Tâches',      icon: '✅', key: 'taches' },
     { href: '/staff/reservations.html', label: '📋 Réservations',   mobileLabel: 'Résas',       icon: '📋', key: 'reservations' },
     { href: '/staff/tables.html',       label: '🍽️ Plan de Salle',  mobileLabel: 'Salle',       icon: '🍽️', key: 'tables' },
+    { href: '/admin/pointages.html',    label: '⏱️ Pointeuse',      mobileLabel: 'Pointeuse',   icon: '⏱️', key: 'pointages' },
   ];
   const managerSoirLinks = [
     { href: '/admin/dashboard.html',    label: '📊 Dashboard',     mobileLabel: 'Dashboard',   icon: '📊', key: 'dashboard' },
@@ -87,6 +88,7 @@ async function buildNav(activePage) {
     { href: '/staff/reservations.html', label: '📋 Réservations',   mobileLabel: 'Résas',       icon: '📋', key: 'reservations' },
     { href: '/staff/tables.html',       label: '🍽️ Plan de Salle',  mobileLabel: 'Salle',       icon: '🍽️', key: 'tables' },
     { href: '/staff/planning.html',     label: '📅 Planning',         mobileLabel: 'Planning',    icon: '📅', key: 'planning' },
+    { href: '/admin/pointages.html',    label: '⏱️ Pointeuse',      mobileLabel: 'Pointeuse',   icon: '⏱️', key: 'pointages' },
   ];
   const staffMidiLinks = [
     { href: '/staff/taches.html',       label: '✅ Mes Tâches',     mobileLabel: 'Tâches',      icon: '✅', key: 'taches' },

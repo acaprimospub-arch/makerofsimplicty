@@ -438,12 +438,24 @@
   }
 
   // ── Caméra ────────────────────────────────────────────────────────────────
+  const cameraAvailable = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+
   async function startCamera() {
-    setState('camera');
     document.getElementById('cameraLabel').textContent =
-      pendingType === 'arrivee' ? 'Pointage arrivée' : 'Pointage départ';
+      pendingType === 'arrivee' ? '📸 Pointage arrivée' : '📸 Pointage départ';
     document.getElementById('cameraName').textContent = pendingName;
 
+    // Pas de caméra disponible (HTTP ou pas de device) → pointage sans photo
+    if (!cameraAvailable) {
+      setState('camera');
+      document.getElementById('countdownOverlay').classList.add('visible');
+      document.getElementById('countdownNum').textContent = '📷';
+      document.getElementById('cameraName').textContent = pendingName + ' — Sans photo (caméra indisponible)';
+      setTimeout(() => captureAndSubmit(null), 1500);
+      return;
+    }
+
+    setState('camera');
     try {
       stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
@@ -455,13 +467,16 @@
       startCountdown();
     } catch (err) {
       stopCamera();
-      isSubmitting = false;
-      setState('pin');
-      if (err.name === 'NotAllowedError') {
+      if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+        // Accès refusé → retour PIN avec message
+        isSubmitting = false;
+        setState('pin');
         showPinError('Accès caméra refusé — autorisez la caméra dans les réglages');
+        currentPin = '';
+        updatePinDisplay();
       } else {
-        // Pas de caméra disponible : on soumet quand même sans photo
-        await captureAndSubmit(null);
+        // Erreur matérielle → soumet sans photo
+        captureAndSubmit(null);
       }
     }
   }
@@ -489,13 +504,15 @@
   function capturePhoto() {
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    canvas.width  = video.videoWidth  || 640;
-    canvas.height = video.videoHeight || 480;
-    // Miroir horizontal (cohérent avec le CSS transform: scaleX(-1))
+    const w = video.videoWidth  || 640;
+    const h = video.videoHeight || 480;
+    canvas.width  = w;
+    canvas.height = h;
     const ctx = canvas.getContext('2d');
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // reset transform
+    ctx.translate(w, 0);
+    ctx.scale(-1, 1); // miroir horizontal (front cam)
+    ctx.drawImage(video, 0, 0, w, h);
     return canvas.toDataURL('image/jpeg', 0.85);
   }
 

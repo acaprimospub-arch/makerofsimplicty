@@ -296,9 +296,9 @@
     // ── Liste du staff ────────────────────────────────────────────────────────
     async function loadStaffList() {
       const staff = await api.get('/api/admin/staff');
-      if (!staff) return;
+      if (!staff || !Array.isArray(staff)) return;
       const sel = document.getElementById('filterUser');
-      (Array.isArray(staff) ? staff : []).forEach(u => {
+      staff.forEach(u => {
         const opt = document.createElement('option');
         opt.value = u.id;
         opt.textContent = u.name + (u.shift ? ` (${u.shift})` : '');
@@ -313,7 +313,11 @@
       const url    = `/api/admin/pointages?date=${date}${userId ? `&user_id=${userId}` : ''}`;
 
       const rows = await api.get(url);
-      if (!rows) return;
+      if (!rows || !Array.isArray(rows)) {
+        document.getElementById('pointagesTbody').innerHTML =
+          `<tr><td colspan="6" class="empty-state">${rows && rows.error ? '⚠️ ' + rows.error : 'Erreur de chargement'}</td></tr>`;
+        return;
+      }
 
       // Mise à jour titre
       const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -363,7 +367,7 @@
     // ── Stats hebdomadaires ───────────────────────────────────────────────────
     async function loadStats() {
       const data = await api.get('/api/admin/pointages/stats');
-      if (!data) return;
+      if (!data || data.error) return;
       const { stats, from, to } = data;
 
       const fromLabel = new Date(from + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
