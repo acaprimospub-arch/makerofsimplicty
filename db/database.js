@@ -1521,6 +1521,21 @@ function deletePlanningPDF(id) {
 }
 
 // ─── Pointages ─────────────────────────────────────────────────────────────────
+function getScheduledStartTime(user_id, date) {
+  const schedShift = db.prepare(`
+    SELECT ss.start_time FROM schedule_shifts ss
+    JOIN schedules sc ON sc.id = ss.schedule_id
+    WHERE ss.user_id = ? AND ss.day_date = ? AND ss.start_time IS NOT NULL
+    LIMIT 1
+  `).get(user_id, date);
+  if (schedShift) return schedShift.start_time;
+
+  const cuisineShift = db.prepare(
+    `SELECT start_time FROM cuisine_planning WHERE user_id = ? AND day_date = ? AND is_off = 0 AND start_time IS NOT NULL`
+  ).get(user_id, date);
+  return cuisineShift ? cuisineShift.start_time : null;
+}
+
 function createPointage({ user_id, type, timestamp, photo_filename, late_min }) {
   return db.prepare(
     `INSERT INTO pointages (user_id, type, timestamp, photo_filename, late_min)
@@ -1580,5 +1595,5 @@ module.exports = {
   getInstagramPosts, getInstagramPostById, createInstagramPost, updateInstagramPost, deleteInstagramPost, getDueInstagramPosts,
   addInstagramMedia, getInstagramMedia, getInstagramMediaById, deleteInstagramMedia, reorderInstagramMedia,
   addPlanningPDF, getLatestPlanningPDF, deletePlanningPDF,
-  createPointage, getLastPointageToday, getPointagesByDate, getPointagesRange,
+  getScheduledStartTime, createPointage, getLastPointageToday, getPointagesByDate, getPointagesRange,
 };

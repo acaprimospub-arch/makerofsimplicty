@@ -1482,23 +1482,7 @@ app.post('/api/pointage/clock', (req, res) => {
   if (type === 'arrivee') {
     try {
       const graceMin = parseInt(db.getSetting('pointage_grace_min') || '10');
-      let shiftStart = null;
-
-      const schedShift = db.prepare(`
-        SELECT ss.start_time FROM schedule_shifts ss
-        JOIN schedules sc ON sc.id = ss.schedule_id
-        WHERE ss.user_id = ? AND ss.day_date = ? AND ss.start_time IS NOT NULL
-        LIMIT 1
-      `).get(user.id, today);
-
-      if (schedShift) {
-        shiftStart = schedShift.start_time;
-      } else {
-        const cuisineShift = db.prepare(
-          `SELECT start_time FROM cuisine_planning WHERE user_id = ? AND day_date = ? AND is_off = 0 AND start_time IS NOT NULL`
-        ).get(user.id, today);
-        if (cuisineShift) shiftStart = cuisineShift.start_time;
-      }
+      const shiftStart = db.getScheduledStartTime(user.id, today);
 
       if (shiftStart) {
         const [sh, sm] = shiftStart.slice(0, 5).split(':').map(Number);

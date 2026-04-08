@@ -283,7 +283,6 @@
   <script>
     // ── Init ──────────────────────────────────────────────────────────────────
     buildNav('pointages');
-    checkAuth();
 
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('filterDate').value = today;
@@ -296,10 +295,10 @@
 
     // ── Liste du staff ────────────────────────────────────────────────────────
     async function loadStaffList() {
-      const res = await api.get('/api/admin/staff');
-      if (!res.ok) return;
+      const staff = await api.get('/api/admin/staff');
+      if (!staff) return;
       const sel = document.getElementById('filterUser');
-      (res.data || []).forEach(u => {
+      (Array.isArray(staff) ? staff : []).forEach(u => {
         const opt = document.createElement('option');
         opt.value = u.id;
         opt.textContent = u.name + (u.shift ? ` (${u.shift})` : '');
@@ -313,9 +312,8 @@
       const userId = document.getElementById('filterUser').value;
       const url    = `/api/admin/pointages?date=${date}${userId ? `&user_id=${userId}` : ''}`;
 
-      const res = await api.get(url);
-      if (!res.ok) return;
-      const rows = res.data || [];
+      const rows = await api.get(url);
+      if (!rows) return;
 
       // Mise à jour titre
       const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -324,7 +322,6 @@
       // KPI (aujourd'hui seulement)
       if (date === today) {
         document.getElementById('kpiTotal').textContent = rows.length;
-        // Présents = ceux dont le dernier pointage de la journée est 'arrivee'
         const byUser = {};
         rows.forEach(r => { byUser[r.user_id] = r.type; });
         const present = Object.values(byUser).filter(t => t === 'arrivee').length;
@@ -352,10 +349,9 @@
                onclick="openPhoto('/uploads/pointages/${r.photo_filename}', '${escHtml(r.user_name)} — ${heure}')"
                alt="Photo ${escHtml(r.user_name)}">`
           : '<span class="no-photo">Aucune</span>';
-        const shift = r.shift || '—';
         return `<tr>
           <td><strong>${escHtml(r.user_name)}</strong></td>
-          <td style="color:var(--text-muted)">${shift}</td>
+          <td style="color:var(--text-muted)">${r.shift || '—'}</td>
           <td>${typeEl}</td>
           <td style="font-weight:600">${heure}</td>
           <td>${retardEl}</td>
@@ -366,9 +362,9 @@
 
     // ── Stats hebdomadaires ───────────────────────────────────────────────────
     async function loadStats() {
-      const res = await api.get('/api/admin/pointages/stats');
-      if (!res.ok) return;
-      const { stats, from, to } = res.data;
+      const data = await api.get('/api/admin/pointages/stats');
+      if (!data) return;
+      const { stats, from, to } = data;
 
       const fromLabel = new Date(from + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
       const toLabel   = new Date(to   + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
@@ -376,7 +372,7 @@
         `📊 Heures travaillées — ${fromLabel} au ${toLabel}`;
 
       const tbody = document.getElementById('statsTbody');
-      if (!stats.length) {
+      if (!stats || !stats.length) {
         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Aucune donnée cette semaine</td></tr>';
         return;
       }
