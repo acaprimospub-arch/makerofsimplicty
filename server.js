@@ -276,11 +276,16 @@ const io = new Server(server);
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.set('trust proxy', 1); // fait confiance au proxy Nginx
 app.use(session({
   secret: 'mos-pub-merciere-2024',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000 }
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000,
+    secure: 'auto',   // secure=true en HTTPS, false en HTTP local
+    sameSite: 'lax'
+  }
 }));
 
 // ─── Middleware ────────────────────────────────────────────────────────────────
@@ -585,6 +590,13 @@ app.post('/api/admin/staff', requireAdmin, (req, res) => {
 });
 
 app.put('/api/admin/staff/:id', requireAdmin, (req, res) => {
+  const { pin } = req.body;
+  if (pin) {
+    const existing = db.getUserByPin(pin);
+    if (existing && existing.id !== parseInt(req.params.id)) {
+      return res.status(400).json({ error: 'Ce PIN est déjà utilisé' });
+    }
+  }
   db.updateUser(req.params.id, req.body);
   res.json(db.getUserById(req.params.id));
 });

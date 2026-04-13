@@ -199,6 +199,7 @@ async function buildNav(activePage) {
   const adminLinks = [
     { href: '/admin/dashboard.html',    label: 'Dashboard',    key: 'dashboard' },
     { href: '/admin/manager.html',      label: 'Manager',      key: 'manager' },
+    { href: '/admin/equipe.html',       label: 'Équipe',       key: 'equipe' },
     { href: '/staff/reservations.html', label: 'Réservations', key: 'reservations' },
     { href: '/staff/tables.html',       label: 'Salle',        key: 'tables' },
     { href: '/cuisine/index.html',      label: 'Cuisine',      key: 'cuisine' },

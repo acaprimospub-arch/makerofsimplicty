@@ -658,10 +658,10 @@ function getUserByPin(pin) {
   return db.prepare('SELECT * FROM users WHERE pin = ? AND active = 1').get(pin);
 }
 function getUserById(id) {
-  return db.prepare('SELECT id, name, pin, role, shift, active, created_at FROM users WHERE id = ?').get(id);
+  return db.prepare('SELECT id, name, pin, role, shift, email, active, created_at FROM users WHERE id = ?').get(id);
 }
 function getAllUsers() {
-  return db.prepare('SELECT id, name, pin, role, shift, active, created_at FROM users ORDER BY role DESC, name').all();
+  return db.prepare('SELECT id, name, pin, role, shift, email, active, created_at FROM users ORDER BY role DESC, name').all();
 }
 function createUser({ name, pin, role, shift, email }) {
   return db.prepare('INSERT INTO users (name, pin, role, shift, email) VALUES (?, ?, ?, ?, ?)').run(name, pin, role || 'staff', shift || null, email || null).lastInsertRowid;
