@@ -10,79 +10,105 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MOS">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
 </head>
 <body>
-  <nav id="nav"></nav>
+  <nav id="nav" role="navigation" aria-label="Navigation principale"></nav>
 
-  <div class="page">
-    <div style="padding:24px 20px 16px">
-      <div class="menu-greeting">Bonjour, <span id="menuName">…</span> 👋</div>
-      <div class="menu-subtitle" id="menuSubtitle"></div>
-    </div>
-    <div class="menu-grid" id="menuGrid">
-      <!-- Tuiles générées dynamiquement -->
-    </div>
+  <div class="page" id="main-content">
+    <header style="padding:24px 20px 16px">
+      <h1 class="menu-greeting">Bonjour, <span id="menu-name">…</span></h1>
+      <p class="menu-subtitle" id="menu-subtitle"></p>
+    </header>
+    <nav aria-label="Modules disponibles">
+      <ul class="menu-grid" id="menu-grid" role="list">
+        <!-- Tuiles générées dynamiquement -->
+      </ul>
+    </nav>
   </div>
 
   <script src="/js/api.js"></script>
   <script>
+    'use strict';
+
+    // ── Icônes SVG par destination ──
+    const TILE_ICONS = {
+      '/admin/dashboard.html':    `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h5a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm1 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1v-4a1 1 0 00-1-1h-4z"/></svg>`,
+      '/admin/manager.html':      `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>`,
+      '/staff/reservations.html': `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>`,
+      '/staff/tables.html':       `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 3a1 1 0 000 2h1v11a1 1 0 102 0V5h8v11a1 1 0 102 0V5h1a1 1 0 100-2H3zm4 5a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z"/></svg>`,
+      '/staff/taches.html':       `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>`,
+      '/staff/planning.html':     `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>`,
+      '/cuisine/index.html':      `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>`,
+      '/cuisine/taches.html':     `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>`,
+      '/cuisine/planning.html':   `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>`,
+      '/instagram/index.html':    `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2c-2.236 0-2.516.01-3.394.049-.876.04-1.474.178-1.997.38a4.03 4.03 0 00-1.457.948 4.03 4.03 0 00-.948 1.457c-.202.523-.34 1.121-.38 1.997C2.01 7.484 2 7.764 2 10s.01 2.516.049 3.394c.04.876.178 1.474.38 1.997a4.03 4.03 0 00.948 1.457c.455.455.944.738 1.457.948.523.202 1.121.34 1.997.38C7.484 17.99 7.764 18 10 18s2.516-.01 3.394-.049c.876-.04 1.474-.178 1.997-.38a4.03 4.03 0 001.457-.948 4.03 4.03 0 00.948-1.457c.202-.523.34-1.121.38-1.997C17.99 12.516 18 12.236 18 10s-.01-2.516-.049-3.394c-.04-.876-.178-1.474-.38-1.997a4.03 4.03 0 00-.948-1.457 4.03 4.03 0 00-1.457-.948c-.523-.202-1.121-.34-1.997-.38C12.516 2.01 12.236 2 10 2zm0 1.5c2.2 0 2.46.008 3.328.048.804.036 1.24.168 1.53.28.384.15.658.328.946.616.288.288.466.562.615.946.112.29.244.726.28 1.53.04.868.048 1.128.048 3.328s-.008 2.46-.048 3.328c-.036.804-.168 1.24-.28 1.53a2.553 2.553 0 01-.615.946 2.553 2.553 0 01-.946.615c-.29.112-.726.244-1.53.28-.868.04-1.128.048-3.328.048s-2.46-.008-3.328-.048c-.804-.036-1.24-.168-1.53-.28a2.553 2.553 0 01-.946-.615 2.553 2.553 0 01-.615-.946c-.112-.29-.244-.726-.28-1.53C3.508 12.46 3.5 12.2 3.5 10s.008-2.46.048-3.328c.036-.804.168-1.24.28-1.53.15-.384.327-.658.615-.946.288-.288.562-.466.946-.615.29-.112.726-.244 1.53-.28C7.54 3.508 7.8 3.5 10 3.5zm0 2.5a4 4 0 100 8 4 4 0 000-8zm0 1.5a2.5 2.5 0 110 5 2.5 2.5 0 010-5zm4.5-1.5a.75.75 0 100 1.5.75.75 0 000-1.5z" clip-rule="evenodd"/></svg>`,
+      '/admin/email.html':        `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>`,
+      '/resa/devis.html':         `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>`,
+      '/marketing/dashboard.html':`<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>`,
+      '/marketing/reservations.html':`<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>`,
+      '/admin/joy.html':          `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM6.293 5.293a1 1 0 011.414 0L9 6.586V5a1 1 0 112 0v1.586l1.293-1.293a1 1 0 011.414 1.414L12.414 8H14a1 1 0 110 2h-1.586l1.293 1.293a1 1 0 01-1.414 1.414L11 11.414V13a1 1 0 11-2 0v-1.586l-1.293 1.293a1 1 0 01-1.414-1.414L7.586 10H6a1 1 0 110-2h1.586L6.293 6.707a1 1 0 010-1.414z"/></svg>`,
+      '/resa/dashboard.html':     `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h5a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm1 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1v-4a1 1 0 00-1-1h-4z"/></svg>`,
+      '/resa/gestion.html':       `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>`,
+      '/resa/suivi.html':         `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>`,
+    };
+
     const MENU_ITEMS = {
       admin: [
-        { icon: '📊', label: 'Dashboard',     href: '/admin/dashboard.html' },
-        { icon: '👔', label: 'Manager',        href: '/admin/manager.html' },
-        { icon: '📅', label: 'Réservations',   href: '/staff/reservations.html' },
-        { icon: '🗺️', label: 'Plan de salle',  href: '/staff/tables.html' },
-        { icon: '🍳', label: 'Cuisine',         href: '/cuisine/index.html' },
-        { icon: '📸', label: 'Instagram',       href: '/instagram/index.html' },
-        { icon: '✉️', label: 'Email',           href: '/admin/email.html' },
-        { icon: '📄', label: 'Devis',           href: '/resa/devis.html' },
-        { icon: '🗓️', label: 'Planning',        href: '/staff/planning.html' },
+        { label: 'Dashboard',    href: '/admin/dashboard.html' },
+        { label: 'Manager',      href: '/admin/manager.html' },
+        { label: 'Réservations', href: '/staff/reservations.html' },
+        { label: 'Plan de salle',href: '/staff/tables.html' },
+        { label: 'Cuisine',      href: '/cuisine/index.html' },
+        { label: 'Instagram',    href: '/instagram/index.html' },
+        { label: 'Email',        href: '/admin/email.html' },
+        { label: 'Devis',        href: '/resa/devis.html' },
+        { label: 'Planning',     href: '/staff/planning.html' },
       ],
       manager_midi: [
-        { icon: '📊', label: 'Dashboard',     href: '/admin/dashboard.html' },
-        { icon: '✅', label: 'Tâches',         href: '/staff/taches.html' },
-        { icon: '📅', label: 'Réservations',   href: '/staff/reservations.html' },
-        { icon: '🗺️', label: 'Plan de salle',  href: '/staff/tables.html' },
+        { label: 'Dashboard',    href: '/admin/dashboard.html' },
+        { label: 'Tâches',       href: '/staff/taches.html' },
+        { label: 'Réservations', href: '/staff/reservations.html' },
+        { label: 'Plan de salle',href: '/staff/tables.html' },
       ],
       manager_soir: [
-        { icon: '📊', label: 'Dashboard',     href: '/admin/dashboard.html' },
-        { icon: '✅', label: 'Tâches',         href: '/staff/taches.html' },
-        { icon: '📅', label: 'Réservations',   href: '/staff/reservations.html' },
-        { icon: '🗺️', label: 'Plan de salle',  href: '/staff/tables.html' },
-        { icon: '🗓️', label: 'Planning',        href: '/staff/planning.html' },
+        { label: 'Dashboard',    href: '/admin/dashboard.html' },
+        { label: 'Tâches',       href: '/staff/taches.html' },
+        { label: 'Réservations', href: '/staff/reservations.html' },
+        { label: 'Plan de salle',href: '/staff/tables.html' },
+        { label: 'Planning',     href: '/staff/planning.html' },
       ],
       staff_midi: [
-        { icon: '✅', label: 'Tâches',         href: '/staff/taches.html' },
-        { icon: '📅', label: 'Réservations',   href: '/staff/reservations.html' },
-        { icon: '🗺️', label: 'Plan de salle',  href: '/staff/tables.html' },
-        { icon: '🗓️', label: 'Planning',        href: '/staff/planning.html' },
+        { label: 'Tâches',       href: '/staff/taches.html' },
+        { label: 'Réservations', href: '/staff/reservations.html' },
+        { label: 'Plan de salle',href: '/staff/tables.html' },
+        { label: 'Planning',     href: '/staff/planning.html' },
       ],
       staff_soir: [
-        { icon: '✅', label: 'Tâches',         href: '/staff/taches.html' },
-        { icon: '📅', label: 'Réservations',   href: '/staff/reservations.html' },
-        { icon: '🗺️', label: 'Plan de salle',  href: '/staff/tables.html' },
-        { icon: '🗓️', label: 'Planning',        href: '/staff/planning.html' },
+        { label: 'Tâches',       href: '/staff/taches.html' },
+        { label: 'Réservations', href: '/staff/reservations.html' },
+        { label: 'Plan de salle',href: '/staff/tables.html' },
+        { label: 'Planning',     href: '/staff/planning.html' },
       ],
       cuisine: [
-        { icon: '✅', label: 'Tâches',         href: '/cuisine/taches.html' },
-        { icon: '🗓️', label: 'Planning',        href: '/cuisine/planning.html' },
-        { icon: '🏖️', label: 'Congés',          href: '/staff/planning.html' },
+        { label: 'Tâches',   href: '/cuisine/taches.html' },
+        { label: 'Planning', href: '/cuisine/planning.html' },
+        { label: 'Congés',   href: '/staff/planning.html' },
       ],
       marketing: [
-        { icon: '📊', label: 'Dashboard',     href: '/marketing/dashboard.html' },
-        { icon: '📸', label: 'Instagram',       href: '/instagram/index.html' },
-        { icon: '📅', label: 'Réservations',   href: '/marketing/reservations.html' },
-        { icon: '🎉', label: 'Joy.io',          href: '/admin/joy.html' },
-        { icon: '📄', label: 'Devis',           href: '/resa/devis.html' },
-        { icon: '🗓️', label: 'Planning',        href: '/staff/planning.html' },
+        { label: 'Dashboard',    href: '/marketing/dashboard.html' },
+        { label: 'Instagram',    href: '/instagram/index.html' },
+        { label: 'Réservations', href: '/marketing/reservations.html' },
+        { label: 'Joy.io',       href: '/admin/joy.html' },
+        { label: 'Devis',        href: '/resa/devis.html' },
+        { label: 'Planning',     href: '/staff/planning.html' },
       ],
       resa: [
-        { icon: '📊', label: 'Dashboard',     href: '/resa/dashboard.html' },
-        { icon: '📋', label: 'Gestion',        href: '/resa/gestion.html' },
-        { icon: '🔍', label: 'Suivi',           href: '/resa/suivi.html' },
-        { icon: '📄', label: 'Devis',           href: '/resa/devis.html' },
-        { icon: '🗓️', label: 'Planning',        href: '/staff/planning.html' },
+        { label: 'Dashboard', href: '/resa/dashboard.html' },
+        { label: 'Gestion',   href: '/resa/gestion.html' },
+        { label: 'Suivi',     href: '/resa/suivi.html' },
+        { label: 'Devis',     href: '/resa/devis.html' },
+        { label: 'Planning',  href: '/staff/planning.html' },
       ],
     };
 
@@ -97,50 +123,55 @@
       resa:         'Réservations',
     };
 
+    const DEFAULT_ICON = `<svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="6"/></svg>`;
+
     async function init() {
       const user = await api.get('/api/auth/me');
       if (!user || !user.id) { window.location.href = '/'; return; }
       window.__mosUser = user;
 
-      // Déterminer la clé de menu
       let menuKey;
-      if (user.role === 'admin')                                    menuKey = 'admin';
-      else if (user.shift === 'resa')                               menuKey = 'resa';
-      else if (user.shift === 'marketing')                          menuKey = 'marketing';
-      else if (user.shift === 'cuisine')                            menuKey = 'cuisine';
-      else if (user.role === 'manager' && user.shift === 'midi')    menuKey = 'manager_midi';
-      else if (user.role === 'manager' && user.shift === 'soir')    menuKey = 'manager_soir';
-      else if (user.shift === 'midi')                               menuKey = 'staff_midi';
-      else                                                           menuKey = 'staff_soir';
+      if (user.role === 'admin')                                 menuKey = 'admin';
+      else if (user.shift === 'resa')                            menuKey = 'resa';
+      else if (user.shift === 'marketing')                       menuKey = 'marketing';
+      else if (user.shift === 'cuisine')                         menuKey = 'cuisine';
+      else if (user.role === 'manager' && user.shift === 'midi') menuKey = 'manager_midi';
+      else if (user.role === 'manager' && user.shift === 'soir') menuKey = 'manager_soir';
+      else if (user.shift === 'midi')                            menuKey = 'staff_midi';
+      else                                                        menuKey = 'staff_soir';
 
-      // Remplir le greeting
-      document.getElementById('menuName').textContent = user.name;
-      document.getElementById('menuSubtitle').textContent = SUBTITLES[menuKey] || '';
+      document.getElementById('menu-name').textContent = user.name;
+      document.getElementById('menu-subtitle').textContent = SUBTITLES[menuKey] || '';
       document.title = `Menu — ${user.name}`;
 
-      // Rendre les tuiles
       const items = MENU_ITEMS[menuKey] || [];
-      document.getElementById('menuGrid').innerHTML = items.map(item => `
-        <a href="${item.href}" class="menu-tile">
-          <div class="menu-tile-icon" aria-hidden="true">${item.icon}</div>
-          <div class="menu-tile-label">${item.label}</div>
-        </a>
+      document.getElementById('menu-grid').innerHTML = items.map(item => `
+        <li role="listitem">
+          <a href="${escapeHtml(item.href)}" class="menu-tile" aria-label="Ouvrir ${escapeHtml(item.label)}">
+            <span class="menu-tile-icon" aria-hidden="true">
+              ${TILE_ICONS[item.href] || DEFAULT_ICON}
+            </span>
+            <span class="menu-tile-label">${escapeHtml(item.label)}</span>
+          </a>
+        </li>
       `).join('');
 
-      // Barre nav (logo + user + logout uniquement, sans liens)
+      // Nav: logo + user + logout, sans liens répétés
       const nav = document.getElementById('nav');
       nav.setAttribute('aria-label', 'Navigation principale');
       nav.innerHTML = `
-        <a href="/menu.html" class="nav-logo" aria-label="Menu — MOS Pub Mercière">
-          <img src="/images/logo.png" alt="MOS" class="nav-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
-          <span class="nav-logo-text" style="display:none;">MOS</span>
+        <a href="/menu.html" class="nav-logo" aria-current="page" aria-label="Menu — MOS Pub Mercière">
+          <img src="/images/logo.png" alt="MOS" class="nav-logo-img"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+          <span class="nav-logo-text" style="display:none;" aria-hidden="true">MOS</span>
         </a>
         <div class="nav-links"></div>
         <div class="nav-right">
-          <span class="nav-user" aria-label="Connecté en tant que ${user.name}">${user.name}</span>
-          <button class="btn-logout" aria-label="Se déconnecter" onclick="logout()">Déco.</button>
+          <span class="nav-user" aria-label="Connecté en tant que ${escapeHtml(user.name)}">${escapeHtml(user.name)}</span>
+          <button class="btn-logout" id="btn-logout" type="button" aria-label="Se déconnecter">Déco.</button>
         </div>
       `;
+      document.getElementById('btn-logout').addEventListener('click', () => logout());
     }
 
     init();

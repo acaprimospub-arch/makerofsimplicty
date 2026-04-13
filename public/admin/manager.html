@@ -10,206 +10,202 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MOS">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
   <style>
-    /* ── Date nav ── */
-    .date-nav { display: flex; align-items: center; gap: 8px; }
+    .date-nav { display:flex; align-items:center; gap:8px; }
     .date-nav button {
-      background: var(--bg-card); border: 1px solid var(--border);
-      color: var(--text); border-radius: 8px; width: 32px; height: 32px;
-      cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;
+      background:var(--bg-card); border:1px solid var(--border);
+      color:var(--text); border-radius:8px; width:34px; height:34px; min-height:34px;
+      cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center;
     }
-    .date-nav button:hover { background: var(--bg-hover); }
+    .date-nav button:hover { background:var(--bg-hover); }
     .date-nav input[type="date"] {
-      background: var(--bg-card); border: 1px solid var(--border);
-      color: var(--text); border-radius: 8px; padding: 4px 10px; font-size: 0.85rem;
+      background:var(--bg-card); border:1px solid var(--border);
+      color:var(--text); border-radius:8px; padding:5px 10px; font-size:0.85rem;
     }
 
-    /* ── Staff row ── */
     .staff-row {
-      display: flex; flex-direction: column; gap: 6px;
-      padding: 12px 0; border-bottom: 1px solid var(--border);
+      display:flex; flex-direction:column; gap:6px;
+      padding:12px 0; border-bottom:1px solid var(--border);
     }
-    .staff-row:last-child { border-bottom: none; padding-bottom: 0; }
-    .staff-row:first-child { padding-top: 0; }
-    .staff-row-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .staff-row-name { font-weight: 700; font-size: .95rem; flex: 1; min-width: 0; }
-    .staff-row-count { font-size: .85rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+    .staff-row:last-child { border-bottom:none; padding-bottom:0; }
+    .staff-row:first-child { padding-top:0; }
+    .staff-row-header { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .staff-row-name { font-weight:700; font-size:.95rem; flex:1; min-width:0; }
 
-    /* ── Resa row ── */
     .resa-unassigned {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 0; border-bottom: 1px solid var(--border);
+      display:flex; align-items:center; gap:12px;
+      padding:12px 0; border-bottom:1px solid var(--border);
     }
-    .resa-unassigned:last-child { border-bottom: none; padding-bottom: 0; }
-    .resa-unassigned:first-child { padding-top: 0; }
-    .resa-time { font-weight: 800; font-size: 1.1rem; min-width: 52px; }
-    .resa-info { flex: 1; min-width: 0; }
-    .resa-name { font-weight: 700; font-size: .9rem; }
-    .resa-meta { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
+    .resa-unassigned:last-child { border-bottom:none; padding-bottom:0; }
+    .resa-unassigned:first-child { padding-top:0; }
+    .resa-time { font-weight:800; font-size:1.1rem; min-width:52px; }
+    .resa-info { flex:1; min-width:0; }
+    .resa-name { font-weight:700; font-size:.9rem; }
+    .resa-meta { font-size:.78rem; color:var(--text-muted); margin-top:2px; }
 
-    /* ── KPI grid ── */
-    .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-    @media (max-width: 480px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+    .kpi-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+    @media (max-width:480px) { .kpi-row { grid-template-columns:repeat(2,1fr); } }
     .kpi-box {
-      background: var(--bg-surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 12px 14px; text-align: center;
+      background:var(--bg-surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:12px 14px; text-align:center;
     }
-    .kpi-val { font-size: 1.5rem; font-weight: 800; line-height: 1; }
-    .kpi-lbl { font-size: .72rem; color: var(--text-muted); margin-top: 4px; }
+    .kpi-val { font-size:1.5rem; font-weight:800; line-height:1; }
+    .kpi-lbl { font-size:.72rem; color:var(--text-muted); margin-top:4px; }
 
-    /* ── Task row ── */
     .task-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 0; border-bottom: 1px solid var(--border);
-      font-size: .88rem;
+      display:flex; align-items:center; gap:10px;
+      padding:10px 0; border-bottom:1px solid var(--border); font-size:.88rem;
     }
-    .task-row:last-child { border-bottom: none; padding-bottom: 0; }
-    .task-row:first-child { padding-top: 0; }
-    .task-desc { flex: 1; min-width: 0; }
+    .task-row:last-child { border-bottom:none; padding-bottom:0; }
+    .task-row:first-child { padding-top:0; }
+    .task-desc { flex:1; min-width:0; }
 
-    /* ── Accordéon catégorie ── */
     .cat-toggle {
-      width: 100%; display: flex; align-items: center; justify-content: space-between;
-      background: var(--bg-surface); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: 10px 14px;
-      cursor: pointer; font-size: .88rem; font-weight: 700;
-      color: var(--text); margin-bottom: 0;
-      transition: background .12s;
+      width:100%; display:flex; align-items:center; justify-content:space-between;
+      background:var(--bg-surface); border:1px solid var(--border);
+      border-radius:var(--radius-sm); padding:10px 14px;
+      cursor:pointer; font-size:.88rem; font-weight:700;
+      color:var(--text); transition:background .12s;
     }
-    .cat-toggle:hover { background: var(--bg-hover); }
-    .cat-toggle-right { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-weight: 400; font-size: .78rem; }
-    .cat-arrow { font-size: .75rem; transition: transform .2s; }
-    .cat-arrow.open { transform: rotate(90deg); }
-    .cat-body { overflow: hidden; transition: max-height .25s ease; max-height: 0; }
-    .cat-body.open { max-height: 2000px; }
-    .cat-body-inner { padding: 4px 0 8px; }
+    .cat-toggle:hover { background:var(--bg-hover); }
+    .cat-toggle-right { display:flex; align-items:center; gap:8px; color:var(--text-muted); font-weight:400; font-size:.78rem; }
+    .cat-arrow { font-size:.75rem; transition:transform .2s; display:inline-block; }
+    .cat-arrow.open { transform:rotate(90deg); }
+    .cat-body { overflow:hidden; transition:max-height .25s ease; max-height:0; }
+    .cat-body.open { max-height:2000px; }
+    .cat-body-inner { padding:4px 0 8px; }
+
+    .pin-mono { font-family:monospace; font-size:1rem; letter-spacing:2px; color:var(--primary); }
   </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
 
-  <div class="page">
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container-sm">
 
-      <!-- Header -->
-      <div class="page-header">
+      <header class="page-header">
         <div>
-          <div class="page-title">📋 Vue Manager</div>
+          <h1 class="page-title">Vue Manager</h1>
         </div>
-        <a href="/admin/dashboard.html" class="btn btn-secondary btn-sm">📊 Dashboard live</a>
-      </div>
+        <a href="/admin/dashboard.html" class="btn btn-secondary btn-sm">Dashboard live</a>
+      </header>
 
       <!-- Onglets -->
-      <div class="tabs" style="margin-bottom:20px;">
-        <button class="tab active" id="tab-taches"   onclick="switchTab('taches')">✅ Tâches</button>
-        <button class="tab"        id="tab-resas"    onclick="switchTab('resas')">📋 Résas</button>
-        <button class="tab"        id="tab-staff"    onclick="switchTab('staff')">👥 Staff</button>
+      <div role="tablist" aria-label="Sections" style="margin-bottom:20px;" class="tabs">
+        <button role="tab" class="tab" id="tab-taches" aria-selected="true"  aria-controls="pane-taches">Tâches</button>
+        <button role="tab" class="tab" id="tab-resas"  aria-selected="false" aria-controls="pane-resas" tabindex="-1">Résas</button>
+        <button role="tab" class="tab" id="tab-staff"  aria-selected="false" aria-controls="pane-staff" tabindex="-1">Staff</button>
       </div>
 
-      <!-- ═══ TAB TÂCHES ═══ -->
-      <div id="pane-taches">
+      <!-- ═══ PANEL TÂCHES ═══ -->
+      <div role="tabpanel" id="pane-taches" aria-labelledby="tab-taches">
 
-        <div class="card" style="margin-bottom:16px;">
+        <section aria-labelledby="tasks-salle-title" class="card" style="margin-bottom:16px;">
           <div class="card-header">
-            <div class="card-title">🍽️ Salle — aujourd'hui</div>
-            <button class="btn btn-primary btn-sm" onclick="openTaskModal('salle')">+ Ajouter</button>
+            <h2 class="card-title" id="tasks-salle-title">Salle — aujourd'hui</h2>
+            <button class="btn btn-primary btn-sm" id="btn-add-salle">+ Ajouter</button>
           </div>
-          <div id="taskStatsSalle" style="margin-bottom:16px;"></div>
           <div id="taskListSalle"></div>
-        </div>
+        </section>
 
-        <div class="card">
+        <section aria-labelledby="tasks-cuisine-title" class="card">
           <div class="card-header">
-            <div class="card-title">🍳 Cuisine — aujourd'hui</div>
-            <button class="btn btn-primary btn-sm" onclick="openTaskModal('cuisine')">+ Ajouter</button>
+            <h2 class="card-title" id="tasks-cuisine-title">Cuisine — aujourd'hui</h2>
+            <button class="btn btn-primary btn-sm" id="btn-add-cuisine">+ Ajouter</button>
           </div>
-          <div id="taskStatsCuisine" style="margin-bottom:16px;"></div>
           <div id="taskListCuisine"></div>
-        </div>
+        </section>
 
       </div>
 
-      <!-- ═══ TAB RÉSAS ═══ -->
-      <div id="pane-resas" style="display:none;">
+      <!-- ═══ PANEL RÉSAS ═══ -->
+      <div role="tabpanel" id="pane-resas" aria-labelledby="tab-resas" hidden>
 
-        <div class="card" style="margin-bottom:16px;">
+        <section aria-labelledby="unassigned-title" class="card" style="margin-bottom:16px;">
           <div class="card-header">
             <div>
-              <div class="card-title">Résas sans table</div>
+              <h2 class="card-title" id="unassigned-title">Résas sans table</h2>
               <div class="card-subtitle" id="resaDateLabel"></div>
             </div>
-            <div class="date-nav">
-              <button onclick="shiftResaDate(-1)">‹</button>
-              <input type="date" id="resaDateInput" onchange="loadResas()">
-              <button onclick="shiftResaDate(1)">›</button>
+            <div role="group" aria-label="Navigation par date" class="date-nav">
+              <button id="btn-prev-date" aria-label="Jour précédent">‹</button>
+              <label for="resaDateInput" class="sr-only">Date</label>
+              <input type="date" id="resaDateInput">
+              <button id="btn-next-date" aria-label="Jour suivant">›</button>
             </div>
           </div>
           <div id="unassignedList"></div>
-        </div>
+        </section>
 
-        <div class="card">
+        <section aria-labelledby="resa-stats-title" class="card">
           <div class="card-header">
-            <div class="card-title">Stats — 7 derniers jours</div>
+            <h2 class="card-title" id="resa-stats-title">Stats — 7 derniers jours</h2>
           </div>
           <div id="resaStats"></div>
-        </div>
+        </section>
 
       </div>
 
-      <!-- ═══ TAB STAFF ═══ -->
-      <div id="pane-staff" style="display:none;">
+      <!-- ═══ PANEL STAFF ═══ -->
+      <div role="tabpanel" id="pane-staff" aria-labelledby="tab-staff" hidden>
 
-        <div class="card" style="margin-bottom:16px;">
+        <section aria-labelledby="staff-list-title" class="card" style="margin-bottom:16px;">
           <div class="card-header">
-            <div class="card-title">Équipe & codes PIN</div>
+            <h2 class="card-title" id="staff-list-title">Équipe &amp; codes PIN</h2>
           </div>
           <div id="staffList"></div>
-        </div>
+        </section>
 
-        <div class="card">
+        <section aria-labelledby="staff-events-title" class="card">
           <div class="card-header">
-            <div class="card-title">Retards & heures supp — 7 jours</div>
+            <h2 class="card-title" id="staff-events-title">Retards &amp; heures supp — 7 jours</h2>
           </div>
           <div id="staffEvents"></div>
-        </div>
+        </section>
 
       </div>
 
     </div>
-  </div>
+  </main>
 
   <!-- Modal : créer une tâche -->
-  <div class="modal-overlay hidden" id="taskModal" onclick="closeOnOverlay(event,'taskModal')">
+  <div class="modal-overlay hidden" id="taskModal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-title">Nouvelle tâche</div>
-        <button class="modal-close" onclick="hideModal('taskModal')">✕</button>
+        <h2 class="modal-title" id="task-modal-title">Nouvelle tâche</h2>
+        <button class="modal-close" id="task-modal-close" aria-label="Fermer">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
       </div>
-      <form id="taskForm" onsubmit="createTask(event)">
+      <form id="taskForm" novalidate>
         <div style="display:flex;flex-direction:column;gap:14px;">
           <div class="form-group">
-            <label class="form-label">Description</label>
-            <input type="text" id="taskDesc" placeholder="Ex: Nettoyer les frigos" required>
+            <label class="form-label" for="taskDesc">Description <span class="required" aria-hidden="true">*</span></label>
+            <input type="text" id="taskDesc" placeholder="Ex: Nettoyer les frigos" required aria-required="true" autocomplete="off">
+            <div class="field-error" id="taskDesc-error" role="alert" hidden></div>
           </div>
           <div class="form-group">
-            <label class="form-label">Catégorie</label>
+            <label class="form-label" for="taskCategory">Catégorie</label>
             <select id="taskCategory">
-              <option value="matin">🌅 Matin</option>
-              <option value="passation">🔄 Passation</option>
-              <option value="soir">🌙 Soir</option>
-              <option value="nettoyage">🧹 Nettoyage</option>
+              <option value="matin">Matin</option>
+              <option value="passation">Passation</option>
+              <option value="soir">Soir</option>
+              <option value="nettoyage">Nettoyage</option>
             </select>
           </div>
           <input type="hidden" id="taskDomain" value="salle">
-          <div id="taskDomainLabel" class="badge badge-info" style="width:fit-content;"></div>
+          <div id="taskDomainLabel" class="badge badge-info" style="width:fit-content;" aria-live="polite"></div>
           <div class="form-group">
-            <label class="form-label">Section <span style="color:var(--text-muted);font-weight:400;">(optionnel)</span></label>
-            <input type="text" id="taskSection" placeholder="Ex: Bar, Caisse...">
+            <label class="form-label" for="taskSection">Section <span style="color:var(--text-muted);font-weight:400;">(optionnel)</span></label>
+            <input type="text" id="taskSection" placeholder="Ex: Bar, Caisse..." autocomplete="off">
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="hideModal('taskModal')">Annuler</button>
+          <button type="button" class="btn btn-secondary" id="task-cancel-btn">Annuler</button>
           <button type="submit" class="btn btn-primary">Créer la tâche</button>
         </div>
       </form>
@@ -219,21 +215,7 @@
   <div id="toast-container"></div>
   <script src="/js/api.js"></script>
   <script>
-    // ─── Accordéon catégories ────────────────────────────────────────────────
-    function toggleCat(id) {
-      const body  = document.getElementById(id);
-      const arrow = document.getElementById('arr-' + id);
-      const open  = body.classList.toggle('open');
-      arrow.classList.toggle('open', open);
-    }
-
-    // ─── Tab switch ───────────────────────────────────────────────────────────
-    function switchTab(tab) {
-      ['taches', 'resas', 'staff'].forEach(t => {
-        document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
-        document.getElementById(`pane-${t}`).style.display = t === tab ? '' : 'none';
-      });
-    }
+    'use strict';
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
     function todayStr() { return new Date().toISOString().split('T')[0]; }
@@ -246,90 +228,166 @@
     }
 
     function fmtDate(str) {
-      return new Date(str + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+      return new Date(str + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
     }
 
-    const posteLabel = s => {
-      if (s.role === 'admin')                          return { label: '👑 Admin',           cls: 'badge-primary' };
-      if (s.role === 'manager' && s.shift === 'midi')  return { label: '⭐ Manager Midi',    cls: 'badge-warning' };
-      if (s.role === 'manager' && s.shift === 'soir')  return { label: '⭐ Manager Soir',    cls: 'badge-warning' };
-      if (s.shift === 'midi')                          return { label: '🌅 Staff Midi',      cls: 'badge-info'    };
-      if (s.shift === 'soir')                          return { label: '🌙 Staff Soir',      cls: 'badge-muted'   };
-      return { label: s.role || '—', cls: 'badge-muted' };
-    };
+    function posteLabel(s) {
+      if (s.role === 'admin')                          return { label:'Admin',          cls:'badge-primary' };
+      if (s.role === 'manager' && s.shift === 'midi')  return { label:'Manager Midi',   cls:'badge-warning' };
+      if (s.role === 'manager' && s.shift === 'soir')  return { label:'Manager Soir',   cls:'badge-warning' };
+      if (s.shift === 'midi')                          return { label:'Staff Midi',     cls:'badge-info'    };
+      if (s.shift === 'soir')                          return { label:'Staff Soir',     cls:'badge-muted'   };
+      return { label: s.role || '—', cls:'badge-muted' };
+    }
+
+    // ─── Tabs (ARIA pattern) ──────────────────────────────────────────────────
+    const TABS = ['taches', 'resas', 'staff'];
+
+    function switchTab(tab) {
+      TABS.forEach(t => {
+        const btn   = document.getElementById(`tab-${t}`);
+        const panel = document.getElementById(`pane-${t}`);
+        const active = t === tab;
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        btn.setAttribute('tabindex', active ? '0' : '-1');
+        btn.classList.toggle('active', active);
+        panel.hidden = !active;
+      });
+    }
+
+    document.querySelectorAll('[role="tablist"] [role="tab"]').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.id.replace('tab-', '')));
+      btn.addEventListener('keydown', e => {
+        const idx = TABS.indexOf(btn.id.replace('tab-', ''));
+        let next = -1;
+        if (e.key === 'ArrowRight') next = (idx + 1) % TABS.length;
+        if (e.key === 'ArrowLeft')  next = (idx - 1 + TABS.length) % TABS.length;
+        if (e.key === 'Home')       next = 0;
+        if (e.key === 'End')        next = TABS.length - 1;
+        if (next >= 0) {
+          e.preventDefault();
+          switchTab(TABS[next]);
+          document.getElementById(`tab-${TABS[next]}`).focus();
+        }
+      });
+    });
+
+    // ─── Accordéon catégories ─────────────────────────────────────────────────
+    function toggleCat(id) {
+      const body  = document.getElementById(id);
+      const btn   = document.querySelector(`[aria-controls="${id}"]`);
+      const open  = body.classList.toggle('open');
+      const arrow = btn && btn.querySelector('.cat-arrow');
+      if (arrow) arrow.classList.toggle('open', open);
+      if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
 
     // ─── TAB TÂCHES ──────────────────────────────────────────────────────────
-    const CAT_LABEL = { matin: '🌅 Matin', passation: '🔄 Passation', soir: '🌙 Soir', nettoyage: '🧹 Nettoyage' };
+    const CAT_LABEL = { matin:'Matin', passation:'Passation', soir:'Soir', nettoyage:'Nettoyage' };
     const CAT_ORDER = ['matin', 'passation', 'soir', 'nettoyage'];
 
-    function renderDomainTasks(tasks, statsEl, listEl) {
-      // Stats (comptage uniquement, sans completion data par domaine)
+    function renderDomainTasks(tasks, listEl) {
       const grouped = {};
-      tasks.forEach(t => { if (!grouped[t.category]) grouped[t.category] = []; grouped[t.category].push(t); });
+      tasks.forEach(t => {
+        if (!grouped[t.category]) grouped[t.category] = [];
+        grouped[t.category].push(t);
+      });
 
       const cats = CAT_ORDER.filter(c => grouped[c]);
       if (!cats.length) {
-        if (statsEl) statsEl.innerHTML = '';
         listEl.innerHTML = `<div class="empty-state"><div class="empty-state-text">Aucune tâche.</div></div>`;
         return;
       }
 
-      if (statsEl) statsEl.innerHTML = '';
-
-      listEl.innerHTML = cats.map((c, i) => {
+      listEl.innerHTML = cats.map(c => {
         const count = grouped[c].length;
         const id    = `cat-${listEl.id}-${c}`;
         return `
           <div style="margin-bottom:6px;">
-            <button class="cat-toggle" onclick="toggleCat('${id}')">
-              <span>${CAT_LABEL[c] || c}</span>
+            <button class="cat-toggle" aria-expanded="false" aria-controls="${id}">
+              <span>${escapeHtml(CAT_LABEL[c] || c)}</span>
               <span class="cat-toggle-right">
                 <span>${count} tâche${count > 1 ? 's' : ''}</span>
-                <span class="cat-arrow" id="arr-${id}">›</span>
+                <span class="cat-arrow" aria-hidden="true">›</span>
               </span>
             </button>
-            <div class="cat-body" id="${id}">
+            <div class="cat-body" id="${id}" role="region" aria-label="${escapeHtml(CAT_LABEL[c] || c)}">
               <div class="cat-body-inner">
                 ${grouped[c].map(t => `
                   <div class="task-row">
-                    <div class="task-desc">${t.description}</div>
-                    ${t.section ? `<span class="badge badge-muted">${t.section}</span>` : ''}
+                    <div class="task-desc">${escapeHtml(t.description)}</div>
+                    ${t.section ? `<span class="badge badge-muted">${escapeHtml(t.section)}</span>` : ''}
                   </div>`).join('')}
               </div>
             </div>
           </div>`;
       }).join('');
+
+      // Bind accordion toggles
+      listEl.querySelectorAll('.cat-toggle').forEach(btn => {
+        btn.addEventListener('click', () => toggleCat(btn.getAttribute('aria-controls')));
+      });
     }
 
     async function loadTaches() {
       const tasks = await api.get('/api/admin/tasks');
       if (!tasks) return;
-
       const salle   = tasks.filter(t => t.domain !== 'cuisine');
       const cuisine = tasks.filter(t => t.domain === 'cuisine');
-
-      renderDomainTasks(salle,   document.getElementById('taskStatsSalle'),   document.getElementById('taskListSalle'));
-      renderDomainTasks(cuisine, document.getElementById('taskStatsCuisine'), document.getElementById('taskListCuisine'));
+      renderDomainTasks(salle,   document.getElementById('taskListSalle'));
+      renderDomainTasks(cuisine, document.getElementById('taskListCuisine'));
     }
 
-    function openTaskModal(domain) {
+    // ─── Modal tâche ──────────────────────────────────────────────────────────
+    let _taskModalTrigger = null;
+
+    function openTaskModal(domain, triggerEl) {
+      _taskModalTrigger = triggerEl || null;
       document.getElementById('taskForm').reset();
+      document.getElementById('taskDesc').setAttribute('aria-invalid', 'false');
+      document.getElementById('taskDesc-error').hidden = true;
       document.getElementById('taskDomain').value = domain;
       const lbl = document.getElementById('taskDomainLabel');
       if (domain === 'cuisine') {
-        lbl.textContent = '🍳 Cuisine';
+        lbl.textContent = 'Cuisine';
         lbl.className = 'badge badge-warning';
       } else {
-        lbl.textContent = '🍽️ Salle';
+        lbl.textContent = 'Salle';
         lbl.className = 'badge badge-info';
       }
-      showModal('taskModal');
+      showModal('taskModal', triggerEl);
     }
 
-    async function createTask(e) {
+    document.getElementById('btn-add-salle').addEventListener('click', function() {
+      openTaskModal('salle', this);
+    });
+    document.getElementById('btn-add-cuisine').addEventListener('click', function() {
+      openTaskModal('cuisine', this);
+    });
+    document.getElementById('task-modal-close').addEventListener('click', () => hideModal('taskModal'));
+    document.getElementById('task-cancel-btn').addEventListener('click', () => hideModal('taskModal'));
+
+    document.getElementById('taskModal').addEventListener('click', e => {
+      if (e.target.id === 'taskModal') hideModal('taskModal');
+    });
+
+    document.getElementById('taskForm').addEventListener('submit', async function(e) {
       e.preventDefault();
+      const descEl = document.getElementById('taskDesc');
+      const desc   = descEl.value.trim();
+      if (!desc) {
+        descEl.setAttribute('aria-invalid', 'true');
+        const errEl = document.getElementById('taskDesc-error');
+        errEl.textContent = 'La description est obligatoire.';
+        errEl.hidden = false;
+        descEl.focus();
+        return;
+      }
+      descEl.setAttribute('aria-invalid', 'false');
+      document.getElementById('taskDesc-error').hidden = true;
+
       const body = {
-        description: document.getElementById('taskDesc').value.trim(),
+        description: desc,
         category:    document.getElementById('taskCategory').value,
         domain:      document.getElementById('taskDomain').value,
         section:     document.getElementById('taskSection').value.trim() || null,
@@ -338,11 +396,15 @@
       if (!res) return;
       hideModal('taskModal');
       document.getElementById('taskForm').reset();
-      showToast('Tâche créée ✓', 'success');
+      showToast('Tâche créée', 'success');
       loadTaches();
-    }
+    });
 
     // ─── TAB RÉSAS ───────────────────────────────────────────────────────────
+    document.getElementById('btn-prev-date').addEventListener('click', () => shiftResaDate(-1));
+    document.getElementById('btn-next-date').addEventListener('click', () => shiftResaDate(1));
+    document.getElementById('resaDateInput').addEventListener('change', loadResas);
+
     function shiftResaDate(n) {
       const inp = document.getElementById('resaDateInput');
       const d   = new Date(inp.value + 'T12:00:00');
@@ -361,7 +423,6 @@
         api.get(`/api/admin/reservation-stats?from=${from}&to=${to}`)
       ]);
 
-      // Résas sans table
       const unassigned = (dash.reservations || []).filter(r => {
         if (r.status === 'cancelled' || r.status === 'no_show') return false;
         const ids = (() => { try { return JSON.parse(r.table_ids || '[]'); } catch(e) { return []; } })();
@@ -370,30 +431,48 @@
 
       const listEl = document.getElementById('unassignedList');
       if (!unassigned.length) {
-        listEl.innerHTML = `<div class="badge badge-success" style="font-size:.85rem;padding:8px 14px;">✅ Toutes les résas ont une table assignée</div>`;
+        listEl.innerHTML = `<div class="badge badge-success" style="font-size:.85rem;padding:8px 14px;">Toutes les résas ont une table assignée</div>`;
       } else {
-        listEl.innerHTML = unassigned.map(r => `
-          <div class="resa-unassigned">
-            <div class="resa-time">${r.time}</div>
-            <div class="resa-info">
-              <div class="resa-name">${r.customer_name}</div>
-              <div class="resa-meta">👥 ${r.party_size} pers.${r.space ? ` · 📍 ${r.space}` : ''}${r.phone ? ` · 📞 ${r.phone}` : ''}</div>
-            </div>
-            <span class="badge badge-warning">Sans table</span>
-          </div>`).join('');
+        listEl.innerHTML = `<ul role="list" style="list-style:none;margin:0;padding:0;">` +
+          unassigned.map(r => `
+            <li class="resa-unassigned">
+              <time class="resa-time" datetime="${escapeHtml(r.time)}">${escapeHtml(r.time)}</time>
+              <div class="resa-info">
+                <div class="resa-name">${escapeHtml(r.customer_name)}</div>
+                <div class="resa-meta">${r.party_size} pers.${r.space ? ` · ${escapeHtml(r.space)}` : ''}${r.phone ? ` · ${escapeHtml(r.phone)}` : ''}</div>
+              </div>
+              <span class="badge badge-warning" aria-label="Sans table assignée">Sans table</span>
+            </li>`).join('') +
+          `</ul>`;
       }
 
-      // Stats semaine
-      const ov  = stats.overview || {};
-      const statsEl = document.getElementById('resaStats');
-      statsEl.innerHTML = `
-        <div class="kpi-row">
-          <div class="kpi-box"><div class="kpi-val">${ov.total || 0}</div><div class="kpi-lbl">Réservations</div></div>
-          <div class="kpi-box"><div class="kpi-val">${ov.total_pax || 0}</div><div class="kpi-lbl">Couverts</div></div>
-          <div class="kpi-box"><div class="kpi-val">${ov.avg_pax || 0}</div><div class="kpi-lbl">Moy. / table</div></div>
-          <div class="kpi-box"><div class="kpi-val" style="color:var(--success);">${ov.nb_arrived || 0}</div><div class="kpi-lbl">Arrivées</div></div>
-          <div class="kpi-box"><div class="kpi-val" style="color:var(--danger);">${ov.nb_no_show || 0}</div><div class="kpi-lbl">No-shows</div></div>
-          <div class="kpi-box"><div class="kpi-val">${ov.total ? Math.round((ov.nb_arrived || 0) / ov.total * 100) : 0}%</div><div class="kpi-lbl">Taux arrivée</div></div>
+      const ov = (stats && stats.overview) || {};
+      document.getElementById('resaStats').innerHTML = `
+        <div class="kpi-row" role="list" aria-label="Indicateurs 7 derniers jours">
+          <article class="kpi-box" role="listitem" aria-label="${ov.total || 0} réservations">
+            <div class="kpi-val">${ov.total || 0}</div>
+            <div class="kpi-lbl">Réservations</div>
+          </article>
+          <article class="kpi-box" role="listitem" aria-label="${ov.total_pax || 0} couverts">
+            <div class="kpi-val">${ov.total_pax || 0}</div>
+            <div class="kpi-lbl">Couverts</div>
+          </article>
+          <article class="kpi-box" role="listitem" aria-label="Moyenne ${ov.avg_pax || 0} par table">
+            <div class="kpi-val">${ov.avg_pax || 0}</div>
+            <div class="kpi-lbl">Moy. / table</div>
+          </article>
+          <article class="kpi-box" role="listitem" aria-label="${ov.nb_arrived || 0} arrivées">
+            <div class="kpi-val" style="color:var(--success);">${ov.nb_arrived || 0}</div>
+            <div class="kpi-lbl">Arrivées</div>
+          </article>
+          <article class="kpi-box" role="listitem" aria-label="${ov.nb_no_show || 0} no-shows">
+            <div class="kpi-val" style="color:var(--danger);">${ov.nb_no_show || 0}</div>
+            <div class="kpi-lbl">No-shows</div>
+          </article>
+          <article class="kpi-box" role="listitem" aria-label="Taux d'arrivée ${ov.total ? Math.round((ov.nb_arrived||0)/ov.total*100) : 0}%">
+            <div class="kpi-val">${ov.total ? Math.round((ov.nb_arrived||0)/ov.total*100) : 0}%</div>
+            <div class="kpi-lbl">Taux arrivée</div>
+          </article>
         </div>`;
     }
 
@@ -405,15 +484,13 @@
         api.get(`/api/cuisine/time-events?from=${from}&to=${to}`)
       ]);
 
-      // Regrouper les events par user_name
       const evByUser = {};
       (timeEvents || []).forEach(e => {
-        if (!evByUser[e.user_name]) evByUser[e.user_name] = { retards: 0, retardMin: 0, supps: 0, suppMin: 0 };
+        if (!evByUser[e.user_name]) evByUser[e.user_name] = { retards:0, retardMin:0, supps:0, suppMin:0 };
         if (e.type === 'retard') { evByUser[e.user_name].retards++; evByUser[e.user_name].retardMin += e.minutes; }
         else                     { evByUser[e.user_name].supps++;   evByUser[e.user_name].suppMin   += e.minutes; }
       });
 
-      // Liste staff + PINs
       const listEl = document.getElementById('staffList');
       if (!staff || !staff.length) {
         listEl.innerHTML = `<div class="empty-state"><div class="empty-state-text">Aucun membre.</div></div>`;
@@ -421,14 +498,22 @@
         listEl.innerHTML = `
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Nom</th><th>PIN</th><th>Poste</th><th>Statut</th></tr></thead>
+              <caption class="sr-only">Liste des membres de l'équipe</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Nom</th>
+                  <th scope="col">PIN</th>
+                  <th scope="col">Poste</th>
+                  <th scope="col">Statut</th>
+                </tr>
+              </thead>
               <tbody>
                 ${staff.map(s => {
                   const p = posteLabel(s);
                   return `<tr>
-                    <td><strong>${s.name}</strong></td>
-                    <td><span style="font-family:monospace;font-size:1rem;letter-spacing:2px;color:var(--primary);">${s.pin}</span></td>
-                    <td><span class="badge ${p.cls}">${p.label}</span></td>
+                    <td><strong>${escapeHtml(s.name)}</strong></td>
+                    <td><span class="pin-mono" aria-label="Code PIN ${escapeHtml(s.pin)}">${escapeHtml(s.pin)}</span></td>
+                    <td><span class="badge ${p.cls}">${escapeHtml(p.label)}</span></td>
                     <td><span class="badge ${s.active ? 'badge-success' : 'badge-danger'}">${s.active ? 'Actif' : 'Inactif'}</span></td>
                   </tr>`;
                 }).join('')}
@@ -437,32 +522,36 @@
           </div>`;
       }
 
-      // Retards & supp
       const evEl = document.getElementById('staffEvents');
       if (!staff || !staff.length) { evEl.innerHTML = ''; return; }
 
       const activeStaff = staff.filter(s => s.active && s.role !== 'admin');
-      if (!activeStaff.length) { evEl.innerHTML = `<div class="empty-state"><div class="empty-state-text">Aucun membre actif.</div></div>`; return; }
+      if (!activeStaff.length) {
+        evEl.innerHTML = `<div class="empty-state"><div class="empty-state-text">Aucun membre actif.</div></div>`;
+        return;
+      }
 
-      evEl.innerHTML = activeStaff.map(s => {
-        const ev = evByUser[s.name] || {};
-        const p  = posteLabel(s);
-        return `
-          <div class="staff-row">
-            <div class="staff-row-header">
-              <span class="staff-row-name">${s.name}</span>
-              <span class="badge ${p.cls}">${p.label}</span>
-            </div>
-            <div style="display:flex;flex-wrap:wrap;gap:5px;">
-              ${ev.retards
-                ? `<span class="badge badge-danger">⏰ ${ev.retards} retard${ev.retards > 1 ? 's' : ''} — ${ev.retardMin} min</span>`
-                : `<span class="badge badge-muted">⏰ 0 retard</span>`}
-              ${ev.supps
-                ? `<span class="badge badge-info">➕ ${ev.supps} heure${ev.supps > 1 ? 's' : ''} supp — ${ev.suppMin} min</span>`
-                : ''}
-            </div>
-          </div>`;
-      }).join('');
+      evEl.innerHTML = `<ul role="list" style="list-style:none;margin:0;padding:0;">` +
+        activeStaff.map(s => {
+          const ev = evByUser[s.name] || {};
+          const p  = posteLabel(s);
+          return `
+            <li class="staff-row">
+              <div class="staff-row-header">
+                <span class="staff-row-name">${escapeHtml(s.name)}</span>
+                <span class="badge ${p.cls}">${escapeHtml(p.label)}</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;" aria-label="Événements de ${escapeHtml(s.name)}">
+                ${ev.retards
+                  ? `<span class="badge badge-danger">${ev.retards} retard${ev.retards>1?'s':''} — ${ev.retardMin} min</span>`
+                  : `<span class="badge badge-muted">0 retard</span>`}
+                ${ev.supps
+                  ? `<span class="badge badge-info">${ev.supps} h. supp — ${ev.suppMin} min</span>`
+                  : ''}
+              </div>
+            </li>`;
+        }).join('') +
+        `</ul>`;
     }
 
     // ─── Init ─────────────────────────────────────────────────────────────────

@@ -10,12 +10,13 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MOS">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
   <style>
     /* ── Week nav ── */
     .week-nav { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .week-nav-btn { background:var(--bg-card); border:1px solid var(--border); color:var(--text-muted); border-radius:20px; padding:7px 14px; font-size:.82rem; cursor:pointer; white-space:nowrap; }
     .week-nav-btn:hover { border-color:var(--primary); color:var(--primary); }
+    .week-nav-btn:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .week-label { font-weight:700; font-size:.92rem; }
 
     /* ── Alerte sans table ── */
@@ -29,29 +30,37 @@
       padding: 11px 16px;
       margin-bottom: 16px;
       cursor: pointer;
+      width: 100%;
+      text-align: left;
     }
     .no-table-banner:hover { background: rgba(251,146,60,.13); }
+    .no-table-banner:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .no-table-banner-text { flex:1; font-size:.85rem; }
     .no-table-banner-text strong { color: #fb923c; }
 
     /* ── Filter bar ── */
     .filter-bar {
-      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;
       background: var(--bg-card); border: 1px solid var(--border);
       border-radius: 12px; padding: 10px 14px; margin-bottom: 20px;
     }
+    .filter-field { display:flex; flex-direction:column; gap:4px; flex:1; min-width:100px; }
+    .filter-field label { font-size:.75rem; font-weight:600; color:var(--text-muted); }
     .filter-bar input, .filter-bar select {
       background: var(--bg-surface); border: 1px solid var(--border);
       color: var(--text); border-radius: 8px; padding: 6px 10px;
-      font-size:.83rem; flex:1; min-width:100px;
+      font-size:.83rem;
     }
+    .filter-bar input:focus-visible, .filter-bar select:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .filter-bar input::placeholder { color: var(--text-muted); }
     .filter-toggle {
       padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
       background: var(--bg-surface); color: var(--text-muted); cursor: pointer;
       font-size:.8rem; font-weight:600; white-space:nowrap; transition:.15s;
+      align-self: flex-end;
     }
     .filter-toggle.active { background:rgba(251,146,60,.15); border-color:#fb923c; color:#fb923c; }
+    .filter-toggle:focus-visible { box-shadow:var(--focus-ring); outline:none; }
 
     /* ── Day column ── */
     .week-grid {
@@ -78,11 +87,14 @@
 
     /* ── Resa mini card ── */
     .rmc {
+      display: block; width: 100%;
       border-radius: 8px; padding: 7px 9px; margin-bottom: 6px;
       cursor: pointer; border-left: 3px solid transparent; transition: opacity .15s;
+      background: none; text-align: left; color: var(--text);
     }
-    .rmc:last-child { margin-bottom: 0; }
+    .rmc:last-of-type { margin-bottom: 0; }
     .rmc:hover { opacity: .8; }
+    .rmc:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .rmc.confirmed { background:rgba(96,165,250,.1);  border-left-color:#60a5fa; }
     .rmc.arrived   { background:rgba(34,197,94,.1);   border-left-color:#22c55e; }
     .rmc.no_show   { background:rgba(239,68,68,.1);   border-left-color:#ef4444; }
@@ -99,9 +111,10 @@
       font-size:.62rem; font-weight:700; color:#22c55e;
       background:rgba(34,197,94,.12); border-radius:4px; padding:1px 5px;
     }
-    .joy-icon { font-size:.65rem; }
-    .day-add { text-align:center; padding:6px; font-size:.72rem; color:var(--text-muted); cursor:pointer; border-radius:6px; }
+    .joy-badge { font-size:.62rem; font-weight:700; color:#a78bfa; background:rgba(167,139,250,.12); border-radius:4px; padding:1px 5px; }
+    .day-add { display:block; width:100%; text-align:center; padding:6px; font-size:.72rem; color:var(--text-muted); cursor:pointer; border-radius:6px; background:none; border:none; }
     .day-add:hover { background:var(--bg-hover); color:var(--primary); }
+    .day-add:focus-visible { box-shadow:var(--focus-ring); outline:none; }
 
     /* ── Drawer ── */
     .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s; }
@@ -113,6 +126,10 @@
       transition:transform .3s cubic-bezier(.32,.72,0,1); max-height:92dvh; display:flex; flex-direction:column;
     }
     .drawer.open { transform:translateY(0); }
+    @media (prefers-reduced-motion: reduce) {
+      .drawer { transition: none; }
+      .drawer-backdrop { transition: none; }
+    }
     @media (min-width:641px) {
       .drawer { bottom:auto; top:50%; left:50%; right:auto; transform:translate(-50%,-40%); opacity:0; pointer-events:none; border-radius:var(--radius); width:100%; max-width:480px; transition:transform .25s ease,opacity .25s ease; }
       .drawer.open { transform:translate(-50%,-50%); opacity:1; pointer-events:auto; }
@@ -122,6 +139,7 @@
     .drawer-head   { display:flex; align-items:center; justify-content:space-between; padding:14px 20px 12px; flex-shrink:0; border-bottom:1px solid var(--border); }
     .drawer-title  { font-size:1rem; font-weight:700; }
     .drawer-close  { width:30px; height:30px; border-radius:50%; background:var(--bg-surface); color:var(--text-muted); display:flex; align-items:center; justify-content:center; font-size:.9rem; cursor:pointer; border:none; }
+    .drawer-close:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .drawer-body   { overflow-y:auto; padding:16px 20px; flex:1; }
     .drawer-footer { display:flex; gap:8px; padding:10px 20px calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); flex-shrink:0; }
     .drawer-footer .btn { flex:1; justify-content:center; min-height:46px; }
@@ -153,6 +171,7 @@
       cursor: pointer; transition: .15s; width: 100%; justify-content: center;
     }
     .btn-assign-plan:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-dim); }
+    .btn-assign-plan:focus-visible { box-shadow:var(--focus-ring); outline:none; }
 
     /* ── Pièces jointes ── */
     .attach-section { margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
@@ -163,126 +182,153 @@
     .attach-info { flex:1; min-width:0; }
     .attach-name { font-size:.82rem; font-weight:600; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
     .attach-meta { font-size:.72rem; color:var(--text-muted); }
-    .attach-btn-open { background:rgba(205,164,67,.12); border:1.5px solid rgba(205,164,67,.3); color:var(--primary); border-radius:6px; padding:4px 10px; font-size:.75rem; font-weight:600; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+    .attach-btn-open { background:rgba(230,184,74,.12); border:1.5px solid rgba(230,184,74,.3); color:var(--primary); border-radius:6px; padding:4px 10px; font-size:.75rem; font-weight:600; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+    .attach-btn-open:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .attach-btn-del  { background:rgba(232,84,84,.1); border:1.5px solid rgba(232,84,84,.3); color:var(--danger); border-radius:6px; padding:4px 8px; font-size:.75rem; cursor:pointer; flex-shrink:0; }
-    .attach-upload-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:10px; background:var(--bg-surface); border:1.5px dashed var(--border); border-radius:8px; color:var(--text-muted); font-size:.83rem; font-weight:600; cursor:pointer; transition:border-color .15s,color .15s; }
-    .attach-upload-btn:hover { border-color:var(--primary); color:var(--primary); }
-    .attach-upload-btn input[type="file"] { display:none; }
+    .attach-btn-del:focus-visible { box-shadow:var(--focus-ring); outline:none; }
+    .attach-upload-label { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:10px; background:var(--bg-surface); border:1.5px dashed var(--border); border-radius:8px; color:var(--text-muted); font-size:.83rem; font-weight:600; cursor:pointer; transition:border-color .15s,color .15s; }
+    .attach-upload-label:hover { border-color:var(--primary); color:var(--primary); }
+    .attach-upload-label:focus-within { box-shadow:var(--focus-ring); outline:none; }
+    .attach-upload-label input[type="file"] { position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
 
-    /* ── Status pills ── */
+    /* ── Status buttons ── */
     .status-btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
     .status-btn {
       flex:1; min-width:80px; padding:9px 6px; border-radius:10px; border:1.5px solid transparent;
       font-size:.8rem; font-weight:700; cursor:pointer; text-align:center; transition:.15s;
+      display:flex; align-items:center; justify-content:center; gap:5px;
     }
     .status-btn.confirmed { background:rgba(96,165,250,.12); border-color:rgba(96,165,250,.35); color:#60a5fa; }
     .status-btn.arrived   { background:rgba(34,197,94,.12);  border-color:rgba(34,197,94,.35);  color:#4ade80; }
     .status-btn.no_show   { background:rgba(239,68,68,.12);  border-color:rgba(239,68,68,.35);  color:#f87171; }
     .status-btn.cancelled { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.2); color:var(--text-muted); }
-    .status-btn.active    { filter:brightness(1.3); box-shadow:0 0 0 2px currentColor; }
+    .status-btn[aria-pressed="true"] { filter:brightness(1.3); box-shadow:0 0 0 2px currentColor; }
     .status-btn:hover     { filter:brightness(1.2); }
+    .status-btn:focus-visible { box-shadow:var(--focus-ring); outline:none; }
+
+    /* ── Confirm modal ── */
+    .confirm-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:400; display:flex; align-items:center; justify-content:center; padding:20px; }
+    .confirm-overlay.hidden { display:none; }
+    .confirm-box { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:24px; max-width:340px; width:100%; }
+    .confirm-box p { font-size:.92rem; margin-bottom:20px; line-height:1.5; }
+    .confirm-actions { display:flex; gap:10px; justify-content:flex-end; }
   </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
 
-  <div class="page">
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container">
 
       <!-- Header -->
       <div class="page-header" style="margin-bottom:20px;">
         <div>
-          <div class="page-title">📋 Réservations</div>
-          <div class="page-subtitle" id="weekSubtitle"></div>
+          <h1 class="page-title">Réservations</h1>
+          <p class="page-subtitle" id="weekSubtitle"></p>
         </div>
-        <button class="btn btn-primary" onclick="openCreate()">+ Nouvelle</button>
+        <button class="btn btn-primary" id="btnNewResa">+ Nouvelle</button>
       </div>
 
       <!-- Bannière sans table -->
-      <div id="noTableBanner" class="no-table-banner hidden" onclick="toggleNoTable()">
-        <span style="font-size:1.2rem">⚠️</span>
+      <button type="button" id="noTableBanner" class="no-table-banner hidden" aria-live="polite">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         <div class="no-table-banner-text">
           <strong id="noTableCount">0</strong> réservation(s) sans table assignée cette semaine
         </div>
-        <span id="noTableBannerBtn" style="font-size:.8rem;color:#fb923c;font-weight:700;">Voir →</span>
-      </div>
+        <span id="noTableBannerBtn" style="font-size:.8rem;color:#fb923c;font-weight:700;" aria-hidden="true">Voir →</span>
+      </button>
 
       <!-- Week nav -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap;">
-        <div class="week-nav">
-          <button class="week-nav-btn" onclick="shiftWeek(-1)">← Semaine préc.</button>
-          <span class="week-label" id="weekLabel"></span>
-          <button class="week-nav-btn" onclick="shiftWeek(1)">Semaine suiv. →</button>
+        <div class="week-nav" role="group" aria-label="Navigation par semaine">
+          <button class="week-nav-btn" id="btnPrevWeek" aria-label="Semaine précédente">← Préc.</button>
+          <span class="week-label" id="weekLabel" aria-live="polite" aria-atomic="true"></span>
+          <button class="week-nav-btn" id="btnNextWeek" aria-label="Semaine suivante">Suiv. →</button>
         </div>
-        <button class="week-nav-btn" onclick="goToday()">Aujourd'hui</button>
+        <button class="week-nav-btn" id="btnToday">Aujourd'hui</button>
       </div>
 
       <!-- Filtres -->
-      <div class="filter-bar">
-        <input type="text" id="filterName" placeholder="🔍 Rechercher un nom…" oninput="applyFilters()">
-        <select id="filterSpace" onchange="applyFilters()">
-          <option value="">Tous les espaces</option>
-        </select>
-        <select id="filterStatus" onchange="applyFilters()">
-          <option value="">Tous les statuts</option>
-          <option value="confirmed">Confirmées</option>
-          <option value="arrived">Arrivées</option>
-          <option value="no_show">No-shows</option>
-          <option value="cancelled">Annulées</option>
-        </select>
-        <button class="filter-toggle" id="filterNoTable" onclick="toggleNoTable()">⚠️ Sans table</button>
+      <div class="filter-bar" role="search" aria-label="Filtrer les réservations">
+        <div class="filter-field">
+          <label for="filterName">Nom du client</label>
+          <input type="search" id="filterName" placeholder="Rechercher…" autocomplete="off">
+        </div>
+        <div class="filter-field">
+          <label for="filterSpace">Espace</label>
+          <select id="filterSpace">
+            <option value="">Tous les espaces</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label for="filterStatus">Statut</label>
+          <select id="filterStatus">
+            <option value="">Tous les statuts</option>
+            <option value="confirmed">Confirmées</option>
+            <option value="arrived">Arrivées</option>
+            <option value="no_show">No-shows</option>
+            <option value="cancelled">Annulées</option>
+          </select>
+        </div>
+        <button class="filter-toggle" id="filterNoTableBtn" type="button" aria-pressed="false">
+          <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          Sans table
+        </button>
       </div>
 
       <!-- Grille semaine -->
-      <div class="week-grid" id="weekGrid"></div>
+      <div class="week-grid" id="weekGrid" role="list" aria-label="Réservations de la semaine"></div>
 
     </div>
-  </div>
+  </main>
 
   <!-- Backdrop -->
-  <div class="drawer-backdrop" id="backdrop" onclick="closeDrawer()"></div>
+  <div class="drawer-backdrop" id="backdrop" aria-hidden="true"></div>
 
   <!-- Drawer création / édition -->
-  <div class="drawer" id="mainDrawer">
-    <div class="drawer-handle"></div>
+  <div class="drawer" id="mainDrawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" hidden>
+    <div class="drawer-handle" aria-hidden="true"></div>
     <div class="drawer-head">
-      <div class="drawer-title" id="drawerTitle">Nouvelle réservation</div>
-      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+      <h2 class="drawer-title" id="drawerTitle">Nouvelle réservation</h2>
+      <button class="drawer-close" id="btnCloseDrawer" aria-label="Fermer">
+        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
     <div class="drawer-body">
-      <form id="resaForm" onsubmit="saveResa(event)">
+      <form id="resaForm" novalidate>
         <input type="hidden" id="resaId">
         <div class="frow">
 
           <div class="fgroup">
-            <label>Nom du client</label>
-            <input type="text" id="resaName" placeholder="Ex: Dupont" required>
+            <label for="resaName">Nom du client <span aria-hidden="true">*</span></label>
+            <input type="text" id="resaName" aria-required="true" autocomplete="off" placeholder="Ex: Dupont" required>
           </div>
 
           <div class="f2">
             <div class="fgroup">
-              <label>Date</label>
-              <input type="date" id="resaDate" required>
+              <label for="resaDate">Date <span aria-hidden="true">*</span></label>
+              <input type="date" id="resaDate" aria-required="true" required>
             </div>
             <div class="fgroup">
-              <label>Heure</label>
-              <input type="time" id="resaTime" required>
+              <label for="resaTime">Heure <span aria-hidden="true">*</span></label>
+              <input type="time" id="resaTime" aria-required="true" required>
             </div>
           </div>
 
           <div class="f2">
             <div class="fgroup">
-              <label>Nb de personnes</label>
-              <input type="number" id="resaPax" min="1" max="200" value="2" required>
+              <label for="resaPax">Nb de personnes <span aria-hidden="true">*</span></label>
+              <input type="number" id="resaPax" min="1" max="200" value="2" aria-required="true" required>
             </div>
             <div class="fgroup">
-              <label>Téléphone</label>
-              <input type="tel" id="resaPhone" placeholder="06…">
+              <label for="resaPhone">Téléphone</label>
+              <input type="tel" id="resaPhone" placeholder="06…" autocomplete="off">
             </div>
           </div>
 
           <div class="fgroup">
-            <label>Espace</label>
+            <label for="resaSpace">Espace</label>
             <select id="resaSpace">
               <option value="">Non précisé</option>
               <option value="salle_bas">Salle Bas</option>
@@ -294,31 +340,44 @@
 
           <!-- Table assign (via plan de salle) -->
           <div class="fgroup">
-            <label>Tables assignées</label>
+            <p class="fgroup" style="margin:0;padding:0;font-size:.82rem;font-weight:600;color:var(--text-muted);">Tables assignées</p>
             <div class="table-assign-box">
-              <div class="table-assigned-tags" id="assignedTagsDisplay">
+              <div class="table-assigned-tags" id="assignedTagsDisplay" aria-live="polite">
                 <span class="no-assigned-label">Aucune table assignée</span>
               </div>
-              <button type="button" class="btn-assign-plan" id="btnAssignPlan" onclick="goToFloorPlan()">
-                🗺️ Assigner via le plan de salle
+              <button type="button" class="btn-assign-plan" id="btnAssignPlan">
+                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Assigner via le plan de salle
               </button>
             </div>
           </div>
 
           <div class="fgroup">
-            <label>Notes</label>
+            <label for="resaNotes">Notes</label>
             <input type="text" id="resaNotes" placeholder="Allergies, demandes spéciales…">
           </div>
 
           <!-- Statut (édition seulement) -->
-          <div id="statusSection" style="display:none;">
+          <div id="statusSection" hidden>
             <div class="fgroup">
-              <label>Statut</label>
-              <div class="status-btns">
-                <div class="status-btn confirmed" onclick="setStatus('confirmed')">✉ Confirmée</div>
-                <div class="status-btn arrived"   onclick="setStatus('arrived')">✅ Arrivée</div>
-                <div class="status-btn no_show"   onclick="setStatus('no_show')">❌ No-show</div>
-                <div class="status-btn cancelled" onclick="setStatus('cancelled')">🚫 Annulée</div>
+              <p style="font-size:.82rem;font-weight:600;color:var(--text-muted);margin:0 0 6px;">Statut</p>
+              <div class="status-btns" role="group" aria-label="Statut de la réservation">
+                <button type="button" class="status-btn confirmed" data-status="confirmed" aria-pressed="false">
+                  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  Confirmée
+                </button>
+                <button type="button" class="status-btn arrived" data-status="arrived" aria-pressed="false">
+                  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Arrivée
+                </button>
+                <button type="button" class="status-btn no_show" data-status="no_show" aria-pressed="false">
+                  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                  No-show
+                </button>
+                <button type="button" class="status-btn cancelled" data-status="cancelled" aria-pressed="false">
+                  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  Annulée
+                </button>
               </div>
             </div>
           </div>
@@ -327,24 +386,41 @@
       </form>
 
       <!-- Pièces jointes (visibles en mode édition seulement) -->
-      <div class="attach-section" id="attachSection" style="display:none;">
-        <div class="attach-title">📎 Pièces jointes</div>
-        <div id="attachList" class="attach-list"></div>
-        <label class="attach-upload-btn">
-          <input type="file" id="attachInput" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" onchange="uploadAttachment(this)">
-          📎 Ajouter un fichier
+      <div class="attach-section" id="attachSection" hidden>
+        <p class="attach-title">
+          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+          Pièces jointes
+        </p>
+        <div id="attachList" class="attach-list" aria-live="polite"></div>
+        <label class="attach-upload-label" id="attachUploadLabel">
+          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+          Ajouter un fichier
+          <input type="file" id="attachInput" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" aria-label="Choisir un fichier à joindre à la réservation">
         </label>
       </div>
 
     </div>
     <div class="drawer-footer">
-      <button class="btn btn-danger btn-sm" id="btnDelete" style="flex:0 0 auto;padding:0 16px;display:none;" onclick="deleteResa()">🗑</button>
-      <button class="btn btn-secondary" onclick="closeDrawer()">Annuler</button>
+      <button class="btn btn-danger btn-sm" id="btnDelete" style="flex:0 0 auto;padding:0 16px;" hidden aria-label="Supprimer cette réservation">
+        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+      </button>
+      <button class="btn btn-secondary" id="btnCancelDrawer">Annuler</button>
       <button type="submit" form="resaForm" class="btn btn-primary" id="btnSave">Enregistrer</button>
     </div>
   </div>
 
-  <div id="toast-container"></div>
+  <!-- Confirm modal -->
+  <div class="confirm-overlay hidden" id="confirmOverlay" role="dialog" aria-modal="true" aria-labelledby="confirmMsg">
+    <div class="confirm-box">
+      <p id="confirmMsg"></p>
+      <div class="confirm-actions">
+        <button class="btn btn-secondary btn-sm" id="confirmCancel">Annuler</button>
+        <button class="btn btn-danger btn-sm" id="confirmOk">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/api.js"></script>
   <script>
@@ -357,7 +433,7 @@
     }
 
     const DAYS_FR   = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-    const ZONE_LABELS = { salle_bas:'Salle Bas', etage:'Étage', terrasse:'Terrasse', coin_canap:'Coin Canapé' };
+    const STATUS_LABELS = { confirmed:'Confirmée', arrived:'Arrivée', no_show:'No-show', cancelled:'Annulée' };
 
     let currentWeekStart = getMonday(new Date());
     let allResas      = [];
@@ -366,6 +442,8 @@
     let editId        = null;
     let editDate      = null;
     let filterNoTable = false;
+    let _drawerTrigger = null;
+    let _confirmCb     = null;
 
     function getMonday(d) {
       const dt = new Date(d); const day = dt.getDay();
@@ -380,8 +458,56 @@
       return `${s.getDate()} ${s.toLocaleDateString('fr-FR',{month:'short'})} → ${e.getDate()} ${e.toLocaleDateString('fr-FR',{month:'short',year:'numeric'})}`;
     }
 
-    function shiftWeek(d) { currentWeekStart = addDays(currentWeekStart, d*7); loadWeek(); }
-    function goToday()    { currentWeekStart = getMonday(new Date()); loadWeek(); }
+    // ─── Confirm modal ────────────────────────────────────────────
+    function showConfirm(msg, cb) {
+      _confirmCb = cb;
+      document.getElementById('confirmMsg').textContent = msg;
+      document.getElementById('confirmOverlay').classList.remove('hidden');
+      document.getElementById('confirmOk').focus();
+    }
+    document.getElementById('confirmOk').addEventListener('click', () => {
+      document.getElementById('confirmOverlay').classList.add('hidden');
+      if (_confirmCb) { _confirmCb(); _confirmCb = null; }
+    });
+    document.getElementById('confirmCancel').addEventListener('click', () => {
+      document.getElementById('confirmOverlay').classList.add('hidden');
+      _confirmCb = null;
+    });
+
+    // ─── Week navigation ──────────────────────────────────────────
+    document.getElementById('btnPrevWeek').addEventListener('click', () => { currentWeekStart = addDays(currentWeekStart, -7); loadWeek(); });
+    document.getElementById('btnNextWeek').addEventListener('click', () => { currentWeekStart = addDays(currentWeekStart,  7); loadWeek(); });
+    document.getElementById('btnToday').addEventListener('click',    () => { currentWeekStart = getMonday(new Date()); loadWeek(); });
+
+    // ─── Filters ──────────────────────────────────────────────────
+    document.getElementById('filterName').addEventListener('input', applyFilters);
+    document.getElementById('filterSpace').addEventListener('change', applyFilters);
+    document.getElementById('filterStatus').addEventListener('change', applyFilters);
+    document.getElementById('noTableBanner').addEventListener('click', toggleNoTable);
+    document.getElementById('filterNoTableBtn').addEventListener('click', toggleNoTable);
+
+    function toggleNoTable() {
+      filterNoTable = !filterNoTable;
+      document.getElementById('filterNoTableBtn').classList.toggle('active', filterNoTable);
+      document.getElementById('filterNoTableBtn').setAttribute('aria-pressed', String(filterNoTable));
+      document.getElementById('noTableBannerBtn').textContent = filterNoTable ? 'Masquer ✕' : 'Voir →';
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const name   = document.getElementById('filterName').value.trim().toLowerCase();
+      const space  = document.getElementById('filterSpace').value;
+      const status = document.getElementById('filterStatus').value;
+      let filtered = allResas;
+      if (name)          filtered = filtered.filter(r => r.customer_name.toLowerCase().includes(name));
+      if (space)         filtered = filtered.filter(r => r.space === space);
+      if (status)        filtered = filtered.filter(r => r.status === status);
+      if (filterNoTable) filtered = filtered.filter(r => r.status !== 'cancelled' && (!r.table_ids || r.table_ids.length === 0));
+      renderWeek(filtered);
+    }
+
+    // ─── New resa button ──────────────────────────────────────────
+    document.getElementById('btnNewResa').addEventListener('click', () => openCreate());
 
     // ─── Load ─────────────────────────────────────────────────────
     async function init() {
@@ -407,7 +533,7 @@
         banner.classList.remove('hidden');
       } else {
         banner.classList.add('hidden');
-        if (filterNoTable) toggleNoTable(); // reset filter if no more unassigned
+        if (filterNoTable) toggleNoTable();
       }
 
       // Space filter
@@ -415,31 +541,9 @@
       const sel = document.getElementById('filterSpace');
       const prev = sel.value;
       sel.innerHTML = '<option value="">Tous les espaces</option>' +
-        spaces.map(s => `<option value="${s}" ${s===prev?'selected':''}>${s}</option>`).join('');
+        spaces.map(s => `<option value="${escapeHtml(s)}" ${s===prev?'selected':''}>${escapeHtml(s)}</option>`).join('');
 
       applyFilters();
-    }
-
-    // ─── Filters ──────────────────────────────────────────────────
-    function toggleNoTable() {
-      filterNoTable = !filterNoTable;
-      document.getElementById('filterNoTable').classList.toggle('active', filterNoTable);
-      document.getElementById('noTableBannerBtn').textContent = filterNoTable ? 'Masquer ✕' : 'Voir →';
-      applyFilters();
-    }
-
-    function applyFilters() {
-      const name   = document.getElementById('filterName').value.trim().toLowerCase();
-      const space  = document.getElementById('filterSpace').value;
-      const status = document.getElementById('filterStatus').value;
-
-      let filtered = allResas;
-      if (name)         filtered = filtered.filter(r => r.customer_name.toLowerCase().includes(name));
-      if (space)        filtered = filtered.filter(r => r.space === space);
-      if (status)       filtered = filtered.filter(r => r.status === status);
-      if (filterNoTable) filtered = filtered.filter(r => r.status !== 'cancelled' && (!r.table_ids || r.table_ids.length === 0));
-
-      renderWeek(filtered);
     }
 
     // ─── Render week ──────────────────────────────────────────────
@@ -453,28 +557,29 @@
         const dayResas = resas.filter(r => r.date === dd);
         const d        = new Date(dd+'T12:00');
         const dowIdx   = d.getDay();
+        const dayLabel = `${DAYS_FR[dowIdx]} ${d.getDate()} ${d.toLocaleDateString('fr-FR',{month:'short'})}`;
 
         const cards = dayResas.map(r => {
           const noTable  = !r.table_ids || r.table_ids.length === 0;
-          const joyIcon  = r.joy_event_id ? `<span class="joy-icon" title="Joy.io">🔗</span> ` : '';
+          const joyBadge = r.joy_event_id ? `<span class="joy-badge">Joy</span>` : '';
           const tableTag = noTable
-            ? `<span class="no-table-tag">⚠ sans table</span>`
-            : `<span class="table-tag">T.${r.table_names.join('+')}</span>`;
-          return `
-            <div class="rmc ${r.status}" onclick="openEdit(${r.id})">
+            ? `<span class="no-table-tag" aria-label="sans table assignée">⚠ sans table</span>`
+            : `<span class="table-tag" aria-label="table ${r.table_names.join(', ')}">T.${escapeHtml(r.table_names.join('+'))}</span>`;
+          const statusLabel = STATUS_LABELS[r.status] || r.status;
+          return `<button type="button" class="rmc ${escapeHtml(r.status)}" data-resa-id="${r.id}"
+            aria-label="${escapeHtml(r.customer_name)}, ${r.time}, ${r.party_size} personnes, ${statusLabel}">
               <div class="rmc-top">
-                <span class="rmc-time">${r.time}</span>
-                <span class="rmc-name">${joyIcon}${r.customer_name}</span>
+                <span class="rmc-time">${escapeHtml(r.time)}</span>
+                <span class="rmc-name">${joyBadge}${escapeHtml(r.customer_name)}</span>
               </div>
-              <div class="rmc-pax">
+              <div class="rmc-pax" aria-hidden="true">
                 ${r.party_size} pers. &nbsp;${tableTag}
               </div>
-            </div>`;
+            </button>`;
         }).join('');
 
-        return `
-          <div class="day-col ${isToday?'is-today':''}">
-            <div class="day-head">
+        return `<div class="day-col ${isToday?'is-today':''}" role="listitem" aria-label="${dayLabel}${isToday?' (aujourd\'hui)':''}">
+            <div class="day-head" aria-hidden="true">
               <div>
                 <div class="day-name">${DAYS_FR[dowIdx]}</div>
                 <div class="day-date">${d.getDate()} ${d.toLocaleDateString('fr-FR',{month:'short'})}</div>
@@ -483,30 +588,38 @@
             </div>
             <div class="day-body">
               ${cards}
-              <div class="day-add" onclick="openCreate('${dd}')">+ Ajouter</div>
+              <button type="button" class="day-add" data-add-date="${escapeHtml(dd)}" aria-label="Ajouter une réservation le ${dayLabel}">+ Ajouter</button>
             </div>
           </div>`;
       }).join('');
+
+      // Delegation for resa cards and add buttons
+      grid.querySelectorAll('.rmc').forEach(btn => {
+        btn.addEventListener('click', () => openEdit(parseInt(btn.dataset.resaId)));
+      });
+      grid.querySelectorAll('.day-add').forEach(btn => {
+        btn.addEventListener('click', () => openCreate(btn.dataset.addDate));
+      });
     }
 
-    // ─── Table display (assigned via floor plan) ──────────────────
+    // ─── Table display ─────────────────────────────────────────────
     function refreshAssignedDisplay(tableIds) {
       const box = document.getElementById('assignedTagsDisplay');
       if (!tableIds || tableIds.length === 0) {
         box.innerHTML = '<span class="no-assigned-label">Aucune table assignée</span>';
       } else {
         const names = tableIds.map(id => allTables.find(t => t.id === id)?.name || `T.${id}`);
-        box.innerHTML = names.map(n => `<span class="assigned-tag">🍽 ${n}</span>`).join('');
+        box.innerHTML = names.map(n => `<span class="assigned-tag">${escapeHtml(n)}</span>`).join('');
       }
     }
+
+    document.getElementById('btnAssignPlan').addEventListener('click', goToFloorPlan);
 
     async function goToFloorPlan() {
       const name  = document.getElementById('resaName').value.trim();
       const date  = document.getElementById('resaDate').value;
       const returnPath = encodeURIComponent('/marketing/reservations.html');
-
       if (editId) {
-        // Mode édition : on a déjà un ID, on peut sauvegarder et rediriger
         const body = {
           customer_name: name,
           date,
@@ -520,7 +633,6 @@
         await api.put(`/api/reservations/${editId}`, body);
         window.location.href = `/staff/tables.html?assignTo=${editId}&date=${date}&name=${encodeURIComponent(name)}&returnTo=${returnPath}`;
       } else {
-        // Mode création : créer la résa d'abord, puis rediriger vers le plan
         if (!name || !date) { showToast('Remplis au moins le nom et la date', 'warning'); return; }
         const body = {
           customer_name: name,
@@ -539,7 +651,7 @@
     }
 
     // ─── Drawer create ────────────────────────────────────────────
-    function openCreate(date) {
+    function openCreate(date, triggerEl) {
       editId = null;
       editDate = date || today();
       currentStatus = 'confirmed';
@@ -552,15 +664,16 @@
       document.getElementById('resaPhone').value = '';
       document.getElementById('resaSpace').value = '';
       document.getElementById('resaNotes').value = '';
-      document.getElementById('statusSection').style.display  = 'none';
-      document.getElementById('btnDelete').style.display      = 'none';
-      document.getElementById('attachSection').style.display  = 'none';
+      document.getElementById('statusSection').hidden  = true;
+      document.getElementById('btnDelete').hidden      = true;
+      document.getElementById('attachSection').hidden  = true;
       document.getElementById('btnSave').textContent = 'Créer';
       refreshAssignedDisplay([]);
-      openDrawer();
+      updateStatusBtns();
+      openDrawer(triggerEl);
     }
 
-    async function openEdit(id) {
+    async function openEdit(id, triggerEl) {
       const r = allResas.find(r => r.id === id);
       if (!r) return;
       editId = id;
@@ -575,14 +688,28 @@
       document.getElementById('resaPhone').value = r.phone || '';
       document.getElementById('resaSpace').value = r.space || '';
       document.getElementById('resaNotes').value = r.notes || '';
-      document.getElementById('statusSection').style.display = 'block';
-      document.getElementById('btnDelete').style.display = r.joy_event_id ? 'none' : 'inline-flex';
+      document.getElementById('statusSection').hidden = false;
+      document.getElementById('btnDelete').hidden = !!r.joy_event_id;
       document.getElementById('btnSave').textContent = 'Enregistrer';
-      document.getElementById('attachSection').style.display = 'block';
+      document.getElementById('attachSection').hidden = false;
       updateStatusBtns();
       refreshAssignedDisplay(r.table_ids || []);
-      openDrawer();
+      openDrawer(triggerEl);
       loadAttachments(id);
+    }
+
+    // ─── Status buttons ───────────────────────────────────────────
+    document.querySelectorAll('.status-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentStatus = btn.dataset.status;
+        updateStatusBtns();
+      });
+    });
+    function updateStatusBtns() {
+      document.querySelectorAll('.status-btn').forEach(b => {
+        const active = b.dataset.status === currentStatus;
+        b.setAttribute('aria-pressed', String(active));
+      });
     }
 
     // ─── Pièces jointes ───────────────────────────────────────────
@@ -605,32 +732,39 @@
       if (!list) return;
       const atts = await api.get(`/api/reservations/${resId}/attachments`);
       if (!atts) return;
-
       const canManage = _canManageAttachments();
-
-      // Bouton upload : visible seulement pour admin/manager
-      const uploadBtn = document.querySelector('#attachSection .attach-upload-btn');
-      if (uploadBtn) uploadBtn.style.display = canManage ? 'flex' : 'none';
-
+      document.getElementById('attachUploadLabel').style.display = canManage ? 'flex' : 'none';
       if (!atts.length) {
-        list.innerHTML = `<div style="font-size:.78rem;color:var(--text-muted);font-style:italic;">Aucune pièce jointe</div>`;
+        list.innerHTML = `<p style="font-size:.78rem;color:var(--text-muted);font-style:italic;">Aucune pièce jointe</p>`;
         return;
       }
       list.innerHTML = atts.map(a => `
         <div class="attach-item" id="att-${a.id}">
-          <div class="attach-icon">${_attachIcon(a.mimetype)}</div>
+          <span class="attach-icon" aria-hidden="true">${_attachIcon(a.mimetype)}</span>
           <div class="attach-info">
-            <div class="attach-name" title="${a.original_name}">${a.original_name}</div>
-            <div class="attach-meta">${_fmtSize(a.size)}${a.uploader_name ? ' · ' + a.uploader_name : ''}</div>
+            <div class="attach-name" title="${escapeHtml(a.original_name)}">${escapeHtml(a.original_name)}</div>
+            <div class="attach-meta">${_fmtSize(a.size)}${a.uploader_name ? ' · ' + escapeHtml(a.uploader_name) : ''}</div>
           </div>
-          <button class="attach-btn-open" onclick="window.open('/api/attachments/${a.id}/file','_blank')">Voir</button>
-          ${canManage ? `<button class="attach-btn-del" onclick="deleteAttachment(${a.id},${resId})" title="Supprimer">✕</button>` : ''}
+          <button class="attach-btn-open" data-att-open="${a.id}" aria-label="Voir ${escapeHtml(a.original_name)}">Voir</button>
+          ${canManage ? `<button class="attach-btn-del" data-att-del="${a.id}" data-att-resid="${resId}" aria-label="Supprimer ${escapeHtml(a.original_name)}">
+            <svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>` : ''}
         </div>
       `).join('');
+
+      list.querySelectorAll('[data-att-open]').forEach(btn => {
+        btn.addEventListener('click', () => window.open(`/api/attachments/${btn.dataset.attOpen}/file`, '_blank'));
+      });
+      list.querySelectorAll('[data-att-del]').forEach(btn => {
+        btn.addEventListener('click', () => deleteAttachment(parseInt(btn.dataset.attDel), parseInt(btn.dataset.attResid)));
+      });
     }
 
+    document.getElementById('attachInput').addEventListener('change', function() {
+      if (this.files.length && editId) uploadAttachment(this);
+    });
+
     async function uploadAttachment(input) {
-      if (!input.files.length || !editId) return;
       const file = input.files[0];
       const fd = new FormData();
       fd.append('file', file);
@@ -641,27 +775,23 @@
         showToast(err.error || 'Erreur upload', 'error');
         return;
       }
-      showToast('Fichier ajouté ✓', 'success');
+      showToast('Fichier ajouté', 'success');
       loadAttachments(editId);
     }
 
     async function deleteAttachment(attId, resId) {
-      if (!confirm('Supprimer cette pièce jointe ?')) return;
-      const res = await api.delete(`/api/attachments/${attId}`);
-      if (res?.ok) {
-        showToast('Pièce jointe supprimée', 'info');
-        loadAttachments(resId);
-      }
-    }
-
-    function setStatus(s) { currentStatus = s; updateStatusBtns(); }
-    function updateStatusBtns() {
-      document.querySelectorAll('.status-btn').forEach(b =>
-        b.classList.toggle('active', b.classList.contains(currentStatus))
-      );
+      showConfirm('Supprimer cette pièce jointe ?', async () => {
+        const res = await api.delete(`/api/attachments/${attId}`);
+        if (res?.ok) {
+          showToast('Pièce jointe supprimée', 'info');
+          loadAttachments(resId);
+        }
+      });
     }
 
     // ─── Save ─────────────────────────────────────────────────────
+    document.getElementById('resaForm').addEventListener('submit', saveResa);
+
     async function saveResa(e) {
       e.preventDefault();
       const body = {
@@ -676,39 +806,79 @@
       };
       if (editId) {
         await api.put(`/api/reservations/${editId}`, body);
-        showToast('Réservation mise à jour ✓', 'success');
+        showToast('Réservation mise à jour', 'success');
       } else {
         await api.post('/api/reservations', body);
-        showToast('Réservation créée ✓', 'success');
+        showToast('Réservation créée', 'success');
       }
       closeDrawer();
       loadWeek();
     }
 
+    document.getElementById('btnDelete').addEventListener('click', deleteResa);
+
     async function deleteResa() {
-      if (!editId || !confirm('Supprimer cette réservation ?')) return;
-      await fetch(`/api/reservations/${editId}`, { method:'DELETE' });
-      closeDrawer();
-      showToast('Réservation supprimée', 'info');
-      loadWeek();
+      if (!editId) return;
+      showConfirm('Supprimer cette réservation ?', async () => {
+        await fetch(`/api/reservations/${editId}`, { method:'DELETE' });
+        closeDrawer();
+        showToast('Réservation supprimée', 'info');
+        loadWeek();
+      });
     }
 
     // ─── Drawer helpers ───────────────────────────────────────────
-    function openDrawer() {
+    function _getFocusable(el) {
+      return Array.from(el.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+    }
+    function _trapFocus(e) {
+      const el = document.getElementById('mainDrawer');
+      const items = _getFocusable(el);
+      if (!items.length) return;
+      if (e.key === 'Tab') {
+        if (e.shiftKey) {
+          if (document.activeElement === items[0]) { e.preventDefault(); items[items.length-1].focus(); }
+        } else {
+          if (document.activeElement === items[items.length-1]) { e.preventDefault(); items[0].focus(); }
+        }
+      }
+      if (e.key === 'Escape') closeDrawer();
+    }
+
+    function openDrawer(triggerEl) {
+      _drawerTrigger = triggerEl || document.activeElement;
+      const drawer = document.getElementById('mainDrawer');
+      drawer.hidden = false;
       document.getElementById('backdrop').classList.add('open');
-      document.getElementById('mainDrawer').classList.add('open');
+      drawer.classList.add('open');
       document.body.style.overflow = 'hidden';
+      drawer.addEventListener('keydown', _trapFocus);
+      requestAnimationFrame(() => {
+        const first = _getFocusable(drawer)[0];
+        if (first) first.focus();
+      });
     }
     function closeDrawer() {
+      const drawer = document.getElementById('mainDrawer');
+      drawer.classList.remove('open');
       document.getElementById('backdrop').classList.remove('open');
-      document.getElementById('mainDrawer').classList.remove('open');
       document.body.style.overflow = '';
+      drawer.removeEventListener('keydown', _trapFocus);
+      setTimeout(() => { drawer.hidden = true; }, 300);
+      if (_drawerTrigger && typeof _drawerTrigger.focus === 'function') {
+        _drawerTrigger.focus();
+        _drawerTrigger = null;
+      }
     }
+
+    document.getElementById('btnCloseDrawer').addEventListener('click', closeDrawer);
+    document.getElementById('btnCancelDrawer').addEventListener('click', closeDrawer);
+    document.getElementById('backdrop').addEventListener('click', closeDrawer);
 
     // ─── Socket ───────────────────────────────────────────────────
     socket.on('reservation:updated', loadWeek);
     socket.on('reservation:deleted', loadWeek);
-    socket.on('joy:synced', () => { loadWeek(); showToast('Joy.io synchronisé ✓', 'success'); });
+    socket.on('joy:synced', () => { loadWeek(); showToast('Joy.io synchronisé', 'success'); });
 
     // ─── URL params ───────────────────────────────────────────────
     const _urlParams = new URLSearchParams(location.search);
@@ -717,7 +887,7 @@
     if (urlDate) currentWeekStart = getMonday(new Date(urlDate));
 
     init().then(() => {
-      if (urlAssigned === '1') showToast('Tables assignées avec succès ✓', 'success');
+      if (urlAssigned === '1') showToast('Tables assignées avec succès', 'success');
     });
   </script>
 </body>

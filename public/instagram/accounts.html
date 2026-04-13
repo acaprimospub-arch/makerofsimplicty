@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
   <style>
     .accounts-grid {
       display: grid;
@@ -36,7 +36,6 @@
       background: var(--bg-surface);
       border: 2px solid var(--border);
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.4rem;
       flex-shrink: 0;
       overflow: hidden;
     }
@@ -47,12 +46,12 @@
     .account-badges { display: flex; gap: 6px; flex-wrap: wrap; }
     .badge-type {
       font-size: .7rem; font-weight: 600; padding: 2px 8px;
-      border-radius: 99px; background: var(--primary-dim, rgba(205,164,67,.15));
+      border-radius: 99px; background: var(--primary-dim, rgba(230,184,74,.15));
       color: var(--primary); text-transform: uppercase; letter-spacing: .05em;
     }
     .badge-token {
       font-size: .7rem; font-weight: 600; padding: 2px 8px;
-      border-radius: 99px;
+      border-radius: 99px; display: inline-flex; align-items: center; gap: 4px;
     }
     .badge-token.ok      { background: rgba(76,175,106,.15); color: #4caf6a; }
     .badge-token.expiring{ background: rgba(240,180,41,.15);  color: #f0b429; }
@@ -63,28 +62,48 @@
     /* Modal */
     .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:300; align-items:center; justify-content:center; padding:16px; }
     .modal-overlay.open { display:flex; }
-    .modal-box { background:var(--bg-card); border-radius:var(--radius); width:100%; max-width:520px; max-height:90vh; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:16px; }
+    .modal-box { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); width:100%; max-width:520px; max-height:90vh; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:16px; }
     .modal-header { display:flex; align-items:center; justify-content:space-between; }
     .modal-title  { font-size:1.05rem; font-weight:700; color:var(--text); }
-    .form-row-2   { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .modal-close  { width:30px; height:30px; border-radius:50%; background:var(--bg-surface); color:var(--text-muted); display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; }
+    .modal-close:focus-visible { box-shadow:var(--focus-ring); outline:none; }
+    .form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
     @media(max-width:480px) { .form-row-2 { grid-template-columns:1fr; } }
     .form-group { display:flex; flex-direction:column; gap:6px; }
     .form-label { font-size:.78rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; }
-    .form-group input, .form-group select { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); padding:9px 12px; font-size:.88rem; width:100%; }
+    .form-group input, .form-group select {
+      background:var(--bg-surface); border:1px solid var(--border);
+      border-radius:var(--radius-sm); color:var(--text);
+      padding:9px 12px; font-size:.88rem; width:100%;
+    }
+    .form-group input:focus-visible, .form-group select:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .form-hint { font-size:.73rem; color:var(--text-muted); }
     .modal-actions { display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
 
-    .token-warning { background:rgba(240,180,41,.12); border:1px solid rgba(240,180,41,.3); border-radius:var(--radius-sm); padding:10px 14px; font-size:.8rem; color:#f0b429; }
+    .token-warning {
+      background:rgba(240,180,41,.12); border:1px solid rgba(240,180,41,.3);
+      border-radius:var(--radius-sm); padding:10px 14px; font-size:.8rem; color:#f0b429;
+      display:flex; align-items:center; gap:8px; margin-bottom:20px;
+    }
+
+    /* Confirm modal */
+    .confirm-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:400; display:flex; align-items:center; justify-content:center; padding:20px; }
+    .confirm-overlay.hidden { display:none; }
+    .confirm-box { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:24px; max-width:340px; width:100%; }
+    .confirm-box p { font-size:.92rem; margin-bottom:20px; line-height:1.5; }
+    .confirm-actions { display:flex; gap:10px; justify-content:flex-end; }
   </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
-  <div class="page">
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
+
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container">
       <div class="page-header">
         <div>
-          <div class="page-title">Comptes Instagram</div>
-          <div class="page-subtitle">Gestion des accès et tokens API</div>
+          <h1 class="page-title">Comptes Instagram</h1>
+          <p class="page-subtitle">Gestion des accès et tokens API</p>
         </div>
         <div style="display:flex;gap:8px">
           <a href="/instagram/index.html" class="btn btn-secondary btn-sm">← Planificateur</a>
@@ -92,37 +111,40 @@
         </div>
       </div>
 
-      <div class="token-warning" id="tokenWarning" style="display:none;margin-bottom:20px">
-        ⚠️ <strong>Tokens expirant bientôt</strong> — Mettez à jour les tokens des comptes signalés.
+      <div class="token-warning hidden" id="tokenWarning" role="alert" aria-live="polite">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f0b429" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <strong>Tokens expirant bientôt</strong> — Mettez à jour les tokens des comptes signalés.
       </div>
 
-      <div class="accounts-grid" id="accountsGrid">
-        <div class="skeleton-card">Chargement…</div>
+      <div class="accounts-grid" id="accountsGrid" aria-live="polite">
+        <p style="color:var(--text-muted)">Chargement…</p>
       </div>
     </div>
-  </div>
+  </main>
 
   <!-- Modal ajout / édition -->
-  <div class="modal-overlay" id="modalOverlay" onclick="closeOnOverlay(event,'modalOverlay')">
+  <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-box">
       <div class="modal-header">
-        <div class="modal-title" id="modalTitle">Nouveau compte</div>
-        <button class="btn-icon" onclick="hideModal('modalOverlay')">✕</button>
+        <h2 class="modal-title" id="modalTitle">Nouveau compte</h2>
+        <button class="modal-close" id="btnCloseModal" aria-label="Fermer">
+          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
 
       <div class="form-row-2">
         <div class="form-group">
-          <label class="form-label">Nom affiché *</label>
-          <input type="text" id="fName" placeholder="Ex : Mos Pub Officiel">
+          <label class="form-label" for="fName">Nom affiché <span aria-hidden="true">*</span></label>
+          <input type="text" id="fName" aria-required="true" placeholder="Ex : Mos Pub Officiel" autocomplete="off">
         </div>
         <div class="form-group">
-          <label class="form-label">@Username</label>
-          <input type="text" id="fUsername" placeholder="mospub_lyon">
+          <label class="form-label" for="fUsername">@Username</label>
+          <input type="text" id="fUsername" placeholder="mospub_lyon" autocomplete="off">
         </div>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Type de compte</label>
+        <label class="form-label" for="fType">Type de compte</label>
         <select id="fType">
           <option value="business">Business</option>
           <option value="creator">Creator</option>
@@ -131,40 +153,115 @@
 
       <div class="form-row-2">
         <div class="form-group">
-          <label class="form-label">IG User ID</label>
-          <input type="text" id="fIgUserId" placeholder="17841400000000000">
-          <span class="form-hint">Paramètres Meta for Developers → App → Instagram → User ID</span>
+          <label class="form-label" for="fIgUserId">IG User ID</label>
+          <input type="text" id="fIgUserId" placeholder="17841400000000000" autocomplete="off" aria-describedby="fIgUserIdHint">
+          <span class="form-hint" id="fIgUserIdHint">Paramètres Meta for Developers → App → Instagram → User ID</span>
         </div>
         <div class="form-group">
-          <label class="form-label">Page ID (facultatif)</label>
-          <input type="text" id="fPageId" placeholder="ID page Facebook liée">
+          <label class="form-label" for="fPageId">Page ID (facultatif)</label>
+          <input type="text" id="fPageId" placeholder="ID page Facebook liée" autocomplete="off">
         </div>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Access Token</label>
-        <input type="password" id="fToken" placeholder="EAAxxxxxxxx…" autocomplete="off">
-        <span class="form-hint">Token long durée (60 jours). Ne partagez jamais cet écran.</span>
+        <label class="form-label" for="fToken">Access Token</label>
+        <input type="password" id="fToken" placeholder="EAAxxxxxxxx…" autocomplete="off" aria-describedby="fTokenHint">
+        <span class="form-hint" id="fTokenHint">Token long durée (60 jours). Ne partagez jamais cet écran.</span>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Expiration du token</label>
+        <label class="form-label" for="fTokenExpires">Expiration du token</label>
         <input type="date" id="fTokenExpires">
       </div>
 
       <div class="modal-actions">
         <button class="btn btn-secondary" id="btnTestConn" style="margin-right:auto">Tester la connexion</button>
-        <button class="btn btn-secondary" onclick="hideModal('modalOverlay')">Annuler</button>
+        <button class="btn btn-secondary" id="btnCancelModal">Annuler</button>
         <button class="btn btn-primary" id="btnSave">Enregistrer</button>
       </div>
     </div>
   </div>
 
+  <!-- Confirm modal -->
+  <div class="confirm-overlay hidden" id="confirmOverlay" role="dialog" aria-modal="true" aria-labelledby="confirmMsg">
+    <div class="confirm-box">
+      <p id="confirmMsg"></p>
+      <div class="confirm-actions">
+        <button class="btn btn-secondary btn-sm" id="confirmCancel">Annuler</button>
+        <button class="btn btn-danger btn-sm" id="confirmOk">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
   <script src="/js/api.js"></script>
   <script>
     let editId = null;
     let accounts = [];
+    let _modalTrigger = null;
+    let _confirmCb = null;
 
+    // ── Confirm modal ─────────────────────────────────────────────
+    function showConfirm(msg, cb) {
+      _confirmCb = cb;
+      document.getElementById('confirmMsg').textContent = msg;
+      document.getElementById('confirmOverlay').classList.remove('hidden');
+      document.getElementById('confirmOk').focus();
+    }
+    document.getElementById('confirmOk').addEventListener('click', () => {
+      document.getElementById('confirmOverlay').classList.add('hidden');
+      if (_confirmCb) { _confirmCb(); _confirmCb = null; }
+    });
+    document.getElementById('confirmCancel').addEventListener('click', () => {
+      document.getElementById('confirmOverlay').classList.add('hidden');
+      _confirmCb = null;
+    });
+
+    // ── Focus trap ────────────────────────────────────────────────
+    function _getFocusable(el) {
+      return Array.from(el.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+    }
+    function _trapFocus(e) {
+      const el = document.getElementById('modalOverlay');
+      const items = _getFocusable(el);
+      if (!items.length) return;
+      if (e.key === 'Tab') {
+        if (e.shiftKey) {
+          if (document.activeElement === items[0]) { e.preventDefault(); items[items.length-1].focus(); }
+        } else {
+          if (document.activeElement === items[items.length-1]) { e.preventDefault(); items[0].focus(); }
+        }
+      }
+      if (e.key === 'Escape') closeModal();
+    }
+
+    function openModal() {
+      _modalTrigger = document.activeElement;
+      const overlay = document.getElementById('modalOverlay');
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      overlay.addEventListener('keydown', _trapFocus);
+      requestAnimationFrame(() => {
+        const first = _getFocusable(overlay)[0];
+        if (first) first.focus();
+      });
+    }
+
+    function closeModal() {
+      const overlay = document.getElementById('modalOverlay');
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+      overlay.removeEventListener('keydown', _trapFocus);
+      if (_modalTrigger && typeof _modalTrigger.focus === 'function') {
+        _modalTrigger.focus();
+        _modalTrigger = null;
+      }
+    }
+
+    document.getElementById('btnCloseModal').addEventListener('click', closeModal);
+    document.getElementById('btnCancelModal').addEventListener('click', closeModal);
+
+    // ── Init ──────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async () => {
       await buildNav('instagram');
       await loadAccounts();
@@ -193,10 +290,16 @@
       return `Valide jusqu'au ${new Date(acc.token_expires_at).toLocaleDateString('fr-FR')}`;
     }
 
+    const TOKEN_ICONS = {
+      ok:       `<svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+      expiring: `<svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`,
+      missing:  `<svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+    };
+
     function renderAccounts() {
       const grid = document.getElementById('accountsGrid');
       const hasExpiring = accounts.some(a => ['missing', 'expiring'].includes(tokenStatus(a)));
-      document.getElementById('tokenWarning').style.display = hasExpiring ? '' : 'none';
+      document.getElementById('tokenWarning').classList.toggle('hidden', !hasExpiring);
 
       if (!accounts.length) {
         grid.innerHTML = `<div class="card" style="grid-column:1/-1;text-align:center;padding:32px;color:var(--text-muted)">
@@ -208,35 +311,49 @@
       grid.innerHTML = accounts.map(acc => {
         const ts = tokenStatus(acc);
         return `
-          <div class="account-card">
+          <article class="account-card" aria-label="Compte ${escapeHtml(acc.name)}">
             <div class="account-card-header">
-              <div class="account-avatar">
-                ${acc.avatar_url ? `<img src="${acc.avatar_url}" alt="">` : '📸'}
+              <div class="account-avatar" aria-hidden="true">
+                ${acc.avatar_url ? `<img src="${escapeHtml(acc.avatar_url)}" alt="">` : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>'}
               </div>
               <div class="account-info">
-                <div class="account-name">${escHtml(acc.name)}</div>
-                <div class="account-username">${acc.username ? '@' + escHtml(acc.username) : 'Aucun username'}</div>
+                <div class="account-name">${escapeHtml(acc.name)}</div>
+                <div class="account-username">${acc.username ? '@' + escapeHtml(acc.username) : 'Aucun username'}</div>
               </div>
             </div>
             <div class="account-badges">
-              <span class="badge-type">${acc.account_type}</span>
-              <span class="badge-token ${ts}">${tokenLabel(acc)}</span>
+              <span class="badge-type">${escapeHtml(acc.account_type)}</span>
+              <span class="badge-token ${ts}">${TOKEN_ICONS[ts]}${tokenLabel(acc)}</span>
             </div>
             <div class="account-actions">
-              <button class="btn btn-secondary btn-sm" onclick="openEdit(${acc.id})">✏️ Modifier</button>
-              <button class="btn btn-secondary btn-sm" onclick="testConn(${acc.id})">⚡ Tester</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteAccount(${acc.id})">🗑️</button>
+              <button class="btn btn-secondary btn-sm" data-edit="${acc.id}" aria-label="Modifier ${escapeHtml(acc.name)}">
+                <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Modifier
+              </button>
+              <button class="btn btn-secondary btn-sm" data-test="${acc.id}" aria-label="Tester la connexion de ${escapeHtml(acc.name)}">
+                <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                Tester
+              </button>
+              <button class="btn btn-danger btn-sm" data-delete="${acc.id}" aria-label="Supprimer ${escapeHtml(acc.name)}">
+                <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+              </button>
             </div>
-          </div>
-        `;
+          </article>`;
       }).join('');
+
+      grid.querySelectorAll('[data-edit]').forEach(btn => {
+        btn.addEventListener('click', () => openEdit(parseInt(btn.dataset.edit)));
+      });
+      grid.querySelectorAll('[data-test]').forEach(btn => {
+        btn.addEventListener('click', () => testConn(parseInt(btn.dataset.test)));
+      });
+      grid.querySelectorAll('[data-delete]').forEach(btn => {
+        btn.addEventListener('click', () => deleteAccount(parseInt(btn.dataset.delete)));
+      });
     }
 
-    function escHtml(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    document.getElementById('btnAdd').onclick = () => {
+    // ── Add / Edit ────────────────────────────────────────────────
+    document.getElementById('btnAdd').addEventListener('click', () => {
       editId = null;
       document.getElementById('modalTitle').textContent = 'Nouveau compte';
       document.getElementById('fName').value = '';
@@ -246,8 +363,8 @@
       document.getElementById('fPageId').value = '';
       document.getElementById('fToken').value = '';
       document.getElementById('fTokenExpires').value = '';
-      showModal('modalOverlay');
-    };
+      openModal();
+    });
 
     function openEdit(id) {
       const acc = accounts.find(a => a.id === id);
@@ -261,10 +378,10 @@
       document.getElementById('fPageId').value = acc.ig_page_id || '';
       document.getElementById('fToken').value = acc.access_token || '';
       document.getElementById('fTokenExpires').value = acc.token_expires_at ? acc.token_expires_at.split('T')[0] : '';
-      showModal('modalOverlay');
+      openModal();
     }
 
-    document.getElementById('btnSave').onclick = async () => {
+    document.getElementById('btnSave').addEventListener('click', async () => {
       const name = document.getElementById('fName').value.trim();
       if (!name) { showToast('Le nom est requis', 'error'); return; }
       const payload = {
@@ -284,32 +401,29 @@
       }
       if (r?.error) { showToast(r.error, 'error'); return; }
       showToast(editId ? 'Compte mis à jour' : 'Compte créé', 'success');
-      hideModal('modalOverlay');
+      closeModal();
       await loadAccounts();
-    };
+    });
 
-    document.getElementById('btnTestConn').onclick = async () => {
-      const id = editId;
-      if (!id) { showToast('Enregistrez d\'abord le compte', 'warning'); return; }
-      showToast('Test en cours…', 'info');
-      const r = await api.get(`/api/instagram/accounts/${id}/check`);
-      if (r?.ok) showToast(`✅ Connecté : ${r.name} (@${r.username || '?'})`, 'success');
-      else showToast(`❌ Erreur : ${r?.error || 'Inconnue'}`, 'error');
-    };
+    document.getElementById('btnTestConn').addEventListener('click', async () => {
+      if (!editId) { showToast('Enregistrez d\'abord le compte', 'warning'); return; }
+      await testConn(editId);
+    });
 
     async function testConn(id) {
       showToast('Test en cours…', 'info');
       const r = await api.get(`/api/instagram/accounts/${id}/check`);
-      if (r?.ok) showToast(`✅ Connecté : ${r.name} (@${r.username || '?'})`, 'success');
-      else showToast(`❌ Erreur : ${r?.error || 'Inconnue'}`, 'error');
+      if (r?.ok) showToast(`Connecté : ${r.name} (@${r.username || '?'})`, 'success');
+      else showToast(`Erreur : ${r?.error || 'Inconnue'}`, 'error');
     }
 
     async function deleteAccount(id) {
       const acc = accounts.find(a => a.id === id);
-      if (!confirm(`Supprimer le compte "${acc?.name}" ?`)) return;
-      await api.delete(`/api/instagram/accounts/${id}`);
-      showToast('Compte supprimé', 'success');
-      await loadAccounts();
+      showConfirm(`Supprimer le compte "${acc?.name}" ?`, async () => {
+        await api.delete(`/api/instagram/accounts/${id}`);
+        showToast('Compte supprimé', 'success');
+        await loadAccounts();
+      });
     }
   </script>
 </body>

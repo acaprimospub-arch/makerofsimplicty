@@ -10,78 +10,101 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MOS">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
 </head>
 <body>
-  <div class="login-page">
+  <main class="login-page" id="main-content">
     <div class="login-box">
-      <div class="login-logo">
-        <img src="/images/logo.png" alt="MOS" class="login-logo-img"
-             onerror="this.style.display='none';document.getElementById('login-logo-fallback').style.display='block'">
-        <div id="login-logo-fallback" style="display:none;">
-          <div style="font-size:2.5rem;font-weight:900;color:#cda443;letter-spacing:3px;">MOS</div>
-          <div style="font-size:0.85rem;color:rgba(255,255,255,0.5);letter-spacing:2px;margin-top:4px;">MAKER OF STORIES</div>
+
+      <div class="login-logo" aria-hidden="true">
+        <img src="/images/logo.png" alt="" class="login-logo-img"
+             onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='block'">
+        <div id="logo-fallback" style="display:none;">
+          <div class="login-logo-text">MOS</div>
+          <div style="font-size:0.75rem;color:var(--text-subtle);letter-spacing:2px;margin-top:4px;text-transform:uppercase;">Maker of Stories</div>
         </div>
-        <p style="margin-top:12px;color:rgba(255,255,255,0.45);font-size:0.82rem;letter-spacing:1px;">Mos Pub Mercière</p>
+        <p style="margin-top:10px;color:var(--text-subtle);font-size:0.8rem;letter-spacing:1px;">Mos Pub Mercière</p>
       </div>
 
-      <div class="login-card">
-        <div style="text-align:center; margin-bottom:20px;">
-          <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:4px;">Entrez votre code PIN</p>
+      <section class="login-card" aria-label="Connexion par code PIN">
+        <h1 class="login-title">Entrez votre code PIN</h1>
+
+        <!-- Affichage du PIN (annoncé aux lecteurs d'écran) -->
+        <output
+          id="pin-display"
+          aria-live="polite"
+          aria-atomic="true"
+          aria-label="Code saisi : 0 chiffre"
+          class="pin-display"
+        >
+          <span class="pin-dot" aria-hidden="true"></span>
+          <span class="pin-dot" aria-hidden="true"></span>
+          <span class="pin-dot" aria-hidden="true"></span>
+          <span class="pin-dot" aria-hidden="true"></span>
+        </output>
+
+        <!-- Pavé numérique -->
+        <div class="pin-pad" role="group" aria-label="Pavé numérique">
+          <button class="pin-key" type="button" aria-label="Chiffre 1">1</button>
+          <button class="pin-key" type="button" aria-label="Chiffre 2">2</button>
+          <button class="pin-key" type="button" aria-label="Chiffre 3">3</button>
+          <button class="pin-key" type="button" aria-label="Chiffre 4">4</button>
+          <button class="pin-key" type="button" aria-label="Chiffre 5">5</button>
+          <button class="pin-key" type="button" aria-label="Chiffre 6">6</button>
+          <button class="pin-key" type="button" aria-label="Chiffre 7">7</button>
+          <button class="pin-key" type="button" aria-label="Chiffre 8">8</button>
+          <button class="pin-key" type="button" aria-label="Chiffre 9">9</button>
+          <button class="pin-key del" type="button" id="btn-del" aria-label="Effacer le dernier chiffre">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="20" height="20">
+              <path fill-rule="evenodd" d="M7.293 5.293a1 1 0 011.414 0L10 6.586l1.293-1.293a1 1 0 111.414 1.414L11.414 8l1.293 1.293a1 1 0 01-1.414 1.414L10 9.414l-1.293 1.293a1 1 0 01-1.414-1.414L8.586 8 7.293 6.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+              <path fill-rule="evenodd" d="M2 10a1 1 0 01.293-.707l6-6A1 1 0 019 3h8a1 1 0 011 1v12a1 1 0 01-1 1H9a1 1 0 01-.707-.293l-6-6A1 1 0 012 10zm2 0l5.586-5.586L17 4.414v11.172l-7.414-.001L4 10z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+          <button class="pin-key" type="button" aria-label="Chiffre 0">0</button>
+          <button class="pin-key enter" type="button" id="btn-ok" aria-label="Valider le code PIN">OK</button>
         </div>
 
-        <div class="pin-display" id="pinDisplay">
-          <div class="pin-dot" id="d0"></div>
-          <div class="pin-dot" id="d1"></div>
-          <div class="pin-dot" id="d2"></div>
-          <div class="pin-dot" id="d3"></div>
-        </div>
+        <!-- Message d'erreur — annoncé immédiatement (role="alert") -->
+        <p class="pin-error" id="pin-error" role="alert" aria-live="assertive" aria-atomic="true"></p>
+      </section>
 
-        <div class="pin-pad">
-          <button class="pin-key" onclick="pressKey('1')">1</button>
-          <button class="pin-key" onclick="pressKey('2')">2</button>
-          <button class="pin-key" onclick="pressKey('3')">3</button>
-          <button class="pin-key" onclick="pressKey('4')">4</button>
-          <button class="pin-key" onclick="pressKey('5')">5</button>
-          <button class="pin-key" onclick="pressKey('6')">6</button>
-          <button class="pin-key" onclick="pressKey('7')">7</button>
-          <button class="pin-key" onclick="pressKey('8')">8</button>
-          <button class="pin-key" onclick="pressKey('9')">9</button>
-          <button class="pin-key del" onclick="deleteKey()">⌫</button>
-          <button class="pin-key" onclick="pressKey('0')">0</button>
-          <button class="pin-key enter" onclick="submitPin()">OK</button>
-        </div>
-
-        <div class="pin-error" id="pinError"></div>
-      </div>
     </div>
-  </div>
+  </main>
 
   <script>
-    let pin = '';
+    'use strict';
     const MAX = 4;
+    let pin = '';
+
+    const display = document.getElementById('pin-display');
+    const errorEl = document.getElementById('pin-error');
+    const dots = display.querySelectorAll('.pin-dot');
 
     function updateDisplay() {
-      for (let i = 0; i < MAX; i++) {
-        document.getElementById('d' + i).classList.toggle('filled', i < pin.length);
-      }
+      dots.forEach((dot, i) => dot.classList.toggle('filled', i < pin.length));
+      display.setAttribute('aria-label', `Code saisi\u00a0: ${pin.length} chiffre${pin.length !== 1 ? 's' : ''}`);
     }
 
     function pressKey(k) {
       if (pin.length >= MAX) return;
       pin += k;
+      errorEl.textContent = '';
       updateDisplay();
       if (pin.length === MAX) submitPin();
     }
 
     function deleteKey() {
+      if (!pin) return;
       pin = pin.slice(0, -1);
+      errorEl.textContent = '';
       updateDisplay();
-      document.getElementById('pinError').textContent = '';
     }
 
     async function submitPin() {
       if (!pin) return;
+      const okBtn = document.getElementById('btn-ok');
+      okBtn.disabled = true;
+      okBtn.textContent = '…';
       try {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
@@ -90,44 +113,49 @@
         });
         const data = await res.json();
         if (!res.ok) {
-          document.getElementById('pinError').textContent = data.error;
+          errorEl.textContent = data.error || 'Code PIN incorrect';
           pin = '';
           updateDisplay();
-          // Shake animation
+          // Secousse (respecte prefers-reduced-motion via CSS)
           const card = document.querySelector('.login-card');
-          card.style.animation = 'none';
-          card.offsetHeight;
-          card.style.animation = 'shake 0.3s';
+          card.classList.remove('shake');
+          void card.offsetWidth;
+          card.classList.add('shake');
+          card.addEventListener('animationend', () => card.classList.remove('shake'), { once: true });
+          okBtn.disabled = false;
+          okBtn.textContent = 'OK';
           return;
         }
-        // Redirect to menu page
         window.location.href = '/menu.html';
-      } catch (e) {
-        document.getElementById('pinError').textContent = 'Erreur de connexion';
+      } catch {
+        errorEl.textContent = 'Erreur de connexion, réessayez.';
         pin = '';
         updateDisplay();
+        okBtn.disabled = false;
+        okBtn.textContent = 'OK';
       }
     }
 
-    // Keyboard support
+    // ── Pavé numérique — event listeners ──
+    document.querySelectorAll('.pin-key[aria-label^="Chiffre"]').forEach(btn => {
+      const digit = btn.getAttribute('aria-label').replace('Chiffre ', '');
+      btn.addEventListener('click', () => pressKey(digit));
+    });
+    document.getElementById('btn-del').addEventListener('click', deleteKey);
+    document.getElementById('btn-ok').addEventListener('click', submitPin);
+
+    // ── Support clavier physique ──
     document.addEventListener('keydown', e => {
       if (e.key >= '0' && e.key <= '9') pressKey(e.key);
-      else if (e.key === 'Backspace') deleteKey();
+      else if (e.key === 'Backspace') { e.preventDefault(); deleteKey(); }
       else if (e.key === 'Enter') submitPin();
     });
 
-    // Check if already logged in
-    fetch('/api/auth/me').then(r => r.json()).then(user => {
-      if (user.id) window.location.href = '/menu.html';
-    }).catch(() => {});
+    // ── Déjà connecté ? Redirection immédiate ──
+    fetch('/api/auth/me')
+      .then(r => r.json())
+      .then(user => { if (user && user.id) window.location.href = '/menu.html'; })
+      .catch(() => {});
   </script>
-
-  <style>
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-8px); }
-      75% { transform: translateX(8px); }
-    }
-  </style>
 </body>
 </html>

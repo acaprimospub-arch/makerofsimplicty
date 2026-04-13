@@ -10,14 +10,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MOS">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
   <style>
-    /* ── Cards ── */
     .dash-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; margin-bottom:14px; }
-    .dash-card-title { font-size:.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
-    .dash-card-title span { font-size:1rem; }
-
-    /* ── Planning aujourd'hui ── */
+    .dash-card-title { font-size:.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:12px; }
     .planning-row { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); }
     .planning-row:last-child { border-bottom:none; }
     .pr-name { font-weight:700; font-size:.95rem; width:80px; flex-shrink:0; }
@@ -28,8 +24,6 @@
     .pr-status { font-size:.72rem; font-weight:700; padding:2px 8px; border-radius:20px; }
     .pr-late { background:rgba(240,180,41,.15); color:var(--warning); border:1px solid rgba(240,180,41,.3); }
     .pr-supp { background:rgba(76,175,106,.12); color:var(--success); border:1px solid rgba(76,175,106,.3); }
-
-    /* ── Progression tâches ── */
     .task-prog-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
     .task-prog-row:last-child { margin-bottom:0; }
     .tp-name { font-weight:700; font-size:.88rem; width:72px; flex-shrink:0; }
@@ -37,15 +31,11 @@
     .tp-fill { height:100%; border-radius:4px; background:var(--primary); transition:width .5s; }
     .tp-fill.full { background:var(--success); }
     .tp-count { font-size:.78rem; color:var(--text-muted); min-width:44px; text-align:right; }
-
-    /* ── Global progress ── */
     .global-prog { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
     .gp-bar { flex:1; height:10px; background:var(--bg-surface); border-radius:5px; overflow:hidden; }
     .gp-fill { height:100%; border-radius:5px; background:var(--primary); transition:width .5s; }
     .gp-fill.full { background:var(--success); }
     .gp-label { font-size:.9rem; font-weight:700; min-width:50px; text-align:right; }
-
-    /* ── Time events ── */
     .te-row { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
     .te-row:last-child { border-bottom:none; }
     .te-badge { font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:20px; white-space:nowrap; flex-shrink:0; margin-top:2px; }
@@ -55,8 +45,6 @@
     .te-name { font-weight:700; font-size:.88rem; }
     .te-detail { font-size:.8rem; color:var(--text-muted); margin-top:2px; }
     .te-empty { font-size:.83rem; color:var(--text-muted); font-style:italic; }
-
-    /* ── Week summary ── */
     .week-table { width:100%; border-collapse:collapse; }
     .week-table th { font-size:.72rem; font-weight:700; color:var(--text-muted); text-align:left; padding:6px 8px; border-bottom:1px solid var(--border); }
     .week-table td { font-size:.82rem; padding:7px 8px; border-bottom:1px solid var(--border); }
@@ -65,69 +53,70 @@
     .wt-pill { display:inline-block; font-size:.7rem; font-weight:700; padding:2px 7px; border-radius:20px; margin:1px; }
     .wt-retard { background:rgba(240,180,41,.15); color:var(--warning); }
     .wt-supp   { background:rgba(76,175,106,.12); color:var(--success); }
-
-    /* ── Date nav ── */
     .date-nav { display:flex; align-items:center; gap:8px; margin-bottom:16px; }
     .date-nav-btn { background:var(--bg-card); border:1px solid var(--border); color:var(--text-muted); border-radius:20px; padding:6px 14px; font-size:.8rem; cursor:pointer; }
     .date-nav-btn:hover { border-color:var(--primary); color:var(--primary); }
-    .date-nav input[type="date"] { flex:1; min-width:130px; max-width:170px; }
+    .date-nav-btn:focus-visible { box-shadow:var(--focus-ring); outline:none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .tp-fill, .gp-fill { transition: none !important; }
+    }
   </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
 
-  <div class="page">
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container-sm">
 
-      <div class="page-header">
+      <header class="page-header">
         <div>
-          <div class="page-title">👨‍🍳 Dashboard Cuisine</div>
-          <div class="page-subtitle" id="dateLabel"></div>
+          <h1 class="page-title">Dashboard Cuisine</h1>
+          <p class="page-subtitle" id="dateLabel"></p>
         </div>
+      </header>
+
+      <div role="group" aria-label="Navigation par date" class="date-nav">
+        <button class="date-nav-btn" id="btnPrev" aria-label="Jour précédent">← Hier</button>
+        <label class="sr-only" for="viewDate">Date</label>
+        <input type="date" id="viewDate" class="form-input" style="flex:1;min-width:130px;max-width:170px;">
+        <button class="date-nav-btn" id="btnToday">Aujourd'hui</button>
+        <button class="date-nav-btn" id="btnNext" aria-label="Jour suivant">Demain →</button>
       </div>
 
-      <div class="date-nav">
-        <button class="date-nav-btn" onclick="shiftDate(-1)">← Hier</button>
-        <input type="date" id="viewDate" onchange="loadDay()">
-        <button class="date-nav-btn" onclick="goToday()">Aujourd'hui</button>
-        <button class="date-nav-btn" onclick="shiftDate(1)">Demain →</button>
-      </div>
+      <section class="dash-card" aria-labelledby="section-planning">
+        <h2 class="dash-card-title" id="section-planning">Planning du jour</h2>
+        <div id="planningToday" aria-live="polite" aria-atomic="true"></div>
+      </section>
 
-      <!-- Planning du jour -->
-      <div class="dash-card">
-        <div class="dash-card-title"><span>📅</span> Planning du jour</div>
-        <div id="planningToday"></div>
-      </div>
-
-      <!-- Progression des tâches -->
-      <div class="dash-card">
-        <div class="dash-card-title"><span>✅</span> Tâches du jour</div>
-        <div class="global-prog">
+      <section class="dash-card" aria-labelledby="section-tasks">
+        <h2 class="dash-card-title" id="section-tasks">Tâches du jour</h2>
+        <div class="global-prog" aria-hidden="true">
           <div class="gp-bar"><div class="gp-fill" id="gpFill" style="width:0%"></div></div>
           <div class="gp-label" id="gpLabel">0/0</div>
         </div>
-        <div id="taskProgList"></div>
-      </div>
+        <progress id="gpProgress" class="sr-only" aria-label="Progression globale des tâches" value="0" max="1"></progress>
+        <div id="taskProgList" aria-live="polite" aria-atomic="true"></div>
+      </section>
 
-      <!-- Retards & Heures supp du jour -->
-      <div class="dash-card">
-        <div class="dash-card-title"><span>⏱</span> Retards & Heures supp — aujourd'hui</div>
-        <div id="timeEventsToday"></div>
-      </div>
+      <section class="dash-card" aria-labelledby="section-time">
+        <h2 class="dash-card-title" id="section-time">Retards &amp; Heures supp — aujourd'hui</h2>
+        <div id="timeEventsToday" aria-live="polite" aria-atomic="true"></div>
+      </section>
 
-      <!-- Résumé de la semaine -->
-      <div class="dash-card">
-        <div class="dash-card-title"><span>📊</span> Résumé de la semaine</div>
-        <div id="weekSummary"></div>
-      </div>
+      <section class="dash-card" aria-labelledby="section-week">
+        <h2 class="dash-card-title" id="section-week">Résumé de la semaine</h2>
+        <div id="weekSummary" aria-live="polite" aria-atomic="true"></div>
+      </section>
 
     </div>
-  </div>
+  </main>
 
   <div id="toast-container"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/api.js"></script>
   <script>
+    'use strict';
     buildNav('dashboard-cuisine');
     const socket = io();
 
@@ -138,41 +127,41 @@
     function updateLabel() {
       document.getElementById('dateLabel').textContent = formatDate(viewDateEl.value);
     }
+
+    document.getElementById('btnPrev').addEventListener('click', () => shiftDate(-1));
+    document.getElementById('btnNext').addEventListener('click', () => shiftDate(1));
+    document.getElementById('btnToday').addEventListener('click', () => { viewDateEl.value = today(); loadDay(); });
+    viewDateEl.addEventListener('change', loadDay);
+
     function shiftDate(d) {
       const dt = new Date(viewDateEl.value);
       dt.setDate(dt.getDate() + d);
       viewDateEl.value = dt.toISOString().split('T')[0];
       loadDay();
     }
-    function goToday() { viewDateEl.value = today(); loadDay(); }
 
     function getMonday(dateStr) {
       const d = new Date(dateStr);
       const day = d.getDay();
-      const diff = (day === 0 ? -6 : 1 - day);
-      d.setDate(d.getDate() + diff);
+      d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
       return d.toISOString().split('T')[0];
     }
     function addDays(dateStr, n) {
-      const d = new Date(dateStr);
-      d.setDate(d.getDate() + n);
-      return d.toISOString().split('T')[0];
+      const d = new Date(dateStr); d.setDate(d.getDate() + n); return d.toISOString().split('T')[0];
     }
 
     async function loadDay() {
       updateLabel();
       const date = viewDateEl.value;
       const weekStart = getMonday(date);
+      const weekEnd   = addDays(weekStart, 6);
 
-      const [completions, timeEvents, planning] = await Promise.all([
+      const [completions, timeEvents, planning, weekEvents] = await Promise.all([
         api.get(`/api/cuisine/completions?date=${date}`),
         api.get(`/api/cuisine/time-events?date=${date}`),
         api.get(`/api/cuisine/planning?weekStart=${weekStart}`),
+        api.get(`/api/cuisine/time-events?from=${weekStart}&to=${weekEnd}`),
       ]);
-
-      const weekFrom = getMonday(date);
-      const weekTo   = addDays(weekFrom, 6);
-      const weekEvents = await api.get(`/api/cuisine/time-events?from=${weekFrom}&to=${weekTo}`);
 
       renderPlanning(planning, date, timeEvents);
       renderTaskProg(completions);
@@ -183,33 +172,20 @@
     function renderPlanning(planning, date, timeEvents) {
       const el = document.getElementById('planningToday');
       if (!planning?.users?.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:.85rem">Aucun staff enregistré</div>'; return; }
-
-      el.innerHTML = planning.users.map(u => {
+      el.innerHTML = '<ul role="list" style="list-style:none;padding:0;margin:0;">' + planning.users.map(u => {
         const shift = planning.shifts?.find(s => s.user_id === u.id && s.day_date === date);
         const late  = timeEvents?.find(e => e.user_id === u.id && e.type === 'retard');
         const supp  = timeEvents?.find(e => e.user_id === u.id && e.type === 'supp');
-
         let shiftHtml;
-        if (!shift) {
-          shiftHtml = `<span class="pr-absent">Non planifié</span>`;
-        } else if (shift.is_off) {
-          shiftHtml = `<span class="pr-off">❌ Repos</span>`;
-        } else {
-          const s = shift.start_time?.slice(0,5) || '';
-          const e = shift.end_time?.slice(0,5) || '';
-          shiftHtml = `<span class="pr-hours">${s} → ${e}</span>`;
-        }
-
+        if (!shift) shiftHtml = `<span class="pr-absent">Non planifié</span>`;
+        else if (shift.is_off) shiftHtml = `<span class="pr-off">Repos</span>`;
+        else shiftHtml = `<span class="pr-hours">${escapeHtml(shift.start_time?.slice(0,5)||'')} → ${escapeHtml(shift.end_time?.slice(0,5)||'')}</span>`;
         const badges = [
-          late ? `<span class="pr-status pr-late">⏰ +${late.minutes}min retard</span>` : '',
-          supp ? `<span class="pr-status pr-supp">➕ +${supp.minutes}min supp</span>` : '',
+          late ? `<span class="pr-status pr-late">+${late.minutes}min retard</span>` : '',
+          supp ? `<span class="pr-status pr-supp">+${supp.minutes}min supp</span>` : '',
         ].filter(Boolean).join(' ');
-
-        return `<div class="planning-row">
-          <div class="pr-name">${u.name}</div>
-          <div class="pr-shift">${shiftHtml} ${badges}</div>
-        </div>`;
-      }).join('');
+        return `<li class="planning-row"><div class="pr-name">${escapeHtml(u.name)}</div><div class="pr-shift">${shiftHtml} ${badges}</div></li>`;
+      }).join('') + '</ul>';
     }
 
     function renderTaskProg(completions) {
@@ -217,86 +193,60 @@
         document.getElementById('taskProgList').innerHTML = '<div style="color:var(--text-muted);font-size:.85rem">Aucune donnée</div>';
         return;
       }
-      const totalAll = completions[0]?.total || 0;
-      const doneAll  = completions.reduce((s, m) => s + (m.done || 0), 0);
-      // divide by members to avoid multiplying total
-      const uniqueDone = completions.length ? Math.max(...completions.map(m => m.done || 0)) : 0;
-      // Actually show global progress as ratio of tasks completed (any person) vs total tasks
-      // Use completions[0].total as the task total
-      const totalTasks = totalAll;
-      // Global: count distinct tasks completed (not per-user sum)
-      // We'll approximate with max(done) for global, and show per-user
+      const totalTasks = completions[0]?.total || 0;
+      const uniqueDone = Math.max(...completions.map(m => m.done || 0));
       const pctGlobal = totalTasks > 0 ? Math.round(uniqueDone / totalTasks * 100) : 0;
       const fillEl = document.getElementById('gpFill');
       fillEl.style.width = pctGlobal + '%';
-      fillEl.className   = 'gp-fill' + (pctGlobal === 100 ? ' full' : '');
+      fillEl.className = 'gp-fill' + (pctGlobal === 100 ? ' full' : '');
       document.getElementById('gpLabel').textContent = `${uniqueDone}/${totalTasks}`;
-
+      const prog = document.getElementById('gpProgress');
+      prog.value = uniqueDone; prog.max = totalTasks;
       document.getElementById('taskProgList').innerHTML = completions.map(m => {
         const pct = totalTasks > 0 ? Math.round((m.done || 0) / totalTasks * 100) : 0;
         return `<div class="task-prog-row">
-          <div class="tp-name">${m.name}</div>
-          <div class="tp-bar"><div class="tp-fill ${pct===100?'full':''}" style="width:${pct}%"></div></div>
-          <div class="tp-count">${m.done}/${totalTasks}</div>
+          <div class="tp-name">${escapeHtml(m.name)}</div>
+          <div class="tp-bar" aria-hidden="true"><div class="tp-fill ${pct===100?'full':''}" style="width:${pct}%"></div></div>
+          <div class="tp-count" aria-label="${escapeHtml(m.name)} : ${m.done} sur ${totalTasks}">${m.done}/${totalTasks}</div>
         </div>`;
       }).join('');
     }
 
     function renderTimeEvents(events) {
       const el = document.getElementById('timeEventsToday');
-      if (!events?.length) {
-        el.innerHTML = '<div class="te-empty">Aucun signalement aujourd\'hui</div>';
-        return;
-      }
-      el.innerHTML = events.map(e => {
-        const label = e.type === 'retard' ? 'Retard' : 'H. supp';
-        const cls   = e.type === 'retard' ? 'te-retard' : 'te-supp';
-        return `<div class="te-row">
-          <span class="te-badge ${cls}">${label}</span>
+      if (!events?.length) { el.innerHTML = '<div class="te-empty">Aucun signalement aujourd\'hui</div>'; return; }
+      el.innerHTML = '<ul role="list" style="list-style:none;padding:0;margin:0;">' + events.map(e => `
+        <li class="te-row">
+          <span class="te-badge ${e.type==='retard'?'te-retard':'te-supp'}">${e.type==='retard'?'Retard':'H. supp'}</span>
           <div class="te-body">
-            <div class="te-name">${e.user_name} <span style="font-weight:400;color:var(--text-muted)">+${e.minutes} min</span></div>
-            ${e.note ? `<div class="te-detail">📝 ${e.note}</div>` : ''}
+            <div class="te-name">${escapeHtml(e.user_name)} <span style="font-weight:400;color:var(--text-muted)">+${e.minutes} min</span></div>
+            ${e.note ? `<div class="te-detail">${escapeHtml(e.note)}</div>` : ''}
           </div>
-        </div>`;
-      }).join('');
+        </li>`).join('') + '</ul>';
     }
 
     function renderWeekSummary(users, weekEvents) {
       const el = document.getElementById('weekSummary');
       if (!users.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:.85rem">Aucune donnée</div>'; return; }
-
       const totalRetard = weekEvents.filter(e => e.type === 'retard').reduce((s,e) => s + e.minutes, 0);
       const totalSupp   = weekEvents.filter(e => e.type === 'supp').reduce((s,e) => s + e.minutes, 0);
-
       const rows = users.map(u => {
-        const uEvents = weekEvents.filter(e => e.user_id === u.id);
-        const retard  = uEvents.filter(e => e.type === 'retard').reduce((s,e) => s + e.minutes, 0);
-        const supp    = uEvents.filter(e => e.type === 'supp').reduce((s,e) => s + e.minutes, 0);
-        const pills = [
-          retard ? `<span class="wt-pill wt-retard">⏰ ${retard}min retard</span>` : '',
-          supp   ? `<span class="wt-pill wt-supp">➕ ${supp}min supp</span>` : '',
-        ].filter(Boolean).join('');
-        return `<tr>
-          <td class="wt-name">${u.name}</td>
-          <td>${pills || '<span style="color:var(--text-muted);font-size:.78rem">RAS</span>'}</td>
-        </tr>`;
+        const ue = weekEvents.filter(e => e.user_id === u.id);
+        const r  = ue.filter(e => e.type === 'retard').reduce((s,e) => s + e.minutes, 0);
+        const s  = ue.filter(e => e.type === 'supp').reduce((s,e) => s + e.minutes, 0);
+        const pills = [r ? `<span class="wt-pill wt-retard">+${r}min retard</span>` : '', s ? `<span class="wt-pill wt-supp">+${s}min supp</span>` : ''].filter(Boolean).join('');
+        return `<tr><td class="wt-name">${escapeHtml(u.name)}</td><td>${pills||'<span style="color:var(--text-muted);font-size:.78rem">RAS</span>'}</td></tr>`;
       }).join('');
-
-      el.innerHTML = `
-        <table class="week-table">
-          <thead><tr><th>Staff</th><th>Cette semaine</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-        ${(totalRetard || totalSupp) ? `
-        <div style="margin-top:10px;font-size:.78rem;color:var(--text-muted)">
-          Total semaine : ${totalRetard ? `⏰ ${totalRetard}min retard` : ''} ${totalSupp ? `➕ ${totalSupp}min supp` : ''}
-        </div>` : ''}
-      `;
+      el.innerHTML = `<table class="week-table">
+        <caption class="sr-only">Résumé retards et heures supplémentaires de la semaine</caption>
+        <thead><tr><th scope="col">Staff</th><th scope="col">Cette semaine</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${(totalRetard || totalSupp) ? `<div style="margin-top:10px;font-size:.78rem;color:var(--text-muted)" role="status">Total semaine : ${totalRetard?`+${totalRetard}min retard `:''} ${totalSupp?`+${totalSupp}min supp`:''}</div>` : ''}`;
     }
 
-    // ── Temps réel ────────────────────────────────────────────────────────────
-    socket.on('task:updated', () => loadDay());
-    socket.on('cuisine:time-events:updated', () => loadDay());
+    socket.on('task:updated', () => { loadDay(); announce('Tâches mises à jour'); });
+    socket.on('cuisine:time-events:updated', () => { loadDay(); announce('Signalements mis à jour'); });
 
     loadDay();
   </script>

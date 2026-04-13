@@ -10,206 +10,437 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MOS">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
+  <style>
+    .pin-strength { height: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); margin-top: 6px; overflow: hidden; }
+    .pin-strength-fill { height: 100%; border-radius: 999px; transition: width 0.2s, background 0.2s; }
+  </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
+  <nav class="nav" id="nav" role="navigation"></nav>
 
-  <div class="page">
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container-sm">
       <div class="page-header">
         <div>
-          <div class="page-title">👥 Gestion de l'équipe</div>
-          <div class="page-subtitle">Créez et gérez les codes PIN de votre staff</div>
+          <h1 class="page-title">Gestion de l'équipe</h1>
+          <p class="page-subtitle">Créez et gérez les codes PIN de votre staff</p>
         </div>
-        <button class="btn btn-primary" onclick="showModal('addModal')">+ Ajouter un membre</button>
+        <div class="page-actions">
+          <div class="flex items-center gap-3">
+            <label for="staff-search" class="sr-only">Filtrer l'équipe</label>
+            <input
+              type="search"
+              id="staff-search"
+              placeholder="Rechercher un membre…"
+              aria-label="Filtrer les membres de l'équipe"
+              style="width:220px;"
+            >
+          </div>
+          <button class="btn btn-primary" id="btn-add" type="button">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="16" height="16"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+            Ajouter un membre
+          </button>
+        </div>
       </div>
 
-      <div class="card">
-        <div id="staffList">
+      <section class="card" aria-labelledby="staff-table-caption">
+        <div id="staff-list">
           <div class="empty-state">
-            <div class="empty-state-icon">👤</div>
-            <div class="empty-state-text">Chargement...</div>
+            <div class="empty-state-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><circle cx="24" cy="16" r="8"/><path d="M8 40c0-8.837 7.163-16 16-16s16 7.163 16 16"/></svg>
+            </div>
+            <p class="empty-state-text">Chargement…</p>
           </div>
         </div>
-      </div>
+      </section>
     </div>
-  </div>
+  </main>
 
-  <!-- Add/Edit Modal -->
-  <div class="modal-overlay hidden" id="addModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" onclick="closeOnOverlay(event,'addModal')">
+  <!-- ══ Modal Ajouter / Modifier ══ -->
+  <div class="modal-overlay hidden" id="add-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-title" id="modalTitle">Ajouter un membre</div>
-        <button class="modal-close" aria-label="Fermer la fenêtre" onclick="hideModal('addModal')">✕</button>
+        <h2 class="modal-title" id="modal-title">Ajouter un membre</h2>
+        <button class="modal-close" id="modal-close-btn" type="button" aria-label="Fermer la fenêtre">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
       </div>
-      <form id="staffForm" onsubmit="saveStaff(event)">
-        <input type="hidden" id="staffId">
-        <div style="display:flex;flex-direction:column;gap:14px;">
+
+      <form id="staff-form" novalidate>
+        <input type="hidden" id="staff-id">
+        <div class="flex flex-col gap-4">
+
           <div class="form-group">
-            <label class="form-label" for="staffName">Prénom / Nom</label>
-            <input type="text" id="staffName" placeholder="Ex: Julie Martin" required>
+            <label class="form-label" for="staff-name">
+              Prénom / Nom <span class="required" aria-hidden="true">*</span>
+            </label>
+            <input
+              type="text"
+              id="staff-name"
+              placeholder="Ex : Julie Martin"
+              required
+              aria-required="true"
+              autocomplete="name"
+            >
+            <p class="field-error hidden" id="err-name" role="alert">
+              <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M6 1a5 5 0 100 10A5 5 0 006 1zm.5 7h-1v-1h1v1zm0-2h-1V4h1v2z"/></svg>
+              Ce champ est requis.
+            </p>
           </div>
+
           <div class="form-row form-row-2">
             <div class="form-group">
-              <label class="form-label" for="staffPin">Code PIN (4-6 chiffres)</label>
-              <input type="text" id="staffPin" placeholder="Ex: 1234" maxlength="6" pattern="[0-9]{4,6}" required inputmode="numeric">
+              <label class="form-label" for="staff-pin">
+                Code PIN <span class="required" aria-hidden="true">*</span>
+                <span class="text-xs text-subtle">(4–6 chiffres)</span>
+              </label>
+              <input
+                type="text"
+                id="staff-pin"
+                placeholder="Ex : 1234"
+                maxlength="6"
+                pattern="[0-9]{4,6}"
+                required
+                aria-required="true"
+                inputmode="numeric"
+                autocomplete="off"
+                aria-describedby="pin-hint err-pin"
+              >
+              <!-- Jauge de force -->
+              <div class="pin-strength" aria-hidden="true">
+                <div class="pin-strength-fill" id="pin-strength-fill" style="width:0;"></div>
+              </div>
+              <p class="field-hint" id="pin-hint">4 à 6 chiffres uniquement.</p>
+              <p class="field-error hidden" id="err-pin" role="alert">
+                <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M6 1a5 5 0 100 10A5 5 0 006 1zm.5 7h-1v-1h1v1zm0-2h-1V4h1v2z"/></svg>
+                PIN invalide (4–6 chiffres requis).
+              </p>
             </div>
+
             <div class="form-group">
-              <label class="form-label" for="staffPoste">Poste</label>
-              <select id="staffPoste">
-                <option value="staff_midi">🌅 Staff Midi</option>
-                <option value="staff_soir">🌙 Staff Soir</option>
-                <option value="manager_midi">⭐🌅 Manager Midi</option>
-                <option value="manager_soir">⭐🌙 Manager Soir</option>
+              <label class="form-label" for="staff-poste">
+                Poste <span class="required" aria-hidden="true">*</span>
+              </label>
+              <select id="staff-poste" required aria-required="true">
+                <option value="staff_midi">Staff Midi</option>
+                <option value="staff_soir">Staff Soir</option>
+                <option value="manager_midi">Manager Midi</option>
+                <option value="manager_soir">Manager Soir</option>
+                <option value="staff_cuisine">Staff Cuisine</option>
+                <option value="staff_marketing">Staff Marketing</option>
+                <option value="staff_resa">Staff Réservations</option>
               </select>
             </div>
           </div>
+
           <div class="form-group">
-            <label class="form-label" for="staffEmail">Email <span style="color:var(--text-muted);font-weight:400;">(pour recevoir le planning)</span></label>
-            <input type="email" id="staffEmail" placeholder="prenom.nom@email.com">
+            <label class="form-label" for="staff-email">
+              Email
+              <span class="text-xs text-subtle">(optionnel — pour recevoir le planning)</span>
+            </label>
+            <input
+              type="email"
+              id="staff-email"
+              placeholder="prenom.nom@email.com"
+              autocomplete="email"
+            >
           </div>
+
         </div>
+
+        <p class="field-error hidden mt-3" id="err-form" role="alert">
+          <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M6 1a5 5 0 100 10A5 5 0 006 1zm.5 7h-1v-1h1v1zm0-2h-1V4h1v2z"/></svg>
+          <span id="err-form-msg"></span>
+        </p>
+
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="hideModal('addModal')">Annuler</button>
-          <button type="submit" class="btn btn-primary">Enregistrer</button>
+          <button type="button" class="btn btn-secondary" id="modal-cancel-btn">Annuler</button>
+          <button type="submit" class="btn btn-primary" id="modal-save-btn">Enregistrer</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Confirm Delete Modal -->
-  <div class="modal-overlay hidden" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle" onclick="closeOnOverlay(event,'deleteModal')">
-    <div class="modal">
+  <!-- ══ Modal Confirmer la suppression ══ -->
+  <div class="modal-overlay hidden" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+    <div class="modal modal-sm">
       <div class="modal-header">
-        <div class="modal-title" id="deleteModalTitle">Supprimer le membre</div>
-        <button class="modal-close" aria-label="Fermer la fenêtre" onclick="hideModal('deleteModal')">✕</button>
+        <h2 class="modal-title" id="delete-modal-title">Supprimer le membre</h2>
+        <button class="modal-close" id="delete-modal-close" type="button" aria-label="Fermer la fenêtre">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
       </div>
-      <p style="color:var(--text-muted);font-size:0.9rem;">Êtes-vous sûr de vouloir désactiver <strong id="deleteStaffName"></strong> ? Cette personne ne pourra plus se connecter.</p>
+      <p style="color:var(--text-muted);font-size:0.9rem;line-height:1.5;">
+        Voulez-vous désactiver <strong id="delete-staff-name"></strong> ?
+        Cette personne ne pourra plus se connecter.
+      </p>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="hideModal('deleteModal')">Annuler</button>
-        <button type="button" class="btn btn-danger" onclick="confirmDelete()">Supprimer</button>
+        <button type="button" class="btn btn-secondary" id="delete-cancel-btn">Annuler</button>
+        <button type="button" class="btn btn-danger" id="delete-confirm-btn">Supprimer</button>
       </div>
     </div>
   </div>
 
-  <div id="toast-container"></div>
+  <div id="toast-container" role="status" aria-live="polite"></div>
   <script src="/js/api.js"></script>
   <script>
+    'use strict';
     buildNav('equipe');
+
+    let allStaff = [];
     let deleteId = null;
 
+    // ── Chargement ──
     async function loadStaff() {
       const staff = await api.get('/api/admin/staff');
       if (!staff) return;
+      allStaff = staff;
+      renderStaff(allStaff);
+    }
 
-      const container = document.getElementById('staffList');
+    function renderStaff(staff) {
+      const container = document.getElementById('staff-list');
       if (!staff.length) {
-        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">Aucun membre dans l'équipe</div></div>`;
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48"><circle cx="24" cy="16" r="8"/><path d="M8 40c0-8.837 7.163-16 16-16s16 7.163 16 16"/></svg>
+            </div>
+            <p class="empty-state-title">Aucun membre</p>
+            <p class="empty-state-text">Commencez par ajouter un membre à l'équipe.</p>
+          </div>`;
         return;
       }
-
-      const posteLabel = s => {
-        if (s.role === 'admin') return { label: '👑 Admin', cls: 'badge-primary' };
-        if (s.role === 'manager' && s.shift === 'midi') return { label: '⭐🌅 Manager Midi', cls: 'badge-warning' };
-        if (s.role === 'manager' && s.shift === 'soir') return { label: '⭐🌙 Manager Soir', cls: 'badge-warning' };
-        if (s.shift === 'midi') return { label: '🌅 Staff Midi', cls: 'badge-info' };
-        if (s.shift === 'soir') return { label: '🌙 Staff Soir', cls: 'badge-muted' };
-        return { label: s.role, cls: 'badge-muted' };
-      };
 
       container.innerHTML = `
         <div class="table-wrap">
           <table>
-            <thead><tr>
-              <th>Nom</th><th>PIN</th><th>Poste</th><th>Statut</th><th></th>
-            </tr></thead>
+            <caption id="staff-table-caption">Liste des membres de l'équipe (${staff.length})</caption>
+            <thead>
+              <tr>
+                <th scope="col">Membre</th>
+                <th scope="col">PIN</th>
+                <th scope="col">Poste</th>
+                <th scope="col">Statut</th>
+                <th scope="col"><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
             <tbody>
               ${staff.map(s => {
                 const p = posteLabel(s);
                 return `
-                <tr>
-                  <td><strong>${s.name}</strong></td>
-                  <td><span style="font-family:monospace;font-size:1rem;letter-spacing:2px;color:var(--primary);">${s.pin}</span></td>
-                  <td><span class="badge ${p.cls}">${p.label}</span></td>
-                  <td><span class="badge ${s.active ? 'badge-success' : 'badge-danger'}">${s.active ? 'Actif' : 'Inactif'}</span></td>
-                  <td>
-                    <div style="display:flex;gap:6px;justify-content:flex-end;">
-                      ${s.role !== 'admin' ? `
-                        <button class="btn btn-secondary btn-sm" onclick="editStaff(${JSON.stringify(s).replace(/"/g, '&quot;')})">Modifier</button>
-                        <button class="btn btn-danger btn-sm" onclick="askDelete(${s.id},'${s.name}')">Supprimer</button>
-                      ` : ''}
-                    </div>
-                  </td>
-                </tr>`;
+                  <tr data-id="${s.id}">
+                    <td><strong>${escapeHtml(s.name)}</strong></td>
+                    <td>
+                      <code style="font-family:monospace;font-size:1rem;letter-spacing:3px;color:var(--primary);" aria-label="PIN : ${s.pin}">${escapeHtml(s.pin)}</code>
+                    </td>
+                    <td><span class="badge ${p.cls}">${escapeHtml(p.label)}</span></td>
+                    <td>
+                      <span class="badge ${s.active ? 'badge-success' : 'badge-danger'}">
+                        ${s.active ? 'Actif' : 'Inactif'}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="flex gap-2 justify-end">
+                        ${s.role !== 'admin' ? `
+                          <button
+                            class="btn btn-secondary btn-sm edit-btn"
+                            type="button"
+                            data-id="${s.id}"
+                            aria-label="Modifier ${escapeHtml(s.name)}"
+                          >Modifier</button>
+                          <button
+                            class="btn btn-danger btn-sm delete-btn"
+                            type="button"
+                            data-id="${s.id}"
+                            data-name="${escapeHtml(s.name)}"
+                            aria-label="Supprimer ${escapeHtml(s.name)}"
+                          >Supprimer</button>
+                        ` : '<span class="text-xs text-subtle">Admin</span>'}
+                      </div>
+                    </td>
+                  </tr>`;
               }).join('')}
             </tbody>
           </table>
         </div>`;
+
+      // Délégation d'événements sur les boutons
+      container.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.dataset.id, 10);
+          const s = allStaff.find(m => m.id === id);
+          if (s) editStaff(s, btn);
+        });
+      });
+      container.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          askDelete(parseInt(btn.dataset.id, 10), btn.dataset.name, btn);
+        });
+      });
     }
 
-    function editStaff(s) {
-      document.getElementById('modalTitle').textContent = 'Modifier un membre';
-      document.getElementById('staffId').value = s.id;
-      document.getElementById('staffName').value = s.name;
-      document.getElementById('staffPin').value = s.pin;
-      const poste = (s.role === 'manager' ? 'manager' : 'staff') + '_' + (s.shift || 'midi');
-      document.getElementById('staffPoste').value = poste;
-      document.getElementById('staffEmail').value = s.email || '';
-      showModal('addModal');
+    // ── Libellés de poste ──
+    function posteLabel(s) {
+      if (s.role === 'admin') return { label: 'Admin', cls: 'badge-primary' };
+      if (s.role === 'manager' && s.shift === 'midi')   return { label: 'Manager Midi', cls: 'badge-warning' };
+      if (s.role === 'manager' && s.shift === 'soir')   return { label: 'Manager Soir', cls: 'badge-warning' };
+      if (s.shift === 'midi')      return { label: 'Staff Midi',     cls: 'badge-info' };
+      if (s.shift === 'soir')      return { label: 'Staff Soir',     cls: 'badge-muted' };
+      if (s.shift === 'cuisine')   return { label: 'Staff Cuisine',  cls: 'badge-purple' };
+      if (s.shift === 'marketing') return { label: 'Marketing',      cls: 'badge-success' };
+      if (s.shift === 'resa')      return { label: 'Réservations',   cls: 'badge-info' };
+      return { label: s.shift || s.role, cls: 'badge-muted' };
     }
 
+    // ── Recherche en temps réel ──
+    document.getElementById('staff-search').addEventListener('input', function() {
+      const q = this.value.toLowerCase();
+      const filtered = allStaff.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        (s.email || '').toLowerCase().includes(q)
+      );
+      renderStaff(filtered);
+    });
+
+    // ── Ouvrir modal Ajouter ──
     function openAdd() {
-      document.getElementById('modalTitle').textContent = 'Ajouter un membre';
-      document.getElementById('staffId').value = '';
-      document.getElementById('staffForm').reset();
-      showModal('addModal');
+      document.getElementById('modal-title').textContent = 'Ajouter un membre';
+      document.getElementById('staff-id').value = '';
+      document.getElementById('staff-form').reset();
+      clearFormErrors();
+      updatePinStrength('');
+      showModal('add-modal', document.getElementById('btn-add'));
     }
-    document.querySelector('[onclick="showModal(\'addModal\')"]').onclick = openAdd;
+    document.getElementById('btn-add').addEventListener('click', openAdd);
 
-    async function saveStaff(e) {
+    // ── Ouvrir modal Modifier ──
+    function editStaff(s, triggerBtn) {
+      document.getElementById('modal-title').textContent = 'Modifier un membre';
+      document.getElementById('staff-id').value = s.id;
+      document.getElementById('staff-name').value = s.name;
+      document.getElementById('staff-pin').value = s.pin;
+      const poste = (s.role === 'manager' ? 'manager' : 'staff') + '_' + (s.shift || 'midi');
+      const select = document.getElementById('staff-poste');
+      if ([...select.options].some(o => o.value === poste)) select.value = poste;
+      document.getElementById('staff-email').value = s.email || '';
+      clearFormErrors();
+      updatePinStrength(s.pin);
+      showModal('add-modal', triggerBtn);
+    }
+
+    // ── Fermer modals ──
+    document.getElementById('modal-close-btn').addEventListener('click', () => hideModal('add-modal'));
+    document.getElementById('modal-cancel-btn').addEventListener('click', () => hideModal('add-modal'));
+    document.getElementById('add-modal').addEventListener('click', e => { if (e.target.id === 'add-modal') hideModal('add-modal'); });
+
+    document.getElementById('delete-modal-close').addEventListener('click', () => hideModal('delete-modal'));
+    document.getElementById('delete-cancel-btn').addEventListener('click', () => hideModal('delete-modal'));
+    document.getElementById('delete-modal').addEventListener('click', e => { if (e.target.id === 'delete-modal') hideModal('delete-modal'); });
+
+    // ── Jauge PIN ──
+    function updatePinStrength(val) {
+      const fill = document.getElementById('pin-strength-fill');
+      const len = val.length;
+      let width = 0, bg = 'var(--danger)';
+      if (len >= 4) { width = 50; bg = 'var(--warning)'; }
+      if (len >= 5) { width = 75; bg = 'var(--primary)'; }
+      if (len >= 6) { width = 100; bg = 'var(--success)'; }
+      fill.style.width = width + '%';
+      fill.style.background = bg;
+    }
+    document.getElementById('staff-pin').addEventListener('input', function() {
+      this.value = this.value.replace(/\D/g, '').slice(0, 6);
+      updatePinStrength(this.value);
+    });
+
+    // ── Validation ──
+    function clearFormErrors() {
+      ['err-name', 'err-pin', 'err-form'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      document.getElementById('staff-name').removeAttribute('aria-invalid');
+      document.getElementById('staff-pin').removeAttribute('aria-invalid');
+    }
+
+    function showFieldError(fieldId, errId) {
+      const field = document.getElementById(fieldId);
+      field.setAttribute('aria-invalid', 'true');
+      document.getElementById(errId).classList.remove('hidden');
+    }
+
+    // ── Enregistrer ──
+    document.getElementById('staff-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const id = document.getElementById('staffId').value;
-      const poste = document.getElementById('staffPoste').value; // ex: "staff_midi", "manager_soir"
-      const [role, shift] = poste.split('_');
+      clearFormErrors();
+      let valid = true;
+      const nameVal = document.getElementById('staff-name').value.trim();
+      const pinVal  = document.getElementById('staff-pin').value.trim();
+
+      if (!nameVal) { showFieldError('staff-name', 'err-name'); valid = false; }
+      if (!pinVal || !/^\d{4,6}$/.test(pinVal)) { showFieldError('staff-pin', 'err-pin'); valid = false; }
+      if (!valid) return;
+
+      const id    = document.getElementById('staff-id').value;
+      const poste = document.getElementById('staff-poste').value;
+      const parts = poste.split('_');
+      const role  = parts[0];
+      const shift = parts.slice(1).join('_');
+
       const body = {
-        name: document.getElementById('staffName').value.trim(),
-        pin: document.getElementById('staffPin').value.trim(),
+        name:  nameVal,
+        pin:   pinVal,
         role,
         shift,
-        email: document.getElementById('staffEmail').value.trim() || null,
+        email: document.getElementById('staff-email').value.trim() || null,
       };
 
-      let result;
-      if (id) {
-        result = await api.put(`/api/admin/staff/${id}`, body);
-      } else {
-        result = await api.post('/api/admin/staff', body);
-      }
+      const saveBtn = document.getElementById('modal-save-btn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Enregistrement…';
+
+      const result = id
+        ? await api.put(`/api/admin/staff/${id}`, body)
+        : await api.post('/api/admin/staff', body);
+
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Enregistrer';
 
       if (result?.error) {
-        showToast(result.error, 'error');
+        document.getElementById('err-form-msg').textContent = result.error;
+        document.getElementById('err-form').classList.remove('hidden');
         return;
       }
-      hideModal('addModal');
-      showToast(id ? 'Membre mis à jour ✓' : 'Membre ajouté ✓', 'success');
+      hideModal('add-modal');
+      showToast(id ? 'Membre mis à jour' : 'Membre ajouté', 'success');
+      announce(id ? 'Membre mis à jour avec succès' : 'Nouveau membre ajouté');
       loadStaff();
-    }
+    });
 
-    function askDelete(id, name) {
+    // ── Demander suppression ──
+    function askDelete(id, name, triggerBtn) {
       deleteId = id;
-      document.getElementById('deleteStaffName').textContent = name;
-      showModal('deleteModal');
+      document.getElementById('delete-staff-name').textContent = name;
+      showModal('delete-modal', triggerBtn);
+      // Focus sur le bouton Annuler (action par défaut sûre)
+      setTimeout(() => document.getElementById('delete-cancel-btn').focus(), 50);
     }
 
-    async function confirmDelete() {
+    document.getElementById('delete-confirm-btn').addEventListener('click', async () => {
       if (!deleteId) return;
+      const btn = document.getElementById('delete-confirm-btn');
+      btn.disabled = true;
+      btn.textContent = 'Suppression…';
       const result = await api.delete(`/api/admin/staff/${deleteId}`);
+      btn.disabled = false;
+      btn.textContent = 'Supprimer';
       if (result?.error) { showToast(result.error, 'error'); return; }
-      hideModal('deleteModal');
+      hideModal('delete-modal');
       showToast('Membre supprimé', 'info');
+      announce('Membre supprimé de l\'équipe');
       loadStaff();
-    }
+    });
 
     loadStaff();
   </script>

@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MOS">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
   <style>
     /* ══ ONGLETS PRINCIPAUX ══ */
     .page-tabs {
@@ -24,14 +24,12 @@
       font-size: .85rem; font-weight: 600; cursor: pointer;
       transition: all .15s; text-align: center;
     }
-    .page-tab.active { background: var(--primary-dim); color: var(--primary); }
-    .tab-pane { display: none; }
-    .tab-pane.active { display: block; }
+    .page-tab[aria-selected="true"] { background: var(--primary-dim); color: var(--primary); }
+    .page-tab:focus-visible { box-shadow: var(--focus-ring); outline: none; }
 
     /* ══ DASHBOARD ══ */
     .dash-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; margin-bottom:14px; }
     .dash-card-title { font-size:.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
-    .dash-card-title span { font-size:1rem; }
     .planning-row { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); }
     .planning-row:last-child { border-bottom:none; }
     .pr-name { font-weight:700; font-size:.95rem; width:80px; flex-shrink:0; }
@@ -71,6 +69,7 @@
     .date-nav { display:flex; align-items:center; gap:8px; margin-bottom:16px; }
     .date-nav-btn { background:var(--bg-card); border:1px solid var(--border); color:var(--text-muted); border-radius:20px; padding:6px 14px; font-size:.8rem; cursor:pointer; }
     .date-nav-btn:hover { border-color:var(--primary); color:var(--primary); }
+    .date-nav-btn:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .date-nav input[type="date"] { flex:1; min-width:130px; max-width:170px; }
 
     /* ══ TÂCHES ══ */
@@ -80,6 +79,8 @@
     .task-item.others-done { border-left-color: #5b8dee; background: rgba(91,141,238,0.04); }
     .task-item.others-done .task-desc { text-decoration: line-through; color: var(--text-muted); }
     .task-item.others-done .task-checkbox { background: rgba(91,141,238,0.18); color: #5b8dee; border-color: #5b8dee; }
+    button.task-item { display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; cursor:pointer; }
+    button.task-item:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .task-completers { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
     .completer-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 20px; }
     .completer-badge.me { background: rgba(212,175,55,0.22); color: var(--gold); border: 1px solid var(--gold); }
@@ -108,6 +109,7 @@
     .signal-btns { display:flex; gap:10px; }
     .btn-signal { flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:14px 10px; cursor:pointer; font-size:.85rem; font-weight:600; transition:border-color .15s,background .12s; }
     .btn-signal:active { background:var(--bg-surface); }
+    .btn-signal:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .btn-signal.retard { border-color:rgba(240,180,41,.35); }
     .btn-signal.retard:hover { border-color:var(--warning); background:rgba(240,180,41,.07); }
     .btn-signal.supp   { border-color:rgba(76,175,106,.35); }
@@ -120,8 +122,9 @@
     .te-supp   { background:rgba(76,175,106,.12); color:var(--success); border:1px solid rgba(76,175,106,.3); }
     .te-info { flex:1; font-size:.85rem; }
     .te-note { font-size:.75rem; color:var(--text-muted); margin-top:2px; }
-    .te-del { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:.85rem; padding:4px; }
+    .te-del { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:.85rem; padding:4px; min-width:30px; min-height:30px; border-radius:var(--radius-sm); }
     .te-del:hover { color:var(--danger); }
+    .te-del:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .task-manage-list { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
     .task-manage-item { display:flex; align-items:center; gap:10px; background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 14px; }
     .task-manage-desc { flex:1; font-size:.88rem; }
@@ -130,11 +133,13 @@
     .btn-icon { width:32px; height:32px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--bg-card); color:var(--text-muted); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:.85rem; }
     .btn-icon:hover { border-color:var(--primary); color:var(--primary); }
     .btn-icon.danger:hover { border-color:var(--danger); color:var(--danger); }
+    .btn-icon:focus-visible { box-shadow:var(--focus-ring); outline:none; }
 
     /* ══ PLANNING ══ */
     .week-nav { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:20px; }
     .week-nav-btn { background:var(--bg-card); border:1px solid var(--border); color:var(--text-muted); border-radius:20px; padding:7px 16px; font-size:.82rem; cursor:pointer; transition:border-color .15s,color .15s; white-space:nowrap; }
     .week-nav-btn:hover { border-color:var(--primary); color:var(--primary); }
+    .week-nav-btn:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .week-label { font-size:.95rem; font-weight:700; text-align:center; flex:1; }
     .planning-grid { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
     .planning-table { width:100%; border-collapse:collapse; min-width:600px; }
@@ -142,8 +147,10 @@
     .planning-table th.today-col { background:var(--primary-dim); color:var(--primary); border-color:var(--primary); }
     .planning-table td { border:1px solid var(--border); padding:4px; vertical-align:top; min-width:80px; }
     .staff-cell { background:var(--bg-card); padding:8px 10px; font-weight:700; font-size:.88rem; white-space:nowrap; }
-    .shift-cell { background:var(--bg-card); min-height:56px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border-radius:4px; padding:4px; transition:background .12s; text-align:center; }
-    .shift-cell:hover { background:var(--bg-hover); }
+    .shift-cell { background:var(--bg-card); min-height:56px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border-radius:4px; padding:4px; text-align:center; }
+    .shift-cell[role="button"] { cursor:pointer; transition:background .12s; }
+    .shift-cell[role="button"]:hover { background:var(--bg-hover); }
+    .shift-cell[role="button"]:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .shift-cell.is-work { background:rgba(205,164,67,.12); border:1.5px solid rgba(205,164,67,.35); }
     .shift-cell.is-off  { background:rgba(232,84,84,.07);  border:1.5px solid rgba(232,84,84,.25); }
     .shift-cell.is-empty { border:1.5px dashed var(--border); }
@@ -154,14 +161,12 @@
     .readonly-badge { display:inline-flex; align-items:center; gap:5px; font-size:.75rem; color:var(--text-muted); background:var(--bg-surface); border:1px solid var(--border); border-radius:20px; padding:4px 12px; margin-bottom:14px; }
     .btn-whatsapp { display:inline-flex; align-items:center; justify-content:center; gap:8px; background:#25d366; color:#fff; border:none; border-radius:var(--radius-sm); padding:13px 20px; font-size:.95rem; font-weight:700; cursor:pointer; transition:background .15s; width:100%; }
     .btn-whatsapp:hover { background:#1da851; }
+    .btn-whatsapp:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .btn-whatsapp svg { width:20px; height:20px; fill:currentColor; flex-shrink:0; }
     .preview-box { background:var(--bg-surface); border:1px solid var(--border); border-radius:12px; padding:16px; font-family:monospace; font-size:.82rem; line-height:1.7; color:var(--text); white-space:pre-wrap; word-break:break-word; max-height:340px; overflow-y:auto; }
-    .preview-label { font-size:.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
-    .off-toggle { display:flex; align-items:center; gap:12px; background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 16px; cursor:pointer; }
-    .off-toggle input { width:18px; height:18px; cursor:pointer; accent-color:var(--danger); }
-    .off-toggle label { cursor:pointer; font-size:.9rem; }
+    .off-toggle-label { display:flex; align-items:center; gap:12px; background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 16px; cursor:pointer; }
+    .off-toggle-label input { width:18px; height:18px; cursor:pointer; accent-color:var(--danger); }
     .f2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    /* ── Colonne total heures ── */
     .total-cell { background:var(--bg-surface); padding:6px 8px; text-align:center; vertical-align:middle !important; }
     .total-hours { font-size:.82rem; font-weight:800; color:var(--text); white-space:nowrap; }
     .total-supp  { display:inline-block; font-size:.65rem; font-weight:700; padding:1px 6px; border-radius:20px; background:rgba(76,175,106,.12); color:var(--success); border:1px solid rgba(76,175,106,.3); margin-top:3px; white-space:nowrap; }
@@ -182,146 +187,158 @@
     .drawer-head { display:flex; align-items:center; justify-content:space-between; padding:14px 20px 12px; flex-shrink:0; border-bottom:1px solid var(--border); }
     .drawer-title { font-size:1rem; font-weight:700; }
     .drawer-close { width:30px; height:30px; border-radius:50%; background:var(--bg-surface); color:var(--text-muted); display:flex; align-items:center; justify-content:center; font-size:.9rem; cursor:pointer; border:none; }
+    .drawer-close:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .drawer-body { overflow-y:auto; padding:16px 20px; flex:1; }
     .drawer-footer { display:flex; gap:8px; padding:10px 20px calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); flex-shrink:0; }
     .drawer-footer .btn { flex:1; justify-content:center; min-height:46px; }
     .frow { display:flex; flex-direction:column; gap:14px; }
     .fgroup { display:flex; flex-direction:column; gap:6px; }
     .fgroup label { font-size:.82rem; font-weight:600; color:var(--text-muted); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .drawer, .drawer-backdrop, .tp-fill, .gp-fill, .tm-bar-fill { transition: none !important; }
+    }
   </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
 
-  <div class="page">
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container-sm">
 
-      <!-- Header -->
-      <div class="page-header" style="margin-bottom:16px;">
+      <header class="page-header" style="margin-bottom:16px;">
         <div>
-          <div class="page-title">🍳 Cuisine</div>
-          <div class="page-subtitle" id="pageSubtitle"></div>
+          <h1 class="page-title">Cuisine</h1>
+          <p class="page-subtitle" id="pageSubtitle"></p>
         </div>
-        <button id="btnValidate" class="btn btn-primary hidden" onclick="openPreview()">
-          ✅ Valider le planning
-        </button>
-      </div>
+        <button id="btnValidate" class="btn btn-primary hidden">Valider le planning</button>
+      </header>
 
       <!-- Onglets principaux -->
-      <div class="page-tabs">
-        <button class="page-tab active" id="ptab-dashboard" onclick="switchMainTab('dashboard')">📊 Dashboard</button>
-        <button class="page-tab" id="ptab-taches"    onclick="switchMainTab('taches')">✅ Tâches</button>
-        <button class="page-tab" id="ptab-planning"  onclick="switchMainTab('planning')">📅 Planning</button>
+      <div role="tablist" aria-label="Sections de la page Cuisine" class="page-tabs" id="mainTabList">
+        <button role="tab" class="page-tab" id="ptab-dashboard"
+          aria-selected="true" aria-controls="pane-dashboard" tabindex="0">Dashboard</button>
+        <button role="tab" class="page-tab" id="ptab-taches"
+          aria-selected="false" aria-controls="pane-taches" tabindex="-1">Tâches</button>
+        <button role="tab" class="page-tab" id="ptab-planning"
+          aria-selected="false" aria-controls="pane-planning" tabindex="-1">Planning</button>
       </div>
 
       <!-- ══ PANE DASHBOARD ══ -->
-      <div id="pane-dashboard" class="tab-pane active">
+      <div role="tabpanel" id="pane-dashboard" aria-labelledby="ptab-dashboard">
 
-        <div class="date-nav">
-          <button class="date-nav-btn" onclick="dashShiftDate(-1)">← Hier</button>
-          <input type="date" id="dashViewDate" onchange="loadDash()">
-          <button class="date-nav-btn" onclick="dashGoToday()">Aujourd'hui</button>
-          <button class="date-nav-btn" onclick="dashShiftDate(1)">Demain →</button>
+        <div role="group" aria-label="Navigation par date" class="date-nav">
+          <button class="date-nav-btn" id="btnDashPrev" aria-label="Jour précédent">← Hier</button>
+          <label class="sr-only" for="dashViewDate">Date du dashboard</label>
+          <input type="date" id="dashViewDate" class="form-input" style="flex:1;min-width:130px;max-width:170px;">
+          <button class="date-nav-btn" id="btnDashToday">Aujourd'hui</button>
+          <button class="date-nav-btn" id="btnDashNext" aria-label="Jour suivant">Demain →</button>
         </div>
 
-        <div class="dash-card">
-          <div class="dash-card-title"><span>📅</span> Planning du jour</div>
-          <div id="dashPlanningToday"></div>
-        </div>
+        <section class="dash-card" aria-labelledby="dash-planning-title">
+          <h2 class="dash-card-title" id="dash-planning-title">Planning du jour</h2>
+          <div id="dashPlanningToday" aria-live="polite" aria-atomic="true"></div>
+        </section>
 
-        <div class="dash-card">
-          <div class="dash-card-title"><span>✅</span> Tâches du jour</div>
-          <div class="global-prog">
+        <section class="dash-card" aria-labelledby="dash-tasks-title">
+          <h2 class="dash-card-title" id="dash-tasks-title">Tâches du jour</h2>
+          <div class="global-prog" aria-hidden="true">
             <div class="gp-bar"><div class="gp-fill" id="gpFill" style="width:0%"></div></div>
             <div class="gp-label" id="gpLabel">0/0</div>
           </div>
-          <div id="dashTaskProgList"></div>
-        </div>
+          <progress id="gpProgress" class="sr-only" aria-label="Progression globale des tâches aujourd'hui" value="0" max="1"></progress>
+          <div id="dashTaskProgList" aria-live="polite" aria-atomic="true"></div>
+        </section>
 
-        <div class="dash-card">
-          <div class="dash-card-title"><span>⏱</span> Retards & Heures supp — aujourd'hui</div>
-          <div id="dashTimeEventsToday"></div>
-        </div>
+        <section class="dash-card" aria-labelledby="dash-time-title">
+          <h2 class="dash-card-title" id="dash-time-title">Retards &amp; Heures supp — aujourd'hui</h2>
+          <div id="dashTimeEventsToday" aria-live="polite" aria-atomic="true"></div>
+        </section>
 
-        <div class="dash-card">
-          <div class="dash-card-title"><span>📊</span> Résumé de la semaine</div>
-          <div id="dashWeekSummary"></div>
-        </div>
+        <section class="dash-card" aria-labelledby="dash-week-title">
+          <h2 class="dash-card-title" id="dash-week-title">Résumé de la semaine</h2>
+          <div id="dashWeekSummary" aria-live="polite" aria-atomic="true"></div>
+        </section>
 
       </div>
 
       <!-- ══ PANE TÂCHES ══ -->
-      <div id="pane-taches" class="tab-pane">
+      <div role="tabpanel" id="pane-taches" aria-labelledby="ptab-taches" hidden>
 
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:12px;">
-          <div class="tabs" id="tachesTabBar"></div>
-          <div style="display:flex;align-items:center;gap:10px;min-width:200px;">
+          <div role="tablist" aria-label="Catégories de tâches" class="tabs" id="tachesTabBar"></div>
+          <div style="display:flex;align-items:center;gap:10px;min-width:200px;" aria-hidden="true">
             <div class="progress-bar" style="flex:1;">
               <div class="progress-fill" id="tachesProgressFill" style="width:0%"></div>
             </div>
             <span class="text-sm text-muted" id="tachesProgressLabel">0/0</span>
           </div>
+          <progress id="tachesProgress" class="sr-only" aria-label="Progression des tâches de la catégorie courante" value="0" max="1"></progress>
         </div>
 
-        <div class="team-stats-bar">
+        <div class="team-stats-bar" role="status" aria-label="Statistiques des tâches">
           <div class="team-stat-item">
-            <div class="team-stat-dot mine"></div>
+            <div class="team-stat-dot mine" aria-hidden="true"></div>
             <span class="team-stat-label">Moi :</span>
             <span class="team-stat-value" id="statMe">0</span>
           </div>
-          <span class="team-stat-sep">·</span>
+          <span class="team-stat-sep" aria-hidden="true">·</span>
           <div class="team-stat-item">
-            <div class="team-stat-dot team"></div>
+            <div class="team-stat-dot team" aria-hidden="true"></div>
             <span class="team-stat-label">Collègues :</span>
             <span class="team-stat-value" id="statTeam">0</span>
           </div>
-          <span class="team-stat-sep">·</span>
+          <span class="team-stat-sep" aria-hidden="true">·</span>
           <div class="team-stat-item">
-            <div class="team-stat-dot left"></div>
+            <div class="team-stat-dot left" aria-hidden="true"></div>
             <span class="team-stat-label">Restantes :</span>
             <span class="team-stat-value" id="statLeft">0</span>
           </div>
         </div>
 
-        <div id="tasksList"></div>
+        <div id="tasksList" aria-live="polite" aria-atomic="true"></div>
 
         <div class="team-overview hidden" id="teamOverview">
-          <div class="team-overview-title">👥 Qui fait quoi aujourd'hui</div>
+          <h2 class="team-overview-title">Qui fait quoi aujourd'hui</h2>
           <div id="teamOverviewList"></div>
         </div>
 
         <div class="hidden" id="chefControls" style="margin-top:20px;">
-          <button class="btn btn-secondary" style="width:100%" onclick="openTaskManager()">⚙️ Gérer les tâches</button>
+          <button class="btn btn-secondary" style="width:100%" id="btnOpenTaskManager">Gérer les tâches</button>
         </div>
 
-        <div class="signal-section">
-          <div class="signal-title">⏱ Signalement</div>
+        <section class="signal-section" aria-labelledby="signal-title">
+          <h2 class="signal-title" id="signal-title">Signalement</h2>
           <div class="signal-btns">
-            <button class="btn-signal retard" onclick="openSignal('retard')">
-              <span class="btn-signal-icon">⏰</span><span>Retard</span>
+            <button class="btn-signal retard" id="btnSignalRetard">
+              <span class="btn-signal-icon" aria-hidden="true">⏰</span><span>Retard</span>
             </button>
-            <button class="btn-signal supp" onclick="openSignal('supp')">
-              <span class="btn-signal-icon">➕</span><span>Heures supp</span>
+            <button class="btn-signal supp" id="btnSignalSupp">
+              <span class="btn-signal-icon" aria-hidden="true">➕</span><span>Heures supp</span>
             </button>
           </div>
-          <div class="time-events-list" id="timeEventsList"></div>
-        </div>
+          <div class="time-events-list" id="timeEventsList" aria-live="polite" aria-atomic="true"></div>
+        </section>
 
       </div>
 
       <!-- ══ PANE PLANNING ══ -->
-      <div id="pane-planning" class="tab-pane">
+      <div role="tabpanel" id="pane-planning" aria-labelledby="ptab-planning" hidden>
 
-        <div id="readonlyBadge" class="readonly-badge hidden">👁 Lecture seule</div>
-
-        <div class="week-nav">
-          <button class="week-nav-btn" onclick="shiftWeek(-1)">← Semaine préc.</button>
-          <span class="week-label" id="weekLabel"></span>
-          <button class="week-nav-btn" onclick="shiftWeek(1)">Semaine suiv. →</button>
+        <div id="readonlyBadge" class="readonly-badge hidden" role="status">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 2a5 5 0 100 10A5 5 0 007 2zm0 2a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm0 7a4 4 0 01-3.2-6.4C4.3 5.6 5 6.5 5 7.5c0 .83.5 1.55 1.24 1.87A3 3 0 007 11z" fill="currentColor"/></svg>
+          Lecture seule
         </div>
 
-        <div class="planning-grid">
+        <div role="group" aria-label="Navigation par semaine" class="week-nav">
+          <button class="week-nav-btn" id="btnWeekPrev" aria-label="Semaine précédente">← Semaine préc.</button>
+          <span class="week-label" id="weekLabel" aria-live="polite" aria-atomic="true"></span>
+          <button class="week-nav-btn" id="btnWeekNext" aria-label="Semaine suivante">Semaine suiv. →</button>
+        </div>
+
+        <div class="planning-grid" role="region" aria-label="Grille de planning de la semaine">
           <table class="planning-table">
+            <caption class="sr-only">Planning cuisine de la semaine</caption>
             <thead id="planningHead"></thead>
             <tbody id="planningBody"></tbody>
           </table>
@@ -330,141 +347,167 @@
       </div>
 
     </div>
-  </div>
+  </main>
 
   <!-- Backdrop partagé -->
-  <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeAll()"></div>
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
 
   <!-- ── Drawers Tâches ── -->
-  <div class="drawer" id="taskManagerDrawer">
-    <div class="drawer-handle"></div>
+  <div class="drawer" id="taskManagerDrawer" role="dialog" aria-modal="true" aria-labelledby="taskManagerTitle">
+    <div class="drawer-handle" aria-hidden="true"></div>
     <div class="drawer-head">
-      <div class="drawer-title">⚙️ Gestion des tâches</div>
-      <button class="drawer-close" aria-label="Fermer" onclick="closeAll()">✕</button>
+      <h2 class="drawer-title" id="taskManagerTitle">Gestion des tâches</h2>
+      <button class="drawer-close" id="closeTaskManager" aria-label="Fermer la gestion des tâches">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M10 2L2 10M2 2l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </button>
     </div>
     <div class="drawer-body">
-      <button class="btn btn-primary" style="width:100%;margin-bottom:14px" onclick="openTaskForm()">+ Nouvelle tâche</button>
+      <button class="btn btn-primary" style="width:100%;margin-bottom:14px" id="btnNewTask">+ Nouvelle tâche</button>
       <div class="task-manage-list" id="taskManageList"></div>
     </div>
   </div>
 
-  <div class="drawer" id="taskFormDrawer">
-    <div class="drawer-handle"></div>
+  <div class="drawer" id="taskFormDrawer" role="dialog" aria-modal="true" aria-labelledby="taskFormTitle">
+    <div class="drawer-handle" aria-hidden="true"></div>
     <div class="drawer-head">
-      <div class="drawer-title" id="taskFormTitle">Nouvelle tâche</div>
-      <button class="drawer-close" aria-label="Fermer" onclick="closeTaskForm()">✕</button>
+      <h2 class="drawer-title" id="taskFormTitle">Nouvelle tâche</h2>
+      <button class="drawer-close" id="closeTaskForm" aria-label="Fermer le formulaire de tâche">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M10 2L2 10M2 2l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </button>
     </div>
     <div class="drawer-body">
-      <form id="taskForm" onsubmit="saveTask(event)">
+      <form id="taskForm">
         <input type="hidden" id="taskId">
         <div class="frow">
           <div class="fgroup">
-            <label>Description *</label>
-            <input type="text" id="taskDesc" placeholder="Ex : Nettoyer le grill" required autocomplete="off">
+            <label for="taskDesc">Description <span aria-hidden="true">*</span></label>
+            <input type="text" id="taskDesc" class="form-input" placeholder="Ex : Nettoyer le grill" required autocomplete="off" aria-required="true">
           </div>
           <div class="fgroup">
-            <label>Catégorie</label>
-            <select id="taskCat">
-              <option value="fermeture">🔒 Fermeture</option>
-              <option value="nettoyage">🧽 Nettoyage</option>
+            <label for="taskCat">Catégorie</label>
+            <select id="taskCat" class="form-select">
+              <option value="fermeture">Fermeture</option>
+              <option value="nettoyage">Nettoyage</option>
             </select>
           </div>
           <div class="fgroup">
-            <label>Section</label>
-            <input type="text" id="taskSection" placeholder="Ex : Cuisine" value="Cuisine">
+            <label for="taskSection">Section</label>
+            <input type="text" id="taskSection" class="form-input" placeholder="Ex : Cuisine" value="Cuisine">
           </div>
           <div class="fgroup">
-            <label>Sous-section</label>
-            <input type="text" id="taskSubsection" placeholder="Ex : Matériel de cuisson">
+            <label for="taskSubsection">Sous-section</label>
+            <input type="text" id="taskSubsection" class="form-input" placeholder="Ex : Matériel de cuisson">
           </div>
         </div>
       </form>
     </div>
     <div class="drawer-footer">
-      <button class="btn btn-secondary" onclick="closeTaskForm()">Annuler</button>
+      <button class="btn btn-secondary" id="cancelTaskForm">Annuler</button>
       <button type="submit" form="taskForm" class="btn btn-primary">Enregistrer</button>
     </div>
   </div>
 
-  <div class="drawer" id="signalDrawer">
-    <div class="drawer-handle"></div>
+  <div class="drawer" id="signalDrawer" role="dialog" aria-modal="true" aria-labelledby="signalDrawerTitle">
+    <div class="drawer-handle" aria-hidden="true"></div>
     <div class="drawer-head">
-      <div class="drawer-title" id="signalDrawerTitle">Signaler un retard</div>
-      <button class="drawer-close" aria-label="Fermer" onclick="closeAll()">✕</button>
+      <h2 class="drawer-title" id="signalDrawerTitle">Signaler un retard</h2>
+      <button class="drawer-close" id="closeSignalDrawer" aria-label="Fermer le formulaire de signalement">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M10 2L2 10M2 2l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </button>
     </div>
     <div class="drawer-body">
-      <form id="signalForm" onsubmit="submitSignal(event)">
+      <form id="signalForm">
         <input type="hidden" id="signalType">
         <div class="frow">
           <div class="fgroup">
-            <label id="signalMinLabel">Minutes de retard</label>
+            <label for="signalMinutes" id="signalMinLabel">Minutes de retard</label>
             <div style="display:flex;align-items:center;gap:10px">
-              <input type="number" id="signalMinutes" min="1" max="480" placeholder="Ex : 15" style="flex:1" required>
-              <span style="color:var(--text-muted);font-size:.85rem">min</span>
+              <input type="number" id="signalMinutes" class="form-input" min="1" max="480" placeholder="Ex : 15" style="flex:1" required aria-required="true" aria-labelledby="signalMinLabel">
+              <span style="color:var(--text-muted);font-size:.85rem" aria-hidden="true">min</span>
             </div>
           </div>
           <div class="fgroup">
-            <label>Note <span style="font-weight:400;color:var(--text-muted)">(optionnel)</span></label>
-            <input type="text" id="signalNote" placeholder="Ex : Transport, problème..." autocomplete="off">
+            <label for="signalNote">Note <span style="font-weight:400;color:var(--text-muted)">(optionnel)</span></label>
+            <input type="text" id="signalNote" class="form-input" placeholder="Ex : Transport, problème..." autocomplete="off">
           </div>
         </div>
       </form>
     </div>
     <div class="drawer-footer">
-      <button class="btn btn-secondary" onclick="closeAll()">Annuler</button>
+      <button class="btn btn-secondary" id="cancelSignalDrawer">Annuler</button>
       <button type="submit" form="signalForm" class="btn btn-primary">Envoyer</button>
     </div>
   </div>
 
   <!-- ── Drawers Planning ── -->
-  <div class="drawer" id="previewDrawer">
-    <div class="drawer-handle"></div>
+  <div class="drawer" id="previewDrawer" role="dialog" aria-modal="true" aria-labelledby="previewDrawerTitle">
+    <div class="drawer-handle" aria-hidden="true"></div>
     <div class="drawer-head">
-      <div class="drawer-title">📋 Aperçu du planning</div>
-      <button class="drawer-close" aria-label="Fermer l'aperçu" onclick="closeAll()">✕</button>
+      <h2 class="drawer-title" id="previewDrawerTitle">Aperçu du planning</h2>
+      <button class="drawer-close" id="closePreviewDrawer" aria-label="Fermer l'aperçu du planning">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M10 2L2 10M2 2l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </button>
     </div>
     <div class="drawer-body" style="display:flex;flex-direction:column;align-items:center;gap:12px;">
-      <div id="previewLoading" style="color:var(--text-muted);font-size:.9rem;">Génération de l'image…</div>
-      <img id="previewImg" style="display:none;max-width:100%;border-radius:10px;border:1px solid var(--border);">
+      <div id="previewLoading" role="status" style="color:var(--text-muted);font-size:.9rem;">Génération de l'image…</div>
+      <img id="previewImg" style="display:none;max-width:100%;border-radius:10px;border:1px solid var(--border);" alt="Aperçu du planning cuisine">
     </div>
     <div class="drawer-footer" style="flex-direction:column;gap:10px;">
-      <button class="btn-whatsapp" id="btnShare" onclick="shareImage()" aria-label="Partager le planning sur WhatsApp" style="display:none;">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+      <button class="btn-whatsapp" id="btnShare" aria-label="Partager le planning sur WhatsApp" style="display:none;">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
         Envoyer sur WhatsApp
       </button>
-      <button class="btn btn-secondary" onclick="closeAll()" style="justify-content:center;">Fermer</button>
+      <button class="btn btn-secondary" id="closePreviewDrawerFooter" style="justify-content:center;">Fermer</button>
     </div>
   </div>
 
-  <div class="drawer" id="shiftDrawer">
-    <div class="drawer-handle"></div>
+  <div class="drawer" id="shiftDrawer" role="dialog" aria-modal="true" aria-labelledby="shiftDrawerTitle">
+    <div class="drawer-handle" aria-hidden="true"></div>
     <div class="drawer-head">
-      <div class="drawer-title" id="shiftDrawerTitle">Modifier le shift</div>
-      <button class="drawer-close" aria-label="Fermer l'éditeur de shift" onclick="closeAll()">✕</button>
+      <h2 class="drawer-title" id="shiftDrawerTitle">Modifier le shift</h2>
+      <button class="drawer-close" id="closeShiftDrawer" aria-label="Fermer l'éditeur de shift">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M10 2L2 10M2 2l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </button>
     </div>
     <div class="drawer-body">
-      <form id="shiftForm" onsubmit="saveShift(event)">
+      <form id="shiftForm">
         <input type="hidden" id="shiftUserId">
         <input type="hidden" id="shiftDayDate">
         <input type="hidden" id="shiftWeekStart">
         <div class="frow">
-          <label class="off-toggle" onclick="toggleOff()">
+          <label class="off-toggle-label" for="shiftIsOff">
             <input type="checkbox" id="shiftIsOff">
-            <span>❌ Jour de repos</span>
+            <span>Jour de repos</span>
           </label>
           <div id="shiftTimeFields" class="frow">
             <div class="f2">
-              <div class="fgroup"><label>Début</label><input type="time" id="shiftStart" value="09:00"></div>
-              <div class="fgroup"><label>Fin</label><input type="time" id="shiftEnd" value="17:00"></div>
+              <div class="fgroup"><label for="shiftStart">Début</label><input type="time" id="shiftStart" class="form-input" value="09:00"></div>
+              <div class="fgroup"><label for="shiftEnd">Fin</label><input type="time" id="shiftEnd" class="form-input" value="17:00"></div>
             </div>
           </div>
         </div>
       </form>
     </div>
     <div class="drawer-footer">
-      <button class="btn btn-secondary" onclick="clearShift()" style="flex:0 0 auto;padding:0 16px">🗑</button>
-      <button class="btn btn-secondary" onclick="closeAll()">Annuler</button>
+      <button class="btn btn-secondary" id="btnClearShift" style="flex:0 0 auto;padding:0 16px" aria-label="Effacer ce créneau">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><path d="M2 4h10M5 4V2h4v2M6 6v5M8 6v5M3 4l1 8h6l1-8"/></svg>
+      </button>
+      <button class="btn btn-secondary" id="cancelShiftDrawer">Annuler</button>
       <button type="submit" form="shiftForm" class="btn btn-primary">Enregistrer</button>
+    </div>
+  </div>
+
+  <!-- Modal confirmation générique -->
+  <div class="modal-overlay hidden" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="confirm-modal-title">Confirmer</h2>
+      </div>
+      <p id="confirmModalMsg" style="font-size:.9rem;color:var(--text-muted);"></p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="confirmModalCancel">Annuler</button>
+        <button class="btn btn-danger" id="confirmModalOk">Confirmer</button>
+      </div>
     </div>
   </div>
 
@@ -473,6 +516,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="/js/api.js"></script>
   <script>
+    'use strict';
     buildNav('cuisine');
     const socket = io();
 
@@ -481,33 +525,109 @@
     let currentMainTab = 'dashboard';
 
     // ══════════════════════════════════════════════════════
-    // ONGLETS
+    // ONGLETS PRINCIPAUX — ARIA tab pattern
     // ══════════════════════════════════════════════════════
+    const MAIN_TABS = ['dashboard', 'taches', 'planning'];
+
     function switchMainTab(tab) {
       currentMainTab = tab;
-      document.querySelectorAll('.page-tab').forEach(b => b.classList.toggle('active', b.id === `ptab-${tab}`));
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === `pane-${tab}`));
+      MAIN_TABS.forEach(t => {
+        const btn   = document.getElementById(`ptab-${t}`);
+        const panel = document.getElementById(`pane-${t}`);
+        const active = t === tab;
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        btn.setAttribute('tabindex', active ? '0' : '-1');
+        panel.hidden = !active;
+      });
       document.getElementById('btnValidate').classList.toggle('hidden', tab !== 'planning' || !isChef);
-      // Sous-titre contextuel
       if (tab === 'dashboard') updateDashSubtitle();
       else if (tab === 'planning') document.getElementById('pageSubtitle').textContent = `Semaine du ${formatDate(currentWeekStart)}`;
       else document.getElementById('pageSubtitle').textContent = formatDate(today());
       history.replaceState(null, '', `?tab=${tab}`);
     }
 
+    document.getElementById('mainTabList').addEventListener('keydown', e => {
+      const tabs = MAIN_TABS;
+      const idx  = tabs.indexOf(currentMainTab);
+      if (e.key === 'ArrowRight') { e.preventDefault(); switchMainTab(tabs[(idx + 1) % tabs.length]); document.getElementById(`ptab-${tabs[(idx + 1) % tabs.length]}`).focus(); }
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); switchMainTab(tabs[(idx - 1 + tabs.length) % tabs.length]); document.getElementById(`ptab-${tabs[(idx - 1 + tabs.length) % tabs.length]}`).focus(); }
+      if (e.key === 'Home')       { e.preventDefault(); switchMainTab(tabs[0]); document.getElementById(`ptab-${tabs[0]}`).focus(); }
+      if (e.key === 'End')        { e.preventDefault(); switchMainTab(tabs[tabs.length - 1]); document.getElementById(`ptab-${tabs[tabs.length - 1]}`).focus(); }
+    });
+    MAIN_TABS.forEach(t => {
+      document.getElementById(`ptab-${t}`).addEventListener('click', () => switchMainTab(t));
+    });
+
     // ══════════════════════════════════════════════════════
-    // DRAWERS PARTAGÉS
+    // DRAWERS — focus trap + Escape
     // ══════════════════════════════════════════════════════
-    function openDrawer(id) {
+    let _drawerTrigger = null;
+
+    function openDrawer(id, triggerEl = null) {
+      _drawerTrigger = triggerEl;
       document.getElementById('drawerBackdrop').classList.add('open');
-      document.getElementById(id).classList.add('open');
+      const drawer = document.getElementById(id);
+      drawer.classList.add('open');
       document.body.style.overflow = 'hidden';
+      setTimeout(() => {
+        const first = drawer.querySelector('button,input,select,textarea,[tabindex="0"]');
+        if (first) first.focus();
+      }, 50);
     }
+
     function closeAll() {
       document.getElementById('drawerBackdrop').classList.remove('open');
       document.querySelectorAll('.drawer').forEach(d => d.classList.remove('open'));
       document.body.style.overflow = '';
+      if (_drawerTrigger) { _drawerTrigger.focus(); _drawerTrigger = null; }
     }
+
+    // Focus trap for each drawer
+    document.querySelectorAll('.drawer').forEach(drawer => {
+      drawer.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { closeAll(); return; }
+        if (e.key !== 'Tab') return;
+        const focusable = Array.from(drawer.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex="0"]')).filter(el => !el.hidden && el.offsetParent !== null);
+        if (!focusable.length) return;
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      });
+    });
+
+    document.getElementById('drawerBackdrop').addEventListener('click', closeAll);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
+
+    // Drawer close buttons
+    document.getElementById('closeTaskManager').addEventListener('click', closeAll);
+    document.getElementById('closeTaskForm').addEventListener('click', () => { closeAll(); setTimeout(() => openTaskManager(), 50); });
+    document.getElementById('cancelTaskForm').addEventListener('click', () => { closeAll(); setTimeout(() => openTaskManager(), 50); });
+    document.getElementById('closeSignalDrawer').addEventListener('click', closeAll);
+    document.getElementById('cancelSignalDrawer').addEventListener('click', closeAll);
+    document.getElementById('closePreviewDrawer').addEventListener('click', closeAll);
+    document.getElementById('closePreviewDrawerFooter').addEventListener('click', closeAll);
+    document.getElementById('closeShiftDrawer').addEventListener('click', closeAll);
+    document.getElementById('cancelShiftDrawer').addEventListener('click', closeAll);
+
+    // ══════════════════════════════════════════════════════
+    // MODAL CONFIRMATION GÉNÉRIQUE
+    // ══════════════════════════════════════════════════════
+    let _confirmCallback = null;
+
+    function showConfirm(message, onConfirm) {
+      _confirmCallback = onConfirm;
+      document.getElementById('confirmModalMsg').textContent = message;
+      showModal('confirmModal');
+      setTimeout(() => document.getElementById('confirmModalCancel').focus(), 50);
+    }
+
+    document.getElementById('confirmModalCancel').addEventListener('click', () => {
+      hideModal('confirmModal'); _confirmCallback = null;
+    });
+    document.getElementById('confirmModalOk').addEventListener('click', () => {
+      hideModal('confirmModal');
+      if (_confirmCallback) { _confirmCallback(); _confirmCallback = null; }
+    });
 
     // ══════════════════════════════════════════════════════
     // UTILITAIRES DATE
@@ -539,7 +659,11 @@
       dashViewDateEl.value = dt.toISOString().split('T')[0];
       loadDash();
     }
-    function dashGoToday() { dashViewDateEl.value = today(); loadDash(); }
+
+    document.getElementById('btnDashPrev').addEventListener('click', () => dashShiftDate(-1));
+    document.getElementById('btnDashNext').addEventListener('click', () => dashShiftDate(1));
+    document.getElementById('btnDashToday').addEventListener('click', () => { dashViewDateEl.value = today(); loadDash(); });
+    dashViewDateEl.addEventListener('change', loadDash);
 
     async function loadDash() {
       updateDashSubtitle();
@@ -561,20 +685,20 @@
     function renderDashPlanning(planning, date, timeEvts) {
       const el = document.getElementById('dashPlanningToday');
       if (!planning?.users?.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:.85rem">Aucun staff enregistré</div>'; return; }
-      el.innerHTML = planning.users.map(u => {
+      el.innerHTML = '<ul role="list" style="list-style:none;padding:0;margin:0;">' + planning.users.map(u => {
         const shift = planning.shifts?.find(s => s.user_id === u.id && s.day_date === date);
         const late  = timeEvts?.find(e => e.user_id === u.id && e.type === 'retard');
         const supp  = timeEvts?.find(e => e.user_id === u.id && e.type === 'supp');
         let shiftHtml;
         if (!shift) shiftHtml = `<span class="pr-absent">Non planifié</span>`;
-        else if (shift.is_off) shiftHtml = `<span class="pr-off">❌ Repos</span>`;
-        else shiftHtml = `<span class="pr-hours">${shift.start_time?.slice(0,5)} → ${shift.end_time?.slice(0,5)}</span>`;
+        else if (shift.is_off) shiftHtml = `<span class="pr-off">Repos</span>`;
+        else shiftHtml = `<span class="pr-hours">${escapeHtml(shift.start_time?.slice(0,5))} → ${escapeHtml(shift.end_time?.slice(0,5))}</span>`;
         const badges = [
-          late ? `<span class="pr-status pr-late">⏰ +${late.minutes}min</span>` : '',
-          supp ? `<span class="pr-status pr-supp">➕ +${supp.minutes}min</span>` : '',
+          late ? `<span class="pr-status pr-late">+${late.minutes}min retard</span>` : '',
+          supp ? `<span class="pr-status pr-supp">+${supp.minutes}min supp</span>` : '',
         ].filter(Boolean).join(' ');
-        return `<div class="planning-row"><div class="pr-name">${u.name}</div><div class="pr-shift">${shiftHtml} ${badges}</div></div>`;
-      }).join('');
+        return `<li class="planning-row"><div class="pr-name">${escapeHtml(u.name)}</div><div class="pr-shift">${shiftHtml} ${badges}</div></li>`;
+      }).join('') + '</ul>';
     }
 
     function renderDashTaskProg(completions) {
@@ -589,12 +713,14 @@
       fillEl.style.width = pct + '%';
       fillEl.className = 'gp-fill' + (pct === 100 ? ' full' : '');
       document.getElementById('gpLabel').textContent = `${uniqueDone}/${totalTasks}`;
+      const prog = document.getElementById('gpProgress');
+      prog.value = uniqueDone; prog.max = totalTasks;
       document.getElementById('dashTaskProgList').innerHTML = completions.map(m => {
         const p = totalTasks > 0 ? Math.round((m.done || 0) / totalTasks * 100) : 0;
         return `<div class="task-prog-row">
-          <div class="tp-name">${m.name}</div>
-          <div class="tp-bar"><div class="tp-fill ${p===100?'full':''}" style="width:${p}%"></div></div>
-          <div class="tp-count">${m.done}/${totalTasks}</div>
+          <div class="tp-name">${escapeHtml(m.name)}</div>
+          <div class="tp-bar" aria-hidden="true"><div class="tp-fill ${p===100?'full':''}" style="width:${p}%"></div></div>
+          <div class="tp-count" aria-label="${escapeHtml(m.name)} : ${m.done} sur ${totalTasks} tâches">${m.done}/${totalTasks}</div>
         </div>`;
       }).join('');
     }
@@ -602,14 +728,14 @@
     function renderDashTimeEvents(events) {
       const el = document.getElementById('dashTimeEventsToday');
       if (!events?.length) { el.innerHTML = '<div class="te-empty">Aucun signalement aujourd\'hui</div>'; return; }
-      el.innerHTML = events.map(e => `
-        <div class="te-row">
+      el.innerHTML = '<ul role="list" style="list-style:none;padding:0;margin:0;">' + events.map(e => `
+        <li class="te-row">
           <span class="te-badge ${e.type==='retard'?'te-retard':'te-supp'}">${e.type==='retard'?'Retard':'H. supp'}</span>
           <div class="te-body">
-            <div class="te-name">${e.user_name} <span style="font-weight:400;color:var(--text-muted)">+${e.minutes} min</span></div>
-            ${e.note ? `<div class="te-detail">📝 ${e.note}</div>` : ''}
+            <div class="te-name">${escapeHtml(e.user_name)} <span style="font-weight:400;color:var(--text-muted)">+${e.minutes} min</span></div>
+            ${e.note ? `<div class="te-detail">${escapeHtml(e.note)}</div>` : ''}
           </div>
-        </div>`).join('');
+        </li>`).join('') + '</ul>';
     }
 
     function renderDashWeekSummary(users, weekEvts) {
@@ -621,15 +747,19 @@
         const ue = weekEvts.filter(e=>e.user_id===u.id);
         const r  = ue.filter(e=>e.type==='retard').reduce((s,e)=>s+e.minutes,0);
         const s  = ue.filter(e=>e.type==='supp').reduce((s,e)=>s+e.minutes,0);
-        const pills = [r?`<span class="wt-pill wt-retard">⏰ ${r}min</span>`:'', s?`<span class="wt-pill wt-supp">➕ ${s}min</span>`:''].filter(Boolean).join('');
-        return `<tr><td class="wt-name">${u.name}</td><td>${pills||'<span style="color:var(--text-muted);font-size:.78rem">RAS</span>'}</td></tr>`;
+        const pills = [r?`<span class="wt-pill wt-retard">+${r}min retard</span>`:'', s?`<span class="wt-pill wt-supp">+${s}min supp</span>`:''].filter(Boolean).join('');
+        return `<tr><td class="wt-name">${escapeHtml(u.name)}</td><td>${pills||'<span style="color:var(--text-muted);font-size:.78rem">RAS</span>'}</td></tr>`;
       }).join('');
-      el.innerHTML = `<table class="week-sum-table"><thead><tr><th>Staff</th><th>Cette semaine</th></tr></thead><tbody>${rows}</tbody></table>
-        ${(totRetard||totSupp)?`<div style="margin-top:10px;font-size:.78rem;color:var(--text-muted)">Total : ${totRetard?`⏰ ${totRetard}min  `:''}${totSupp?`➕ ${totSupp}min`:''}</div>`:''}`;
+      el.innerHTML = `<table class="week-sum-table">
+        <caption class="sr-only">Résumé des retards et heures supp de la semaine</caption>
+        <thead><tr><th scope="col">Staff</th><th scope="col">Cette semaine</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${(totRetard||totSupp)?`<div style="margin-top:10px;font-size:.78rem;color:var(--text-muted)" role="status">Total semaine : ${totRetard?`+${totRetard}min retard  `:''}${totSupp?`+${totSupp}min supp`:''}</div>`:''}`;
     }
 
     // ══════════════════════════════════════════════════════
-    // TÂCHES
+    // TÂCHES — ARIA tab pattern
     // ══════════════════════════════════════════════════════
     let allTasks = [];
     let currentTachesTab = 'fermeture';
@@ -637,15 +767,29 @@
     let timeEvents = [];
 
     const TACHES_TABS = [
-      { key: 'fermeture', label: '🔒 FERMETURE' },
-      { key: 'nettoyage', label: '🧽 NETTOYAGE' },
+      { key: 'fermeture', label: 'Fermeture' },
+      { key: 'nettoyage', label: 'Nettoyage' },
     ];
     const SECTION_ICONS = { 'Cuisine': '🍳', 'Plan de Nettoyage': '🧽' };
 
     async function initTaches() {
-      document.getElementById('tachesTabBar').innerHTML = TACHES_TABS.map(t =>
-        `<button class="tab ${t.key===currentTachesTab?'active':''}" id="ctab-${t.key}" onclick="switchTachesTab('${t.key}')">${t.label}</button>`
-      ).join('');
+      // Build sub-tabs
+      document.getElementById('tachesTabBar').innerHTML = TACHES_TABS.map(t => `
+        <button role="tab" class="tab" id="ctab-${t.key}"
+          aria-selected="${t.key===currentTachesTab?'true':'false'}"
+          aria-controls="pane-taches"
+          tabindex="${t.key===currentTachesTab?'0':'-1'}">${t.label}</button>
+      `).join('');
+      TACHES_TABS.forEach(t => {
+        document.getElementById(`ctab-${t.key}`).addEventListener('click', () => switchTachesTab(t.key));
+      });
+      document.getElementById('tachesTabBar').addEventListener('keydown', e => {
+        const tabs = TACHES_TABS.map(t => t.key);
+        const idx  = tabs.indexOf(currentTachesTab);
+        if (e.key === 'ArrowRight') { e.preventDefault(); const next = tabs[(idx+1)%tabs.length]; switchTachesTab(next); document.getElementById(`ctab-${next}`).focus(); }
+        if (e.key === 'ArrowLeft')  { e.preventDefault(); const prev = tabs[(idx-1+tabs.length)%tabs.length]; switchTachesTab(prev); document.getElementById(`ctab-${prev}`).focus(); }
+      });
+
       await loadTasks();
       await loadTimeEvents();
       if (isChef) {
@@ -664,7 +808,12 @@
 
     function switchTachesTab(tab) {
       currentTachesTab = tab;
-      document.querySelectorAll('#tachesTabBar .tab').forEach(b => b.classList.toggle('active', b.id === `ctab-${tab}`));
+      TACHES_TABS.forEach(t => {
+        const btn = document.getElementById(`ctab-${t.key}`);
+        btn.setAttribute('aria-selected', t.key === tab ? 'true' : 'false');
+        btn.setAttribute('tabindex', t.key === tab ? '0' : '-1');
+        btn.classList.toggle('active', t.key === tab);
+      });
       renderTachesTab();
     }
 
@@ -679,6 +828,9 @@
       fill.style.width = pct + '%';
       fill.className = 'progress-fill' + (pct === 100 ? ' success' : '');
       document.getElementById('tachesProgressLabel').textContent = `${totalDone}/${tasks.length}`;
+      const prog = document.getElementById('tachesProgress');
+      prog.value = totalDone; prog.max = tasks.length;
+      prog.setAttribute('aria-label', `Progression : ${totalDone} sur ${tasks.length} tâches complétées`);
       document.getElementById('statMe').textContent   = myDone;
       document.getElementById('statTeam').textContent = onlyTeam;
       document.getElementById('statLeft').textContent = remaining;
@@ -692,26 +844,31 @@
 
       const container = document.getElementById('tasksList');
       if (!tasks.length) {
-        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">Aucune tâche</div></div>`;
+        container.innerHTML = `<div class="empty-state"><div class="empty-state-text">Aucune tâche</div></div>`;
         return;
       }
       container.innerHTML = Object.entries(sections).map(([section, subsections]) => `
         <div class="task-section">
           <div class="task-section-header">
-            <span class="task-section-icon">${SECTION_ICONS[section]||'📌'}</span>
-            <span class="task-section-title">${section}</span>
+            <span class="task-section-icon" aria-hidden="true">${SECTION_ICONS[section]||'📌'}</span>
+            <span class="task-section-title">${escapeHtml(section)}</span>
           </div>
           ${Object.entries(subsections).map(([sub, items]) => {
             const subDone = items.filter(t => t.completion_count > 0).length;
             const countLabel = subDone > 0
-              ? `<span class="subsection-count">(<span class="done-count">${subDone}</span>/${items.length})</span>`
-              : `<span class="subsection-count">(${items.length})</span>`;
+              ? `<span class="subsection-count" aria-label="${subDone} sur ${items.length} complétées">(<span class="done-count" aria-hidden="true">${subDone}</span><span aria-hidden="true">/${items.length})</span></span>`
+              : `<span class="subsection-count" aria-label="${items.length} tâches">(${items.length})</span>`;
             return `<div class="task-subsection">
-              <div class="task-subsection-header">${sub} ${countLabel}</div>
+              <div class="task-subsection-header">${escapeHtml(sub)} ${countLabel}</div>
               ${items.map(t => renderTaskItem(t)).join('')}
             </div>`;
           }).join('')}
         </div>`).join('');
+
+      // Event delegation for task toggles
+      container.querySelectorAll('[data-task-id]').forEach(btn => {
+        btn.addEventListener('click', () => toggleTask(parseInt(btn.dataset.taskId)));
+      });
     }
 
     function renderTaskItem(t) {
@@ -722,13 +879,19 @@
       if (anyDone && t.completers) {
         badges = `<div class="task-completers">${t.completers.split(', ').map(name => {
           const isMe = currentUser && name === currentUser.name;
-          return `<span class="completer-badge ${isMe?'me':'other'}">✓ ${name}</span>`;
+          return `<span class="completer-badge ${isMe?'me':'other'}" role="img" aria-label="${isMe?'Complété par moi':'Complété par '+escapeHtml(name)}">✓ ${escapeHtml(name)}</span>`;
         }).join('')}</div>`;
       }
-      return `<div class="${cls}" id="task-${t.id}" onclick="toggleTask(${t.id})">
-        <div class="task-checkbox">${isMine||anyDone?'✓':''}</div>
-        <div class="task-content"><div class="task-desc">${t.description}</div>${badges}</div>
-      </div>`;
+      const stateLabel = isMine ? ' — complétée par moi' : anyDone ? ' — complétée par l\'équipe' : '';
+      return `<button type="button" class="${cls}" data-task-id="${t.id}"
+        aria-pressed="${isMine ? 'true' : 'false'}"
+        aria-label="${escapeHtml(t.description)}${stateLabel}">
+        <div class="task-checkbox" aria-hidden="true">${isMine||anyDone?'✓':''}</div>
+        <div class="task-content">
+          <div class="task-desc" aria-hidden="true">${escapeHtml(t.description)}</div>
+          ${badges}
+        </div>
+      </button>`;
     }
 
     async function toggleTask(id) {
@@ -739,6 +902,7 @@
         task.my_completed = 0; task.completion_count = Math.max(0, (task.completion_count||1)-1);
         if (task.completers && currentUser)
           task.completers = task.completers.split(', ').filter(n => n !== currentUser.name).join(', ') || null;
+        announce(`Tâche "${task.description}" décochée`);
       } else {
         await api.post(`/api/tasks/${id}/complete`, {});
         task.my_completed = 1; task.completion_count = (task.completion_count||0)+1;
@@ -747,6 +911,7 @@
           if (!names.includes(currentUser.name)) names.push(currentUser.name);
           task.completers = names.join(', ');
         }
+        announce(`Tâche "${task.description}" complétée`);
       }
       renderTachesTab();
     }
@@ -757,37 +922,55 @@
       document.getElementById('teamOverviewList').innerHTML = data.map(m => {
         const pct = m.total > 0 ? Math.round(m.done/m.total*100) : 0;
         return `<div class="team-member-row">
-          <div class="tm-name">${m.name}</div>
-          <div class="tm-bar"><div class="tm-bar-fill" style="width:${pct}%"></div></div>
-          <div class="tm-count"><b>${m.done}</b>/${m.total}</div>
+          <div class="tm-name">${escapeHtml(m.name)}</div>
+          <div class="tm-bar" aria-hidden="true"><div class="tm-bar-fill" style="width:${pct}%"></div></div>
+          <div class="tm-count" aria-label="${escapeHtml(m.name)} : ${m.done} sur ${m.total}"><b>${m.done}</b>/${m.total}</div>
         </div>`;
       }).join('');
     }
 
-    function openTaskManager() {
+    // Chef controls
+    document.getElementById('btnOpenTaskManager').addEventListener('click', e => openTaskManager(e.currentTarget));
+
+    function openTaskManager(triggerEl = null) {
       closeAll();
       api.get('/api/cuisine/tasks').then(data => {
         if (!data) return;
         managedTasks = data;
-        const catLabel = { fermeture: '🔒 Fermeture', nettoyage: '🧽 Nettoyage' };
+        const catLabel = { fermeture: 'Fermeture', nettoyage: 'Nettoyage' };
         const el = document.getElementById('taskManageList');
-        if (!managedTasks.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:20px">Aucune tâche</div>'; }
-        else el.innerHTML = managedTasks.map(t => `
-          <div class="task-manage-item">
-            <div style="flex:1;min-width:0">
-              <div class="task-manage-desc">${t.description}</div>
-              <div class="task-manage-cat">${catLabel[t.category]||t.category} · ${t.section||''} · ${t.subsection||''}</div>
-            </div>
-            <div class="task-manage-actions">
-              <button class="btn-icon" onclick="openTaskForm(${t.id})">✏️</button>
-              <button class="btn-icon danger" onclick="deleteTask(${t.id})">🗑</button>
-            </div>
-          </div>`).join('');
-        openDrawer('taskManagerDrawer');
+        if (!managedTasks.length) {
+          el.innerHTML = '<div style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:20px">Aucune tâche</div>';
+        } else {
+          el.innerHTML = managedTasks.map(t => `
+            <div class="task-manage-item">
+              <div style="flex:1;min-width:0">
+                <div class="task-manage-desc">${escapeHtml(t.description)}</div>
+                <div class="task-manage-cat">${escapeHtml(catLabel[t.category]||t.category)} · ${escapeHtml(t.section||'')} · ${escapeHtml(t.subsection||'')}</div>
+              </div>
+              <div class="task-manage-actions">
+                <button class="btn-icon" data-edit-task="${t.id}" aria-label="Modifier la tâche : ${escapeHtml(t.description)}">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M9.5 2L12 4.5 4.5 12H2v-2.5L9.5 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                </button>
+                <button class="btn-icon danger" data-delete-task="${t.id}" aria-label="Supprimer la tâche : ${escapeHtml(t.description)}">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><path d="M2 4h10M5 4V2h4v2M6 6v5M8 6v5M3 4l1 8h6l1-8"/></svg>
+                </button>
+              </div>
+            </div>`).join('');
+          el.querySelectorAll('[data-edit-task]').forEach(btn => {
+            btn.addEventListener('click', () => openTaskForm(parseInt(btn.dataset.editTask), btn));
+          });
+          el.querySelectorAll('[data-delete-task]').forEach(btn => {
+            btn.addEventListener('click', () => deleteTask(parseInt(btn.dataset.deleteTask)));
+          });
+        }
+        openDrawer('taskManagerDrawer', triggerEl);
       });
     }
 
-    function openTaskForm(id = null) {
+    document.getElementById('btnNewTask').addEventListener('click', e => openTaskForm(null, e.currentTarget));
+
+    function openTaskForm(id = null, triggerEl = null) {
       closeAll();
       document.getElementById('taskFormTitle').textContent = id ? 'Modifier la tâche' : 'Nouvelle tâche';
       if (id) {
@@ -806,13 +989,11 @@
         document.getElementById('taskSection').value = 'Cuisine';
         document.getElementById('taskSubsection').value = '';
       }
-      openDrawer('taskFormDrawer');
+      openDrawer('taskFormDrawer', triggerEl);
       setTimeout(() => document.getElementById('taskDesc').focus(), 350);
     }
 
-    function closeTaskForm() { closeAll(); setTimeout(() => openTaskManager(), 50); }
-
-    async function saveTask(e) {
+    document.getElementById('taskForm').addEventListener('submit', async e => {
       e.preventDefault();
       const id = document.getElementById('taskId').value;
       const body = {
@@ -822,15 +1003,16 @@
         subsection:  document.getElementById('taskSubsection').value.trim() || null,
         domain:      'cuisine',
       };
-      if (id) { await api.put(`/api/cuisine/tasks/${id}`, body); showToast('Tâche modifiée ✓', 'success'); }
-      else    { await api.post('/api/cuisine/tasks', body); showToast('Tâche créée ✓', 'success'); }
+      if (id) { await api.put(`/api/cuisine/tasks/${id}`, body); showToast('Tâche modifiée', 'success'); }
+      else    { await api.post('/api/cuisine/tasks', body); showToast('Tâche créée', 'success'); }
       closeAll(); await loadTasks();
-    }
+    });
 
-    async function deleteTask(id) {
-      if (!confirm('Supprimer cette tâche ?')) return;
-      await api.delete(`/api/cuisine/tasks/${id}`);
-      showToast('Tâche supprimée', 'info'); closeAll(); await loadTasks();
+    function deleteTask(id) {
+      showConfirm('Supprimer cette tâche ?', async () => {
+        await api.delete(`/api/cuisine/tasks/${id}`);
+        showToast('Tâche supprimée', 'info'); closeAll(); await loadTasks();
+      });
     }
 
     async function loadTimeEvents() {
@@ -849,24 +1031,30 @@
         <div class="time-event-item">
           <span class="te-badge ${e.type==='retard'?'te-retard':'te-supp'}">${e.type==='retard'?'Retard':'Heure supp'}</span>
           <div class="te-info">
-            <div>${isChef?`<b>${e.user_name}</b> · `:''}${e.minutes} min</div>
-            ${e.note?`<div class="te-note">${e.note}</div>`:''}
+            <div>${isChef?`<b>${escapeHtml(e.user_name)}</b> · `:''}${e.minutes} min</div>
+            ${e.note?`<div class="te-note">${escapeHtml(e.note)}</div>`:''}
           </div>
-          <button class="te-del" onclick="deleteTimeEvent(${e.id})">✕</button>
+          <button class="te-del" data-del-event="${e.id}" aria-label="Supprimer le signalement de ${e.minutes} min">✕</button>
         </div>`).join('');
+      el.querySelectorAll('[data-del-event]').forEach(btn => {
+        btn.addEventListener('click', () => deleteTimeEvent(parseInt(btn.dataset.delEvent)));
+      });
     }
 
-    function openSignal(type) {
+    document.getElementById('btnSignalRetard').addEventListener('click', e => openSignal('retard', e.currentTarget));
+    document.getElementById('btnSignalSupp').addEventListener('click', e => openSignal('supp', e.currentTarget));
+
+    function openSignal(type, triggerEl = null) {
       document.getElementById('signalType').value = type;
-      document.getElementById('signalDrawerTitle').textContent = type === 'retard' ? '⏰ Signaler un retard' : '➕ Heures supplémentaires';
+      document.getElementById('signalDrawerTitle').textContent = type === 'retard' ? 'Signaler un retard' : 'Heures supplémentaires';
       document.getElementById('signalMinLabel').textContent = type === 'retard' ? 'Minutes de retard' : 'Minutes supplémentaires';
       document.getElementById('signalMinutes').value = '';
       document.getElementById('signalNote').value = '';
-      openDrawer('signalDrawer');
+      openDrawer('signalDrawer', triggerEl);
       setTimeout(() => document.getElementById('signalMinutes').focus(), 350);
     }
 
-    async function submitSignal(e) {
+    document.getElementById('signalForm').addEventListener('submit', async e => {
       e.preventDefault();
       const type    = document.getElementById('signalType').value;
       const minutes = parseInt(document.getElementById('signalMinutes').value) || 0;
@@ -874,9 +1062,9 @@
       if (!minutes) return;
       await api.post('/api/cuisine/time-events', { type, minutes, note });
       closeAll();
-      showToast(type === 'retard' ? 'Retard signalé ✓' : 'Heures supp signalées ✓', 'success');
+      showToast(type === 'retard' ? 'Retard signalé' : 'Heures supp signalées', 'success');
       await loadTimeEvents();
-    }
+    });
 
     async function deleteTimeEvent(id) {
       await api.delete(`/api/cuisine/time-events/${id}`);
@@ -914,6 +1102,9 @@
       return `${s.getDate()} ${s.toLocaleDateString('fr-FR',{month:'short'})} → ${e.getDate()} ${e.toLocaleDateString('fr-FR',{month:'short',year:'numeric'})}`;
     }
 
+    document.getElementById('btnWeekPrev').addEventListener('click', () => shiftWeek(-1));
+    document.getElementById('btnWeekNext').addEventListener('click', () => shiftWeek(1));
+
     function shiftWeek(d) {
       currentWeekStart = addDays(currentWeekStart, d * 7);
       loadPlanning();
@@ -944,60 +1135,73 @@
       const dayDates = DAYS.map((_, i) => addDays(currentWeekStart, i));
 
       document.getElementById('planningHead').innerHTML = `<tr>
-        <th style="min-width:90px;text-align:left;padding-left:10px">Staff</th>
+        <th scope="col" style="min-width:90px;text-align:left;padding-left:10px">Staff</th>
         ${DAYS.map((d, i) => {
           const dd = dayDates[i], isToday = dd === todayStr;
           const [,idm,idj] = dd.split('-');
-          return `<th class="${isToday?'today-col':''}">${d.short}<br><span style="font-weight:400;font-size:.68rem">${idj}/${idm}</span></th>`;
+          return `<th scope="col" class="${isToday?'today-col':''}">${d.short}<br><span style="font-weight:400;font-size:.68rem">${idj}/${idm}</span></th>`;
         }).join('')}
-        <th class="col-total">Total</th>
+        <th scope="col" class="col-total">Total</th>
       </tr>`;
 
-      document.getElementById('planningBody').innerHTML = planningData.users.map(u => {
-        // Calcul total heures planifiées
+      const tbody = document.getElementById('planningBody');
+      tbody.innerHTML = planningData.users.map(u => {
         const totalMins = dayDates.reduce((sum, dd) => {
           const s = planningData.shifts.find(sh => sh.user_id === u.id && sh.day_date === dd);
           return sum + (s && !s.is_off ? minutesBetween(s.start_time, s.end_time) : 0);
         }, 0);
-
-        // Heures supp de la semaine pour cet utilisateur
         const suppMins = weekPlanningEvents
           .filter(e => e.user_id === u.id && e.type === 'supp')
           .reduce((sum, e) => sum + (e.minutes || 0), 0);
-
-        const daysOff   = dayDates.filter(dd => {
+        const daysOff = dayDates.filter(dd => {
           const s = planningData.shifts.find(sh => sh.user_id === u.id && sh.day_date === dd);
           return s?.is_off;
         }).length;
-
         let totalHtml;
         if (totalMins === 0 && daysOff === 0) {
           totalHtml = `<span class="total-off">—</span>`;
         } else {
-          const suppLabel = suppMins > 0
-            ? `<span class="total-supp">+${fmtHours(suppMins)} supp</span>`
-            : '';
+          const suppLabel = suppMins > 0 ? `<span class="total-supp">+${fmtHours(suppMins)} supp</span>` : '';
           totalHtml = `<span class="total-hours">${fmtHours(totalMins)}</span>${suppLabel}`;
         }
-
         return `<tr>
-          <td class="staff-cell">${u.name}</td>
+          <th scope="row" class="staff-cell">${escapeHtml(u.name)}</th>
           ${dayDates.map(dd => {
             const shift   = planningData.shifts.find(s => s.user_id === u.id && s.day_date === dd);
             const isToday = dd === todayStr;
-            let cellHtml, cellClass;
-            if (!shift)            { cellClass = 'shift-cell is-empty'; cellHtml = isChef ? `<span class="sc-empty">+</span>` : ''; }
-            else if (shift.is_off) { cellClass = 'shift-cell is-off';   cellHtml = `<span class="sc-off">Repos</span>`; }
-            else                   { cellClass = 'shift-cell is-work';   cellHtml = `<span class="sc-time">${shift.start_time?.slice(0,5)}<br>${shift.end_time?.slice(0,5)}</span>`; }
-            const onclick = isChef ? `onclick="openShiftEditor(${u.id},'${dd}','${u.name}')"` : '';
-            return `<td class="${isToday?'today-col':''}"><div class="${cellClass}" ${onclick}>${cellHtml}</div></td>`;
+            let cellHtml, cellClass, ariaLabel = '', interactive = '';
+            if (!shift) {
+              cellClass = 'shift-cell is-empty';
+              cellHtml = isChef ? `<span class="sc-empty" aria-hidden="true">+</span>` : '';
+              ariaLabel = `${escapeHtml(u.name)}, non planifié`;
+            } else if (shift.is_off) {
+              cellClass = 'shift-cell is-off';
+              cellHtml = `<span class="sc-off">Repos</span>`;
+              ariaLabel = `${escapeHtml(u.name)}, repos`;
+            } else {
+              cellClass = 'shift-cell is-work';
+              cellHtml = `<span class="sc-time" aria-hidden="true">${shift.start_time?.slice(0,5)}<br>${shift.end_time?.slice(0,5)}</span>`;
+              ariaLabel = `${escapeHtml(u.name)}, ${shift.start_time?.slice(0,5)} à ${shift.end_time?.slice(0,5)}`;
+            }
+            if (isChef) {
+              interactive = `role="button" tabindex="0" data-shift-uid="${u.id}" data-shift-date="${dd}" data-shift-name="${escapeHtml(u.name)}" aria-label="Modifier le shift : ${ariaLabel}"`;
+            }
+            return `<td class="${isToday?'today-col':''}"><div class="${cellClass}" ${interactive}>${cellHtml}</div></td>`;
           }).join('')}
           <td class="total-cell">${totalHtml}</td>
         </tr>`;
       }).join('');
+
+      // Bind shift cell clicks + keyboard for chef
+      if (isChef) {
+        tbody.querySelectorAll('[data-shift-uid]').forEach(cell => {
+          cell.addEventListener('click', () => openShiftEditor(parseInt(cell.dataset.shiftUid), cell.dataset.shiftDate, cell.dataset.shiftName, cell));
+          cell.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openShiftEditor(parseInt(cell.dataset.shiftUid), cell.dataset.shiftDate, cell.dataset.shiftName, cell); } });
+        });
+      }
     }
 
-    function openShiftEditor(userId, dayDate, userName) {
+    function openShiftEditor(userId, dayDate, userName, triggerEl = null) {
       if (!isChef) return;
       const d = new Date(dayDate);
       document.getElementById('shiftDrawerTitle').textContent = `${userName} — ${d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}`;
@@ -1009,28 +1213,60 @@
       document.getElementById('shiftStart').value   = shift?.start_time?.slice(0,5) || '09:00';
       document.getElementById('shiftEnd').value     = shift?.end_time?.slice(0,5)   || '17:00';
       document.getElementById('shiftTimeFields').style.display = shift?.is_off ? 'none' : 'flex';
-      openDrawer('shiftDrawer');
+      openDrawer('shiftDrawer', triggerEl);
     }
 
-    function toggleOff() {
-      setTimeout(() => {
-        document.getElementById('shiftTimeFields').style.display =
-          document.getElementById('shiftIsOff').checked ? 'none' : 'flex';
-      }, 10);
-    }
+    document.getElementById('shiftIsOff').addEventListener('change', function() {
+      document.getElementById('shiftTimeFields').style.display = this.checked ? 'none' : 'flex';
+    });
 
+    document.getElementById('shiftForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const isOff = document.getElementById('shiftIsOff').checked;
+      await api.put('/api/cuisine/planning', {
+        user_id:    parseInt(document.getElementById('shiftUserId').value),
+        day_date:   document.getElementById('shiftDayDate').value,
+        week_start: document.getElementById('shiftWeekStart').value,
+        start_time: isOff ? null : document.getElementById('shiftStart').value,
+        end_time:   isOff ? null : document.getElementById('shiftEnd').value,
+        is_off:     isOff ? 1 : 0,
+      });
+      closeAll(); await loadPlanning();
+      showToast('Planning mis à jour', 'success');
+    });
+
+    document.getElementById('btnClearShift').addEventListener('click', () => {
+      showConfirm('Effacer ce créneau ?', async () => {
+        const r = await fetch('/api/cuisine/planning', {
+          method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id:    parseInt(document.getElementById('shiftUserId').value),
+            day_date:   document.getElementById('shiftDayDate').value,
+            week_start: document.getElementById('shiftWeekStart').value,
+          }),
+        });
+        if (r.status === 401) { window.location.href = '/'; return; }
+        closeAll(); await loadPlanning();
+        showToast('Créneau supprimé', 'info');
+      });
+    });
+
+    // Valider planning
     let capturedBlob = null;
 
-    async function openPreview() {
+    document.getElementById('btnValidate').addEventListener('click', e => openPreview(e.currentTarget));
+
+    async function openPreview(triggerEl = null) {
       if (!planningData.users.length) { showToast('Aucun planning à envoyer', 'warning'); return; }
       capturedBlob = null;
       document.getElementById('previewImg').style.display = 'none';
       document.getElementById('btnShare').style.display = 'none';
       document.getElementById('previewLoading').style.display = 'block';
-      openDrawer('previewDrawer');
+      document.getElementById('previewLoading').textContent = 'Génération de l\'image…';
+      openDrawer('previewDrawer', triggerEl);
       try {
         const table = document.querySelector('#pane-planning .planning-table');
-        const canvas = await html2canvas(table, { backgroundColor: '#0b2d3e', scale: 2, useCORS: true, logging: false });
+        const canvas = await html2canvas(table, { backgroundColor: '#08141c', scale: 2, useCORS: true, logging: false });
         canvas.toBlob(blob => {
           capturedBlob = blob;
           const img = document.getElementById('previewImg');
@@ -1044,6 +1280,8 @@
       }
     }
 
+    document.getElementById('btnShare').addEventListener('click', shareImage);
+
     async function shareImage() {
       if (!capturedBlob) return;
       const filename = `planning-cuisine-${currentWeekStart}.png`;
@@ -1056,59 +1294,8 @@
         a.href = URL.createObjectURL(capturedBlob);
         a.download = filename;
         a.click();
-        showToast('Image téléchargée — envoie-la sur WhatsApp 👍', 'success');
+        showToast('Image téléchargée — envoie-la sur WhatsApp', 'success');
       }
-    }
-
-    function buildMessage() {
-      const dayDates = DAYS.map((_, i) => addDays(currentWeekStart, i));
-      let msg = `📅 Planning Cuisine — ${fmtWeekLabel(currentWeekStart)}\n━━━━━━━━━━━━━━━━━━━━\n\n`;
-      planningData.users.forEach(u => {
-        msg += `👤 ${u.name}\n`;
-        let hasAny = false;
-        dayDates.forEach((dd, i) => {
-          const shift = planningData.shifts.find(s => s.user_id === u.id && s.day_date === dd);
-          if (!shift) return;
-          hasAny = true;
-          const [,_wm,_wj] = dd.split('-'); const dateStr = `${_wj}/${_wm}`;
-          if (shift.is_off) msg += `• ${DAYS[i].short} ${dateStr} : 📴 Repos\n`;
-          else msg += `• ${DAYS[i].short} ${dateStr} : ${shift.start_time?.slice(0,5)||'?'} → ${shift.end_time?.slice(0,5)||'?'}\n`;
-        });
-        if (!hasAny) msg += `• Aucun créneau défini\n`;
-        msg += '\n';
-      });
-      msg += `━━━━━━━━━━━━━━━━━━━━\nMos Pub Mercière 🍺`;
-      return msg;
-    }
-
-    async function saveShift(e) {
-      e.preventDefault();
-      const isOff = document.getElementById('shiftIsOff').checked;
-      await api.put('/api/cuisine/planning', {
-        user_id:    parseInt(document.getElementById('shiftUserId').value),
-        day_date:   document.getElementById('shiftDayDate').value,
-        week_start: document.getElementById('shiftWeekStart').value,
-        start_time: isOff ? null : document.getElementById('shiftStart').value,
-        end_time:   isOff ? null : document.getElementById('shiftEnd').value,
-        is_off:     isOff ? 1 : 0,
-      });
-      closeAll(); await loadPlanning();
-      showToast('Planning mis à jour ✓', 'success');
-    }
-
-    async function clearShift() {
-      if (!confirm('Effacer ce créneau ?')) return;
-      const r = await fetch('/api/cuisine/planning', {
-        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id:    parseInt(document.getElementById('shiftUserId').value),
-          day_date:   document.getElementById('shiftDayDate').value,
-          week_start: document.getElementById('shiftWeekStart').value,
-        }),
-      });
-      if (r.status === 401) { window.location.href = '/'; return; }
-      closeAll(); await loadPlanning();
-      showToast('Créneau supprimé', 'info');
     }
 
     // ══════════════════════════════════════════════════════
@@ -1123,17 +1310,16 @@
       else           { const i = names.indexOf(userName); if (i>-1) names.splice(i,1); task.completion_count = Math.max(0,(task.completion_count||1)-1); }
       task.completers = names.join(', ') || null;
       renderTachesTab();
+      announce(`${userName} a ${completed?'complété':'décoché'} une tâche`);
       if (isChef) loadTeamOverview();
     });
 
     socket.on('cuisine:time-events:updated', ({ date: d, events }) => {
-      // Tâches + Dashboard : met à jour si c'est aujourd'hui
       if (d === today()) {
         timeEvents = events;
         renderTachesTimeEvents();
         if (dashViewDateEl.value === today()) loadDash();
       }
-      // Planning : recharge si la date est dans la semaine affichée (totaux supp)
       if (d >= currentWeekStart && d <= addDays(currentWeekStart, 6)) loadPlanning();
     });
 
@@ -1149,9 +1335,8 @@
       if (!currentUser) return;
       isChef = currentUser.role === 'admin' || (currentUser.role === 'manager' && currentUser.shift === 'cuisine');
 
-      // Onglet initial depuis URL
       const urlTab = new URLSearchParams(location.search).get('tab');
-      if (urlTab && ['dashboard','taches','planning'].includes(urlTab)) switchMainTab(urlTab);
+      if (urlTab && MAIN_TABS.includes(urlTab)) switchMainTab(urlTab);
       else updateDashSubtitle();
 
       await Promise.all([loadDash(), initTaches(), initPlanning()]);

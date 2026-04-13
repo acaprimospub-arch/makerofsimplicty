@@ -7,285 +7,186 @@
   <link rel="stylesheet" href="/css/main.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
   <style>
-    /* ── KPI chips (même style que dashboard) ── */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-    @media (max-width: 600px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    .badge-arrivee { background: rgba(62,207,107,0.15); color: var(--success); }
+    .badge-depart  { background: rgba(107,168,247,0.15); color: var(--info); }
+    .badge-late    { background: var(--danger-bg); color: var(--danger); }
 
-    .kpi-chip {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      position: relative;
-      overflow: hidden;
-    }
-    .kpi-chip::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: var(--kpi-accent, var(--primary));
-      border-radius: 14px 14px 0 0;
-    }
-    .kpi-chip.success { --kpi-accent: #22c55e; }
-    .kpi-chip.danger  { --kpi-accent: #ef4444; }
-    .kpi-chip.blue    { --kpi-accent: #60a5fa; }
-    .kpi-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
-    .kpi-value { font-size: 1.9rem; font-weight: 800; color: var(--text); line-height: 1; }
-    .kpi-chip.success .kpi-value { color: #22c55e; }
-    .kpi-chip.danger  .kpi-value { color: #ef4444; }
-
-    /* ── Filtres ── */
-    .filters {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .filters label { font-size: 0.82rem; color: var(--text-muted); margin-right: -4px; }
-    .filters input[type="date"],
-    .filters select {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text);
-      padding: 8px 12px;
-      font-size: 0.9rem;
-    }
-    .filters input[type="date"]:focus,
-    .filters select:focus {
-      outline: none;
-      border-color: var(--primary);
-    }
-    .btn-filter {
-      background: var(--primary);
-      color: var(--bg);
-      border: none;
-      border-radius: var(--radius-sm);
-      padding: 8px 16px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-filter:hover { background: var(--primary-light); }
-
-    /* ── Tableau pointages ── */
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    thead th {
-      text-align: left;
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-muted);
-      padding: 8px 12px;
-      border-bottom: 1px solid var(--border);
-    }
-    tbody tr { border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.1s; }
-    tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: var(--bg-surface); }
-    tbody td { padding: 10px 12px; font-size: 0.88rem; vertical-align: middle; }
-
-    .badge {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 99px;
-      font-size: 0.78rem;
-      font-weight: 600;
-    }
-    .badge-arrivee { background: rgba(34,197,94,0.15); color: #22c55e; }
-    .badge-depart  { background: rgba(96,165,250,0.15); color: #60a5fa; }
-    .badge-late    { background: rgba(239,68,68,0.15);  color: #ef4444; }
-
-    /* ── Miniature photo ── */
     .photo-thumb {
-      width: 48px;
-      height: 48px;
+      width: 44px; height: 44px;
       object-fit: cover;
       border-radius: 8px;
       cursor: pointer;
       border: 1px solid var(--border);
       transition: opacity 0.15s, transform 0.15s;
+      display: block;
     }
-    .photo-thumb:hover { opacity: 0.85; transform: scale(1.05); }
-    .no-photo { color: var(--text-muted); font-size: 0.8rem; }
+    .photo-thumb:hover { opacity: 0.82; transform: scale(1.06); }
+    .photo-thumb:focus-visible { box-shadow: var(--focus-ring); outline: none; }
 
-    /* ── Section heures travaillées ── */
     .hours-table td:nth-child(3),
-    .hours-table td:nth-child(4) { font-family: monospace; }
-
-    /* ── Section divider ── */
-    .section-divider {
-      display: flex; align-items: center; gap: 12px; margin: 28px 0 18px;
-    }
-    .section-divider-line { flex: 1; height: 1px; background: var(--border); }
-    .section-divider-label {
-      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.1em; color: var(--text-muted); white-space: nowrap;
-      padding: 4px 10px; border: 1px solid var(--border);
-      border-radius: 99px; background: var(--bg-card);
-    }
-
-    /* ── Lightbox photo ── */
-    #photoOverlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.88);
-      z-index: 9999;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 16px;
-      cursor: pointer;
-    }
-    #photoOverlay.open { display: flex; }
-    #photoOverlay img {
-      max-width: 90vw;
-      max-height: 80vh;
-      border-radius: 12px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.8);
-    }
-    #photoOverlayCaption {
-      color: rgba(255,255,255,0.8);
-      font-size: 0.9rem;
-      text-align: center;
-    }
-    #photoOverlayClose {
-      position: absolute;
-      top: 16px; right: 20px;
-      font-size: 2rem;
-      color: rgba(255,255,255,0.7);
-      cursor: pointer;
-      line-height: 1;
-    }
-
-    .empty-state { text-align: center; color: var(--text-muted); padding: 40px; font-size: 0.9rem; }
+    .hours-table td:nth-child(4) { font-variant-numeric: tabular-nums; }
   </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
+  <nav class="nav" id="nav" role="navigation"></nav>
 
-  <div class="page">
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container">
 
       <!-- Header -->
-      <div class="page-header" style="margin-bottom:24px;">
+      <header class="page-header">
         <div>
-          <div class="page-title">⏱️ Pointeuse</div>
-          <div class="page-subtitle" id="pageSubtitle">Suivi des arrivées et départs du staff</div>
+          <h1 class="page-title">Pointeuse</h1>
+          <p class="page-subtitle">Suivi des arrivées et départs du staff</p>
         </div>
-        <a href="/pointeuse/" target="_blank" class="btn btn-secondary btn-sm">📷 Ouvrir tablette</a>
-      </div>
+        <div class="flex gap-3 flex-wrap items-center">
+          <button class="btn btn-secondary btn-sm" id="btn-export" type="button">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="14" height="14"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+            Exporter CSV
+          </button>
+          <a href="/pointeuse/" target="_blank" class="btn btn-secondary btn-sm" rel="noopener">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="14" height="14"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+            Ouvrir tablette
+          </a>
+        </div>
+      </header>
 
-      <!-- KPI -->
-      <div class="kpi-grid">
-        <div class="kpi-chip">
-          <span class="kpi-label">Pointages aujourd'hui</span>
-          <span class="kpi-value" id="kpiTotal">—</span>
+      <!-- KPIs -->
+      <section aria-label="Indicateurs du jour" class="mb-6">
+        <div class="kpi-grid">
+          <article class="kpi-chip" aria-label="Pointages aujourd'hui : chargement">
+            <div class="kpi-label">Pointages aujourd'hui</div>
+            <div class="kpi-value" id="kpi-total">—</div>
+          </article>
+          <article class="kpi-chip success" aria-label="Présents actuellement : chargement">
+            <div class="kpi-label">Présents actuellement</div>
+            <div class="kpi-value" id="kpi-present">—</div>
+          </article>
+          <article class="kpi-chip danger" aria-label="Retards du jour : chargement">
+            <div class="kpi-label">Retards du jour</div>
+            <div class="kpi-value" id="kpi-late">—</div>
+          </article>
         </div>
-        <div class="kpi-chip success">
-          <span class="kpi-label">Présents actuellement</span>
-          <span class="kpi-value" id="kpiPresent">—</span>
-        </div>
-        <div class="kpi-chip danger">
-          <span class="kpi-label">Retards du jour</span>
-          <span class="kpi-value" id="kpiLate">—</span>
-        </div>
-      </div>
+      </section>
 
       <!-- Filtres -->
-      <div class="card" style="margin-bottom:20px;">
-        <div class="filters">
-          <label for="filterDate">Date :</label>
-          <input type="date" id="filterDate" onchange="loadPointages()">
-
-          <label for="filterUser">Staff :</label>
-          <select id="filterUser" onchange="loadPointages()">
-            <option value="">Tout le monde</option>
-          </select>
+      <section class="card mb-5" aria-label="Filtres">
+        <div class="flex gap-4 flex-wrap items-center">
+          <div class="form-group" style="min-width:160px;">
+            <label class="form-label" for="filter-date">Date</label>
+            <input type="date" id="filter-date">
+          </div>
+          <div class="form-group" style="min-width:180px;">
+            <label class="form-label" for="filter-user">Membre du staff</label>
+            <select id="filter-user">
+              <option value="">Tout le monde</option>
+            </select>
+          </div>
+          <div style="align-self:flex-end;padding-bottom:2px;">
+            <button class="btn btn-primary btn-sm" id="btn-filter" type="button">
+              <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="14" height="14"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+              Filtrer
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Tableau pointages du jour -->
-      <div class="card" style="margin-bottom:24px;">
-        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="card-title" id="tableTitle">Pointages</div>
+      <!-- Tableau pointages -->
+      <section class="card mb-6" aria-labelledby="pointages-table-title">
+        <div class="card-header">
+          <h2 class="card-title" id="pointages-table-title">Pointages</h2>
         </div>
         <div class="table-wrap">
-          <table id="pointagesTable">
+          <table id="pointages-table">
+            <caption class="sr-only" id="pointages-caption">Tableau des pointages</caption>
             <thead>
               <tr>
-                <th>Nom</th>
-                <th>Shift</th>
-                <th>Type</th>
-                <th>Heure</th>
-                <th>Retard</th>
-                <th>Photo</th>
+                <th scope="col">Nom</th>
+                <th scope="col">Shift</th>
+                <th scope="col">Type</th>
+                <th scope="col">Heure</th>
+                <th scope="col">Retard</th>
+                <th scope="col">Photo</th>
               </tr>
             </thead>
-            <tbody id="pointagesTbody">
-              <tr><td colspan="6" class="empty-state">Chargement...</td></tr>
+            <tbody id="pointages-tbody">
+              <tr><td colspan="6" class="empty-state">Chargement…</td></tr>
             </tbody>
           </table>
         </div>
+      </section>
+
+      <!-- Heures travaillées -->
+      <div class="section-divider" role="presentation">
+        <div class="section-divider-line"></div>
+        <div class="section-divider-label" id="stats-period-label">Heures travaillées — semaine en cours</div>
+        <div class="section-divider-line"></div>
       </div>
 
-      <!-- Heures travaillées cette semaine -->
-      <div class="section-divider">
-        <div class="section-divider-line"></div>
-        <div class="section-divider-label">📊 Heures travaillées — semaine en cours</div>
-        <div class="section-divider-line"></div>
-      </div>
-
-      <div class="card">
+      <section class="card" aria-labelledby="stats-title">
+        <h2 class="sr-only" id="stats-title">Heures travaillées cette semaine</h2>
         <div class="table-wrap">
           <table class="hours-table">
+            <caption class="sr-only">Récapitulatif des heures par membre du staff</caption>
             <thead>
               <tr>
-                <th>Nom</th>
-                <th>Shift</th>
-                <th>Heures</th>
-                <th>Retards</th>
-                <th>Total retard</th>
+                <th scope="col">Nom</th>
+                <th scope="col">Shift</th>
+                <th scope="col">Heures travaillées</th>
+                <th scope="col">Retards</th>
+                <th scope="col">Durée retards</th>
               </tr>
             </thead>
-            <tbody id="statsTbody">
-              <tr><td colspan="5" class="empty-state">Chargement...</td></tr>
+            <tbody id="stats-tbody">
+              <tr><td colspan="5" class="empty-state">Chargement…</td></tr>
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
     </div>
+  </main>
+
+  <!-- ══ Lightbox photo ══ -->
+  <div
+    id="photo-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Photo de pointage"
+    class="hidden"
+    style="position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;"
+  >
+    <button
+      id="photo-close-btn"
+      type="button"
+      aria-label="Fermer la photo"
+      style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.12);color:white;border:none;border-radius:8px;width:40px;height:40px;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;"
+    >✕</button>
+    <img
+      id="photo-overlay-img"
+      src=""
+      alt=""
+      style="max-width:90vw;max-height:80vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.8);"
+    >
+    <p id="photo-overlay-caption" style="color:rgba(255,255,255,0.8);font-size:0.9rem;text-align:center;"></p>
   </div>
 
-  <!-- Lightbox photo -->
-  <div id="photoOverlay">
-    <span id="photoOverlayClose" onclick="closePhoto()">✕</span>
-    <img id="photoOverlayImg" src="" alt="Photo pointage">
-    <div id="photoOverlayCaption"></div>
-  </div>
-
+  <div id="toast-container" role="status" aria-live="polite"></div>
   <script src="/js/api.js"></script>
   <script>
-    // ── Init ──────────────────────────────────────────────────────────────────
+    'use strict';
     buildNav('pointages');
 
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('filterDate').value = today;
+    const todayStr = new Date().toISOString().split('T')[0];
+    let currentRows = [];
+
+    document.getElementById('filter-date').value = todayStr;
+    document.getElementById('filter-date').addEventListener('change', loadPointages);
+    document.getElementById('filter-user').addEventListener('change', loadPointages);
+    document.getElementById('btn-filter').addEventListener('click', loadPointages);
+    document.getElementById('btn-export').addEventListener('click', exportCSV);
 
     async function init() {
       await loadStaffList();
@@ -293,11 +194,11 @@
       loadStats();
     }
 
-    // ── Liste du staff ────────────────────────────────────────────────────────
+    // ── Staff list pour le filtre ──
     async function loadStaffList() {
       const staff = await api.get('/api/admin/staff');
       if (!staff || !Array.isArray(staff)) return;
-      const sel = document.getElementById('filterUser');
+      const sel = document.getElementById('filter-user');
       staff.forEach(u => {
         const opt = document.createElement('option');
         opt.value = u.id;
@@ -306,120 +207,172 @@
       });
     }
 
-    // ── Pointages ─────────────────────────────────────────────────────────────
+    // ── Pointages ──
     async function loadPointages() {
-      const date   = document.getElementById('filterDate').value || today;
-      const userId = document.getElementById('filterUser').value;
+      const date   = document.getElementById('filter-date').value || todayStr;
+      const userId = document.getElementById('filter-user').value;
       const url    = `/api/admin/pointages?date=${date}${userId ? `&user_id=${userId}` : ''}`;
+      const rows   = await api.get(url);
 
-      const rows = await api.get(url);
       if (!rows || !Array.isArray(rows)) {
-        document.getElementById('pointagesTbody').innerHTML =
-          `<tr><td colspan="6" class="empty-state">${rows && rows.error ? '⚠️ ' + rows.error : 'Erreur de chargement'}</td></tr>`;
+        document.getElementById('pointages-tbody').innerHTML =
+          `<tr><td colspan="6" class="empty-state">${rows && rows.error ? escapeHtml(rows.error) : 'Erreur de chargement'}</td></tr>`;
         return;
       }
+      currentRows = rows;
 
-      // Mise à jour titre
+      // Titre de la table
       const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-      document.getElementById('tableTitle').textContent = `Pointages — ${dateLabel}`;
+      document.getElementById('pointages-table-title').textContent = `Pointages — ${dateLabel}`;
+      document.getElementById('pointages-caption').textContent = `Pointages du ${dateLabel}`;
 
-      // KPI (aujourd'hui seulement)
-      if (date === today) {
-        document.getElementById('kpiTotal').textContent = rows.length;
+      // KPIs (aujourd'hui seulement)
+      if (date === todayStr) {
+        document.getElementById('kpi-total').textContent = rows.length;
+        document.getElementById('kpi-total').closest('article').setAttribute('aria-label', `Pointages aujourd'hui : ${rows.length}`);
         const byUser = {};
         rows.forEach(r => { byUser[r.user_id] = r.type; });
         const present = Object.values(byUser).filter(t => t === 'arrivee').length;
-        document.getElementById('kpiPresent').textContent = present;
+        document.getElementById('kpi-present').textContent = present;
+        document.getElementById('kpi-present').closest('article').setAttribute('aria-label', `Présents actuellement : ${present}`);
         const lateCount = rows.filter(r => r.late_min > 0).length;
-        document.getElementById('kpiLate').textContent = lateCount;
+        document.getElementById('kpi-late').textContent = lateCount;
+        document.getElementById('kpi-late').closest('article').setAttribute('aria-label', `Retards du jour : ${lateCount}`);
       }
 
-      // Tableau
-      const tbody = document.getElementById('pointagesTbody');
+      const tbody = document.getElementById('pointages-tbody');
       if (!rows.length) {
         tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Aucun pointage pour cette date</td></tr>';
         return;
       }
-      tbody.innerHTML = rows.map(r => {
+      tbody.innerHTML = rows.map((r, i) => {
         const heure = r.timestamp.slice(11, 16);
-        const typeEl = r.type === 'arrivee'
-          ? '<span class="badge badge-arrivee">Arrivée</span>'
-          : '<span class="badge badge-depart">Départ</span>';
+        const isArrivee = r.type === 'arrivee';
+        const typeEl = isArrivee
+          ? `<span class="badge badge-arrivee">Arrivée</span>`
+          : `<span class="badge badge-depart">Départ</span>`;
         const retardEl = r.late_min > 0
           ? `<span class="badge badge-late">+${r.late_min} min</span>`
-          : '<span style="color:var(--text-muted)">—</span>';
+          : `<span class="text-muted text-sm">—</span>`;
         const photoEl = r.photo_filename
-          ? `<img class="photo-thumb" src="/uploads/pointages/${r.photo_filename}" loading="lazy"
-               onclick="openPhoto('/uploads/pointages/${r.photo_filename}', '${escHtml(r.user_name)} — ${heure}')"
-               alt="Photo ${escHtml(r.user_name)}">`
-          : '<span class="no-photo">Aucune</span>';
+          ? `<button
+               class="btn-icon-sm photo-thumb"
+               type="button"
+               data-url="/uploads/pointages/${escapeHtml(r.photo_filename)}"
+               data-caption="${escapeHtml(r.user_name)} — ${escapeHtml(heure)}"
+               aria-label="Voir la photo de pointage de ${escapeHtml(r.user_name)}"
+               style="background:none;border:none;padding:0;cursor:pointer;"
+             >
+               <img
+                 src="/uploads/pointages/${escapeHtml(r.photo_filename)}"
+                 alt="Photo de ${escapeHtml(r.user_name)}"
+                 loading="lazy"
+                 class="photo-thumb"
+                 style="pointer-events:none;"
+               >
+             </button>`
+          : `<span class="text-muted text-xs">Aucune</span>`;
+
         return `<tr>
-          <td><strong>${escHtml(r.user_name)}</strong></td>
-          <td style="color:var(--text-muted)">${r.shift || '—'}</td>
+          <td><strong>${escapeHtml(r.user_name)}</strong></td>
+          <td class="text-muted">${escapeHtml(r.shift || '—')}</td>
           <td>${typeEl}</td>
-          <td style="font-weight:600">${heure}</td>
+          <td style="font-weight:600;font-variant-numeric:tabular-nums;">${escapeHtml(heure)}</td>
           <td>${retardEl}</td>
           <td>${photoEl}</td>
         </tr>`;
       }).join('');
+
+      // Déléguer les clics photos
+      document.getElementById('pointages-tbody').querySelectorAll('[data-url]').forEach(btn => {
+        btn.addEventListener('click', () => openPhoto(btn.dataset.url, btn.dataset.caption, btn));
+      });
     }
 
-    // ── Stats hebdomadaires ───────────────────────────────────────────────────
+    // ── Stats hebdomadaires ──
     async function loadStats() {
       const data = await api.get('/api/admin/pointages/stats');
       if (!data || data.error) return;
       const { stats, from, to } = data;
 
-      const fromLabel = new Date(from + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-      const toLabel   = new Date(to   + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-      document.querySelector('.section-divider-label').textContent =
-        `📊 Heures travaillées — ${fromLabel} au ${toLabel}`;
+      if (from && to) {
+        const fromLabel = new Date(from + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        const toLabel   = new Date(to   + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        document.getElementById('stats-period-label').textContent = `Heures travaillées — ${fromLabel} au ${toLabel}`;
+      }
 
-      const tbody = document.getElementById('statsTbody');
+      const tbody = document.getElementById('stats-tbody');
       if (!stats || !stats.length) {
         tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Aucune donnée cette semaine</td></tr>';
         return;
       }
-      tbody.innerHTML = stats.map(s => {
-        const retardCell = s.late_count > 0
-          ? `<span class="badge badge-late">${s.late_count}x</span>`
-          : '<span style="color:var(--text-muted)">—</span>';
-        const totalRetard = s.total_late_min > 0
-          ? `<span style="color:#ef4444">${fmtH(s.total_late_min)}</span>`
-          : '<span style="color:var(--text-muted)">—</span>';
-        return `<tr>
-          <td><strong>${escHtml(s.name)}</strong></td>
-          <td style="color:var(--text-muted)">${s.shift || '—'}</td>
+      tbody.innerHTML = stats.map(s => `
+        <tr>
+          <td><strong>${escapeHtml(s.name)}</strong></td>
+          <td class="text-muted">${escapeHtml(s.shift || '—')}</td>
           <td style="font-weight:600">${fmtH(s.worked_min)}</td>
-          <td>${retardCell}</td>
-          <td>${totalRetard}</td>
-        </tr>`;
-      }).join('');
+          <td>${s.late_count > 0
+            ? `<span class="badge badge-late">${s.late_count}×</span>`
+            : `<span class="text-muted text-sm">—</span>`}</td>
+          <td>${s.total_late_min > 0
+            ? `<span class="text-danger">${fmtH(s.total_late_min)}</span>`
+            : `<span class="text-muted text-sm">—</span>`}</td>
+        </tr>`).join('');
     }
 
-    // ── Lightbox ──────────────────────────────────────────────────────────────
-    function openPhoto(url, caption) {
-      document.getElementById('photoOverlayImg').src = url;
-      document.getElementById('photoOverlayCaption').textContent = caption || '';
-      document.getElementById('photoOverlay').classList.add('open');
+    // ── Export CSV ──
+    function exportCSV() {
+      if (!currentRows.length) { showToast('Aucune donnée à exporter.', 'info'); return; }
+      const headers = ['Nom', 'Shift', 'Type', 'Heure', 'Retard (min)'];
+      const rows = currentRows.map(r => [
+        r.user_name,
+        r.shift || '',
+        r.type === 'arrivee' ? 'Arrivée' : 'Départ',
+        r.timestamp.slice(11, 16),
+        r.late_min || 0,
+      ]);
+      const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `pointages_${document.getElementById('filter-date').value}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast('CSV exporté', 'success');
+    }
+
+    // ── Lightbox ──
+    let photoTrigger = null;
+    const overlay = document.getElementById('photo-overlay');
+
+    function openPhoto(url, caption, triggerBtn) {
+      photoTrigger = triggerBtn || null;
+      const img = document.getElementById('photo-overlay-img');
+      img.src = url;
+      img.alt = caption || 'Photo de pointage';
+      document.getElementById('photo-overlay-caption').textContent = caption || '';
+      overlay.classList.remove('hidden');
+      overlay.style.display = 'flex';
+      document.body.classList.add('modal-open');
+      trapFocus(overlay, triggerBtn);
+      document.getElementById('photo-close-btn').focus();
     }
     function closePhoto() {
-      document.getElementById('photoOverlay').classList.remove('open');
-      document.getElementById('photoOverlayImg').src = '';
+      overlay.style.display = 'none';
+      overlay.classList.add('hidden');
+      document.getElementById('photo-overlay-img').src = '';
+      document.body.classList.remove('modal-open');
+      releaseFocus();
     }
-    document.getElementById('photoOverlay').addEventListener('click', function(e) {
-      if (e.target === this) closePhoto();
-    });
+    document.getElementById('photo-close-btn').addEventListener('click', closePhoto);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closePhoto(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closePhoto(); });
 
-    // ── Utilitaires ───────────────────────────────────────────────────────────
+    // ── Helpers ──
     function fmtH(mins) {
       if (!mins) return '—';
       const h = Math.floor(mins / 60), m = mins % 60;
       return h > 0 ? (m > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${h}h`) : `${m}min`;
-    }
-    function escHtml(s) {
-      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
     init();

@@ -10,363 +10,387 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MOS">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
   <style>
-
-    /* ══ BANNIÈRE MODE ASSIGNATION ══ */
     .assign-banner {
-      display: none;
-      align-items: center;
-      gap: 10px;
-      background: rgba(205,164,67,.15);
-      border: 1.5px solid rgba(205,164,67,.5);
-      border-radius: var(--radius);
-      padding: 12px 16px;
-      margin-bottom: 14px;
+      display:none; align-items:center; gap:10px;
+      background:rgba(230,184,74,.15); border:1.5px solid rgba(230,184,74,.5);
+      border-radius:var(--radius); padding:12px 16px; margin-bottom:14px;
     }
-    .assign-banner.visible { display: flex; }
-    .assign-banner-icon { font-size: 1.3rem; flex-shrink: 0; }
-    .assign-banner-text { flex: 1; font-size: .88rem; line-height: 1.4; }
-    .assign-banner-text strong { color: var(--primary); }
-    .assign-banner-cancel { background: rgba(255,255,255,.08); border: 1px solid var(--border); border-radius: 20px; color: var(--text-muted); font-size: .8rem; padding: 5px 12px; cursor: pointer; white-space: nowrap; }
+    .assign-banner.visible { display:flex; }
+    .assign-banner-icon { font-size:1.3rem; flex-shrink:0; }
+    .assign-banner-text { flex:1; font-size:.88rem; line-height:1.4; }
+    .assign-banner-text strong { color:var(--primary); }
+    .assign-banner-cancel { background:rgba(255,255,255,.08); border:1px solid var(--border); border-radius:20px; color:var(--text-muted); font-size:.8rem; padding:5px 12px; cursor:pointer; white-space:nowrap; }
 
-    /* ══ ZONE TABS ══ */
-    .zone-tabs { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 2px; scrollbar-width: none; }
-    .zone-tabs::-webkit-scrollbar { display: none; }
-    .zone-tab { padding: 8px 14px; border-radius: var(--radius-sm); font-size: .82rem; font-weight: 600; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; transition: all .15s; white-space: nowrap; flex-shrink: 0; }
-    .zone-tab.active { background: var(--primary-dim); border-color: var(--primary); color: var(--primary); }
-    .zone-tab .zt-cnt { font-size: .7rem; margin-left: 4px; opacity: .8; }
+    .zone-tabs { display:flex; gap:6px; overflow-x:auto; margin-bottom:12px; padding-bottom:2px; scrollbar-width:none; }
+    .zone-tabs::-webkit-scrollbar { display:none; }
+    .zone-tab { padding:8px 14px; border-radius:var(--radius-sm); font-size:.82rem; font-weight:600; background:var(--bg-card); border:1px solid var(--border); color:var(--text-muted); cursor:pointer; transition:all .15s; white-space:nowrap; flex-shrink:0; }
+    .zone-tab[aria-selected="true"] { background:var(--primary-dim); border-color:var(--primary); color:var(--primary); }
+    .zone-tab .zt-cnt { font-size:.7rem; margin-left:4px; opacity:.8; }
 
-    /* ══ LÉGENDE ══ */
-    .legend { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-    .legend-item { display: flex; align-items: center; gap: 5px; font-size: .75rem; color: var(--text-muted); }
-    .legend-dot { width: 9px; height: 9px; border-radius: 50%; border: 2px solid; flex-shrink: 0; }
+    .legend { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .legend-item { display:flex; align-items:center; gap:5px; font-size:.75rem; color:var(--text-muted); }
+    .legend-dot { width:9px; height:9px; border-radius:50%; border:2px solid; flex-shrink:0; }
 
-    /* ══ ZOOM BAR ══ */
-    .zoom-bar { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; }
-    .zoom-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .zoom-lbl { font-size: .82rem; color: var(--text-muted); min-width: 44px; text-align: center; }
-    @media (min-width: 769px) { .zoom-bar { display: none; } }
+    .zoom-bar { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px; }
+    .zoom-btn { width:38px; height:38px; border-radius:50%; border:1px solid var(--border); background:var(--bg-card); color:var(--text); font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .zoom-lbl { font-size:.82rem; color:var(--text-muted); min-width:44px; text-align:center; }
+    @media (min-width:769px) { .zoom-bar { display:none; } }
 
-    /* ══ CANVAS PLAN ══ */
-    .floor-wrap { width: 100%; overflow: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); position: relative; touch-action: pan-x pan-y; }
-    .floor-canvas { transform-origin: top left; position: relative; }
-    .floor-table { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid; cursor: pointer; transition: transform .1s, box-shadow .1s; user-select: none; }
-    .floor-table:hover  { transform: scale(1.04); box-shadow: 0 6px 20px rgba(0,0,0,.4); }
-    @media (max-width: 768px) { .floor-table:hover { transform: none; box-shadow: none; } }
-    .floor-table.is-deco { cursor: default !important; border-style: dashed !important; background: rgba(255,255,255,.03) !important; color: rgba(255,255,255,.2) !important; border-color: rgba(255,255,255,.12) !important; }
-    .floor-table.is-deco:hover { transform: none !important; box-shadow: none !important; }
+    .floor-wrap { width:100%; overflow:auto; -webkit-overflow-scrolling:touch; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg-card); position:relative; touch-action:pan-x pan-y; }
+    .floor-canvas { transform-origin:top left; position:relative; }
+    .floor-table { position:absolute; display:flex; flex-direction:column; align-items:center; justify-content:center; border:2px solid; cursor:pointer; transition:transform .1s,box-shadow .1s; user-select:none; }
+    .floor-table:hover  { transform:scale(1.04); box-shadow:0 6px 20px rgba(0,0,0,.4); }
+    .floor-table:focus-visible { outline:none; box-shadow:var(--focus-ring); z-index:10; }
+    @media (max-width:768px) { .floor-table:hover { transform:none; box-shadow:none; } }
+    .floor-table.is-deco { cursor:default !important; border-style:dashed !important; background:rgba(255,255,255,.03) !important; color:rgba(255,255,255,.2) !important; border-color:rgba(255,255,255,.12) !important; }
+    .floor-table.is-deco:hover { transform:none !important; box-shadow:none !important; }
 
-    /* Couleurs tables selon statut visuel des réservations */
-    :root { --orange: #F5A624; --orange-bg: rgba(245,166,36,.12); }
-    .s-available { background: var(--bg-surface); border-color: var(--border); color: var(--text-muted); }
-    .s-unplaced  { background: var(--orange-bg);  border-color: var(--orange);   color: var(--orange); }
-    .s-placed    { background: var(--info-bg);     border-color: var(--info);     color: var(--info); }
-    .s-arrived   { background: var(--success-bg);  border-color: var(--success);  color: var(--success); }
-    .s-late      { background: var(--danger-bg);   border-color: var(--danger);   color: var(--danger); animation: pulse 1s infinite; }
-    /* Rétro-compatibilité */
-    .s-reserved  { background: var(--info-bg); border-color: var(--info); color: var(--info); }
-    .s-setup     { background: var(--orange-bg); border-color: var(--orange); color: var(--orange); }
-    .s-alert     { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); animation: pulse 1s infinite; }
+    :root { --orange:#F5A624; --orange-bg:rgba(245,166,36,.12); }
+    .s-available { background:var(--bg-surface); border-color:var(--border); color:var(--text-muted); }
+    .s-unplaced  { background:var(--orange-bg);  border-color:var(--orange);  color:var(--orange); }
+    .s-placed    { background:var(--info-bg);     border-color:var(--info);    color:var(--info); }
+    .s-arrived   { background:var(--success-bg);  border-color:var(--success); color:var(--success); }
+    .s-late      { background:var(--danger-bg);   border-color:var(--danger);  color:var(--danger); animation:pulse 1s infinite; }
+    .s-reserved  { background:var(--info-bg); border-color:var(--info); color:var(--info); }
+    .s-setup     { background:var(--orange-bg); border-color:var(--orange); color:var(--orange); }
+    .s-alert     { background:var(--danger-bg); border-color:var(--danger); color:var(--danger); animation:pulse 1s infinite; }
+    @media (prefers-reduced-motion:reduce) { .s-late,.s-alert { animation:none; } }
 
-    /* En mode assignation */
-    .assign-mode .floor-table.s-available   { border-color: var(--success) !important; box-shadow: 0 0 0 2px rgba(76,175,106,.25); }
-    .assign-mode .floor-table.s-selected    { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(205,164,67,.4); background: rgba(205,164,67,.18) !important; color: var(--primary) !important; }
-    .assign-mode .floor-table:not(.s-available):not(.s-selected):not(.is-deco) { opacity: .4; pointer-events: none; }
+    .assign-mode .floor-table.s-available  { border-color:var(--success) !important; box-shadow:0 0 0 2px rgba(76,175,106,.25); }
+    .assign-mode .floor-table.s-selected   { border-color:var(--primary) !important; box-shadow:0 0 0 3px rgba(230,184,74,.4); background:rgba(230,184,74,.18) !important; color:var(--primary) !important; }
+    .assign-mode .floor-table:not(.s-available):not(.s-selected):not(.is-deco) { opacity:.4; pointer-events:none; }
 
-    /* Bouton flottant confirmation multi-tables */
     .confirm-assign-btn {
-      display: none;
-      position: fixed;
-      bottom: calc(var(--bottom-nav-height) + 16px + env(safe-area-inset-bottom));
-      left: 50%; transform: translateX(-50%);
-      z-index: 190;
-      background: var(--primary);
-      color: #000;
-      font-weight: 700;
-      font-size: .95rem;
-      padding: 14px 28px;
-      border-radius: 30px;
-      border: none;
-      cursor: pointer;
-      box-shadow: 0 4px 20px rgba(205,164,67,.5);
-      white-space: nowrap;
+      display:none; position:fixed;
+      bottom:calc(var(--bottom-nav-height) + 16px + env(safe-area-inset-bottom));
+      left:50%; transform:translateX(-50%); z-index:190;
+      background:var(--primary); color:#000; font-weight:700; font-size:.95rem;
+      padding:14px 28px; border-radius:30px; border:none; cursor:pointer;
+      box-shadow:0 4px 20px rgba(230,184,74,.5); white-space:nowrap;
     }
-    .confirm-assign-btn.visible { display: block; }
+    .confirm-assign-btn.visible { display:block; }
 
-    /* ══ LISTE RÉSAS ══ */
-    .res-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+    .res-list { display:flex; flex-direction:column; gap:8px; margin-top:4px; }
     .res-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-left: 4px solid var(--border);
-      border-radius: var(--radius); padding: 12px 14px; cursor: pointer;
-      display: grid; grid-template-columns: 56px 1fr auto; gap: 0 12px; align-items: start;
-      transition: background .12s;
+      background:var(--bg-card); border:1px solid var(--border); border-left:4px solid var(--border);
+      border-radius:var(--radius); padding:12px 14px; cursor:pointer;
+      display:grid; grid-template-columns:56px 1fr auto; gap:0 12px; align-items:start;
+      transition:background .12s; width:100%; text-align:left;
     }
-    .res-card:active { background: var(--bg-surface); }
-    /* Statuts visuels (nouveau système) */
-    .res-card.vs-unplaced  { border-left-color: var(--orange); }
-    .res-card.vs-placed    { border-left-color: var(--info); }
-    .res-card.vs-arrived   { border-left-color: var(--success); }
-    .res-card.vs-late      { border-left-color: var(--danger); animation: blink-card 1.5s ease-in-out infinite; }
-    .res-card.vs-no_show   { border-left-color: var(--danger); opacity: .7; }
-    .res-card.vs-cancelled { border-left-color: #555; opacity: .55; }
+    .res-card:focus-visible { outline:none; box-shadow:var(--focus-ring); }
+    .res-card:active { background:var(--bg-surface); }
+    .res-card.vs-unplaced  { border-left-color:var(--orange); }
+    .res-card.vs-placed    { border-left-color:var(--info); }
+    .res-card.vs-arrived   { border-left-color:var(--success); }
+    .res-card.vs-late      { border-left-color:var(--danger); animation:blink-card 1.5s ease-in-out infinite; }
+    .res-card.vs-no_show   { border-left-color:var(--danger); opacity:.7; }
+    .res-card.vs-cancelled { border-left-color:#555; opacity:.55; }
     .res-card.vs-cancelled .rc-time,.res-card.vs-cancelled .rc-name { text-decoration:line-through; color:#666; }
-    @keyframes blink-card  { 0%,100%{opacity:1} 50%{opacity:.55} }
-    /* Couleurs select statut */
+    @keyframes blink-card { 0%,100%{opacity:1} 50%{opacity:.55} }
+    @media (prefers-reduced-motion:reduce) { .res-card.vs-late { animation:none; } }
     .vs-unplaced  { border-color:var(--orange)!important;  color:var(--orange)!important; }
     .vs-placed    { border-color:var(--info)!important;    color:var(--info)!important; }
     .vs-arrived   { border-color:var(--success)!important; color:var(--success)!important; }
     .vs-late      { border-color:var(--danger)!important;  color:var(--danger)!important; }
     .vs-no_show   { border-color:var(--danger)!important;  color:var(--danger)!important; }
     .vs-cancelled { border-color:#555!important;           color:#555!important; }
-    /* Rétro-compatibilité */
-    .res-card.st-confirmed { border-left-color: var(--info); }
-    .res-card.st-arrived   { border-left-color: var(--success); }
-    .res-card.st-no_show   { border-left-color: var(--danger); }
-    .res-card.st-cancelled { border-left-color: var(--danger); background: rgba(232,84,84,.04); opacity: .7; }
-    .rc-time { font-size: 1.2rem; font-weight: 800; letter-spacing: -.5px; padding-top: 2px; line-height: 1; }
-    .rc-body { min-width: 0; }
-    .rc-name { font-size: .95rem; font-weight: 700; }
-    .rc-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 4px; font-size: .76rem; color: var(--text-muted); }
-    .rc-notes { font-size: .73rem; color: var(--text-muted); font-style: italic; margin-top: 3px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .rc-tbl-ok  { font-size: .7rem; font-weight: 600; color: var(--success); background: var(--success-bg); border: 1px solid rgba(76,175,106,.3); border-radius: 20px; padding: 1px 7px; }
-    .rc-tbl-nok { font-size: .7rem; font-weight: 600; color: var(--danger); background: var(--danger-bg); border: 1px solid rgba(232,84,84,.3); border-radius: 20px; padding: 1px 7px; animation: blink 1.4s ease-in-out infinite; }
+    .rc-time { font-size:1.2rem; font-weight:800; letter-spacing:-.5px; padding-top:2px; line-height:1; }
+    .rc-body { min-width:0; }
+    .rc-name { font-size:.95rem; font-weight:700; }
+    .rc-meta { display:flex; flex-wrap:wrap; gap:4px 10px; margin-top:4px; font-size:.76rem; color:var(--text-muted); }
+    .rc-notes { font-size:.73rem; color:var(--text-muted); font-style:italic; margin-top:3px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .rc-tbl-ok  { font-size:.7rem; font-weight:600; color:var(--success); background:var(--success-bg); border:1px solid rgba(76,175,106,.3); border-radius:20px; padding:1px 7px; }
+    .rc-tbl-nok { font-size:.7rem; font-weight:600; color:var(--danger); background:var(--danger-bg); border:1px solid rgba(232,84,84,.3); border-radius:20px; padding:1px 7px; animation:blink 1.4s ease-in-out infinite; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-    .rc-status-col { grid-column: 3; align-self: center; }
-    .status-pill { font-size: .7rem; font-weight: 600; border-radius: 20px; padding: 4px 9px; border: 1.5px solid; background: transparent; cursor: pointer; white-space: nowrap; appearance: none; -webkit-appearance: none; color: inherit; font-family: inherit; }
-    .sp-confirmed { border-color: var(--info);    color: var(--info); }
-    .sp-arrived   { border-color: var(--success); color: var(--success); }
-    .sp-no_show   { border-color: var(--danger);  color: var(--danger); }
-    .sp-cancelled { border-color: #555;           color: #555; }
+    @media (prefers-reduced-motion:reduce) { .rc-tbl-nok { animation:none; } }
+    .rc-status-col { grid-column:3; align-self:center; }
+    .status-pill { font-size:.7rem; font-weight:600; border-radius:20px; padding:4px 9px; border:1.5px solid; background:transparent; cursor:pointer; white-space:nowrap; appearance:none; -webkit-appearance:none; color:inherit; font-family:inherit; }
 
-    /* ══ MODE ÉDITION ══ */
-    .edit-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; padding: 10px 14px; background: rgba(205,164,67,.08); border: 1.5px solid rgba(205,164,67,.3); border-radius: var(--radius); }
-    .floor-canvas.edit-mode { background: repeating-linear-gradient(var(--bg-card) 0 39px, var(--border) 39px 40px), repeating-linear-gradient(90deg, var(--bg-card) 0 39px, var(--border) 39px 40px) !important; }
-    .edit-mode .floor-table:not(.is-deco) { cursor: grab !important; }
-    .edit-mode .floor-table:not(.is-deco):active { cursor: grabbing !important; }
-    .s-edit-selected { background: rgba(205,164,67,.18) !important; border-color: var(--primary) !important; color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(205,164,67,.35); }
+    .edit-toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; padding:10px 14px; background:rgba(230,184,74,.08); border:1.5px solid rgba(230,184,74,.3); border-radius:var(--radius); }
+    .floor-canvas.edit-mode { background:repeating-linear-gradient(var(--bg-card) 0 39px,var(--border) 39px 40px),repeating-linear-gradient(90deg,var(--bg-card) 0 39px,var(--border) 39px 40px) !important; }
+    .edit-mode .floor-table:not(.is-deco) { cursor:grab !important; }
+    .edit-mode .floor-table:not(.is-deco):active { cursor:grabbing !important; }
+    .s-edit-selected { background:rgba(230,184,74,.18) !important; border-color:var(--primary) !important; color:var(--primary) !important; box-shadow:0 0 0 3px rgba(230,184,74,.35); }
 
-    /* ══ DRAWER (table modal + new res) ══ */
-    .drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; opacity: 0; pointer-events: none; transition: opacity .25s; }
-    .drawer-backdrop.open { opacity: 1; pointer-events: auto; }
-    .drawer { position: fixed; bottom: 0; left: 0; right: 0; z-index: 201; background: var(--bg-card); border-radius: 20px 20px 0 0; box-shadow: 0 -8px 40px rgba(0,0,0,.5); transform: translateY(102%); transition: transform .3s cubic-bezier(.32,.72,0,1); max-height: 92dvh; display: flex; flex-direction: column; }
-    .drawer.open { transform: translateY(0); }
-    @media (min-width: 641px) {
-      .drawer-backdrop { backdrop-filter: blur(2px); }
-      .drawer { bottom: auto; top: 50%; left: 50%; right: auto; transform: translate(-50%,-40%); opacity: 0; border-radius: var(--radius); width: 100%; max-width: 480px; max-height: 90vh; transition: transform .25s ease, opacity .25s ease; }
-      .drawer.open { transform: translate(-50%,-50%); opacity: 1; }
+    .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s; }
+    .drawer-backdrop.open { opacity:1; pointer-events:auto; }
+    .drawer { position:fixed; bottom:0; left:0; right:0; z-index:201; background:var(--bg-card); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.5); transform:translateY(102%); transition:transform .3s cubic-bezier(.32,.72,0,1); max-height:92dvh; display:flex; flex-direction:column; }
+    .drawer.open { transform:translateY(0); }
+    @media (min-width:641px) {
+      .drawer-backdrop { backdrop-filter:blur(2px); }
+      .drawer { bottom:auto; top:50%; left:50%; right:auto; transform:translate(-50%,-40%); opacity:0; border-radius:var(--radius); width:100%; max-width:480px; max-height:90vh; transition:transform .25s ease,opacity .25s ease; }
+      .drawer.open { transform:translate(-50%,-50%); opacity:1; }
     }
-    .drawer-handle { width: 40px; height: 4px; background: rgba(255,255,255,.15); border-radius: 2px; margin: 10px auto 0; flex-shrink: 0; }
-    @media (min-width: 641px) { .drawer-handle { display: none; } }
-    .drawer-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px 12px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
-    .drawer-title { font-size: 1rem; font-weight: 700; }
-    .drawer-close { width: 30px; height: 30px; border-radius: 50%; background: var(--bg-surface); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: .9rem; cursor: pointer; border: none; flex-shrink: 0; }
-    .drawer-body { overflow-y: auto; padding: 16px 20px; flex: 1; -webkit-overflow-scrolling: touch; }
-    .drawer-footer { display: flex; gap: 8px; padding: 10px 20px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); flex-shrink: 0; }
-    .drawer-footer .btn { flex: 1; justify-content: center; min-height: 44px; }
+    @media (prefers-reduced-motion:reduce) { .drawer { transition:none; } }
+    .drawer-handle { width:40px; height:4px; background:rgba(255,255,255,.15); border-radius:2px; margin:10px auto 0; flex-shrink:0; }
+    @media (min-width:641px) { .drawer-handle { display:none; } }
+    .drawer-head { display:flex; align-items:center; justify-content:space-between; padding:14px 20px 12px; flex-shrink:0; border-bottom:1px solid var(--border); }
+    .drawer-title { font-size:1rem; font-weight:700; }
+    .drawer-close { width:30px; height:30px; border-radius:50%; background:var(--bg-surface); color:var(--text-muted); display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; flex-shrink:0; }
+    .drawer-body { overflow-y:auto; padding:16px 20px; flex:1; -webkit-overflow-scrolling:touch; }
+    .drawer-footer { display:flex; gap:8px; padding:10px 20px calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); flex-shrink:0; }
+    .drawer-footer .btn { flex:1; justify-content:center; min-height:44px; }
 
-    /* Table detail drawer */
-    .tbl-detail-res { background: var(--bg-surface); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 14px; }
-    .tbl-detail-name { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
-    .tbl-detail-meta { font-size: .82rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
-    .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .status-btn { padding: 10px; border-radius: var(--radius-sm); font-size: .82rem; font-weight: 600; cursor: pointer; border: 1.5px solid; background: transparent; text-align: center; transition: background .12s; }
-    .status-btn:active { filter: brightness(1.2); }
+    .tbl-detail-res { background:var(--bg-surface); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:14px; }
+    .tbl-detail-name { font-size:1rem; font-weight:700; margin-bottom:4px; }
+    .tbl-detail-meta { font-size:.82rem; color:var(--text-muted); display:flex; flex-wrap:wrap; gap:4px 10px; }
+    .status-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .status-btn { padding:10px; border-radius:var(--radius-sm); font-size:.82rem; font-weight:600; cursor:pointer; border:1.5px solid; background:transparent; text-align:center; transition:background .12s; }
+    .status-btn:active { filter:brightness(1.2); }
 
-    /* Formulaire */
-    .frow { display: flex; flex-direction: column; gap: 14px; }
-    .fgroup { display: flex; flex-direction: column; gap: 6px; }
-    .fgroup label { font-size: .82rem; font-weight: 600; color: var(--text-muted); }
-    .f2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .stepper { display: flex; align-items: stretch; border: 1.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; height: 46px; }
-    .stepper-btn { width: 48px; background: var(--bg-surface); color: var(--text); font-size: 1.4rem; font-weight: 300; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; touch-action: manipulation; }
-    .stepper-btn:active { background: var(--bg-hover); }
-    .stepper-val { flex: 1; text-align: center; background: var(--bg-card); border: none; border-left: 1.5px solid var(--border); border-right: 1.5px solid var(--border); color: var(--text); font-size: 1.2rem; font-weight: 700; font-family: inherit; padding: 0; -moz-appearance: textfield; }
-    .stepper-val::-webkit-inner-spin-button, .stepper-val::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .frow { display:flex; flex-direction:column; gap:14px; }
+    .fgroup { display:flex; flex-direction:column; gap:6px; }
+    .fgroup label { font-size:.82rem; font-weight:600; color:var(--text-muted); }
+    .f2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .stepper { display:flex; align-items:stretch; border:1.5px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; height:46px; }
+    .stepper-btn { width:48px; background:var(--bg-surface); color:var(--text); font-size:1.4rem; font-weight:300; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; touch-action:manipulation; }
+    .stepper-btn:active { background:var(--bg-hover); }
+    .stepper-val { flex:1; text-align:center; background:var(--bg-card); border:none; border-left:1.5px solid var(--border); border-right:1.5px solid var(--border); color:var(--text); font-size:1.2rem; font-weight:700; font-family:inherit; padding:0; -moz-appearance:textfield; }
+    .stepper-val::-webkit-inner-spin-button,.stepper-val::-webkit-outer-spin-button { -webkit-appearance:none; }
+    .sr-desc { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
   </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
-  <div id="alertBanners"></div>
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
+  <div id="alertBanners" role="alert" aria-live="assertive" aria-atomic="true"></div>
 
-  <div class="page">
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container" style="max-width:1400px">
 
-      <div class="page-header">
+      <header class="page-header">
         <div>
-          <div class="page-title">🍽️ Plan de Salle</div>
-          <div class="page-subtitle" id="dateLabel"></div>
+          <h1 class="page-title">Plan de Salle</h1>
+          <p class="page-subtitle" id="dateLabel"></p>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <input type="date" id="viewDate" style="width:auto" onchange="loadAll()">
-          <button class="btn btn-secondary btn-sm" id="editModeBtn" onclick="toggleEditMode()" style="display:none">🔧 Modifier le plan</button>
-          <button class="btn btn-primary" onclick="openNewRes()">+ Réservation</button>
+          <label for="viewDate" class="sr-only">Date</label>
+          <input type="date" id="viewDate" style="width:auto">
+          <button class="btn btn-secondary btn-sm" id="editModeBtn" style="display:none">Modifier le plan</button>
+          <button class="btn btn-primary" id="btnNewRes">+ Réservation</button>
         </div>
-      </div>
+      </header>
 
       <!-- Bannière mode assignation -->
-      <div class="assign-banner" id="assignBanner">
-        <div class="assign-banner-icon">🎯</div>
+      <div class="assign-banner" id="assignBanner" role="status" aria-live="polite">
+        <div class="assign-banner-icon" aria-hidden="true">🎯</div>
         <div class="assign-banner-text">
           Sélectionner une table pour <strong id="assignName"></strong><br>
-          <span style="color:var(--text-muted);font-size:.78rem">Tapez sur une table libre (verte) pour l'assigner</span>
+          <span style="color:var(--text-muted);font-size:.78rem" id="floor-instructions">Tapez sur une table libre (verte) pour l'assigner — Entrée ou Espace pour confirmer</span>
         </div>
-        <button class="assign-banner-cancel" onclick="cancelAssign()">✕ Annuler</button>
+        <button class="assign-banner-cancel" id="btnCancelAssign">✕ Annuler</button>
       </div>
 
       <!-- Barre mode édition -->
-      <div id="editToolbar" style="display:none;" class="edit-toolbar">
-        <span style="font-size:.82rem;font-weight:700;color:var(--primary);">🔧 Mode édition</span>
-        <button class="btn btn-primary btn-sm" onclick="addTable('square')">+ Table</button>
-        <button class="btn btn-secondary btn-sm" onclick="addTable('round')">⬤ Ronde</button>
-        <button class="btn btn-secondary btn-sm" onclick="addDeco()">+ Décoration</button>
-        <button class="btn btn-danger btn-sm" id="btnDelTable" style="display:none" onclick="deleteSelected()">🗑 Supprimer</button>
+      <div id="editToolbar" style="display:none;" class="edit-toolbar" role="toolbar" aria-label="Outils d'édition du plan">
+        <span style="font-size:.82rem;font-weight:700;color:var(--primary);">Mode édition</span>
+        <button class="btn btn-primary btn-sm" id="btnAddTable">+ Table</button>
+        <button class="btn btn-secondary btn-sm" id="btnAddRound">Ronde</button>
+        <button class="btn btn-secondary btn-sm" id="btnAddDeco">+ Décoration</button>
+        <button class="btn btn-danger btn-sm" id="btnDelTable" style="display:none">Supprimer</button>
       </div>
 
-      <div class="zone-tabs" id="zoneTabs"></div>
+      <!-- Zone tabs -->
+      <div role="tablist" aria-label="Zones de la salle" class="zone-tabs" id="zoneTabs"></div>
 
-      <div class="zoom-bar">
-        <button class="zoom-btn" onclick="changeZoom(-.15)">−</button>
-        <span class="zoom-lbl" id="zoomLbl">100%</span>
-        <button class="zoom-btn" onclick="changeZoom(.15)">+</button>
-        <button class="zoom-btn" onclick="resetZoom()" title="Ajuster">⊡</button>
+      <!-- Zoom bar -->
+      <div class="zoom-bar" role="group" aria-label="Contrôle du zoom">
+        <button class="zoom-btn" id="btnZoomOut" aria-label="Zoom arrière">−</button>
+        <span class="zoom-lbl" id="zoomLbl" aria-live="polite" aria-atomic="true">100%</span>
+        <button class="zoom-btn" id="btnZoomIn" aria-label="Zoom avant">+</button>
+        <button class="zoom-btn" id="btnZoomReset" aria-label="Réinitialiser le zoom">⊡</button>
       </div>
 
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:var(--bg-surface);border-color:var(--border)"></div>Libre</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--orange-bg);border-color:var(--orange)"></div>À placer</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--info-bg);border-color:var(--info)"></div>Placé</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--success-bg);border-color:var(--success)"></div>Arrivé</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--danger-bg);border-color:var(--danger)"></div>En retard</div>
-      </div>
+      <!-- Legend -->
+      <dl class="legend" aria-label="Légende des statuts">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--bg-surface);border-color:var(--border)" aria-hidden="true"></div>
+          <dt class="sr-only">Statut</dt><dd>Libre</dd>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--orange-bg);border-color:var(--orange)" aria-hidden="true"></div>
+          <dd>À placer</dd>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--info-bg);border-color:var(--info)" aria-hidden="true"></div>
+          <dd>Placé</dd>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--success-bg);border-color:var(--success)" aria-hidden="true"></div>
+          <dd>Arrivé</dd>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--danger-bg);border-color:var(--danger)" aria-hidden="true"></div>
+          <dd>En retard</dd>
+        </div>
+      </dl>
 
       <div class="floor-wrap" id="floorWrap">
-        <div class="floor-canvas" id="floorCanvas"></div>
+        <div class="floor-canvas" id="floorCanvas" role="application" aria-label="Plan de salle interactif" aria-describedby="floor-kbd-desc"></div>
       </div>
+      <p id="floor-kbd-desc" class="sr-desc">Plan de salle interactif. Naviguez entre les tables avec Tab, activez avec Entrée ou Espace.</p>
 
       <!-- Liste résas -->
-      <div class="card mt-3">
+      <section class="card mt-3" aria-labelledby="res-list-title">
         <div class="card-header">
-          <div class="card-title">📋 Réservations du jour</div>
-          <span class="badge badge-muted" id="resCount">0</span>
+          <h2 class="card-title" id="res-list-title">Réservations du jour</h2>
+          <span class="badge badge-muted" id="resCount" aria-live="polite">0</span>
         </div>
-        <div class="res-list" id="resList"></div>
-      </div>
+        <div id="resList" class="res-list" aria-live="polite" aria-atomic="true"></div>
+      </section>
 
     </div>
-  </div>
+  </main>
 
   <!-- Bouton flottant confirmation multi-tables -->
-  <button class="confirm-assign-btn" id="confirmAssignBtn" onclick="confirmMultiAssign()">
-    ✓ Confirmer (<span id="confirmCount">0</span> table<span id="confirmPlural"></span>)
+  <button class="confirm-assign-btn" id="confirmAssignBtn" type="button">
+    Confirmer (<span id="confirmCount">0</span> table<span id="confirmPlural"></span>)
   </button>
 
-  <!-- ══ DRAWER TABLE ══ -->
-  <div class="drawer-backdrop" id="backdrop" onclick="closeDrawer()"></div>
+  <!-- Backdrop -->
+  <div class="drawer-backdrop" id="backdrop"></div>
 
-  <div class="drawer" id="tableDrawer">
-    <div class="drawer-handle"></div>
+  <!-- Drawer TABLE -->
+  <div class="drawer" id="tableDrawer" role="dialog" aria-modal="true" aria-labelledby="tblName">
+    <div class="drawer-handle" aria-hidden="true"></div>
     <div class="drawer-head">
       <div>
-        <div class="drawer-title" id="tblName">Table</div>
-        <div style="font-size:.78rem;color:var(--text-muted)" id="tblCap"></div>
+        <h2 class="drawer-title" id="tblName">Table</h2>
+        <p style="font-size:.78rem;color:var(--text-muted)" id="tblCap"></p>
       </div>
-      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+      <button class="drawer-close" id="tableDrawerClose" aria-label="Fermer le détail de la table">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
     </div>
     <div class="drawer-body">
       <div id="tblResDetail"></div>
       <div style="margin-bottom:14px">
-        <div style="font-size:.8rem;font-weight:600;color:var(--text-muted);margin-bottom:10px">Changer le statut :</div>
-        <div class="status-grid">
-          <button class="status-btn" style="border-color:var(--border);color:var(--text-muted)" onclick="setTableStatus('available')">⬜ Libre</button>
-          <button class="status-btn" style="border-color:var(--info);color:var(--info)" onclick="setTableStatus('reserved')">📋 Réservée</button>
-          <button class="status-btn" style="border-color:var(--warning);color:var(--warning)" onclick="setTableStatus('setup')">🪑 Mise en place</button>
-          <button class="status-btn" style="border-color:var(--success);color:var(--success)" onclick="setTableStatus('arrived')">✅ Arrivés</button>
+        <p style="font-size:.8rem;font-weight:600;color:var(--text-muted);margin-bottom:10px" id="status-change-label">Changer le statut :</p>
+        <div class="status-grid" role="group" aria-labelledby="status-change-label">
+          <button class="status-btn" style="border-color:var(--border);color:var(--text-muted)" data-set-status="available" type="button">Libre</button>
+          <button class="status-btn" style="border-color:var(--info);color:var(--info)"           data-set-status="reserved"  type="button">Réservée</button>
+          <button class="status-btn" style="border-color:var(--warning);color:var(--warning)"     data-set-status="setup"     type="button">Mise en place</button>
+          <button class="status-btn" style="border-color:var(--success);color:var(--success)"     data-set-status="arrived"   type="button">Arrivés</button>
         </div>
       </div>
-      <div class="divider"></div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">
       <div style="margin-top:14px">
-        <div style="font-size:.8rem;font-weight:600;color:var(--text-muted);margin-bottom:8px">Associer une réservation :</div>
-        <select id="assignResSelect" style="margin-bottom:10px"></select>
-        <button class="btn btn-secondary btn-full btn-sm" onclick="assignReservation()">Associer à cette table</button>
+        <label for="assignResSelect" style="font-size:.8rem;font-weight:600;color:var(--text-muted);display:block;margin-bottom:8px">Associer une réservation :</label>
+        <select id="assignResSelect" style="margin-bottom:10px" aria-label="Choisir une réservation à associer"></select>
+        <button class="btn btn-secondary btn-full btn-sm" id="btnAssignRes" type="button">Associer à cette table</button>
       </div>
-      <div class="divider"></div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">
       <div id="tblNoteSection" style="margin-top:14px;">
-        <div style="font-size:.8rem;font-weight:600;color:var(--text-muted);margin-bottom:8px">📝 Note de service</div>
+        <label for="tblNoteInput" style="font-size:.8rem;font-weight:600;color:var(--text-muted);display:block;margin-bottom:8px">Note de service</label>
         <textarea id="tblNoteInput" rows="3"
           style="width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:8px;font-size:.85rem;resize:none;box-sizing:border-box;"
-          placeholder="Allergie, anniversaire, bouteille…"
-          oninput="scheduleNoteSave()"></textarea>
-        <div id="tblNoteSaved" style="font-size:.7rem;color:var(--success);opacity:0;text-align:right;margin-top:2px;transition:opacity .3s;">✓ Sauvegardé</div>
+          placeholder="Allergie, anniversaire, bouteille…"></textarea>
+        <p id="tblNoteSaved" style="font-size:.7rem;color:var(--success);opacity:0;text-align:right;margin-top:2px;transition:opacity .3s;" role="status" aria-live="polite">Sauvegardé</p>
       </div>
     </div>
     <div class="drawer-footer">
-      <button class="btn btn-secondary" onclick="closeDrawer()">Fermer</button>
-      <button class="btn btn-primary" onclick="openNewResForTable()">+ Résa pour cette table</button>
+      <button class="btn btn-secondary" id="tableDrawerCloseBtn" type="button">Fermer</button>
+      <button class="btn btn-primary" id="btnNewResForTable" type="button">+ Résa pour cette table</button>
     </div>
   </div>
 
-  <!-- ══ DRAWER NOUVELLE RÉSA ══ -->
-  <div class="drawer" id="resDrawer">
-    <div class="drawer-handle"></div>
+  <!-- Drawer NOUVELLE RÉSA -->
+  <div class="drawer" id="resDrawer" role="dialog" aria-modal="true" aria-labelledby="resDrawerTitle">
+    <div class="drawer-handle" aria-hidden="true"></div>
     <div class="drawer-head">
-      <div class="drawer-title" id="resDrawerTitle">Nouvelle réservation</div>
-      <button class="drawer-close" onclick="closeResDrawer()">✕</button>
+      <h2 class="drawer-title" id="resDrawerTitle">Nouvelle réservation</h2>
+      <button class="drawer-close" id="resDrawerClose" aria-label="Fermer le formulaire">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
     </div>
     <div class="drawer-body">
-      <form id="resForm" onsubmit="saveRes(event)">
+      <form id="resForm" novalidate>
         <input type="hidden" id="resId">
         <div class="frow">
-          <div class="fgroup"><label>Nom du client *</label><input type="text" id="resName" required autocomplete="off"></div>
-          <div class="fgroup"><label>Téléphone</label><input type="tel" id="resPhone"></div>
-          <div class="f2">
-            <div class="fgroup"><label>Date *</label><input type="date" id="resDate" required></div>
-            <div class="fgroup"><label>Heure *</label><input type="time" id="resTime" required></div>
+          <div class="fgroup">
+            <label for="resName">Nom du client <span aria-hidden="true">*</span></label>
+            <input type="text" id="resName" required aria-required="true" autocomplete="off">
           </div>
           <div class="fgroup">
-            <label>Personnes</label>
-            <div class="stepper">
-              <button type="button" class="stepper-btn" onclick="stepParty(-1)">−</button>
-              <input type="number" id="resParty" class="stepper-val" min="1" max="99" value="2" readonly>
-              <button type="button" class="stepper-btn" onclick="stepParty(1)">+</button>
+            <label for="resPhone">Téléphone</label>
+            <input type="tel" id="resPhone">
+          </div>
+          <div class="f2">
+            <div class="fgroup">
+              <label for="resDate">Date <span aria-hidden="true">*</span></label>
+              <input type="date" id="resDate" required aria-required="true">
+            </div>
+            <div class="fgroup">
+              <label for="resTime">Heure <span aria-hidden="true">*</span></label>
+              <input type="time" id="resTime" required aria-required="true">
             </div>
           </div>
-          <div class="fgroup"><label>Notes</label><textarea id="resNotes" rows="2" style="resize:vertical"></textarea></div>
+          <div class="fgroup">
+            <label for="resParty">Personnes</label>
+            <div class="stepper">
+              <button type="button" class="stepper-btn" id="btnPartyDec" aria-label="Diminuer">−</button>
+              <input type="number" id="resParty" class="stepper-val" min="1" max="99" value="2" aria-label="Nombre de personnes" readonly>
+              <button type="button" class="stepper-btn" id="btnPartyInc" aria-label="Augmenter">+</button>
+            </div>
+          </div>
+          <div class="fgroup">
+            <label for="resNotes">Notes</label>
+            <textarea id="resNotes" rows="2" style="resize:vertical"></textarea>
+          </div>
         </div>
       </form>
     </div>
     <div class="drawer-footer">
-      <button class="btn btn-secondary" onclick="closeResDrawer()">Annuler</button>
-      <button class="btn btn-danger" id="btnDelRes" onclick="deleteRes()" style="display:none;flex:0 0 auto;padding:0 14px">🗑</button>
+      <button class="btn btn-secondary" id="resDrawerCancelBtn" type="button">Annuler</button>
+      <button class="btn btn-danger" id="btnDelRes" style="display:none;flex:0 0 auto;padding:0 14px" type="button" aria-label="Supprimer cette réservation">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><path d="M2 4h10M5 4V2h4v2M3 4l1 8h6l1-8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      </button>
       <button type="submit" form="resForm" class="btn btn-primary">Enregistrer</button>
     </div>
   </div>
 
-  <!-- ══ DRAWER PROPRIÉTÉS TABLE (mode édition) ══ -->
-  <div class="drawer" id="propDrawer">
-    <div class="drawer-handle"></div>
+  <!-- Drawer PROPRIÉTÉS TABLE (mode édition) -->
+  <div class="drawer" id="propDrawer" role="dialog" aria-modal="true" aria-labelledby="propDrawerTitle">
+    <div class="drawer-handle" aria-hidden="true"></div>
     <div class="drawer-head">
-      <div class="drawer-title">✏️ Propriétés</div>
-      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+      <h2 class="drawer-title" id="propDrawerTitle">Propriétés de la table</h2>
+      <button class="drawer-close" id="propDrawerClose" aria-label="Fermer les propriétés">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
     </div>
     <div class="drawer-body">
       <div class="frow">
-        <div class="fgroup"><label>Nom</label><input type="text" id="propName" oninput="updateSelected()"></div>
+        <div class="fgroup">
+          <label for="propName">Nom</label>
+          <input type="text" id="propName">
+        </div>
         <div class="f2">
-          <div class="fgroup"><label>Capacité</label><input type="number" id="propCapacity" min="0" max="50" oninput="updateSelected()"></div>
-          <div class="fgroup"><label>Forme</label>
-            <select id="propShape" onchange="updateSelected()">
+          <div class="fgroup">
+            <label for="propCapacity">Capacité</label>
+            <input type="number" id="propCapacity" min="0" max="50">
+          </div>
+          <div class="fgroup">
+            <label for="propShape">Forme</label>
+            <select id="propShape">
               <option value="square">Carré</option>
               <option value="round">Rond</option>
             </select>
           </div>
         </div>
         <div class="f2">
-          <div class="fgroup"><label>Largeur (px)</label><input type="number" id="propWidth" min="40" max="200" oninput="updateSelected()"></div>
-          <div class="fgroup"><label>Hauteur (px)</label><input type="number" id="propHeight" min="40" max="200" oninput="updateSelected()"></div>
+          <div class="fgroup">
+            <label for="propWidth">Largeur (px)</label>
+            <input type="number" id="propWidth" min="40" max="200">
+          </div>
+          <div class="fgroup">
+            <label for="propHeight">Hauteur (px)</label>
+            <input type="number" id="propHeight" min="40" max="200">
+          </div>
         </div>
-        <div class="fgroup"><label>Zone</label>
-          <select id="propZone" onchange="updateSelected()">
+        <div class="fgroup">
+          <label for="propZone">Zone</label>
+          <select id="propZone">
             <option value="salle_bas">Salle Bas</option>
             <option value="etage">Étage</option>
             <option value="coin_canap">Coin Canapé</option>
@@ -374,13 +398,13 @@
           </select>
         </div>
         <div class="fgroup" style="flex-direction:row;align-items:center;gap:10px;">
-          <input type="checkbox" id="propDeco" onchange="updateSelected()" style="width:20px;height:20px;flex-shrink:0;">
-          <label style="margin:0;font-size:.82rem;">Élément décoratif</label>
+          <input type="checkbox" id="propDeco" style="width:20px;height:20px;flex-shrink:0;">
+          <label for="propDeco" style="margin:0;font-size:.82rem;">Élément décoratif</label>
         </div>
       </div>
     </div>
     <div class="drawer-footer">
-      <button class="btn btn-secondary" onclick="closeDrawer()">Fermer</button>
+      <button class="btn btn-secondary" id="propDrawerCloseBtn" type="button">Fermer</button>
     </div>
   </div>
 
@@ -388,6 +412,8 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/api.js"></script>
   <script>
+    'use strict';
+
     buildNav('tables');
     const socket = io();
 
@@ -397,12 +423,6 @@
       { key:'coin_canap', label:'Coin Canapé', canvasW:980,  canvasH:560 },
       { key:'terrasse',   label:'Terrasse',    canvasW:1120, canvasH:580 },
     ];
-    const ST = {
-      confirmed: { label:'📋 Confirmée', cls:'sp-confirmed' },
-      arrived:   { label:'✅ Arrivée',   cls:'sp-arrived'   },
-      no_show:   { label:'⚠️ No show',   cls:'sp-no_show'   },
-      cancelled: { label:'❌ Annulée',   cls:'sp-cancelled' },
-    };
 
     let currentZone = 'salle_bas';
     let tables = [], reservations = [], tableStatuses = {};
@@ -410,25 +430,26 @@
     let viewScale = 1, fitScale = 1;
     const activeAlerts = new Set();
 
-    // ── Mode assignation multi-tables ────────────────────────────────────────
-    const urlParams = new URLSearchParams(location.search);
-    const assignToResId = parseInt(urlParams.get('assignTo')) || null;
+    // ── Mode assignation multi-tables ─────────────────────────────────────────
+    const urlParams       = new URLSearchParams(location.search);
+    const assignToResId   = parseInt(urlParams.get('assignTo')) || null;
     const assignReturnDate = urlParams.get('date') || null;
-    const assignResName = decodeURIComponent(urlParams.get('name') || '');
-    const assignReturnTo = urlParams.get('returnTo') || null;
-    const isAssignMode = !!assignToResId;
-    let selectedTableIds = new Set(); // tables cochées en mode assignation
+    const assignResName   = decodeURIComponent(urlParams.get('name') || '');
+    const assignReturnTo  = urlParams.get('returnTo') || null;
+    const isAssignMode    = !!assignToResId;
+    let selectedTableIds  = new Set();
 
     if (isAssignMode) {
       document.getElementById('assignBanner').classList.add('visible');
       document.getElementById('assignName').textContent = assignResName;
     }
 
+    document.getElementById('btnCancelAssign').addEventListener('click', cancelAssign);
     function cancelAssign() {
       if (assignReturnTo) {
-        window.location.href = assignReturnTo + (assignReturnDate ? '?date='+assignReturnDate : '');
+        window.location.href = assignReturnTo + (assignReturnDate ? '?date=' + assignReturnDate : '');
       } else {
-        window.location.href = `/staff/reservations.html${assignReturnDate ? '?date='+assignReturnDate : ''}`;
+        window.location.href = `/staff/reservations.html${assignReturnDate ? '?date=' + assignReturnDate : ''}`;
       }
     }
 
@@ -439,25 +460,91 @@
       document.getElementById('confirmAssignBtn').classList.toggle('visible', n > 0);
     }
 
+    document.getElementById('confirmAssignBtn').addEventListener('click', confirmMultiAssign);
     async function confirmMultiAssign() {
       const ids = Array.from(selectedTableIds);
       await api.put(`/api/reservations/${assignToResId}`, { table_ids: ids });
       const base = assignReturnTo || '/staff/reservations.html';
-      window.location.href = `${base}?date=${assignReturnDate||today()}&assigned=1`;
+      window.location.href = `${base}?date=${assignReturnDate || today()}&assigned=1`;
     }
 
-    // ── Dates & chargement ───────────────────────────────────────────────────
+    // ── Date ─────────────────────────────────────────────────────────────────
     const viewDate = document.getElementById('viewDate');
     viewDate.value = assignReturnDate || today();
     document.getElementById('dateLabel').textContent = formatDate(viewDate.value);
+    viewDate.addEventListener('change', loadAll);
 
+    // ── Zoom buttons ──────────────────────────────────────────────────────────
+    document.getElementById('btnZoomOut').addEventListener('click', () => changeZoom(-.15));
+    document.getElementById('btnZoomIn').addEventListener('click', () => changeZoom(.15));
+    document.getElementById('btnZoomReset').addEventListener('click', resetZoom);
+
+    // ── Edit toolbar buttons ──────────────────────────────────────────────────
+    document.getElementById('btnAddTable').addEventListener('click', () => addTable('square'));
+    document.getElementById('btnAddRound').addEventListener('click', () => addTable('round'));
+    document.getElementById('btnAddDeco').addEventListener('click', addDeco);
+    document.getElementById('btnDelTable').addEventListener('click', deleteSelected);
+    document.getElementById('editModeBtn').addEventListener('click', toggleEditMode);
+    document.getElementById('btnNewRes').addEventListener('click', () => openNewRes());
+
+    // ── Prop drawer ───────────────────────────────────────────────────────────
+    ['propName','propCapacity','propShape','propWidth','propHeight','propZone','propDeco'].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', updateSelected);
+    });
+
+    // ── Backdrop ──────────────────────────────────────────────────────────────
+    document.getElementById('backdrop').addEventListener('click', closeDrawer);
+
+    // ── Drawer close buttons ─────────────────────────────────────────────────
+    document.getElementById('tableDrawerClose').addEventListener('click', closeDrawer);
+    document.getElementById('tableDrawerCloseBtn').addEventListener('click', closeDrawer);
+    document.getElementById('resDrawerClose').addEventListener('click', closeDrawer);
+    document.getElementById('resDrawerCancelBtn').addEventListener('click', closeDrawer);
+    document.getElementById('propDrawerClose').addEventListener('click', closeDrawer);
+    document.getElementById('propDrawerCloseBtn').addEventListener('click', closeDrawer);
+
+    // ── Table drawer buttons ──────────────────────────────────────────────────
+    document.querySelectorAll('[data-set-status]').forEach(btn => {
+      btn.addEventListener('click', () => setTableStatus(btn.dataset.setStatus));
+    });
+    document.getElementById('btnAssignRes').addEventListener('click', assignReservation);
+    document.getElementById('btnNewResForTable').addEventListener('click', openNewResForTable);
+
+    // ── Reservation form ─────────────────────────────────────────────────────
+    document.getElementById('resForm').addEventListener('submit', saveRes);
+    document.getElementById('btnDelRes').addEventListener('click', deleteRes);
+    document.getElementById('btnPartyDec').addEventListener('click', () => stepParty(-1));
+    document.getElementById('btnPartyInc').addEventListener('click', () => stepParty(1));
+
+    // ── Note save (debounced) ─────────────────────────────────────────────────
+    document.getElementById('tblNoteInput').addEventListener('input', scheduleNoteSave);
+
+    // ── Escape key closes any open drawer ─────────────────────────────────────
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && document.querySelector('.drawer.open')) closeDrawer();
+    });
+
+    // ── Focus trap for drawers ────────────────────────────────────────────────
+    ['tableDrawer','resDrawer','propDrawer'].forEach(id => {
+      document.getElementById(id).addEventListener('keydown', e => {
+        if (e.key !== 'Tab') return;
+        const drawer   = document.getElementById(id);
+        const focusable = Array.from(drawer.querySelectorAll('button:not([disabled]),a,[tabindex]:not([tabindex="-1"]),input,select,textarea'));
+        if (!focusable.length) return;
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+        else             { if (document.activeElement === last)  { e.preventDefault(); first.focus(); } }
+      });
+    });
+
+    // ── Load all data ─────────────────────────────────────────────────────────
     async function loadAll() {
       const date = viewDate.value;
       document.getElementById('dateLabel').textContent = formatDate(date);
       const [t, r] = await Promise.all([api.get('/api/tables'), api.get(`/api/reservations?date=${date}`)]);
       if (!t || !r) return;
       tables = t; reservations = r;
-      // En mode assignation : pré-sélectionner les tables déjà assignées
       if (isAssignMode && selectedTableIds.size === 0) {
         const cur = reservations.find(x => x.id === assignToResId);
         if (cur?.table_ids?.length) cur.table_ids.forEach(id => selectedTableIds.add(id));
@@ -470,7 +557,7 @@
       populateAssignSelect();
     }
 
-    // Calcule le statut visuel d'une réservation (identique à reservations.html)
+    // ── Status visuel ─────────────────────────────────────────────────────────
     function computeVS(r) {
       if (r.status === 'cancelled') return 'cancelled';
       if (r.status === 'no_show')   return 'no_show';
@@ -487,33 +574,49 @@
     function computeStatuses() {
       tableStatuses = {};
       tables.forEach(t => { tableStatuses[t.id] = 'available'; });
-      // Priorité : arrived > late > placed > unplaced
       const PRIORITY = { arrived:4, late:3, placed:2, unplaced:1 };
       reservations.forEach(r => {
-        const ids = Array.isArray(r.table_ids) && r.table_ids.length ? r.table_ids
-                  : (r.table_id ? [r.table_id] : []);
+        const ids = Array.isArray(r.table_ids) && r.table_ids.length ? r.table_ids : (r.table_id ? [r.table_id] : []);
         if (!ids.length || r.status === 'cancelled') return;
         const vs = computeVS(r);
         ids.forEach(tid => {
           const cur = tableStatuses[tid];
-          if ((PRIORITY[vs]||0) > (PRIORITY[cur]||0)) tableStatuses[tid] = vs;
+          if ((PRIORITY[vs] || 0) > (PRIORITY[cur] || 0)) tableStatuses[tid] = vs;
         });
       });
     }
 
-    // ── Zone tabs ────────────────────────────────────────────────────────────
+    // ── Zone tabs ─────────────────────────────────────────────────────────────
     function renderZoneTabs() {
-      document.getElementById('zoneTabs').innerHTML = ZONES.map(z => {
-        const zt = tables.filter(t => t.zone === z.key && !t.is_decoration);
-        const occ = zt.filter(t => ['reserved','arrived','alert'].includes(tableStatuses[t.id])).length;
-        return `<button class="zone-tab ${z.key===currentZone?'active':''}" onclick="switchZone('${z.key}')">
-          ${z.label}<span class="zt-cnt">${occ>0?`${occ}/${zt.length}`:zt.length}</span>
+      const container = document.getElementById('zoneTabs');
+      container.innerHTML = ZONES.map(z => {
+        const zt  = tables.filter(t => t.zone === z.key && !t.is_decoration);
+        const occ = zt.filter(t => ['reserved','arrived','alert','placed','unplaced','late'].includes(tableStatuses[t.id])).length;
+        return `<button class="zone-tab" role="tab"
+                  aria-selected="${z.key === currentZone ? 'true' : 'false'}"
+                  data-zone="${z.key}" type="button">
+          ${escapeHtml(z.label)}<span class="zt-cnt" aria-hidden="true">${occ > 0 ? `${occ}/${zt.length}` : zt.length}</span>
         </button>`;
       }).join('');
+      container.querySelectorAll('[role="tab"]').forEach(btn => {
+        btn.addEventListener('click', () => switchZone(btn.dataset.zone));
+        btn.addEventListener('keydown', e => {
+          const keys = ZONES.map(z => z.key);
+          const idx  = keys.indexOf(btn.dataset.zone);
+          let next   = -1;
+          if (e.key === 'ArrowRight') next = (idx + 1) % keys.length;
+          if (e.key === 'ArrowLeft')  next = (idx - 1 + keys.length) % keys.length;
+          if (next >= 0) {
+            e.preventDefault();
+            switchZone(keys[next]);
+            container.querySelector(`[data-zone="${keys[next]}"]`)?.focus();
+          }
+        });
+      });
     }
     function switchZone(key) { currentZone = key; renderZoneTabs(); renderFloor(); }
 
-    // ── Zoom / scale ─────────────────────────────────────────────────────────
+    // ── Zoom / scale ──────────────────────────────────────────────────────────
     function scaleToFit() {
       const canvas = document.getElementById('floorCanvas');
       const wrap   = document.getElementById('floorWrap');
@@ -529,7 +632,7 @@
       wrap   = wrap   || document.getElementById('floorWrap');
       nH = nH || parseInt(canvas.style.height) || 660;
       canvas.style.transform = `scale(${viewScale})`;
-      wrap.style.height = Math.ceil(nH * viewScale) + 'px';
+      wrap.style.height   = Math.ceil(nH * viewScale) + 'px';
       wrap.style.overflow = viewScale <= fitScale ? 'hidden' : 'auto';
       const lbl = document.getElementById('zoomLbl');
       if (lbl) lbl.textContent = Math.round(viewScale * 100) + '%';
@@ -552,14 +655,14 @@
       document.addEventListener('touchstart', e => {
         if (e.target.closest('.floor-canvas') && e.touches.length === 2) {
           pinching = true;
-          startDist  = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+          startDist  = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
           startScale = viewScale;
         }
       }, { passive: true });
       document.addEventListener('touchmove', e => {
         if (!pinching || e.touches.length < 2) return;
         e.preventDefault();
-        const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+        const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
         viewScale = Math.min(2.5, Math.max(fitScale, startScale * (d / startDist)));
         const canvas = document.getElementById('floorCanvas');
         applyScale(canvas, document.getElementById('floorWrap'), parseInt(canvas.style.height) || 660);
@@ -567,7 +670,9 @@
       document.addEventListener('touchend', () => { pinching = false; });
     })();
 
-    // ── Rendu du plan ────────────────────────────────────────────────────────
+    // ── Rendu du plan ─────────────────────────────────────────────────────────
+    const VS_LABELS_FLOOR = { available:'Libre', unplaced:'À placer', placed:'Placé', arrived:'Arrivé', late:'En retard', no_show:'No show', cancelled:'Annulé' };
+
     function renderFloor() {
       const canvas = document.getElementById('floorCanvas');
       const zone = ZONES.find(z => z.key === currentZone);
@@ -579,7 +684,7 @@
       const zoneTables = tables.filter(t => t.zone === currentZone);
       if (!zoneTables.length) {
         canvas.innerHTML = `<div class="empty-state" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">
-          <div class="empty-state-icon">🪑</div><div class="empty-state-text">Aucune table</div></div>`;
+          <div class="empty-state-text">Aucune table</div></div>`;
         scaleToFit(); return;
       }
 
@@ -592,30 +697,37 @@
           return ids.includes(t.id) && r.status !== 'cancelled';
         }) : null;
         const fs = Math.min(t.width, t.height) > 75 ? '.78rem' : '.62rem';
-
         const isEditSelected = editMode && editSelectedId === t.id;
         const displayStatus  = editMode ? 'available' : status;
 
         const el = document.createElement('div');
         el.id = 'tbl-' + t.id;
-        el.className = `floor-table${t.is_decoration && !editMode ? ' is-deco' : (isEditSelected ? ' s-edit-selected' : ' s-'+displayStatus)}`;
-        el.style.cssText = `left:${t.x}px;top:${t.y}px;width:${t.width}px;height:${t.height}px;border-radius:${t.shape==='round'?'50%':'10px'};border:2px solid;`;
+        el.className = `floor-table${t.is_decoration && !editMode ? ' is-deco' : (isEditSelected ? ' s-edit-selected' : ' s-' + displayStatus)}`;
+        el.style.cssText = `left:${t.x}px;top:${t.y}px;width:${t.width}px;height:${t.height}px;border-radius:${t.shape === 'round' ? '50%' : '10px'};border:2px solid;`;
+
+        if (!t.is_decoration || editMode) {
+          el.setAttribute('role', 'button');
+          el.setAttribute('tabindex', t.is_decoration ? '-1' : '0');
+          const statusLabel = VS_LABELS_FLOOR[status] || status;
+          const resLabel    = res ? `, ${res.customer_name}, ${res.time}, ${res.party_size} pers.` : '';
+          el.setAttribute('aria-label', `${t.name}${t.capacity ? ', ' + t.capacity + ' couverts' : ''}, ${statusLabel}${resLabel}`);
+        }
 
         if (editMode) {
-          // Mode édition : affichage simplifié + drag & drop
-          el.innerHTML = `<div style="font-size:${fs};font-weight:700;text-align:center;padding:2px">${t.name}</div>
+          el.innerHTML = `<div style="font-size:${fs};font-weight:700;text-align:center;padding:2px">${escapeHtml(t.name)}</div>
             ${!t.is_decoration ? `<div style="font-size:.6rem;opacity:.6">${t.capacity}p</div>` : ''}`;
           el.addEventListener('mousedown',  e => startDrag(e, t.id));
           el.addEventListener('touchstart', e => startDrag(e, t.id), { passive: false });
           el.addEventListener('click',      e => { e.stopPropagation(); selectTableEdit(t.id); });
+          el.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); selectTableEdit(t.id); } });
         } else if (t.is_decoration) {
-          el.innerHTML = `<div style="font-size:${fs};font-weight:700;text-align:center;padding:2px">${t.name}</div>`;
+          el.innerHTML = `<div style="font-size:${fs};font-weight:700;text-align:center;padding:2px">${escapeHtml(t.name)}</div>`;
         } else {
           el.innerHTML = `
-            <div style="font-size:${fs};font-weight:700;">${t.name}</div>
-            ${res ? `<div style="font-size:.55rem;text-align:center;line-height:1.2;padding:0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${res.customer_name}<br>${res.time}·${res.party_size}p</div>`
+            <div style="font-size:${fs};font-weight:700;">${escapeHtml(t.name)}</div>
+            ${res ? `<div style="font-size:.55rem;text-align:center;line-height:1.2;padding:0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(res.customer_name)}<br>${escapeHtml(res.time)}·${res.party_size}p</div>`
                   : `<div style="font-size:.62rem;opacity:.6">${t.capacity}p</div>`}
-            <div style="font-size:.72rem;margin-top:1px;display:flex;align-items:center;justify-content:center;gap:2px;">${statusIcon[status]||''}${t.note?`<span title="${t.note.replace(/"/g,'&quot;')}">📝</span>`:''}</div>`;
+            <div style="font-size:.72rem;margin-top:1px;display:flex;align-items:center;justify-content:center;gap:2px;" aria-hidden="true">${statusIcon[status] || ''}${t.note ? `<span title="${escapeHtml(t.note)}">📝</span>` : ''}</div>`;
 
           if (isAssignMode) {
             if (selectedTableIds.has(t.id)) {
@@ -623,10 +735,14 @@
               el.classList.add('s-selected');
             }
             if (status === 'available' || selectedTableIds.has(t.id)) {
-              el.addEventListener('click', () => toggleTableSelection(t.id, t.name, el, status));
+              const onToggle = () => toggleTableSelection(t.id, t.name, el, status);
+              el.addEventListener('click', onToggle);
+              el.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onToggle(); } });
             }
           } else {
-            el.addEventListener('click', () => openTableDrawer(t.id));
+            const onOpen = () => openTableDrawer(t.id);
+            el.addEventListener('click', onOpen);
+            el.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onOpen(); } });
           }
         }
         canvas.appendChild(el);
@@ -634,15 +750,13 @@
       scaleToFit();
     }
 
-    // ── Mode assignation : toggle sélection ─────────────────────────────────
+    // ── Assignation toggle ────────────────────────────────────────────────────
     function toggleTableSelection(tableId, tableName, el, originalStatus) {
       if (selectedTableIds.has(tableId)) {
-        // Désélectionner
         selectedTableIds.delete(tableId);
         el.classList.remove('s-selected');
         el.classList.add('s-' + originalStatus);
       } else {
-        // Sélectionner
         selectedTableIds.add(tableId);
         el.classList.remove('s-' + originalStatus);
         el.classList.add('s-selected');
@@ -650,91 +764,103 @@
       updateConfirmBtn();
     }
 
-    // ── Rendu liste résas ────────────────────────────────────────────────────
+    // ── Rendu liste résas ─────────────────────────────────────────────────────
     function renderResList() {
       const el = document.getElementById('resList');
       document.getElementById('resCount').textContent = reservations.length;
       if (!reservations.length) {
-        el.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">Aucune réservation ce jour</div></div>`;
+        el.innerHTML = `<div class="empty-state"><div class="empty-state-text">Aucune réservation ce jour</div></div>`;
         return;
       }
-      // Couleurs statut visuel (identique à reservations.html)
       const VS_CLS = { unplaced:'vs-unplaced', placed:'vs-placed', arrived:'vs-arrived', late:'vs-late', no_show:'vs-no_show', cancelled:'vs-cancelled' };
-      el.innerHTML = reservations.map(r => {
-        const vs = computeVS(r);
-        const tableNames = Array.isArray(r.table_names) && r.table_names.length ? r.table_names : (r.table_name ? [r.table_name] : []);
-        const tbl = tableNames.length
-          ? tableNames.map(n=>`<span class="rc-tbl-ok">🪑 ${n}</span>`).join(' ')
-          : `<span class="rc-tbl-nok">Sans table</span>`;
-        return `<div class="res-card ${VS_CLS[vs]||''}" onclick="editRes(${r.id})">
-          <div class="rc-time">${r.time||'—'}</div>
-          <div class="rc-body">
-            <div class="rc-name">${r.customer_name}</div>
-            <div class="rc-meta">
-              <span>👥 ${r.party_size} pers.</span>
-              ${r.phone?`<span>📞 ${r.phone}</span>`:''}
-              ${r.space?`<span>📍 ${r.space}</span>`:''}
-              ${tbl}
-            </div>
-            ${r.notes?`<div class="rc-notes">📝 ${r.notes}</div>`:''}
-          </div>
-          <div class="rc-status-col" onclick="event.stopPropagation()">
-            <select class="status-pill ${VS_CLS[vs]||''}" onchange="changeResStatus(${r.id},this.value)">
-              <option value="confirmed" ${r.status==='confirmed'?'selected':''}>📋 Confirmée</option>
-              <option value="arrived"   ${r.status==='arrived'?'selected':''}>✅ Arrivée</option>
-              <option value="no_show"   ${r.status==='no_show'?'selected':''}>⚠️ No show</option>
-              <option value="cancelled" ${r.status==='cancelled'?'selected':''}>❌ Annulée</option>
-            </select>
-          </div>
-        </div>`;
-      }).join('');
+      el.innerHTML = `<ul role="list" style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;">` +
+        reservations.map(r => {
+          const vs = computeVS(r);
+          const tableNames = Array.isArray(r.table_names) && r.table_names.length ? r.table_names : (r.table_name ? [r.table_name] : []);
+          const tbl = tableNames.length
+            ? tableNames.map(n => `<span class="rc-tbl-ok">${escapeHtml(n)}</span>`).join(' ')
+            : `<span class="rc-tbl-nok">Sans table</span>`;
+          const statusOptions = [
+            { v:'confirmed', l:'Confirmée' }, { v:'arrived', l:'Arrivée' },
+            { v:'no_show', l:'No show' }, { v:'cancelled', l:'Annulée' }
+          ];
+          return `<li>
+            <button class="res-card ${VS_CLS[vs] || ''}" data-edit-res="${r.id}" type="button"
+                    aria-label="${escapeHtml(r.customer_name)}, ${escapeHtml(r.time || '—')}, ${r.party_size} personnes">
+              <time class="rc-time" datetime="${escapeHtml(r.date)}T${escapeHtml(r.time || '')}">${escapeHtml(r.time || '—')}</time>
+              <div class="rc-body">
+                <div class="rc-name">${escapeHtml(r.customer_name)}</div>
+                <div class="rc-meta">
+                  <span>${r.party_size} pers.</span>
+                  ${r.phone ? `<span>${escapeHtml(r.phone)}</span>` : ''}
+                  ${r.space ? `<span>${escapeHtml(r.space)}</span>` : ''}
+                  ${tbl}
+                </div>
+                ${r.notes ? `<div class="rc-notes">${escapeHtml(r.notes)}</div>` : ''}
+              </div>
+              <div class="rc-status-col" onclick="event.stopPropagation()">
+                <label for="res-status-${r.id}" class="sr-only">Statut de ${escapeHtml(r.customer_name)}</label>
+                <select class="status-pill ${VS_CLS[vs] || ''}" id="res-status-${r.id}" data-change-res="${r.id}" aria-label="Statut">
+                  ${statusOptions.map(o => `<option value="${o.v}"${r.status===o.v?' selected':''}>${escapeHtml(o.l)}</option>`).join('')}
+                </select>
+              </div>
+            </button>
+          </li>`;
+        }).join('') +
+        `</ul>`;
+
+      el.querySelectorAll('[data-edit-res]').forEach(btn => {
+        btn.addEventListener('click', () => editRes(parseInt(btn.dataset.editRes, 10)));
+      });
+      el.querySelectorAll('[data-change-res]').forEach(sel => {
+        sel.addEventListener('change', e => {
+          e.stopPropagation();
+          changeResStatus(parseInt(sel.dataset.changeRes, 10), sel.value);
+        });
+      });
     }
 
     function populateAssignSelect() {
       document.getElementById('assignResSelect').innerHTML =
         `<option value="">— Aucune réservation —</option>` +
-        reservations.filter(r=>r.status!=='cancelled').map(r=>
-          `<option value="${r.id}">${r.time} · ${r.customer_name} (${r.party_size}p)</option>`
+        reservations.filter(r => r.status !== 'cancelled').map(r =>
+          `<option value="${r.id}">${escapeHtml(r.time)} · ${escapeHtml(r.customer_name)} (${r.party_size}p)</option>`
         ).join('');
     }
 
-    // ── Drawer table ─────────────────────────────────────────────────────────
+    // ── Drawer table ──────────────────────────────────────────────────────────
     function openTableDrawer(tableId) {
       selectedTableId = tableId;
-      const t = tables.find(x => x.id === tableId);
+      const t   = tables.find(x => x.id === tableId);
       const res = reservations.find(r => {
         const ids = Array.isArray(r.table_ids) && r.table_ids.length ? r.table_ids : (r.table_id ? [r.table_id] : []);
         return ids.includes(tableId) && r.status !== 'cancelled';
       });
-
       document.getElementById('tblName').textContent = t.name;
-      document.getElementById('tblCap').textContent = `Capacité : ${t.capacity} personnes`;
+      document.getElementById('tblCap').textContent  = `Capacité : ${t.capacity} personnes`;
 
       const detail = document.getElementById('tblResDetail');
       if (res) {
         detail.innerHTML = `
           <div class="tbl-detail-res">
-            <div class="tbl-detail-name">${res.customer_name}</div>
+            <div class="tbl-detail-name">${escapeHtml(res.customer_name)}</div>
             <div class="tbl-detail-meta">
-              <span>🕐 ${res.time}</span>
-              <span>👥 ${res.party_size} pers.</span>
-              ${res.phone?`<span>📞 ${res.phone}</span>`:''}
-              ${res.space?`<span>📍 ${res.space}</span>`:''}
+              <span>${escapeHtml(res.time)}</span>
+              <span>${res.party_size} pers.</span>
+              ${res.phone ? `<span>${escapeHtml(res.phone)}</span>` : ''}
+              ${res.space ? `<span>${escapeHtml(res.space)}</span>` : ''}
             </div>
-            ${res.notes?`<div style="font-size:.75rem;color:var(--text-muted);margin-top:5px;font-style:italic">📝 ${res.notes}</div>`:''}
+            ${res.notes ? `<div style="font-size:.75rem;color:var(--text-muted);margin-top:5px;font-style:italic">${escapeHtml(res.notes)}</div>` : ''}
           </div>`;
         document.getElementById('assignResSelect').value = res.id;
       } else {
-        detail.innerHTML = `<div style="color:var(--text-muted);font-size:.85rem;margin-bottom:14px">Aucune réservation pour cette table.</div>`;
+        detail.innerHTML = `<p style="color:var(--text-muted);font-size:.85rem;margin-bottom:14px">Aucune réservation pour cette table.</p>`;
         document.getElementById('assignResSelect').value = '';
       }
-
-      // Pré-remplir la note de table
       const noteInput = document.getElementById('tblNoteInput');
       noteInput.value = t.note || '';
       noteInput._tableId = t.id;
       document.getElementById('tblNoteSaved').style.opacity = '0';
-
       openDrawer('tableDrawer');
     }
 
@@ -745,7 +871,7 @@
         return ids.includes(selectedTableId) && r.status !== 'cancelled';
       });
       if (res) {
-        const mapped = status==='available'?'confirmed':status==='arrived'?'arrived':'confirmed';
+        const mapped = status === 'available' ? 'confirmed' : status === 'arrived' ? 'arrived' : 'confirmed';
         await changeResStatus(res.id, mapped);
       } else {
         tableStatuses[selectedTableId] = status;
@@ -768,14 +894,14 @@
       if (resId) {
         await api.put(`/api/reservations/${resId}`, { table_id: selectedTableId });
         const r = reservations.find(x => x.id === parseInt(resId));
-        if (r) { r.table_id = selectedTableId; r.table_name = tables.find(t=>t.id===selectedTableId)?.name; }
+        if (r) { r.table_id = selectedTableId; r.table_name = tables.find(t => t.id === selectedTableId)?.name; }
       }
       computeStatuses(); renderFloor(); renderResList();
       closeDrawer();
-      showToast('Réservation associée ✓', 'success');
+      showToast('Réservation associée', 'success');
     }
 
-    // ── Drawer réservation ───────────────────────────────────────────────────
+    // ── Drawer réservation ────────────────────────────────────────────────────
     function openNewRes() {
       document.getElementById('resDrawerTitle').textContent = 'Nouvelle réservation';
       document.getElementById('resId').value    = '';
@@ -787,13 +913,10 @@
       document.getElementById('resNotes').value = '';
       document.getElementById('btnDelRes').style.display = 'none';
       openDrawer('resDrawer');
-      setTimeout(()=>document.getElementById('resName').focus(), 350);
+      setTimeout(() => document.getElementById('resName').focus(), 350);
     }
 
-    function openNewResForTable() {
-      closeDrawer();
-      openNewRes();
-    }
+    function openNewResForTable() { closeDrawer(); openNewRes(); }
 
     function editRes(id) {
       const r = reservations.find(x => x.id === id);
@@ -801,36 +924,37 @@
       document.getElementById('resDrawerTitle').textContent = 'Modifier la réservation';
       document.getElementById('resId').value    = r.id;
       document.getElementById('resName').value  = r.customer_name;
-      document.getElementById('resPhone').value = r.phone||'';
+      document.getElementById('resPhone').value = r.phone || '';
       document.getElementById('resDate').value  = r.date;
       document.getElementById('resTime').value  = r.time;
       document.getElementById('resParty').value = r.party_size;
-      document.getElementById('resNotes').value = r.notes||'';
+      document.getElementById('resNotes').value = r.notes || '';
       document.getElementById('btnDelRes').style.display = 'flex';
       openDrawer('resDrawer');
     }
 
     async function saveRes(e) {
       e.preventDefault();
-      const id = document.getElementById('resId').value;
+      const id   = document.getElementById('resId').value;
       const body = {
         customer_name: document.getElementById('resName').value.trim(),
-        phone:  document.getElementById('resPhone').value.trim()||null,
-        date:   document.getElementById('resDate').value,
-        time:   document.getElementById('resTime').value,
-        party_size: parseInt(document.getElementById('resParty').value)||2,
-        notes:  document.getElementById('resNotes').value.trim()||null,
+        phone:      document.getElementById('resPhone').value.trim() || null,
+        date:       document.getElementById('resDate').value,
+        time:       document.getElementById('resTime').value,
+        party_size: parseInt(document.getElementById('resParty').value) || 2,
+        notes:      document.getElementById('resNotes').value.trim() || null,
       };
       const res = id ? await api.put(`/api/reservations/${id}`, body) : await api.post('/api/reservations', body);
       if (res?.error) { showToast(res.error, 'error'); return; }
       closeDrawer();
-      showToast(id ? 'Réservation modifiée ✓' : 'Réservation créée ✓', 'success');
+      showToast(id ? 'Réservation modifiée' : 'Réservation créée', 'success');
       loadAll();
     }
 
     async function deleteRes() {
       const id = document.getElementById('resId').value;
-      if (!id || !confirm('Supprimer cette réservation ?')) return;
+      if (!id) return;
+      if (!confirm('Supprimer cette réservation ?')) return;
       await api.delete(`/api/reservations/${id}`);
       closeDrawer();
       showToast('Réservation supprimée', 'info');
@@ -839,21 +963,24 @@
 
     function stepParty(d) {
       const i = document.getElementById('resParty');
-      i.value = Math.max(1, Math.min(99, (parseInt(i.value)||2)+d));
+      i.value = Math.max(1, Math.min(99, (parseInt(i.value) || 2) + d));
     }
 
-    function closeResDrawer() { closeDrawer(); }
-
-    // ── Gestion drawers ───────────────────────────────────────────────────────
+    // ── Drawers ───────────────────────────────────────────────────────────────
     function openDrawer(id) {
       document.getElementById('backdrop').classList.add('open');
       document.getElementById(id).classList.add('open');
-      document.body.style.overflow = 'hidden';
+      document.body.classList.add('modal-open');
+      setTimeout(() => {
+        const drawer = document.getElementById(id);
+        const focusable = drawer.querySelectorAll('button:not([disabled]),a,[tabindex]:not([tabindex="-1"]),input,select,textarea');
+        if (focusable.length) focusable[0].focus();
+      }, 300);
     }
     function closeDrawer() {
       ['tableDrawer','resDrawer','propDrawer'].forEach(id => document.getElementById(id).classList.remove('open'));
       document.getElementById('backdrop').classList.remove('open');
-      document.body.style.overflow = '';
+      document.body.classList.remove('modal-open');
     }
 
     // ── Note de table ─────────────────────────────────────────────────────────
@@ -881,8 +1008,10 @@
       el.id = 'alert-' + data.reservationId;
       el.className = 'alert-banner';
       el.style.cssText = `position:fixed;top:calc(var(--nav-height) + 12px);left:50%;transform:translateX(-50%);z-index:500;width:calc(100% - 40px);max-width:600px;`;
-      el.innerHTML = `<div class="alert-banner-icon">⚠️</div><div class="alert-banner-text">${data.message}</div>
-        <button class="alert-banner-close" onclick="dismissAlert(${data.reservationId})">OK</button>`;
+      el.innerHTML = `<div class="alert-banner-icon" aria-hidden="true">⚠️</div>
+        <div class="alert-banner-text">${escapeHtml(data.message)}</div>
+        <button class="alert-banner-close" data-alert-id="${data.reservationId}" type="button">OK</button>`;
+      el.querySelector('[data-alert-id]').addEventListener('click', () => dismissAlert(data.reservationId));
       document.body.appendChild(el);
       const r = reservations.find(x => x.id === data.reservationId);
       if (r) r.status = 'no_show';
@@ -890,7 +1019,7 @@
       renderZoneTabs(); renderFloor();
     });
 
-    socket.on('alert:cancel', ({reservationId}) => {
+    socket.on('alert:cancel', ({ reservationId }) => {
       activeAlerts.delete(reservationId);
       const el = document.getElementById('alert-' + reservationId);
       if (el) el.remove();
@@ -910,10 +1039,10 @@
     socket.on('reservation:updated', r => {
       if (r.date !== viewDate.value) return;
       const i = reservations.findIndex(x => x.id === r.id);
-      if (i>=0) reservations[i]=r; else reservations.push(r);
+      if (i >= 0) reservations[i] = r; else reservations.push(r);
       computeStatuses(); renderZoneTabs(); renderFloor(); renderResList(); populateAssignSelect();
     });
-    socket.on('reservation:deleted', ({id}) => {
+    socket.on('reservation:deleted', ({ id }) => {
       reservations = reservations.filter(r => r.id !== id);
       computeStatuses(); renderZoneTabs(); renderFloor(); renderResList(); populateAssignSelect();
     });
@@ -921,24 +1050,21 @@
     socket.on('table:updated', t => {
       const i = tables.findIndex(x => x.id === t.id);
       if (i >= 0) tables[i] = t;
-      // Mettre à jour la note dans le drawer si cette table est ouverte et que l'utilisateur n'est pas en train de taper
       const inp = document.getElementById('tblNoteInput');
-      if (inp && inp._tableId === t.id && document.activeElement !== inp) {
-        inp.value = t.note || '';
-      }
+      if (inp && inp._tableId === t.id && document.activeElement !== inp) inp.value = t.note || '';
       renderZoneTabs(); renderFloor();
     });
-    socket.on('table:deleted', ({id}) => { tables=tables.filter(t=>t.id!==id); renderZoneTabs(); renderFloor(); });
+    socket.on('table:deleted', ({ id }) => { tables = tables.filter(t => t.id !== id); renderZoneTabs(); renderFloor(); });
 
-    // ── Mode édition ─────────────────────────────────────────────────────────
+    // ── Mode édition ──────────────────────────────────────────────────────────
     let editMode = false, editSelectedId = null;
     let dragging = null, dragOffset = { x:0, y:0 }, saveTimer = null;
 
     function toggleEditMode() {
       editMode = !editMode;
       const btn = document.getElementById('editModeBtn');
-      btn.textContent  = editMode ? '✓ Terminer' : '🔧 Modifier le plan';
-      btn.className    = editMode ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm';
+      btn.textContent = editMode ? 'Terminer' : 'Modifier le plan';
+      btn.className   = editMode ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm';
       document.getElementById('editToolbar').style.display = editMode ? 'flex' : 'none';
       if (!editMode) { editSelectedId = null; closeDrawer(); }
       document.getElementById('btnDelTable').style.display = 'none';
@@ -976,16 +1102,19 @@
       if (old) old.remove();
       if (t.zone === currentZone) {
         const canvas = document.getElementById('floorCanvas');
-        const isEditSelected = true;
         const fs = Math.min(t.width, t.height) > 75 ? '.78rem' : '.62rem';
         const el = document.createElement('div');
         el.id = 'tbl-' + t.id;
         el.className = `floor-table s-edit-selected`;
-        el.style.cssText = `left:${t.x}px;top:${t.y}px;width:${t.width}px;height:${t.height}px;border-radius:${t.shape==='round'?'50%':'10px'};border:2px solid;`;
-        el.innerHTML = `<div style="font-size:${fs};font-weight:700;text-align:center;padding:2px">${t.name}</div>${!t.is_decoration?`<div style="font-size:.6rem;opacity:.6">${t.capacity}p</div>`:''}`;
+        el.setAttribute('role', 'button');
+        el.setAttribute('tabindex', '0');
+        el.setAttribute('aria-label', `${t.name}, propriétés en cours de modification`);
+        el.style.cssText = `left:${t.x}px;top:${t.y}px;width:${t.width}px;height:${t.height}px;border-radius:${t.shape === 'round' ? '50%' : '10px'};border:2px solid;`;
+        el.innerHTML = `<div style="font-size:${fs};font-weight:700;text-align:center;padding:2px">${escapeHtml(t.name)}</div>${!t.is_decoration ? `<div style="font-size:.6rem;opacity:.6">${t.capacity}p</div>` : ''}`;
         el.addEventListener('mousedown',  e => startDrag(e, t.id));
         el.addEventListener('touchstart', e => startDrag(e, t.id), { passive: false });
         el.addEventListener('click', e => { e.stopPropagation(); selectTableEdit(t.id); });
+        el.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); selectTableEdit(t.id); } });
         canvas.appendChild(el);
       }
       scheduleSave(editSelectedId, t);
@@ -1000,10 +1129,8 @@
     async function addTable(shape) {
       const count = tables.filter(t => t.zone === currentZone && !t.is_decoration).length + 1;
       const t = await api.post('/api/tables', {
-        name: `T${count}`, zone: currentZone,
-        x: 50, y: 50,
-        width: shape === 'round' ? 80 : 65,
-        height: shape === 'round' ? 80 : 65,
+        name: `T${count}`, zone: currentZone, x: 50, y: 50,
+        width: shape === 'round' ? 80 : 65, height: shape === 'round' ? 80 : 65,
         shape, capacity: 2, is_decoration: 0
       });
       if (!t) return;
@@ -1014,9 +1141,8 @@
 
     async function addDeco() {
       const t = await api.post('/api/tables', {
-        name: 'Bar', zone: currentZone,
-        x: 50, y: 50, width: 120, height: 40,
-        shape: 'square', capacity: 0, is_decoration: 1
+        name: 'Bar', zone: currentZone, x: 50, y: 50,
+        width: 120, height: 40, shape: 'square', capacity: 0, is_decoration: 1
       });
       if (!t) return;
       tables.push(t);
@@ -1034,7 +1160,7 @@
       renderZoneTabs(); renderFloor();
     }
 
-    // Drag & drop
+    // ── Drag & drop ───────────────────────────────────────────────────────────
     function startDrag(e, id) {
       if (!editMode) return;
       e.stopPropagation(); e.preventDefault();
@@ -1053,8 +1179,7 @@
       if (!el) return;
       const x = Math.max(0, Math.round((cx - canvas.left - dragOffset.x) / 5) * 5);
       const y = Math.max(0, Math.round((cy - canvas.top  - dragOffset.y) / 5) * 5);
-      el.style.left = x + 'px';
-      el.style.top  = y + 'px';
+      el.style.left = x + 'px'; el.style.top = y + 'px';
     }
     function endDrag() {
       if (!dragging) return;
@@ -1073,7 +1198,6 @@
     document.addEventListener('touchend', endDrag);
 
     loadAll().then(() => {
-      // Afficher le bouton édition aux admins/managers uniquement
       const u = window.__mosUser;
       if (u?.role === 'admin' || u?.role === 'manager') {
         document.getElementById('editModeBtn').style.display = '';

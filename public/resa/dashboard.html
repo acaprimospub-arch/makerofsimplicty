@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MOS">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
   <style>
     .kpi-grid {
       display: grid;
@@ -27,7 +27,7 @@
     }
     .kpi-value {
       font-size: 2rem;
-      font-weight: 700;
+      font-weight: 800;
       color: var(--primary);
       line-height: 1;
       margin-bottom: 4px;
@@ -82,15 +82,20 @@
       font-size: 11px;
       color: var(--text-muted);
     }
-    .status-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 600;
       flex-shrink: 0;
+      padding: 1px 6px;
+      border-radius: 99px;
     }
-    .dot-confirmed { background: var(--info); }
-    .dot-arrived   { background: var(--success); }
-    .dot-cancelled { background: #555; }
-    .dot-no_show   { background: var(--danger); }
+    .si-confirmed { background: rgba(96,165,250,.15); color: #60a5fa; }
+    .si-arrived   { background: rgba(34,197,94,.12);  color: #4ade80; }
+    .si-cancelled { background: rgba(85,85,85,.12);   color: #888; }
+    .si-no_show   { background: rgba(232,84,84,.12);  color: #f87171; }
 
     .alert-item {
       display: flex;
@@ -123,66 +128,82 @@
   </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
 
-  <div class="page">
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container-sm">
 
       <!-- En-tête -->
       <div class="card-header" style="margin-bottom:16px">
-        <h1 class="card-title" id="pageTitle">📊 Dashboard</h1>
-        <span id="dateLabel" style="font-size:13px;color:var(--text-muted)"></span>
+        <h1 class="card-title" id="pageTitle">Dashboard</h1>
+        <span id="dateLabel" style="font-size:13px;color:var(--text-muted)" aria-live="polite"></span>
       </div>
 
       <!-- KPIs aujourd'hui -->
-      <div class="card" style="margin-bottom:16px">
+      <section class="card" style="margin-bottom:16px" aria-labelledby="kpiHeading">
         <div class="card-header">
-          <span class="card-title">Aujourd'hui</span>
+          <h2 class="card-title" id="kpiHeading">Aujourd'hui</h2>
         </div>
-        <div class="kpi-grid" id="kpiGrid">
-          <div class="kpi-card"><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-label">Réservations</div></div>
-          <div class="kpi-card blue"><div class="kpi-value" id="kpiCouverts">—</div><div class="kpi-label">Couverts</div></div>
-          <div class="kpi-card orange"><div class="kpi-value" id="kpiNonPlacees">—</div><div class="kpi-label">Non placées</div></div>
-          <div class="kpi-card green"><div class="kpi-value" id="kpiConfirmees">—</div><div class="kpi-label">Confirmées</div></div>
+        <div class="kpi-grid" id="kpiGrid" role="list" aria-label="Indicateurs clés">
+          <article class="kpi-card" role="listitem" id="kpiCardTotal" aria-label="Réservations : chargement">
+            <div class="kpi-value" id="kpiTotal">—</div>
+            <div class="kpi-label">Réservations</div>
+          </article>
+          <article class="kpi-card blue" role="listitem" id="kpiCardCouverts" aria-label="Couverts : chargement">
+            <div class="kpi-value" id="kpiCouverts">—</div>
+            <div class="kpi-label">Couverts</div>
+          </article>
+          <article class="kpi-card orange" role="listitem" id="kpiCardNonPlacees" aria-label="Non placées : chargement">
+            <div class="kpi-value" id="kpiNonPlacees">—</div>
+            <div class="kpi-label">Non placées</div>
+          </article>
+          <article class="kpi-card green" role="listitem" id="kpiCardConfirmees" aria-label="Confirmées : chargement">
+            <div class="kpi-value" id="kpiConfirmees">—</div>
+            <div class="kpi-label">Confirmées</div>
+          </article>
         </div>
-      </div>
+      </section>
 
       <div class="dash-cols">
         <!-- Alertes -->
-        <div class="card" id="alertsCard">
+        <section class="card" id="alertsCard" aria-labelledby="alertsHeading">
           <div class="card-header">
-            <span class="card-title">⚠️ Alertes</span>
+            <h2 class="card-title" id="alertsHeading">
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Alertes
+            </h2>
           </div>
-          <div id="alertsList"><div class="empty-state">Aucune alerte</div></div>
-        </div>
+          <div id="alertsList" aria-live="assertive"><p class="empty-state">Aucune alerte</p></div>
+        </section>
 
         <!-- 7 prochains jours -->
-        <div class="card">
+        <section class="card" aria-labelledby="weekHeading">
           <div class="card-header">
-            <span class="card-title">📅 7 prochains jours</span>
+            <h2 class="card-title" id="weekHeading">7 prochains jours</h2>
           </div>
-          <div id="weekList"><div class="empty-state">Chargement…</div></div>
-        </div>
+          <div id="weekList"><p class="empty-state">Chargement…</p></div>
+        </section>
       </div>
 
     </div>
-  </div>
+  </main>
 
   <script src="/js/api.js"></script>
   <script>
     buildNav('resa-dashboard');
 
+    const STATUS_LABELS = { confirmed:'Confirmée', arrived:'Arrivée', cancelled:'Annulée', no_show:'No show' };
     const todayStr = today();
 
     document.getElementById('dateLabel').textContent = formatDate(todayStr);
 
     async function loadDashboard() {
-      // Aujourd'hui
       const todayResas = await api.get(`/api/reservations?date=${todayStr}`);
       if (!todayResas) return;
 
-      const active = todayResas.filter(r => r.status !== 'cancelled');
-      const confirmed = todayResas.filter(r => r.status === 'confirmed');
+      const active     = todayResas.filter(r => r.status !== 'cancelled');
+      const confirmed  = todayResas.filter(r => r.status === 'confirmed');
       const nonPlacees = confirmed.filter(r => {
         const ids = JSON.parse(r.table_ids || '[]');
         return ids.length === 0;
@@ -194,11 +215,16 @@
       document.getElementById('kpiNonPlacees').textContent = nonPlacees.length;
       document.getElementById('kpiConfirmees').textContent = confirmed.length;
 
+      document.getElementById('kpiCardTotal').setAttribute('aria-label', `Réservations : ${todayResas.length}`);
+      document.getElementById('kpiCardCouverts').setAttribute('aria-label', `Couverts : ${couverts}`);
+      document.getElementById('kpiCardNonPlacees').setAttribute('aria-label', `Non placées : ${nonPlacees.length}`);
+      document.getElementById('kpiCardConfirmees').setAttribute('aria-label', `Confirmées : ${confirmed.length}`);
+
       // Alertes
       const alertsList = document.getElementById('alertsList');
       const alerts = [];
       nonPlacees.forEach(r => {
-        alerts.push(`📍 <strong>${r.customer_name}</strong> (${r.time}) — table non assignée`);
+        alerts.push(`<strong>${escapeHtml(r.customer_name)}</strong> (${escapeHtml(r.time)}) — table non assignée`);
       });
       const now = new Date();
       confirmed.forEach(r => {
@@ -206,12 +232,15 @@
           const [h, m] = r.time.split(':').map(Number);
           const resaTime = new Date(); resaTime.setHours(h, m, 0);
           const diff = (now - resaTime) / 60000;
-          if (diff > 15) alerts.push(`🔴 <strong>${r.customer_name}</strong> (${r.time}) — en retard`);
+          if (diff > 15) alerts.push(`<strong>${escapeHtml(r.customer_name)}</strong> (${escapeHtml(r.time)}) — en retard`);
         }
       });
       alertsList.innerHTML = alerts.length
-        ? alerts.map(a => `<div class="alert-item">${a}</div>`).join('')
-        : '<div class="empty-state">Aucune alerte</div>';
+        ? alerts.map(a => `<div class="alert-item">
+            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+            <span>${a}</span>
+          </div>`).join('')
+        : '<p class="empty-state">Aucune alerte</p>';
 
       // 7 jours
       const from = todayStr;
@@ -219,7 +248,6 @@
       const weekResas = await api.get(`/api/reservations/range?from=${from}&to=${to}`);
       if (!weekResas) return;
 
-      // Grouper par date
       const byDate = {};
       weekResas.forEach(r => {
         if (!byDate[r.date]) byDate[r.date] = [];
@@ -229,7 +257,7 @@
       const weekList = document.getElementById('weekList');
       const dates = Object.keys(byDate).sort();
       if (!dates.length) {
-        weekList.innerHTML = '<div class="empty-state">Aucune réservation cette semaine</div>';
+        weekList.innerHTML = '<p class="empty-state">Aucune réservation cette semaine</p>';
         return;
       }
 
@@ -242,16 +270,16 @@
         return `
           <div class="day-row">
             <div class="day-label ${isToday ? 'today' : ''}">
-              ${label}<br>
+              ${escapeHtml(label)}<br>
               <span style="font-size:11px;font-weight:400">${total} rés. · ${paxTotal} couverts</span>
             </div>
-            <div class="day-resas">
+            <div class="day-resas" role="list" aria-label="${escapeHtml(label)}">
               ${resasDay.slice(0, 5).map(r => `
-                <div class="mini-resa">
-                  <span class="status-dot dot-${r.status}"></span>
-                  <span class="mini-resa-time">${r.time}</span>
-                  <span class="mini-resa-name">${r.customer_name}</span>
-                  <span class="mini-resa-pax">${r.party_size}p</span>
+                <div class="mini-resa" role="listitem" aria-label="${escapeHtml(r.time)}, ${escapeHtml(r.customer_name)}, ${r.party_size} personnes, ${STATUS_LABELS[r.status] || r.status}">
+                  <span class="status-indicator si-${r.status}" aria-hidden="true">${STATUS_LABELS[r.status] || r.status}</span>
+                  <span class="mini-resa-time" aria-hidden="true">${escapeHtml(r.time)}</span>
+                  <span class="mini-resa-name" aria-hidden="true">${escapeHtml(r.customer_name)}</span>
+                  <span class="mini-resa-pax" aria-hidden="true">${r.party_size}p</span>
                 </div>
               `).join('')}
               ${resasDay.length > 5 ? `<div style="font-size:11px;color:var(--text-muted);padding-left:16px">+${resasDay.length - 5} autres…</div>` : ''}

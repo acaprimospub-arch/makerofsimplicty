@@ -10,88 +10,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MOS">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
   <style>
-    /* ── KPI chips ── */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-    @media (max-width: 900px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 500px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-
-    .kpi-chip {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      position: relative;
-      overflow: hidden;
-    }
-    .kpi-chip::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: var(--kpi-accent, var(--primary));
-      border-radius: 14px 14px 0 0;
-    }
-    .kpi-chip.danger  { --kpi-accent: #ef4444; border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.06); }
-    .kpi-chip.success { --kpi-accent: #22c55e; }
-    .kpi-chip.blue    { --kpi-accent: #60a5fa; }
-    .kpi-chip.purple  { --kpi-accent: #a78bfa; }
-    .kpi-chip.orange  { --kpi-accent: #fb923c; }
-    .kpi-chip.cuisine { --kpi-accent: #f59e0b; }
-
-    .kpi-label {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      font-weight: 600;
-    }
-    .kpi-value {
-      font-size: 1.9rem;
-      font-weight: 800;
-      color: var(--text);
-      line-height: 1;
-    }
-    .kpi-chip.danger  .kpi-value { color: #ef4444; }
-    .kpi-chip.success .kpi-value { color: #22c55e; }
-    .kpi-sub {
-      font-size: 0.73rem;
-      color: var(--text-muted);
-    }
-
-    /* ── Alertes no-show ── */
-    #alertsSection { margin-bottom: 24px; }
-    .alert-noshow {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      background: rgba(239,68,68,0.12);
-      border: 1.5px solid rgba(239,68,68,0.6);
-      border-radius: 12px;
-      padding: 14px 18px;
-      margin-bottom: 10px;
-      animation: pulseRed 2s ease-in-out infinite;
-    }
-    @keyframes pulseRed {
-      0%,100% { border-color: rgba(239,68,68,0.6); background: rgba(239,68,68,0.10); }
-      50%      { border-color: rgba(239,68,68,1);   background: rgba(239,68,68,0.18); }
-    }
-    .alert-noshow-icon { font-size: 1.6rem; flex-shrink: 0; }
-    .alert-noshow-info { flex: 1; }
-    .alert-noshow-name { font-weight: 700; font-size: 1rem; color: #ef4444; }
-    .alert-noshow-detail { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
-    .alert-noshow-time { font-size: 1.2rem; font-weight: 700; color: #ef4444; flex-shrink: 0; }
-
-    /* ── Layout principal ── */
+    /* ── Layout 3 colonnes ── */
     .dashboard-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -100,359 +21,325 @@
     @media (max-width: 1100px) { .dashboard-grid { grid-template-columns: 1fr 1fr; } }
     @media (max-width: 700px)  { .dashboard-grid { grid-template-columns: 1fr; } }
 
-    /* ── Tâches par catégorie ── */
-    .category-block {
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
+    /* ── Alertes no-show ── */
+    .alert-noshow {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(240,84,84,0.1);
+      border: 1.5px solid rgba(240,84,84,0.55);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      animation: pulseRed 2s ease-in-out infinite;
     }
+    .alert-noshow-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .alert-noshow-info { flex: 1; min-width: 0; }
+    .alert-noshow-name { font-weight: 700; font-size: 1rem; color: var(--danger); }
+    .alert-noshow-detail { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
+    .alert-noshow-time  { font-size: 1.15rem; font-weight: 800; color: var(--danger); flex-shrink: 0; }
+
+    /* ── Tâches par catégorie ── */
+    .category-block { padding: 12px 0; border-bottom: 1px solid var(--border); }
     .category-block:last-child { border-bottom: none; }
     .category-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .category-name { font-weight: 600; font-size: 0.9rem; }
-    .category-count { font-size: 0.82rem; color: var(--text-muted); }
-    .progress-bar { height: 8px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; }
-    .progress-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width 0.5s ease; }
-    .progress-fill.success { background: #22c55e; }
+    .category-name { font-weight: 700; font-size: 0.88rem; }
+    .category-count { font-size: 0.8rem; color: var(--text-muted); }
 
     /* ── Par personne ── */
-    .person-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 0; border-bottom: 1px solid var(--border);
-    }
+    .person-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
     .person-row:last-child { border-bottom: none; }
     .person-avatar {
       width: 34px; height: 34px; border-radius: 50%;
       background: var(--primary-dim); color: var(--primary);
       display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+      font-weight: 700; font-size: 0.82rem; flex-shrink: 0;
+      aria-hidden: true;
     }
-    .person-avatar.cuisine-av { background: rgba(245,158,11,0.18); color: #f59e0b; }
+    .person-avatar.cuisine-av { background: rgba(240,180,41,0.18); color: var(--warning); }
     .person-info { flex: 1; min-width: 0; }
-    .person-name { font-weight: 500; font-size: 0.9rem; }
-    .person-meta { font-size: 0.72rem; color: var(--text-muted); }
-    .person-mini-bar { height: 5px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; margin-top: 4px; }
-    .person-mini-fill { height: 100%; background: var(--primary); border-radius: 99px; }
-    .person-count { font-size: 0.85rem; font-weight: 700; color: var(--primary); flex-shrink: 0; }
+    .person-name { font-weight: 600; font-size: 0.9rem; }
+    .person-meta { font-size: 0.74rem; color: var(--text-muted); }
+    .person-mini-bar { height: 5px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; margin-top: 5px; }
+    .person-mini-fill { height: 100%; border-radius: 999px; }
+    .person-count { font-size: 0.88rem; font-weight: 800; flex-shrink: 0; }
 
     /* ── Timeline réservations ── */
-    .resa-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 0; border-bottom: 1px solid var(--border);
-    }
+    .resa-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
     .resa-row:last-child { border-bottom: none; }
-    .resa-row.is-late { background: rgba(239,68,68,0.06); border-radius: 8px; padding: 10px 8px; }
-    .resa-time { font-size: 0.95rem; font-weight: 700; color: var(--text); flex-shrink: 0; width: 42px; }
+    .resa-row.is-late { background: rgba(240,84,84,0.06); border-radius: 8px; padding: 10px 8px; }
+    .resa-time { font-size: 0.95rem; font-weight: 700; flex-shrink: 0; width: 42px; }
     .resa-info { flex: 1; min-width: 0; }
-    .resa-name { font-weight: 500; font-size: 0.88rem; }
-    .resa-detail { font-size: 0.75rem; color: var(--text-muted); }
-    .resa-badge {
-      padding: 3px 10px; border-radius: 99px; font-size: 0.73rem;
-      font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; flex-shrink: 0;
-    }
-    .resa-badge.confirmed { background: rgba(59,130,246,0.2);  color: #60a5fa; }
-    .resa-badge.arrived   { background: rgba(34,197,94,0.2);   color: #4ade80; }
-    .resa-badge.no_show   { background: rgba(239,68,68,0.2);   color: #f87171; animation: pulseRed 2s ease-in-out infinite; }
-    .resa-badge.cancelled { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+    .resa-name { font-weight: 600; font-size: 0.88rem; }
+    .resa-detail { font-size: 0.76rem; color: var(--text-muted); }
 
-    /* ── Mini donut ── */
+    /* ── Stats donut ── */
     .donut-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
     .donut-row:last-child { border-bottom: none; }
     .donut-label { flex: 1; font-size: 0.85rem; }
     .donut-bar-wrap { width: 80px; }
-    .donut-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; }
-    .donut-fill { height: 100%; border-radius: 99px; transition: width .4s ease; }
+    .donut-bar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; }
+    .donut-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
     .donut-val { font-size: 0.82rem; font-weight: 700; width: 28px; text-align: right; color: var(--text-muted); }
 
-    /* ── Live indicator ── */
-    .live-dot {
-      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
-      background: #22c55e; margin-right: 6px;
-      animation: blink 1.5s ease-in-out infinite;
-    }
-    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-
     /* ── Date nav ── */
-    .date-nav { display: flex; align-items: center; gap: 8px; }
-    .date-nav button {
+    .date-nav { display: flex; align-items: center; gap: 6px; }
+    .date-nav-btn {
       background: var(--bg-card); border: 1px solid var(--border);
-      color: var(--text); border-radius: 8px; width: 32px; height: 32px;
-      cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;
+      color: var(--text); border-radius: var(--radius-sm);
+      width: 34px; height: 34px; cursor: pointer;
+      font-size: 1rem; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
     }
-    .date-nav button:hover { background: var(--bg-hover); }
+    .date-nav-btn:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+    .date-nav-btn:focus-visible { box-shadow: var(--focus-ring); outline: none; }
     .date-nav input[type="date"] {
       background: var(--bg-card); border: 1px solid var(--border);
-      color: var(--text); border-radius: 8px; padding: 4px 10px; font-size: 0.85rem;
-    }
-
-    /* ── Section cuisine mini ── */
-    .cuisine-chip {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 0; border-bottom: 1px solid var(--border);
-    }
-    .cuisine-chip:last-child { border-bottom: none; }
-    .cuisine-icon { font-size: 1.2rem; flex-shrink: 0; }
-    .cuisine-info { flex: 1; min-width: 0; }
-    .cuisine-name { font-size: 0.85rem; font-weight: 500; }
-    .cuisine-val { font-size: 0.78rem; color: var(--text-muted); }
-
-    /* ── Séparateurs de section ── */
-    .section-divider {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 28px 0 18px;
-    }
-    .section-divider-line {
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-    .section-divider-label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-muted);
-      white-space: nowrap;
-      padding: 4px 10px;
-      border: 1px solid var(--border);
-      border-radius: 99px;
-      background: var(--bg-card);
-    }
-    .section-divider-label.cuisine-label {
-      color: #f59e0b;
-      border-color: rgba(245,158,11,0.4);
-      background: rgba(245,158,11,0.08);
+      color: var(--text); border-radius: var(--radius-sm);
+      padding: 4px 10px; font-size: 0.85rem; width: auto;
     }
 
     /* ── Nav cuisine rapide ── */
-    .cuisine-nav {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 18px;
-    }
+    .cuisine-nav { display: flex; gap: 8px; margin-bottom: 18px; }
     .cuisine-nav a {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      padding: 14px 8px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      text-decoration: none;
-      color: var(--text-muted);
-      font-size: 0.78rem;
-      font-weight: 600;
-      transition: all .15s;
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+      padding: 14px 8px; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; color: var(--text-muted);
+      font-size: 0.78rem; font-weight: 600; transition: all 0.15s;
     }
-    .cuisine-nav a:hover {
-      border-color: rgba(245,158,11,0.5);
-      color: #f59e0b;
-      background: rgba(245,158,11,0.06);
-    }
-    .cuisine-nav a .cn-icon { font-size: 1.4rem; }
+    .cuisine-nav a:hover { border-color: rgba(240,180,41,0.5); color: var(--warning); background: rgba(240,180,41,0.06); }
+    .cuisine-nav a:focus-visible { box-shadow: var(--focus-ring); outline: none; }
+    .cuisine-nav a svg { width: 20px; height: 20px; }
     @media (max-width: 600px) { .cuisine-nav a { padding: 10px 6px; } }
+
+    /* ── Cuisine chip ── */
+    .cuisine-chip { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .cuisine-chip:last-child { border-bottom: none; }
+    .cuisine-info { flex: 1; min-width: 0; }
+    .cuisine-name { font-size: 0.85rem; font-weight: 600; }
+
+    /* ── Section label cuisine ── */
+    .section-divider-label.cuisine-label { color: var(--warning); border-color: rgba(240,180,41,0.4); background: rgba(240,180,41,0.07); }
+
+    /* ── Log activité ── */
+    .log-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .log-item:last-child { border-bottom: none; }
+    .log-time { font-size: 0.76rem; color: var(--text-muted); flex-shrink: 0; min-width: 44px; margin-top: 2px; }
+    .log-body { flex: 1; min-width: 0; }
+    .log-desc { font-size: 0.84rem; }
+    .log-meta { font-size: 0.74rem; color: var(--text-muted); }
   </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
+  <nav class="nav" id="nav" role="navigation"></nav>
 
-  <div class="page">
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container">
 
-      <!-- Header -->
-      <div class="page-header" style="margin-bottom:20px;">
+      <!-- ── Header ── -->
+      <header class="page-header">
         <div>
-          <div class="page-title"><span class="live-dot"></span>Dashboard</div>
-          <div class="page-subtitle" id="dateLabel"></div>
+          <h1 class="page-title">
+            <span class="live-dot" aria-hidden="true"></span>
+            Dashboard
+            <span class="sr-only">— données en temps réel</span>
+          </h1>
+          <p class="page-subtitle" id="date-label" aria-live="polite" aria-atomic="true"></p>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <a href="/admin/manager.html" class="btn btn-secondary btn-sm">📋 Vue Manager</a>
-          <div class="date-nav">
-            <button onclick="shiftDate(-1)" aria-label="Jour précédent">‹</button>
-            <input type="date" id="logDate" aria-label="Date sélectionnée" onchange="loadAll()">
-            <button onclick="shiftDate(1)" aria-label="Jour suivant">›</button>
+        <div class="flex gap-3 items-center flex-wrap">
+          <a href="/admin/manager.html" class="btn btn-secondary btn-sm">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="14" height="14"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
+            Vue Manager
+          </a>
+          <div class="date-nav" role="group" aria-label="Navigation par date">
+            <button class="date-nav-btn" id="btn-prev" type="button" aria-label="Jour précédent">‹</button>
+            <label for="log-date" class="sr-only">Date sélectionnée</label>
+            <input type="date" id="log-date" class="date-nav" aria-label="Date du tableau de bord">
+            <button class="date-nav-btn" id="btn-next" type="button" aria-label="Jour suivant">›</button>
           </div>
         </div>
+      </header>
+
+      <!-- ══ SALLE ══════════════════════════════════════════════ -->
+      <div class="section-divider" role="presentation">
+        <div class="section-divider-line"></div>
+        <div class="section-divider-label">Salle</div>
+        <div class="section-divider-line"></div>
       </div>
 
-      <!-- ══════════════════ PARTIE SALLE ══════════════════ -->
-      <div class="section-divider">
-        <div class="section-divider-line"></div>
-        <div class="section-divider-label">🍽️ Salle</div>
-        <div class="section-divider-line"></div>
-      </div>
-
-      <!-- Planning PDF salle -->
-      <div class="card" style="margin-bottom:20px;">
+      <!-- Planning PDF -->
+      <section class="card mb-6" aria-labelledby="planning-title">
         <div class="card-header">
-          <div class="card-title">📋 Planning staff (salle)</div>
+          <h2 class="card-title" id="planning-title">Planning staff — Salle</h2>
         </div>
-        <div id="currentPlanningInfo" style="font-size:.82rem;color:var(--text-muted);margin:10px 0 14px;">Chargement…</div>
-        <label class="btn btn-secondary" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
-          ⬆️ Importer un PDF
-          <input type="file" accept=".pdf,application/pdf" style="display:none" onchange="uploadPlanningPDF(this)">
+        <p id="current-planning-info" class="text-sm text-muted mb-4">Chargement…</p>
+        <label class="btn btn-secondary btn-sm" style="cursor:pointer;">
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="14" height="14"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+          Importer un PDF
+          <input type="file" accept=".pdf,application/pdf" id="planning-file-input" style="display:none" aria-label="Fichier PDF du planning">
         </label>
-        <div id="planningUploadStatus" style="font-size:.8rem;margin-top:8px;"></div>
-      </div>
+        <p id="planning-upload-status" aria-live="polite" class="text-sm mt-2"></p>
+      </section>
 
       <!-- KPI Salle -->
-      <div class="kpi-grid" id="kpiGrid">
-        <div class="kpi-chip blue">
-          <div class="kpi-label">📅 Réservations</div>
-          <div class="kpi-value" id="kpiTotal">—</div>
-          <div class="kpi-sub" id="kpiTotalSub">aujourd'hui</div>
+      <section aria-label="Indicateurs salle" class="mb-6">
+        <div class="kpi-grid" id="kpi-grid">
+          <article class="kpi-chip blue" aria-label="Réservations : chargement">
+            <div class="kpi-label">Réservations</div>
+            <div class="kpi-value" id="kpi-total">—</div>
+            <div class="kpi-sub" id="kpi-total-sub">aujourd'hui</div>
+          </article>
+          <article class="kpi-chip success" aria-label="Arrivées : chargement">
+            <div class="kpi-label">Arrivées</div>
+            <div class="kpi-value" id="kpi-arrived">—</div>
+            <div class="kpi-sub" id="kpi-arrived-sub">taux d'arrivée</div>
+          </article>
+          <article class="kpi-chip" id="kpi-noshow-chip" aria-label="No-shows : chargement">
+            <div class="kpi-label">No-shows</div>
+            <div class="kpi-value" id="kpi-noshow">—</div>
+            <div class="kpi-sub">confirmées en attente</div>
+          </article>
+          <article class="kpi-chip purple" aria-label="Tâches salle : chargement">
+            <div class="kpi-label">Tâches salle</div>
+            <div class="kpi-value" id="kpi-tasks">—</div>
+            <div class="kpi-sub" id="kpi-tasks-sub">complétées</div>
+          </article>
         </div>
-        <div class="kpi-chip success">
-          <div class="kpi-label">✅ Arrivées</div>
-          <div class="kpi-value" id="kpiArrived">—</div>
-          <div class="kpi-sub" id="kpiArrivedSub">taux d'arrivée</div>
-        </div>
-        <div class="kpi-chip danger" id="kpiDanger">
-          <div class="kpi-label">⚠️ No-shows</div>
-          <div class="kpi-value" id="kpiNoshow">—</div>
-          <div class="kpi-sub">confirmées en attente</div>
-        </div>
-        <div class="kpi-chip purple">
-          <div class="kpi-label">🎯 Tâches salle</div>
-          <div class="kpi-value" id="kpiTasks">—</div>
-          <div class="kpi-sub" id="kpiTasksSub">complétées</div>
-        </div>
-      </div>
+      </section>
 
-      <!-- Section alertes no-show -->
-      <div id="alertsSection"></div>
+      <!-- Alertes no-show -->
+      <section
+        id="alerts-section"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="false"
+        aria-label="Alertes no-show"
+      ></section>
 
-      <!-- Grille salle -->
-      <div class="dashboard-grid">
+      <!-- Grille 3 colonnes -->
+      <div class="dashboard-grid mb-6">
 
-        <!-- Col 1 : tâches salle -->
-        <div style="display:flex;flex-direction:column;gap:20px;">
-
-          <div class="card">
+        <!-- Col 1 : Tâches salle + par personne -->
+        <div class="flex flex-col gap-5">
+          <section class="card" aria-labelledby="tasks-title">
             <div class="card-header">
-              <div class="card-title">🎯 Tâches salle</div>
+              <h2 class="card-title" id="tasks-title">Tâches salle</h2>
               <a href="/staff/taches.html" class="btn btn-secondary btn-sm">Voir →</a>
             </div>
-            <div id="taskCategories">
-              <div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Chargement…</div></div>
+            <div id="task-categories">
+              <div class="empty-state"><div class="empty-state-text">Chargement…</div></div>
             </div>
-          </div>
+          </section>
 
-          <div class="card">
+          <section class="card" aria-labelledby="byperson-title">
             <div class="card-header">
-              <div class="card-title">👥 Par personne</div>
+              <h2 class="card-title" id="byperson-title">Par personne</h2>
             </div>
-            <div id="byPerson">
-              <div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">Chargement…</div></div>
+            <div id="by-person">
+              <div class="empty-state"><div class="empty-state-text">Chargement…</div></div>
             </div>
-          </div>
-
+          </section>
         </div>
 
-        <!-- Col 2 : réservations -->
-        <div>
-          <div class="card" style="height:100%;">
-            <div class="card-header">
-              <div class="card-title">🍽️ Réservations du jour</div>
-              <a href="/staff/reservations.html" class="btn btn-secondary btn-sm">Gérer →</a>
-            </div>
-            <div id="resaTimeline">
-              <div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">Chargement…</div></div>
-            </div>
+        <!-- Col 2 : Timeline réservations -->
+        <section class="card" aria-labelledby="resa-title" style="height:100%;">
+          <div class="card-header">
+            <h2 class="card-title" id="resa-title">Réservations du jour</h2>
+            <a href="/staff/reservations.html" class="btn btn-secondary btn-sm">Gérer →</a>
           </div>
-        </div>
+          <div id="resa-timeline">
+            <div class="empty-state"><div class="empty-state-text">Chargement…</div></div>
+          </div>
+        </section>
 
-        <!-- Col 3 : stats résas -->
-        <div>
-          <div class="card" style="height:100%;">
-            <div class="card-header">
-              <div class="card-title">📊 Résas par statut</div>
-            </div>
-            <div id="resaStats">
-              <div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-text">Chargement…</div></div>
-            </div>
+        <!-- Col 3 : Stats statuts -->
+        <section class="card" aria-labelledby="stats-title" style="height:100%;">
+          <div class="card-header">
+            <h2 class="card-title" id="stats-title">Résas par statut</h2>
           </div>
-        </div>
+          <div id="resa-stats">
+            <div class="empty-state"><div class="empty-state-text">Chargement…</div></div>
+          </div>
+        </section>
 
       </div>
 
-      <!-- ══════════════════ PARTIE CUISINE ══════════════════ -->
-      <div class="section-divider">
+      <!-- ══ CUISINE ═════════════════════════════════════════════ -->
+      <div class="section-divider" role="presentation">
         <div class="section-divider-line"></div>
-        <div class="section-divider-label cuisine-label">🍳 Cuisine</div>
+        <div class="section-divider-label cuisine-label">Cuisine</div>
         <div class="section-divider-line"></div>
       </div>
 
       <!-- Nav rapide cuisine -->
-      <div class="cuisine-nav">
+      <nav class="cuisine-nav" aria-label="Navigation cuisine">
         <a href="/cuisine/index.html?tab=dashboard">
-          <span class="cn-icon">📊</span>
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 4a1 1 0 011-1h5v5H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h5v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm1 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1v-4a1 1 0 00-1-1h-4z"/></svg>
           Dashboard
         </a>
         <a href="/cuisine/index.html?tab=taches">
-          <span class="cn-icon">✅</span>
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
           Tâches
         </a>
         <a href="/cuisine/index.html?tab=planning">
-          <span class="cn-icon">📅</span>
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>
           Planning
         </a>
+      </nav>
+
+      <!-- KPI Cuisine + détail -->
+      <div class="dashboard-grid mb-6" style="grid-template-columns:1fr 2fr;">
+        <section aria-label="Indicateur cuisine">
+          <article class="kpi-chip cuisine" style="height:100%;box-sizing:border-box;" aria-label="Tâches cuisine : chargement">
+            <div class="kpi-label">Tâches cuisine</div>
+            <div class="kpi-value" id="kpi-cuisine">—</div>
+            <div class="kpi-sub" id="kpi-cuisine-sub">complétées</div>
+          </article>
+        </section>
+        <section class="card" aria-labelledby="cuisine-today-title">
+          <div class="card-header">
+            <h2 class="card-title" id="cuisine-today-title">Cuisine — Aujourd'hui</h2>
+          </div>
+          <div id="cuisine-section">
+            <div class="empty-state"><div class="empty-state-text">Chargement…</div></div>
+          </div>
+        </section>
       </div>
 
-      <!-- KPI Cuisine + contenu du jour -->
-      <div class="dashboard-grid" style="grid-template-columns:1fr 2fr;">
-
-        <!-- KPI cuisine -->
-        <div>
-          <div class="kpi-chip cuisine" style="height:100%;box-sizing:border-box;">
-            <div class="kpi-label">🍳 Tâches cuisine</div>
-            <div class="kpi-value" id="kpiCuisine">—</div>
-            <div class="kpi-sub" id="kpiCuisineSub">complétées</div>
-          </div>
-        </div>
-
-        <!-- Détail cuisine du jour -->
-        <div>
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">Aujourd'hui</div>
-            </div>
-            <div id="cuisineSection">
-              <div class="empty-state"><div class="empty-state-icon">🍳</div><div class="empty-state-text">Chargement…</div></div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Log d'activité récente -->
-      <div class="card mt-4">
+      <!-- Log d'activité -->
+      <section class="card" aria-labelledby="log-title">
         <div class="card-header">
-          <div class="card-title">📋 Activité récente</div>
-          <button class="btn btn-secondary btn-sm" onclick="loadLog()">↻ Actualiser</button>
+          <h2 class="card-title" id="log-title">Activité récente</h2>
+          <button class="btn btn-secondary btn-sm" id="btn-refresh-log" type="button">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="14" height="14"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+            Actualiser
+          </button>
         </div>
-        <div id="logList">
-          <div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Chargement…</div></div>
+        <div id="log-list" aria-live="polite" aria-atomic="true">
+          <div class="empty-state"><div class="empty-state-text">Chargement…</div></div>
         </div>
-      </div>
+      </section>
 
     </div>
-  </div>
+  </main>
 
-  <div id="toast-container"></div>
+  <div id="toast-container" role="status" aria-live="polite"></div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/api.js"></script>
   <script>
+    'use strict';
     buildNav('dashboard');
 
-    const logDateInput = document.getElementById('logDate');
+    const logDateInput = document.getElementById('log-date');
     logDateInput.value = today();
     updateDateLabel();
 
+    // ── Date navigation ──
     function updateDateLabel() {
-      document.getElementById('dateLabel').textContent = formatDate(logDateInput.value);
+      const label = formatDate(logDateInput.value);
+      document.getElementById('date-label').textContent = label;
+      document.title = `Dashboard — ${label}`;
     }
     function shiftDate(delta) {
       const d = new Date(logDateInput.value);
@@ -461,6 +348,22 @@
       updateDateLabel();
       loadAll();
     }
+    document.getElementById('btn-prev').addEventListener('click', () => shiftDate(-1));
+    document.getElementById('btn-next').addEventListener('click', () => shiftDate(1));
+    logDateInput.addEventListener('change', () => { updateDateLabel(); loadAll(); });
+    document.getElementById('btn-refresh-log').addEventListener('click', () => loadLog());
+
+    // ── Raccourcis clavier ←→ ──
+    document.addEventListener('keydown', e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'ArrowLeft')  shiftDate(-1);
+      if (e.key === 'ArrowRight') shiftDate(1);
+    });
+
+    // ── Upload planning PDF ──
+    document.getElementById('planning-file-input').addEventListener('change', function() {
+      uploadPlanningPDF(this);
+    });
 
     async function loadAll() {
       updateDateLabel();
@@ -480,38 +383,45 @@
       await loadCuisine(date);
     }
 
-    // ─── KPIs ─────────────────────────────────────────────────────
+    // ── KPIs ──
     function renderKpis(data) {
-      const resas = data.reservations || [];
-      // only non-cancelled for active count
+      const resas   = data.reservations || [];
       const active  = resas.filter(r => r.status !== 'cancelled');
       const total   = active.length;
       const arrived = resas.filter(r => r.status === 'arrived').length;
       const noShow  = resas.filter(r => r.status === 'no_show' || isLate(r)).length;
       const pct     = total ? Math.round(arrived / total * 100) : 0;
+      const cancelled = resas.filter(r => r.status === 'cancelled').length;
 
-      document.getElementById('kpiTotal').textContent = total;
-      document.getElementById('kpiTotalSub').textContent = resas.filter(r=>r.status==='cancelled').length
-        ? `+ ${resas.filter(r=>r.status==='cancelled').length} annulée(s)` : 'aujourd\'hui';
-      document.getElementById('kpiArrived').textContent = arrived;
-      document.getElementById('kpiArrivedSub').textContent = total ? `${pct}% de taux` : '—';
-      document.getElementById('kpiNoshow').textContent = noShow;
+      const kpiTotalEl = document.getElementById('kpi-total');
+      kpiTotalEl.textContent = total;
+      kpiTotalEl.closest('article').setAttribute('aria-label', `Réservations : ${total}`);
 
-      const kpiDanger = document.getElementById('kpiDanger');
-      kpiDanger.className = 'kpi-chip' + (noShow > 0 ? ' danger' : '');
+      document.getElementById('kpi-total-sub').textContent = cancelled
+        ? `+ ${cancelled} annulée${cancelled > 1 ? 's' : ''}` : "aujourd'hui";
 
-      const cats = data.tasksByCategory || [];
+      const kpiArrivedEl = document.getElementById('kpi-arrived');
+      kpiArrivedEl.textContent = arrived;
+      kpiArrivedEl.closest('article').setAttribute('aria-label', `Arrivées : ${arrived}, taux ${pct}%`);
+      document.getElementById('kpi-arrived-sub').textContent = total ? `${pct}% de taux` : '—';
+
+      const kpiNoshowEl = document.getElementById('kpi-noshow');
+      kpiNoshowEl.textContent = noShow;
+      const chip = document.getElementById('kpi-noshow-chip');
+      chip.className = 'kpi-chip' + (noShow > 0 ? ' danger' : '');
+      chip.setAttribute('aria-label', `No-shows : ${noShow}`);
+
+      const cats    = data.tasksByCategory || [];
       const salleCats = cats.filter(c => !['fermeture','nettoyage'].includes(c.category));
-      const totalT = salleCats.reduce((s,c) => s + c.total, 0);
-      const doneT  = salleCats.reduce((s,c) => s + c.done_tasks, 0);
-      const pctT   = totalT ? Math.round(doneT / totalT * 100) : 0;
-      document.getElementById('kpiTasks').textContent = `${doneT}/${totalT}`;
-      document.getElementById('kpiTasksSub').textContent = `${pctT}% complétées`;
-
-      // Cuisine KPI will be filled by loadCuisine
+      const totalT  = salleCats.reduce((s, c) => s + c.total, 0);
+      const doneT   = salleCats.reduce((s, c) => s + c.done_tasks, 0);
+      const pctT    = totalT ? Math.round(doneT / totalT * 100) : 0;
+      document.getElementById('kpi-tasks').textContent = `${doneT}/${totalT}`;
+      document.getElementById('kpi-tasks-sub').textContent = `${pctT}% complétées`;
+      document.getElementById('kpi-tasks').closest('article').setAttribute('aria-label', `Tâches salle : ${doneT} sur ${totalT}, ${pctT}%`);
     }
 
-    // ─── Alertes ──────────────────────────────────────────────────
+    // ── Alertes ──
     function isLate(r) {
       if (r.status !== 'confirmed') return false;
       const now = new Date();
@@ -522,42 +432,44 @@
     }
 
     function renderAlerts(resas) {
-      const container = document.getElementById('alertsSection');
+      const container = document.getElementById('alerts-section');
       const late = (resas || []).filter(r => r.status === 'no_show' || isLate(r));
       if (!late.length) { container.innerHTML = ''; return; }
       container.innerHTML = `
-        <div style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.06em;color:#ef4444;font-weight:700;margin-bottom:10px;">
-          ⚠️ ${late.length} réservation${late.length>1?'s':''} en alerte
-        </div>
+        <p class="text-xs font-semibold text-danger mb-3" style="text-transform:uppercase;letter-spacing:0.06em;">
+          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="14" height="14" style="vertical-align:-2px;margin-right:4px;"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+          ${late.length} réservation${late.length > 1 ? 's' : ''} en alerte
+        </p>
         ${late.map(r => `
           <div class="alert-noshow">
-            <div class="alert-noshow-icon">🚨</div>
+            <svg class="alert-noshow-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="24" height="24"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
             <div class="alert-noshow-info">
-              <div class="alert-noshow-name">${r.customer_name}</div>
+              <div class="alert-noshow-name">${escapeHtml(r.customer_name)}</div>
               <div class="alert-noshow-detail">
-                ${r.party_size} pers.${r.table_name ? ` · T.${r.table_name}` : ''}
-                ${r.phone ? ` · 📞 ${r.phone}` : ''}
-                ${r.status === 'no_show' ? ' · <strong style="color:#ef4444">No show confirmé</strong>' : ' · <strong style="color:#f97316">+15 min — pas arrivé</strong>'}
+                ${r.party_size} pers.${r.table_name ? ` · Table ${escapeHtml(r.table_name)}` : ''}${r.phone ? ` · ${escapeHtml(r.phone)}` : ''}
+                ${r.status === 'no_show'
+                  ? ' · <strong style="color:var(--danger)">No-show confirmé</strong>'
+                  : ' · <strong style="color:#fb923c">+15 min, pas arrivé</strong>'}
               </div>
             </div>
-            <div class="alert-noshow-time">${r.time}</div>
+            <div class="alert-noshow-time">${escapeHtml(r.time)}</div>
           </div>
         `).join('')}
       `;
     }
 
-    // ─── Tâches salle ─────────────────────────────────────────────
+    // ── Tâches par catégorie ──
     const catConfig = {
-      matin:     { label: '🌅 Matin',     color: '#cda443' },
-      passation: { label: '🔄 Passation', color: '#60a5fa' },
-      soir:      { label: '🌙 Fermeture', color: '#a78bfa' },
+      matin:     { label: 'Matin',     color: 'var(--primary)' },
+      passation: { label: 'Passation', color: 'var(--info)' },
+      soir:      { label: 'Fermeture', color: 'var(--purple)' },
     };
 
     function renderTaskCategories(cats) {
-      const container = document.getElementById('taskCategories');
+      const container = document.getElementById('task-categories');
       const salleCats = (cats || []).filter(c => !['fermeture','nettoyage'].includes(c.category));
       if (!salleCats.length) {
-        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">Aucune tâche</div></div>`;
+        container.innerHTML = `<p class="empty-state"><span class="empty-state-text">Aucune tâche</span></p>`;
         return;
       }
       container.innerHTML = salleCats.map(c => {
@@ -566,220 +478,227 @@
         return `
           <div class="category-block">
             <div class="category-header">
-              <div class="category-name" style="color:${cfg.color}">${cfg.label}</div>
-              <div class="category-count">${c.done_tasks}/${c.total} · ${pct}%</div>
+              <span class="category-name" style="color:${cfg.color}">${escapeHtml(cfg.label)}</span>
+              <span class="category-count">${c.done_tasks}/${c.total} · ${pct}%</span>
             </div>
-            <div class="progress-bar">
-              <div class="progress-fill ${pct===100?'success':''}" style="width:${pct}%;background:${pct===100?'#22c55e':cfg.color};"></div>
+            <div class="progress-bar" role="presentation">
+              <div class="progress-fill ${pct === 100 ? 'success' : ''}"
+                   style="width:${pct}%;background:${pct === 100 ? 'var(--success)' : cfg.color};"
+                   aria-hidden="true"></div>
             </div>
+            <progress class="sr-only" value="${c.done_tasks}" max="${c.total}"
+              aria-label="Progression ${cfg.label} : ${pct}%"></progress>
           </div>`;
       }).join('');
     }
 
-    // ─── Par personne ─────────────────────────────────────────────
+    // ── Par personne ──
     function renderByPerson(persons) {
-      const container = document.getElementById('byPerson');
+      const container = document.getElementById('by-person');
       const active = (persons || []).filter(p => p.task_count > 0);
       if (!active.length) {
-        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">Aucune tâche cochée</div></div>`;
+        container.innerHTML = `<p class="empty-state"><span class="empty-state-text">Aucune tâche cochée</span></p>`;
         return;
       }
       const maxCount = Math.max(...active.map(p => p.task_count));
-      container.innerHTML = active.map(p => {
-        const initials = p.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+      container.innerHTML = `<ul style="list-style:none">` + active.map(p => {
+        const initials = p.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
         const pct = maxCount ? Math.round(p.task_count / maxCount * 100) : 0;
         const isCuisine = p.shift === 'cuisine';
+        const color = isCuisine ? 'var(--warning)' : 'var(--primary)';
         return `
-          <div class="person-row">
-            <div class="person-avatar ${isCuisine?'cuisine-av':''}">${initials}</div>
+          <li class="person-row">
+            <div class="person-avatar ${isCuisine ? 'cuisine-av' : ''}" aria-hidden="true">${escapeHtml(initials)}</div>
             <div class="person-info">
-              <div class="person-name">${p.name}</div>
-              <div class="person-meta">${isCuisine?'🍳 Cuisine':'🍽️ Salle'}</div>
-              <div class="person-mini-bar"><div class="person-mini-fill" style="width:${pct}%;background:${isCuisine?'#f59e0b':'var(--primary)'};"></div></div>
-            </div>
-            <div class="person-count" style="color:${isCuisine?'#f59e0b':'var(--primary)'}">${p.task_count}</div>
-          </div>`;
-      }).join('');
-    }
-
-    // ─── Timeline réservations ─────────────────────────────────────
-    const statusConfig = {
-      confirmed: { label: 'Confirmée', cls: 'confirmed' },
-      arrived:   { label: 'Arrivée',   cls: 'arrived' },
-      no_show:   { label: 'No show',   cls: 'no_show' },
-      cancelled: { label: 'Annulée',   cls: 'cancelled' },
-    };
-
-    function renderResaTimeline(resas) {
-      const container = document.getElementById('resaTimeline');
-      if (!resas || !resas.length) {
-        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-text">Aucune réservation</div></div>`;
-        return;
-      }
-      container.innerHTML = `<div style="max-height:420px;overflow-y:auto;">` + resas.map(r => {
-        const s = statusConfig[r.status] || { label: r.status, cls: 'cancelled' };
-        const late = r.status === 'no_show' || isLate(r);
-        return `
-          <div class="resa-row ${late ? 'is-late' : ''}">
-            <div class="resa-time">${r.time}</div>
-            <div class="resa-info">
-              <div class="resa-name">${r.customer_name} ${late ? '⚠️' : ''}</div>
-              <div class="resa-detail">
-                ${r.party_size} pers.${r.table_name ? ` · T.${r.table_name}` : ''}${r.notes ? ` · ${r.notes}` : ''}
+              <div class="person-name">${escapeHtml(p.name)}</div>
+              <div class="person-meta">${isCuisine ? 'Cuisine' : 'Salle'}</div>
+              <div class="person-mini-bar" aria-hidden="true">
+                <div class="person-mini-fill" style="width:${pct}%;background:${color};"></div>
               </div>
             </div>
-            <div class="resa-badge ${s.cls}">${s.label}</div>
-          </div>`;
-      }).join('') + `</div>`;
+            <div class="person-count" style="color:${color}" aria-label="${p.task_count} tâches">${p.task_count}</div>
+          </li>`;
+      }).join('') + `</ul>`;
     }
 
-    // ─── Stats résas rapides ───────────────────────────────────────
+    // ── Timeline réservations ──
+    function renderResaTimeline(resas) {
+      const container = document.getElementById('resa-timeline');
+      if (!resas || !resas.length) {
+        container.innerHTML = `<p class="empty-state"><span class="empty-state-text">Aucune réservation</span></p>`;
+        return;
+      }
+      container.innerHTML = `
+        <div style="max-height:420px;overflow-y:auto;" tabindex="0" aria-label="Liste des réservations, ${resas.length} entrée${resas.length>1?'s':''}">
+          ${resas.map(r => {
+            const late = r.status === 'no_show' || isLate(r);
+            return `
+              <div class="resa-row ${late ? 'is-late' : ''}">
+                <time class="resa-time" datetime="${escapeHtml(r.date)}T${escapeHtml(r.time)}">${escapeHtml(r.time)}</time>
+                <div class="resa-info">
+                  <div class="resa-name">${escapeHtml(r.customer_name)}${late ? ' <span aria-label="En retard" title="En retard">⚠</span>' : ''}</div>
+                  <div class="resa-detail">
+                    ${r.party_size} pers.${r.table_name ? ` · Table ${escapeHtml(r.table_name)}` : ''}${r.notes ? ` · ${escapeHtml(r.notes)}` : ''}
+                  </div>
+                </div>
+                ${statusBadge(r.status)}
+              </div>`;
+          }).join('')}
+        </div>`;
+    }
+
+    // ── Stats statuts ──
     function renderResaStats(resas) {
-      const container = document.getElementById('resaStats');
+      const container = document.getElementById('resa-stats');
       const list = resas || [];
       const items = [
-        { label: '✅ Arrivées',    val: list.filter(r=>r.status==='arrived').length,   color:'#22c55e' },
-        { label: '📌 Confirmées',  val: list.filter(r=>r.status==='confirmed').length, color:'#60a5fa' },
-        { label: '❌ No-shows',    val: list.filter(r=>r.status==='no_show').length,   color:'#ef4444' },
-        { label: '🚫 Annulées',    val: list.filter(r=>r.status==='cancelled').length, color:'var(--text-muted)' },
-        { label: '🔗 Via Joy.io',  val: list.filter(r=>r.joy_event_id).length,        color:'#f59e0b' },
+        { label: 'Arrivées',   val: list.filter(r => r.status === 'arrived').length,   color: 'var(--success)' },
+        { label: 'Confirmées', val: list.filter(r => r.status === 'confirmed').length, color: 'var(--info)' },
+        { label: 'No-shows',   val: list.filter(r => r.status === 'no_show').length,   color: 'var(--danger)' },
+        { label: 'Annulées',   val: list.filter(r => r.status === 'cancelled').length, color: 'var(--text-muted)' },
+        { label: 'Via Joy.io', val: list.filter(r => r.joy_event_id).length,           color: 'var(--warning)' },
       ];
       const max = Math.max(...items.map(i => i.val), 1);
-      container.innerHTML = items.map(i => `
+      container.innerHTML = `<dl>` + items.map(i => `
         <div class="donut-row">
-          <div class="donut-label">${i.label}</div>
-          <div class="donut-bar-wrap"><div class="donut-bar"><div class="donut-fill" style="width:${Math.round(i.val/max*100)}%;background:${i.color};"></div></div></div>
-          <div class="donut-val">${i.val}</div>
-        </div>`).join('');
+          <dt class="donut-label">${escapeHtml(i.label)}</dt>
+          <dd style="display:flex;align-items:center;gap:8px;margin:0;">
+            <div class="donut-bar-wrap" aria-hidden="true">
+              <div class="donut-bar"><div class="donut-fill" style="width:${Math.round(i.val/max*100)}%;background:${i.color};"></div></div>
+            </div>
+            <span class="donut-val">${i.val}</span>
+          </dd>
+        </div>`).join('') + `</dl>`;
     }
 
-    // ─── Section Cuisine ──────────────────────────────────────────
+    // ── Cuisine ──
     async function loadCuisine(date) {
       try {
         const [completions, timeEvents] = await Promise.all([
           api.get(`/api/cuisine/completions?date=${date}`),
           api.get(`/api/cuisine/time-events?date=${date}`)
         ]);
-        renderCuisine(completions, timeEvents, date);
-      } catch(e) {
-        document.getElementById('cuisineSection').innerHTML =
-          `<div class="empty-state"><div class="empty-state-text">Non disponible</div></div>`;
+        renderCuisine(completions, timeEvents);
+      } catch {
+        document.getElementById('cuisine-section').innerHTML =
+          `<p class="empty-state"><span class="empty-state-text">Non disponible</span></p>`;
       }
     }
 
-    function renderCuisine(completions, timeEvents, date) {
-      const container = document.getElementById('cuisineSection');
-      const comp = completions || [];
-      const events = timeEvents || [];
-
-      // Cuisine KPI
+    function renderCuisine(completions, timeEvents) {
+      const comp   = completions || [];
+      const events = timeEvents  || [];
       const totalTasks = comp.length ? comp[0].total : 0;
-      const totalDone  = comp.reduce((s,u) => s + (u.done||0), 0);
+      const totalDone  = comp.reduce((s, u) => s + (u.done || 0), 0);
       const teamSize   = comp.length;
       const teamDone   = totalTasks ? Math.round(totalDone / (totalTasks * teamSize || 1) * 100) : 0;
-      document.getElementById('kpiCuisine').textContent = `${totalDone}/${totalTasks * teamSize}`;
-      document.getElementById('kpiCuisineSub').textContent = `${teamDone}% (équipe)`;
 
-      let html = '';
-      // Tâches par personne
-      if (comp.length) {
-        html += comp.map(u => {
-          const pct = u.total ? Math.round(u.done / u.total * 100) : 0;
-          const initials = u.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-          return `
-            <div class="cuisine-chip">
-              <div class="person-avatar cuisine-av" style="width:30px;height:30px;font-size:0.78rem;">${initials}</div>
-              <div class="cuisine-info">
-                <div class="cuisine-name">${u.name}</div>
-                <div class="progress-bar" style="height:5px;margin-top:4px;">
-                  <div class="progress-fill ${pct===100?'success':''}" style="width:${pct}%;background:${pct===100?'#22c55e':'#f59e0b'};"></div>
-                </div>
+      const kpiEl = document.getElementById('kpi-cuisine');
+      kpiEl.textContent = `${totalDone}/${totalTasks * teamSize}`;
+      kpiEl.closest('article').setAttribute('aria-label', `Tâches cuisine : ${totalDone} sur ${totalTasks * teamSize}`);
+      document.getElementById('kpi-cuisine-sub').textContent = `${teamDone}% (équipe)`;
+
+      const container = document.getElementById('cuisine-section');
+      if (!comp.length) {
+        container.innerHTML = `<p class="empty-state"><span class="empty-state-text">Aucun staff cuisine actif</span></p>`;
+        return;
+      }
+
+      let html = `<ul style="list-style:none">` + comp.map(u => {
+        const pct = u.total ? Math.round(u.done / u.total * 100) : 0;
+        const initials = u.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        return `
+          <li class="cuisine-chip">
+            <div class="person-avatar cuisine-av" style="width:30px;height:30px;font-size:0.75rem;" aria-hidden="true">${escapeHtml(initials)}</div>
+            <div class="cuisine-info">
+              <div class="cuisine-name">${escapeHtml(u.name)}</div>
+              <div class="progress-bar" style="height:5px;margin-top:4px;" aria-hidden="true">
+                <div class="progress-fill ${pct===100?'success':''}" style="width:${pct}%;background:${pct===100?'var(--success)':'var(--warning)'};"></div>
               </div>
-              <span style="font-size:0.82rem;font-weight:700;color:#f59e0b;">${u.done}/${u.total}</span>
-            </div>`;
-        }).join('');
-      } else {
-        html += `<div class="empty-state"><div class="empty-state-text">Aucun staff cuisine actif</div></div>`;
-      }
+            </div>
+            <span class="text-sm font-bold" style="color:var(--warning);" aria-label="${u.done} sur ${u.total} tâches">${u.done}/${u.total}</span>
+          </li>`;
+      }).join('') + `</ul>`;
 
-      // Retards/heures supp
       if (events.length) {
-        const retards = events.filter(e=>e.type==='retard');
-        const supps   = events.filter(e=>e.type==='supp');
-        html += `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:0.78rem;color:var(--text-muted);">`;
-        if (retards.length) html += `⏰ ${retards.length} retard(s) · ${retards.reduce((s,e)=>s+(e.minutes||0),0)} min  `;
-        if (supps.length)   html += `➕ ${supps.length} heure(s) supp · ${supps.reduce((s,e)=>s+(e.minutes||0),0)} min`;
-        html += `</div>`;
+        const retards = events.filter(e => e.type === 'retard');
+        const supps   = events.filter(e => e.type === 'supp');
+        html += `<p class="text-xs text-muted mt-3" style="padding-top:10px;border-top:1px solid var(--border);">`;
+        if (retards.length) html += `${retards.length} retard(s) · ${retards.reduce((s,e) => s + (e.minutes||0), 0)} min  `;
+        if (supps.length)   html += `${supps.length} h supp · ${supps.reduce((s,e) => s + (e.minutes||0), 0)} min`;
+        html += `</p>`;
       }
-
-      container.innerHTML = html || `<div class="empty-state"><div class="empty-state-text">Aucune donnée</div></div>`;
+      container.innerHTML = html;
     }
 
-    // ─── Log d'activité ───────────────────────────────────────────
+    // ── Log d'activité ──
     async function loadLog(date) {
       const d = date || logDateInput.value;
       const log = await api.get(`/api/admin/daily-log?date=${d}`);
-      if (!log) return;
-      const container = document.getElementById('logList');
-      if (!log.length) {
-        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">Aucune activité</div></div>`;
+      const container = document.getElementById('log-list');
+      if (!log || !log.length) {
+        container.innerHTML = `<p class="empty-state"><span class="empty-state-text">Aucune activité</span></p>`;
         return;
       }
-      const catIcon = { matin: '🌅', passation: '🔄', soir: '🌙', fermeture: '🔒', nettoyage: '🧽' };
-      container.innerHTML = `<div style="max-height:300px;overflow-y:auto;">` +
-        log.map(l => `
-          <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
-            <span style="font-size:0.77rem;color:var(--text-muted);flex-shrink:0;margin-top:2px;min-width:42px;">${formatDateTime(l.completed_at)}</span>
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:0.84rem;">${l.description}</div>
-              <div style="font-size:0.74rem;color:var(--text-muted);">${catIcon[l.category] || ''} ${l.section || ''} · ${l.user_name}</div>
-            </div>
-            <span class="badge badge-success" style="flex-shrink:0;">✓</span>
-          </div>`).join('') + `</div>`;
+      const catLabel = { matin: 'Matin', passation: 'Passation', soir: 'Fermeture', fermeture: 'Fermeture', nettoyage: 'Nettoyage' };
+      container.innerHTML = `
+        <div style="max-height:300px;overflow-y:auto;" tabindex="0" aria-label="Journal d'activité">
+          <ul style="list-style:none">
+            ${log.map(l => `
+              <li class="log-item">
+                <time class="log-time">${escapeHtml(formatDateTime(l.completed_at))}</time>
+                <div class="log-body">
+                  <div class="log-desc">${escapeHtml(l.description)}</div>
+                  <div class="log-meta">${escapeHtml(catLabel[l.category] || l.category || '')}${l.section ? ' · ' + escapeHtml(l.section) : ''} · ${escapeHtml(l.user_name)}</div>
+                </div>
+                <span class="badge badge-success" aria-hidden="true">✓</span>
+              </li>`).join('')}
+          </ul>
+        </div>`;
     }
 
-    // ─── Socket.io ────────────────────────────────────────────────
-    const socket = io();
-    socket.on('task:updated', () => loadDashboard(logDateInput.value));
-    socket.on('reservation:updated', () => loadDashboard(logDateInput.value));
-    socket.on('reservation:deleted', () => loadDashboard(logDateInput.value));
-    socket.on('cuisine:time-events:updated', () => loadDashboard(logDateInput.value));
-    socket.on('alert:no_show', (data) => {
-      loadDashboard(logDateInput.value);
-      playAlertSound();
-      showToast(`⚠️ No-show : ${data.customerName} — ${data.time}`, 'warning');
-    });
-
-    // ─── Planning PDF ─────────────────────────────────────────────
+    // ── Planning PDF ──
     async function loadCurrentPlanning() {
       const pdf = await api.get('/api/staff/planning-pdf');
-      const el = document.getElementById('currentPlanningInfo');
+      const el = document.getElementById('current-planning-info');
       if (!pdf) { el.textContent = 'Aucun planning importé.'; return; }
-      el.innerHTML = `Planning actuel : <strong>${pdf.original_name}</strong><br>
-        Importé le ${(pdf.uploaded_at || '').slice(0, 16).replace('T', ' ')}`;
+      el.innerHTML = `Planning actuel\u00a0: <strong>${escapeHtml(pdf.original_name)}</strong><br>
+        Importé le ${escapeHtml((pdf.uploaded_at || '').slice(0, 16).replace('T', ' '))}`;
     }
 
     async function uploadPlanningPDF(input) {
       const file = input.files[0];
       if (!file) return;
-      const status = document.getElementById('planningUploadStatus');
+      const status = document.getElementById('planning-upload-status');
       status.textContent = 'Envoi en cours…';
       const fd = new FormData();
       fd.append('file', file);
       try {
         const r = await fetch('/api/admin/planning-pdf', { method: 'POST', body: fd });
         const data = await r.json();
-        if (!r.ok) { status.textContent = '❌ ' + (data.error || 'Erreur'); return; }
-        status.textContent = '✅ Planning mis à jour';
+        if (!r.ok) { status.textContent = 'Erreur : ' + (data.error || 'inconnue'); return; }
+        status.textContent = 'Planning mis à jour.';
         input.value = '';
         loadCurrentPlanning();
         setTimeout(() => { status.textContent = ''; }, 3000);
-      } catch(e) {
-        status.textContent = '❌ Erreur réseau';
+      } catch {
+        status.textContent = 'Erreur réseau.';
       }
     }
 
-    // ─── Init ─────────────────────────────────────────────────────
+    // ── Socket.io ──
+    const socket = io();
+    socket.on('task:updated',              () => loadDashboard(logDateInput.value));
+    socket.on('reservation:updated',       () => loadDashboard(logDateInput.value));
+    socket.on('reservation:deleted',       () => loadDashboard(logDateInput.value));
+    socket.on('cuisine:time-events:updated', () => loadDashboard(logDateInput.value));
+    socket.on('alert:no_show', (data) => {
+      loadDashboard(logDateInput.value);
+      playAlertSound();
+      showToast(`No-show : ${data.customerName} — ${data.time}`, 'warning');
+    });
+
+    // ── Init ──
     loadAll();
     loadCurrentPlanning();
     setInterval(() => loadAll(), 60000);

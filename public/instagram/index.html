@@ -9,27 +9,22 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
   <style>
     /* ── Account strip ── */
-    .account-strip {
-      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
-    }
+    .account-strip { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
     .account-pill {
       padding: 6px 16px; border-radius: 999px; font-size: .82rem; font-weight: 600;
       border: 1.5px solid var(--border); color: var(--text-muted); cursor: pointer;
-      transition: border-color .15s, color .15s, background .15s;
-      background: transparent;
+      transition: border-color .15s, color .15s, background .15s; background: transparent;
     }
-    .account-pill.active {
-      border-color: var(--primary); color: var(--primary);
-      background: rgba(205,164,67,.12);
-    }
+    .account-pill[aria-pressed="true"] { border-color: var(--primary); color: var(--primary); background: rgba(230,184,74,.12); }
+    .account-pill:focus-visible { box-shadow: var(--focus-ring); outline: none; }
 
     /* ── View toggle ── */
     .view-toggle { display: flex; gap: 4px; }
     .view-toggle .btn { font-size: .78rem; padding: 5px 12px; }
-    .view-toggle .btn.active { background: var(--primary); color: #000; border-color: var(--primary); }
+    .view-toggle .btn[aria-pressed="true"] { background: var(--primary); color: #000; border-color: var(--primary); }
 
     /* ── Calendar ── */
     .cal-wrapper { overflow-x: auto; }
@@ -37,8 +32,13 @@
     .cal-month-label { font-weight: 700; font-size: 1rem; color: var(--text); flex: 1; text-align: center; }
     .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; min-width: 560px; }
     .cal-head { background: var(--bg-surface); text-align: center; font-size: .72rem; font-weight: 700; color: var(--text-muted); padding: 8px 4px; text-transform: uppercase; }
-    .cal-day { background: var(--bg-card); padding: 6px 6px 8px; min-height: 80px; cursor: pointer; transition: background .12s; }
+    .cal-day {
+      background: var(--bg-card); padding: 6px 6px 8px; min-height: 80px;
+      cursor: pointer; transition: background .12s; text-align: left;
+      border: none; color: var(--text); width: 100%; font-family: inherit;
+    }
     .cal-day:hover { background: var(--bg-surface); }
+    .cal-day:focus-visible { box-shadow: var(--focus-ring); outline: none; z-index: 1; position: relative; }
     .cal-day.other-month { opacity: .38; pointer-events: none; }
     .cal-day.today .cal-day-num { color: var(--primary); font-weight: 800; }
     .cal-day-num { font-size: .72rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
@@ -46,28 +46,32 @@
       display: block; font-size: .68rem; padding: 2px 5px; border-radius: 4px;
       margin-bottom: 2px; cursor: pointer; white-space: nowrap;
       overflow: hidden; text-overflow: ellipsis; font-weight: 600;
-      transition: opacity .1s;
+      transition: opacity .1s; background: none; border: none; width: 100%; text-align: left; font-family: inherit;
     }
     .post-chip:hover { opacity: .8; }
+    .post-chip:focus-visible { box-shadow: var(--focus-ring); outline: none; }
     .post-chip.draft     { background: var(--bg-surface); color: var(--text-muted); border: 1px solid var(--border); }
     .post-chip.scheduled { background: rgba(96,165,250,.18); color: #60a5fa; }
     .post-chip.publishing{ background: rgba(240,180,41,.18); color: #f0b429; }
     .post-chip.published { background: rgba(76,175,106,.18); color: #4caf6a; }
     .post-chip.failed    { background: rgba(232,84,84,.18);  color: #e85454; }
-    .more-chip { font-size: .65rem; color: var(--text-muted); padding: 1px 4px; cursor: pointer; }
+    .more-chip { font-size: .65rem; color: var(--text-muted); padding: 1px 4px; cursor: pointer; background: none; border: none; font-family: inherit; }
+    .more-chip:focus-visible { box-shadow: var(--focus-ring); outline: none; }
 
     /* ── List view ── */
     .week-group { margin-bottom: 24px; }
-    .week-label { font-size: .78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    .week-group-label { font-size: .78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
     .post-row {
       display: flex; align-items: center; gap: 12px;
       background: var(--bg-card); border: 1px solid var(--border);
       border-radius: var(--radius-sm); padding: 12px 14px;
       margin-bottom: 8px; cursor: pointer; transition: border-color .15s;
+      width: 100%; text-align: left; color: var(--text); font-family: inherit;
     }
     .post-row:hover { border-color: var(--primary); }
+    .post-row:focus-visible { box-shadow: var(--focus-ring); outline: none; }
     .post-thumb {
-      width: 52px; height: 52px; border-radius: 8px;
+      position: relative; width: 52px; height: 52px; border-radius: 8px;
       background: var(--bg-surface); border: 1px solid var(--border);
       flex-shrink: 0; overflow: hidden; display: flex; align-items: center; justify-content: center;
       font-size: 1.4rem; color: var(--text-muted);
@@ -77,14 +81,14 @@
     .post-row-caption { font-size: .85rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
     .post-row-meta { font-size: .73rem; color: var(--text-muted); display: flex; gap: 10px; flex-wrap: wrap; }
     .post-row-status { flex-shrink: 0; }
-    .status-badge { font-size: .7rem; font-weight: 700; padding: 3px 9px; border-radius: 99px; }
+    .status-badge { font-size: .7rem; font-weight: 700; padding: 3px 9px; border-radius: 99px; display: inline-flex; align-items: center; gap: 4px; }
     .status-badge.draft     { background: var(--bg-surface); color: var(--text-muted); }
     .status-badge.scheduled { background: rgba(96,165,250,.15); color: #60a5fa; }
     .status-badge.publishing{ background: rgba(240,180,41,.15); color: #f0b429; }
     .status-badge.published { background: rgba(76,175,106,.15); color: #4caf6a; }
     .status-badge.failed    { background: rgba(232,84,84,.15);  color: #e85454; }
 
-    /* ── Drawer ── */
+    /* ── Drawer (right panel) ── */
     .drawer {
       position: fixed; top: 0; right: 0; bottom: 0;
       width: min(500px, 100vw);
@@ -96,13 +100,16 @@
       display: flex; flex-direction: column;
     }
     .drawer.open { transform: translateX(0); }
+    @media (prefers-reduced-motion: reduce) { .drawer { transition: none; } }
     .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 199; display: none; }
     .drawer-overlay.open { display: block; }
     .drawer-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
     }
-    .drawer-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .drawer-close { width:30px; height:30px; border-radius:50%; background:var(--bg-surface); color:var(--text-muted); display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; }
+    .drawer-close:focus-visible { box-shadow:var(--focus-ring); outline:none; }
+    .drawer-title-el { font-size: 1rem; font-weight: 700; color: var(--text); }
     .drawer-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
     .drawer-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
 
@@ -112,6 +119,9 @@
       background: var(--bg-surface); border: 1px solid var(--border);
       border-radius: var(--radius-sm); color: var(--text);
       padding: 9px 12px; font-size: .88rem; width: 100%; font-family: inherit;
+    }
+    .form-group select:focus-visible, .form-group textarea:focus-visible, .form-group input:focus-visible {
+      box-shadow: var(--focus-ring); outline: none;
     }
     .form-group textarea { resize: vertical; min-height: 90px; }
     .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -124,9 +134,7 @@
     }
     .media-dropzone:hover, .media-dropzone.drag-over { border-color: var(--primary); }
     .media-preview-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-    .media-thumb-wrap {
-      position: relative; width: 72px; height: 72px;
-    }
+    .media-thumb-wrap { position: relative; width: 72px; height: 72px; }
     .media-thumb {
       width: 72px; height: 72px; object-fit: cover;
       border-radius: 8px; border: 1px solid var(--border); display: block;
@@ -138,6 +146,7 @@
       font-size: .65rem; display: flex; align-items: center; justify-content: center;
       cursor: pointer; border: none; font-weight: 700;
     }
+    .media-thumb-del:focus-visible { box-shadow: var(--focus-ring); outline: none; }
     .media-order-badge {
       position: absolute; bottom: -2px; left: -2px;
       background: rgba(0,0,0,.7); color: #fff; border-radius: 4px;
@@ -146,108 +155,142 @@
     .caption-count { font-size: .72rem; color: var(--text-muted); text-align: right; }
     .error-msg { font-size: .8rem; color: #e85454; background: rgba(232,84,84,.1); border-radius: 6px; padding: 8px 12px; }
     .permalink-link { font-size: .8rem; color: var(--primary); word-break: break-all; }
+    .media-add-label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+    .media-add-label input { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
+
+    /* ── Confirm modal ── */
+    .confirm-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:400; display:flex; align-items:center; justify-content:center; padding:20px; }
+    .confirm-overlay.hidden { display:none; }
+    .confirm-box { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:24px; max-width:340px; width:100%; }
+    .confirm-box p { font-size:.92rem; margin-bottom:20px; line-height:1.5; }
+    .confirm-actions { display:flex; gap:10px; justify-content:flex-end; }
   </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
-  <div class="page">
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
+
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container">
 
       <!-- Header -->
       <div class="page-header">
         <div>
-          <div class="page-title">📸 Planificateur Instagram</div>
-          <div class="page-subtitle" id="calSubtitle"></div>
+          <h1 class="page-title">Planificateur Instagram</h1>
+          <p class="page-subtitle" id="calSubtitle"></p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <div class="view-toggle">
-            <button class="btn btn-secondary active" id="btnViewCal" onclick="setView('calendar')">Calendrier</button>
-            <button class="btn btn-secondary" id="btnViewList" onclick="setView('list')">Liste</button>
+          <div class="view-toggle" role="group" aria-label="Mode d'affichage">
+            <button class="btn btn-secondary" id="btnViewCal" aria-pressed="true">Calendrier</button>
+            <button class="btn btn-secondary" id="btnViewList" aria-pressed="false">Liste</button>
           </div>
-          <a href="/instagram/accounts.html" class="btn btn-secondary btn-sm">⚙️ Comptes</a>
-          <button class="btn btn-primary" id="btnNewPost" onclick="openDrawer(null)">+ Nouveau post</button>
+          <a href="/instagram/accounts.html" class="btn btn-secondary btn-sm">Comptes</a>
+          <button class="btn btn-primary" id="btnNewPost">+ Nouveau post</button>
         </div>
       </div>
 
       <!-- Account filter strip -->
-      <div class="account-strip" id="accountStrip"></div>
+      <div class="account-strip" id="accountStrip" role="group" aria-label="Filtrer par compte"></div>
 
       <!-- Calendar view -->
-      <div id="viewCalendar">
-        <div class="cal-nav">
-          <button class="btn btn-secondary btn-sm" onclick="changeMonth(-1)">‹</button>
-          <div class="cal-month-label" id="calMonthLabel"></div>
-          <button class="btn btn-secondary btn-sm" onclick="changeMonth(1)">›</button>
+      <section id="viewCalendar" aria-label="Calendrier des posts">
+        <div class="cal-nav" role="group" aria-label="Navigation par mois">
+          <button class="btn btn-secondary btn-sm" id="btnPrevMonth" aria-label="Mois précédent">‹</button>
+          <h2 class="cal-month-label" id="calMonthLabel" aria-live="polite" aria-atomic="true"></h2>
+          <button class="btn btn-secondary btn-sm" id="btnNextMonth" aria-label="Mois suivant">›</button>
         </div>
         <div class="cal-wrapper">
-          <div class="cal-grid" id="calGrid"></div>
+          <div class="cal-grid" id="calGrid" role="grid" aria-label="Calendrier mensuel"></div>
         </div>
-      </div>
+      </section>
 
       <!-- List view -->
-      <div id="viewList" style="display:none">
+      <section id="viewList" hidden aria-label="Liste des posts">
         <div id="listContent"></div>
-      </div>
+      </section>
 
     </div>
-  </div>
+  </main>
 
   <!-- Drawer overlay -->
-  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+  <div class="drawer-overlay" id="drawerOverlay" aria-hidden="true"></div>
 
   <!-- Drawer composition -->
-  <div class="drawer" id="drawer">
+  <div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitleEl" hidden>
     <div class="drawer-header">
-      <div class="drawer-title" id="drawerTitle">Nouveau post</div>
-      <button class="btn-icon" onclick="closeDrawer()">✕</button>
+      <h2 class="drawer-title-el" id="drawerTitleEl">Nouveau post</h2>
+      <button class="drawer-close" id="btnCloseDrawer" aria-label="Fermer">
+        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
     <div class="drawer-body" id="drawerBody">
 
       <div class="form-group">
-        <label class="form-label">Compte Instagram *</label>
-        <select id="dAccount"></select>
+        <label class="form-label" for="dAccount">Compte Instagram <span aria-hidden="true">*</span></label>
+        <select id="dAccount" aria-required="true"></select>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Image(s) — max 10 (carrousel)</label>
-        <div class="media-dropzone" id="mediaDropzone">
-          <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp" multiple hidden>
-          <div class="media-preview-row" id="mediaPreviewRow"></div>
-          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('mediaInput').click()">+ Ajouter une image</button>
-          <div style="font-size:.72rem;color:var(--text-muted);margin-top:6px">JPEG · PNG · WebP · 30 Mo max</div>
+        <p class="form-label" id="mediaLabel">Images — max 10 (carrousel)</p>
+        <div class="media-dropzone" id="mediaDropzone" aria-labelledby="mediaLabel">
+          <div class="media-preview-row" id="mediaPreviewRow" role="list" aria-label="Images sélectionnées"></div>
+          <label class="btn btn-secondary btn-sm media-add-label">
+            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Ajouter une image
+            <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp" multiple aria-label="Choisir des images pour le post">
+          </label>
+          <p style="font-size:.72rem;color:var(--text-muted);margin-top:6px">JPEG · PNG · WebP · 30 Mo max</p>
         </div>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Légende</label>
-        <textarea id="dCaption" placeholder="Votre texte, emojis, hashtags…" maxlength="2200"></textarea>
-        <div class="caption-count"><span id="captionCount">0</span>/2200</div>
+        <label class="form-label" for="dCaption">Légende</label>
+        <textarea id="dCaption" placeholder="Votre texte, emojis, hashtags…" maxlength="2200" aria-describedby="captionCountDesc"></textarea>
+        <div class="caption-count" id="captionCountDesc" aria-live="polite" aria-atomic="true"><span id="captionCount">0</span>/2200 caractères</div>
       </div>
 
       <div class="form-row-2">
         <div class="form-group">
-          <label class="form-label">Statut</label>
-          <select id="dStatus" onchange="onStatusChange()">
+          <label class="form-label" for="dStatus">Statut</label>
+          <select id="dStatus">
             <option value="draft">Brouillon</option>
             <option value="scheduled">Planifié</option>
           </select>
         </div>
-        <div class="form-group" id="scheduleGroup" style="display:none">
-          <label class="form-label">Date & heure</label>
+        <div class="form-group" id="scheduleGroup" hidden>
+          <label class="form-label" for="dScheduledAt">Date &amp; heure</label>
           <input type="datetime-local" id="dScheduledAt">
         </div>
       </div>
 
-      <div id="postInfo"></div>
+      <div id="postInfo" aria-live="polite"></div>
     </div>
     <div class="drawer-footer">
-      <button class="btn btn-danger btn-sm" id="btnDeletePost" style="display:none;margin-right:auto" onclick="deleteCurrentPost()">🗑️ Supprimer</button>
-      <button class="btn btn-secondary" onclick="savePost('draft')">Brouillon</button>
-      <button class="btn btn-primary" id="btnPlanify" onclick="savePost('scheduled')">Planifier</button>
-      <button class="btn btn-success btn-sm" id="btnPublishNow" style="display:none" onclick="publishNow()">▶ Publier maintenant</button>
+      <button class="btn btn-danger btn-sm" id="btnDeletePost" hidden style="margin-right:auto" aria-label="Supprimer ce post">
+        <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        Supprimer
+      </button>
+      <button class="btn btn-secondary" id="btnSaveDraft">Brouillon</button>
+      <button class="btn btn-primary" id="btnPlanify">Planifier</button>
+      <button class="btn btn-success btn-sm" id="btnPublishNow" hidden>
+        <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Publier maintenant
+      </button>
     </div>
   </div>
 
+  <!-- Confirm modal -->
+  <div class="confirm-overlay hidden" id="confirmOverlay" role="dialog" aria-modal="true" aria-labelledby="confirmMsg">
+    <div class="confirm-box">
+      <p id="confirmMsg"></p>
+      <div class="confirm-actions">
+        <button class="btn btn-secondary btn-sm" id="confirmCancel">Annuler</button>
+        <button class="btn btn-danger btn-sm" id="confirmOk">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
   <script src="/js/api.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -258,8 +301,28 @@
     let allPosts = [];
     let allAccounts = [];
     let currentPostId = null;
-    let pendingMediaUploads = []; // fichiers à uploader après création du post
-    let currentMediaItems = [];  // médias déjà attachés (mode édition)
+    let pendingMediaUploads = [];
+    let currentMediaItems = [];
+    let _drawerTrigger = null;
+    let _confirmCb = null;
+
+    const STATUS_LABELS = { draft: 'Brouillon', scheduled: 'Planifié', publishing: 'En cours…', published: 'Publié', failed: 'Échoué' };
+
+    // ── Confirm modal ────────────────────────────────────────────────────────────
+    function showConfirm(msg, cb) {
+      _confirmCb = cb;
+      document.getElementById('confirmMsg').textContent = msg;
+      document.getElementById('confirmOverlay').classList.remove('hidden');
+      document.getElementById('confirmOk').focus();
+    }
+    document.getElementById('confirmOk').addEventListener('click', () => {
+      document.getElementById('confirmOverlay').classList.add('hidden');
+      if (_confirmCb) { _confirmCb(); _confirmCb = null; }
+    });
+    document.getElementById('confirmCancel').addEventListener('click', () => {
+      document.getElementById('confirmOverlay').classList.add('hidden');
+      _confirmCb = null;
+    });
 
     // ── Init ─────────────────────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async () => {
@@ -268,15 +331,18 @@
       renderAccountStrip();
       renderCalendar();
       connectSocket();
+
       // Drag & drop
       const dz = document.getElementById('mediaDropzone');
       dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
       dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
       dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFileSelect(e.dataTransfer.files); });
       document.getElementById('mediaInput').addEventListener('change', e => handleFileSelect(e.target.files));
+
       document.getElementById('dCaption').addEventListener('input', e => {
         document.getElementById('captionCount').textContent = e.target.value.length;
       });
+      document.getElementById('dStatus').addEventListener('change', onStatusChange);
     });
 
     async function loadAccounts() {
@@ -289,14 +355,27 @@
     // ── Filtre compte ────────────────────────────────────────────────────────────
     function renderAccountStrip() {
       const strip = document.getElementById('accountStrip');
-      const pills = [
-        `<button class="account-pill ${activeAccountFilter === null ? 'active' : ''}" onclick="filterAccount(null)">Tous les comptes</button>`
-      ];
+      strip.innerHTML = '';
+
+      const allBtn = document.createElement('button');
+      allBtn.type = 'button';
+      allBtn.className = 'account-pill';
+      allBtn.setAttribute('aria-pressed', String(activeAccountFilter === null));
+      allBtn.textContent = 'Tous les comptes';
+      allBtn.addEventListener('click', () => filterAccount(null));
+      strip.appendChild(allBtn);
+
       allAccounts.forEach(acc => {
-        pills.push(`<button class="account-pill ${activeAccountFilter === acc.id ? 'active' : ''}" onclick="filterAccount(${acc.id})">${escHtml(acc.name)}</button>`);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'account-pill';
+        btn.setAttribute('aria-pressed', String(activeAccountFilter === acc.id));
+        btn.textContent = acc.name;
+        btn.addEventListener('click', () => filterAccount(acc.id));
+        strip.appendChild(btn);
       });
-      strip.innerHTML = pills.join('');
     }
+
     function filterAccount(id) {
       activeAccountFilter = id;
       renderAccountStrip();
@@ -305,21 +384,22 @@
     }
 
     // ── Vue ──────────────────────────────────────────────────────────────────────
+    document.getElementById('btnViewCal').addEventListener('click', () => setView('calendar'));
+    document.getElementById('btnViewList').addEventListener('click', () => setView('list'));
+
     function setView(v) {
       currentView = v;
-      document.getElementById('viewCalendar').style.display = v === 'calendar' ? '' : 'none';
-      document.getElementById('viewList').style.display = v === 'list' ? '' : 'none';
-      document.getElementById('btnViewCal').classList.toggle('active', v === 'calendar');
-      document.getElementById('btnViewList').classList.toggle('active', v === 'list');
+      document.getElementById('viewCalendar').hidden = v !== 'calendar';
+      document.getElementById('viewList').hidden     = v !== 'list';
+      document.getElementById('btnViewCal').setAttribute('aria-pressed', String(v === 'calendar'));
+      document.getElementById('btnViewList').setAttribute('aria-pressed', String(v === 'list'));
       if (v === 'list') renderList();
       else renderCalendar();
     }
 
     // ── Calendrier ───────────────────────────────────────────────────────────────
-    function changeMonth(delta) {
-      currentMonthOffset += delta;
-      renderCalendar();
-    }
+    document.getElementById('btnPrevMonth').addEventListener('click', () => { currentMonthOffset--; renderCalendar(); });
+    document.getElementById('btnNextMonth').addEventListener('click', () => { currentMonthOffset++; renderCalendar(); });
 
     function filteredPosts() {
       if (activeAccountFilter === null) return allPosts;
@@ -336,25 +416,32 @@
       document.getElementById('calSubtitle').textContent = filteredPosts().length + ' post(s) total';
 
       const firstDay = new Date(year, month, 1);
-      let startOffset = firstDay.getDay() - 1; // Lundi = 0
+      let startOffset = firstDay.getDay() - 1;
       if (startOffset < 0) startOffset = 6;
 
       const daysInMonth = new Date(year, month + 1, 0).getDate();
       const daysInPrev  = new Date(year, month, 0).getDate();
       const todayStr = now.toISOString().split('T')[0];
 
-      // Indexer les posts par date
       const postsByDate = {};
       filteredPosts().forEach(p => {
         const d = (p.scheduled_at || p.published_at || p.created_at || '').split(' ')[0].split('T')[0];
         if (d) { if (!postsByDate[d]) postsByDate[d] = []; postsByDate[d].push(p); }
       });
 
-      const DAYS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-      let html = DAYS.map(d => `<div class="cal-head">${d}</div>`).join('');
+      const grid = document.getElementById('calGrid');
+      grid.innerHTML = '';
 
-      let day = 1;
-      let nextDay = 1;
+      const DAYS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+      DAYS.forEach(d => {
+        const th = document.createElement('div');
+        th.className = 'cal-head';
+        th.setAttribute('role', 'columnheader');
+        th.textContent = d;
+        grid.appendChild(th);
+      });
+
+      let day = 1, nextDay = 1;
       const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
 
       for (let i = 0; i < totalCells; i++) {
@@ -380,24 +467,46 @@
         const isToday = dateStr === todayStr;
         const dayPosts = postsByDate[dateStr] || [];
 
-        const chipsHtml = dayPosts.slice(0, 3).map(p =>
-          `<span class="post-chip ${p.status}" onclick="openDrawer(${p.id});event.stopPropagation()" title="${escHtml(p.caption || '(sans légende)')} — ${escHtml(p.account_name || '')}">${escHtml((p.caption || '(sans légende)').substring(0, 18))}</span>`
-        ).join('');
-        const moreHtml = dayPosts.length > 3 ? `<span class="more-chip" onclick="filterDay('${dateStr}')">+${dayPosts.length - 3} autres</span>` : '';
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.setAttribute('role', 'gridcell');
+        cell.className = `cal-day${isCurrentMonth ? '' : ' other-month'}${isToday ? ' today' : ''}`;
+        cell.setAttribute('aria-label', `${dayNum} ${MONTHS_FR[month]}${isToday ? ' (aujourd\'hui)' : ''}${dayPosts.length ? `, ${dayPosts.length} post(s)` : ''}`);
+        if (!isCurrentMonth) cell.disabled = true;
 
-        html += `
-          <div class="cal-day${isCurrentMonth ? '' : ' other-month'}${isToday ? ' today' : ''}" onclick="quickAddOnDay('${dateStr}')">
-            <div class="cal-day-num">${dayNum}</div>
-            ${chipsHtml}${moreHtml}
-          </div>
-        `;
+        const numEl = document.createElement('div');
+        numEl.className = 'cal-day-num';
+        numEl.setAttribute('aria-hidden', 'true');
+        numEl.textContent = dayNum;
+        cell.appendChild(numEl);
+
+        dayPosts.slice(0, 3).forEach(p => {
+          const chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = `post-chip ${p.status}`;
+          chip.setAttribute('aria-label', `${STATUS_LABELS[p.status] || p.status} : ${p.caption || '(sans légende)'} — ${p.account_name || ''}`);
+          chip.textContent = (p.caption || '(sans légende)').substring(0, 18);
+          chip.addEventListener('click', e => { e.stopPropagation(); openDrawer(p.id, null, chip); });
+          cell.appendChild(chip);
+        });
+
+        if (dayPosts.length > 3) {
+          const more = document.createElement('button');
+          more.type = 'button';
+          more.className = 'more-chip';
+          more.setAttribute('aria-label', `Voir les ${dayPosts.length - 3} autres posts`);
+          more.textContent = `+${dayPosts.length - 3} autres`;
+          more.addEventListener('click', e => { e.stopPropagation(); });
+          cell.appendChild(more);
+        }
+
+        cell.addEventListener('click', e => {
+          if (e.target !== cell && e.target !== numEl) return;
+          openDrawer(null, dateStr, cell);
+        });
+
+        grid.appendChild(cell);
       }
-
-      document.getElementById('calGrid').innerHTML = html;
-    }
-
-    function quickAddOnDay(dateStr) {
-      openDrawer(null, dateStr);
     }
 
     // ── Vue Liste ────────────────────────────────────────────────────────────────
@@ -408,8 +517,10 @@
         return da < db2 ? 1 : -1;
       });
 
+      const listEl = document.getElementById('listContent');
+
       if (!posts.length) {
-        document.getElementById('listContent').innerHTML = `<div class="card" style="text-align:center;padding:32px;color:var(--text-muted)">Aucun post trouvé</div>`;
+        listEl.innerHTML = `<div class="card" style="text-align:center;padding:32px;color:var(--text-muted)">Aucun post trouvé</div>`;
         return;
       }
 
@@ -421,41 +532,49 @@
         byWeek[weekKey].push(p);
       });
 
-      const STATUS_LABELS = { draft: 'Brouillon', scheduled: 'Planifié', publishing: 'En cours…', published: 'Publié', failed: 'Échoué' };
-
-      let html = '';
+      listEl.innerHTML = '';
       Object.keys(byWeek).sort((a,b) => b.localeCompare(a)).forEach(weekKey => {
         const weekPosts = byWeek[weekKey];
         const wDate = new Date(weekKey);
-        html += `<div class="week-group">
-          <div class="week-label">Semaine du ${wDate.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</div>`;
+        const group = document.createElement('div');
+        group.className = 'week-group';
+
+        const label = document.createElement('h2');
+        label.className = 'week-group-label';
+        label.textContent = `Semaine du ${wDate.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}`;
+        group.appendChild(label);
+
         weekPosts.forEach(p => {
           const dateDisplay = p.scheduled_at
             ? new Date(p.scheduled_at).toLocaleString('fr-FR', {weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
             : (p.published_at ? new Date(p.published_at).toLocaleString('fr-FR',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Brouillon');
-          html += `
-            <div class="post-row" onclick="openDrawer(${p.id})">
-              <div class="post-thumb">
-                ${p.first_media ? `<img src="/uploads/instagram/${escHtml(p.first_media)}" alt="">` : '📷'}
-                ${p.media_count > 1 ? `<span style="position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,.7);color:#fff;font-size:.6rem;padding:1px 4px;border-radius:3px">+${p.media_count}</span>` : ''}
-              </div>
-              <div class="post-row-info">
-                <div class="post-row-caption">${escHtml(p.caption || '(sans légende)')}</div>
-                <div class="post-row-meta">
-                  <span>📸 ${escHtml(p.account_name || '')}</span>
-                  <span>🗓 ${dateDisplay}</span>
-                  ${p.media_count ? `<span>🖼 ${p.media_count} image${p.media_count > 1 ? 's' : ''}</span>` : ''}
-                </div>
-              </div>
-              <div class="post-row-status">
-                <span class="status-badge ${p.status}">${STATUS_LABELS[p.status] || p.status}</span>
+
+          const row = document.createElement('button');
+          row.type = 'button';
+          row.className = 'post-row';
+          row.setAttribute('aria-label', `Post ${STATUS_LABELS[p.status] || p.status} : ${p.caption || '(sans légende)'}, ${p.account_name || ''}, ${dateDisplay}`);
+          row.innerHTML = `
+            <div class="post-thumb" aria-hidden="true">
+              ${p.first_media ? `<img src="/uploads/instagram/${escapeHtml(p.first_media)}" alt="">` : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>'}
+              ${p.media_count > 1 ? `<span style="position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,.7);color:#fff;font-size:.6rem;padding:1px 4px;border-radius:3px" aria-hidden="true">+${p.media_count}</span>` : ''}
+            </div>
+            <div class="post-row-info">
+              <div class="post-row-caption" aria-hidden="true">${escapeHtml(p.caption || '(sans légende)')}</div>
+              <div class="post-row-meta" aria-hidden="true">
+                <span>${escapeHtml(p.account_name || '')}</span>
+                <span>${dateDisplay}</span>
+                ${p.media_count ? `<span>${p.media_count} image${p.media_count > 1 ? 's' : ''}</span>` : ''}
               </div>
             </div>
-          `;
+            <div class="post-row-status" aria-hidden="true">
+              <span class="status-badge ${p.status}">${STATUS_LABELS[p.status] || p.status}</span>
+            </div>`;
+          row.addEventListener('click', () => openDrawer(p.id, null, row));
+          group.appendChild(row);
         });
-        html += '</div>';
+
+        listEl.appendChild(group);
       });
-      document.getElementById('listContent').innerHTML = html;
     }
 
     function getWeekStart(date) {
@@ -466,25 +585,24 @@
     }
 
     // ── Drawer ───────────────────────────────────────────────────────────────────
-    async function openDrawer(postId, prefillDate = null) {
+    async function openDrawer(postId, prefillDate = null, triggerEl = null) {
+      _drawerTrigger = triggerEl || document.activeElement;
       currentPostId = postId;
       pendingMediaUploads = [];
       currentMediaItems = [];
 
-      // Populate accounts select
       const sel = document.getElementById('dAccount');
-      sel.innerHTML = allAccounts.map(a => `<option value="${a.id}">${escHtml(a.name)}</option>`).join('');
+      sel.innerHTML = allAccounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
       if (!allAccounts.length) sel.innerHTML = '<option value="">Aucun compte configuré</option>';
 
       const infoEl = document.getElementById('postInfo');
       infoEl.innerHTML = '';
-      document.getElementById('btnDeletePost').style.display = 'none';
-      document.getElementById('btnPublishNow').style.display = 'none';
+      document.getElementById('btnDeletePost').hidden = true;
+      document.getElementById('btnPublishNow').hidden = true;
       document.getElementById('mediaPreviewRow').innerHTML = '';
 
       if (postId) {
-        // Mode édition
-        document.getElementById('drawerTitle').textContent = 'Modifier le post';
+        document.getElementById('drawerTitleEl').textContent = 'Modifier le post';
         const post = await api.get(`/api/instagram/posts/${postId}`);
         if (!post) { showToast('Post introuvable', 'error'); return; }
 
@@ -494,26 +612,25 @@
         document.getElementById('dStatus').value = (post.status === 'published' || post.status === 'failed' || post.status === 'publishing') ? 'draft' : post.status;
         document.getElementById('dScheduledAt').value = post.scheduled_at ? post.scheduled_at.replace(' ','T').substring(0,16) : '';
         onStatusChange();
-        document.getElementById('btnDeletePost').style.display = '';
-
-        // Médias existants
+        document.getElementById('btnDeletePost').hidden = false;
         currentMediaItems = post.media || [];
         renderMediaPreviews();
 
-        // Infos statut
         if (post.status === 'published' && post.ig_permalink) {
-          infoEl.innerHTML = `<div style="font-size:.8rem;color:#4caf6a">✅ Publié — <a class="permalink-link" href="${escHtml(post.ig_permalink)}" target="_blank">Voir sur Instagram</a></div>`;
+          infoEl.innerHTML = `<div style="font-size:.8rem;color:#4caf6a">
+            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Publié — <a class="permalink-link" href="${escapeHtml(post.ig_permalink)}" target="_blank">Voir sur Instagram</a>
+          </div>`;
         } else if (post.status === 'failed') {
-          infoEl.innerHTML = `<div class="error-msg">❌ Échec : ${escHtml(post.error_message || 'Erreur inconnue')}</div>`;
-          document.getElementById('btnPublishNow').style.display = '';
+          infoEl.innerHTML = `<div class="error-msg" role="alert">Échec : ${escapeHtml(post.error_message || 'Erreur inconnue')}</div>`;
+          document.getElementById('btnPublishNow').hidden = false;
         } else if (post.status === 'publishing') {
-          infoEl.innerHTML = `<div style="font-size:.8rem;color:#f0b429">⏳ Publication en cours…</div>`;
+          infoEl.innerHTML = `<div style="font-size:.8rem;color:#f0b429" role="status">Publication en cours…</div>`;
         } else if (post.status === 'scheduled') {
-          document.getElementById('btnPublishNow').style.display = '';
+          document.getElementById('btnPublishNow').hidden = false;
         }
       } else {
-        // Mode création
-        document.getElementById('drawerTitle').textContent = 'Nouveau post';
+        document.getElementById('drawerTitleEl').textContent = 'Nouveau post';
         document.getElementById('dCaption').value = '';
         document.getElementById('captionCount').textContent = '0';
         document.getElementById('dStatus').value = 'draft';
@@ -524,20 +641,57 @@
         onStatusChange();
       }
 
-      document.getElementById('drawer').classList.add('open');
+      const drawerEl = document.getElementById('drawer');
+      drawerEl.hidden = false;
       document.getElementById('drawerOverlay').classList.add('open');
+      drawerEl.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      drawerEl.addEventListener('keydown', _trapFocus);
+      requestAnimationFrame(() => {
+        const first = _getFocusable(drawerEl)[0];
+        if (first) first.focus();
+      });
     }
 
     function closeDrawer() {
-      document.getElementById('drawer').classList.remove('open');
+      const drawerEl = document.getElementById('drawer');
+      drawerEl.classList.remove('open');
       document.getElementById('drawerOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+      drawerEl.removeEventListener('keydown', _trapFocus);
+      setTimeout(() => { drawerEl.hidden = true; }, 300);
       currentPostId = null;
+      if (_drawerTrigger && typeof _drawerTrigger.focus === 'function') {
+        _drawerTrigger.focus();
+        _drawerTrigger = null;
+      }
     }
+
+    function _getFocusable(el) {
+      return Array.from(el.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+    }
+    function _trapFocus(e) {
+      const el = document.getElementById('drawer');
+      const items = _getFocusable(el);
+      if (!items.length) return;
+      if (e.key === 'Tab') {
+        if (e.shiftKey) {
+          if (document.activeElement === items[0]) { e.preventDefault(); items[items.length-1].focus(); }
+        } else {
+          if (document.activeElement === items[items.length-1]) { e.preventDefault(); items[0].focus(); }
+        }
+      }
+      if (e.key === 'Escape') closeDrawer();
+    }
+
+    document.getElementById('btnCloseDrawer').addEventListener('click', closeDrawer);
+    document.getElementById('drawerOverlay').addEventListener('click', closeDrawer);
+    document.getElementById('btnNewPost').addEventListener('click', () => openDrawer(null));
 
     function onStatusChange() {
       const v = document.getElementById('dStatus').value;
-      document.getElementById('scheduleGroup').style.display = v === 'scheduled' ? '' : 'none';
-      document.getElementById('btnPlanify').style.display = v === 'scheduled' ? '' : 'none';
+      document.getElementById('scheduleGroup').hidden = v !== 'scheduled';
+      document.getElementById('btnPlanify').hidden    = v !== 'scheduled';
     }
 
     // ── Médias ───────────────────────────────────────────────────────────────────
@@ -551,28 +705,33 @@
 
     function renderMediaPreviews() {
       const row = document.getElementById('mediaPreviewRow');
-      let html = '';
-      // Médias existants (post en édition)
+      row.innerHTML = '';
+
       currentMediaItems.forEach((m, i) => {
-        html += `
-          <div class="media-thumb-wrap">
-            <img class="media-thumb" src="/uploads/instagram/${escHtml(m.filename)}" alt="">
-            <span class="media-order-badge">${i+1}</span>
-            <button class="media-thumb-del" onclick="removeExistingMedia(${m.id})" title="Supprimer">×</button>
-          </div>`;
+        const wrap = document.createElement('div');
+        wrap.className = 'media-thumb-wrap';
+        wrap.setAttribute('role', 'listitem');
+        wrap.innerHTML = `
+          <img class="media-thumb" src="/uploads/instagram/${escapeHtml(m.filename)}" alt="Image ${i+1}">
+          <span class="media-order-badge" aria-hidden="true">${i+1}</span>
+          <button class="media-thumb-del" data-media-id="${m.id}" aria-label="Supprimer l'image ${i+1}">×</button>`;
+        wrap.querySelector('[data-media-id]').addEventListener('click', () => removeExistingMedia(m.id));
+        row.appendChild(wrap);
       });
-      // Fichiers en attente
+
       pendingMediaUploads.forEach((f, i) => {
         const url = URL.createObjectURL(f);
         const idx = currentMediaItems.length + i + 1;
-        html += `
-          <div class="media-thumb-wrap">
-            <img class="media-thumb" src="${url}" alt="">
-            <span class="media-order-badge">${idx}</span>
-            <button class="media-thumb-del" onclick="removePendingMedia(${i})" title="Supprimer">×</button>
-          </div>`;
+        const wrap = document.createElement('div');
+        wrap.className = 'media-thumb-wrap';
+        wrap.setAttribute('role', 'listitem');
+        wrap.innerHTML = `
+          <img class="media-thumb" src="${url}" alt="Image ${idx}">
+          <span class="media-order-badge" aria-hidden="true">${idx}</span>
+          <button class="media-thumb-del" aria-label="Supprimer l'image ${idx}">×</button>`;
+        wrap.querySelector('.media-thumb-del').addEventListener('click', () => removePendingMedia(i));
+        row.appendChild(wrap);
       });
-      row.innerHTML = html;
     }
 
     async function removeExistingMedia(mediaId) {
@@ -587,11 +746,16 @@
     }
 
     // ── Sauvegarder un post ───────────────────────────────────────────────────────
+    document.getElementById('btnSaveDraft').addEventListener('click', () => savePost('draft'));
+    document.getElementById('btnPlanify').addEventListener('click', () => savePost('scheduled'));
+    document.getElementById('btnDeletePost').addEventListener('click', deleteCurrentPost);
+    document.getElementById('btnPublishNow').addEventListener('click', publishNow);
+
     async function savePost(forceStatus) {
       const account_id = parseInt(document.getElementById('dAccount').value);
       if (!account_id) { showToast('Sélectionnez un compte Instagram', 'error'); return; }
-      const caption     = document.getElementById('dCaption').value.trim();
-      const status      = forceStatus || document.getElementById('dStatus').value;
+      const caption      = document.getElementById('dCaption').value.trim();
+      const status       = forceStatus || document.getElementById('dStatus').value;
       const scheduled_at = status === 'scheduled'
         ? document.getElementById('dScheduledAt').value.replace('T', ' ')
         : null;
@@ -608,7 +772,6 @@
         currentPostId = postId;
       }
 
-      // Uploader les médias en attente
       for (const file of pendingMediaUploads) {
         const formData = new FormData();
         formData.append('file', file);
@@ -619,7 +782,7 @@
       }
       pendingMediaUploads = [];
 
-      showToast(status === 'scheduled' ? 'Post planifié ✅' : 'Brouillon sauvegardé', 'success');
+      showToast(status === 'scheduled' ? 'Post planifié' : 'Brouillon sauvegardé', 'success');
       closeDrawer();
       await loadPosts();
       if (currentView === 'calendar') renderCalendar();
@@ -628,13 +791,14 @@
 
     async function deleteCurrentPost() {
       if (!currentPostId) return;
-      if (!confirm('Supprimer ce post ?')) return;
-      await api.delete(`/api/instagram/posts/${currentPostId}`);
-      showToast('Post supprimé', 'success');
-      closeDrawer();
-      await loadPosts();
-      if (currentView === 'calendar') renderCalendar();
-      else renderList();
+      showConfirm('Supprimer ce post ?', async () => {
+        await api.delete(`/api/instagram/posts/${currentPostId}`);
+        showToast('Post supprimé', 'success');
+        closeDrawer();
+        await loadPosts();
+        if (currentView === 'calendar') renderCalendar();
+        else renderList();
+      });
     }
 
     async function publishNow() {
@@ -648,30 +812,24 @@
     // ── Socket.io temps réel ──────────────────────────────────────────────────────
     function connectSocket() {
       const sock = io();
-      sock.on('instagram:post:published', async ({ id, permalink }) => {
-        showToast('✅ Post publié sur Instagram !', 'success');
+      sock.on('instagram:post:published', async () => {
+        announce('Post publié sur Instagram');
+        showToast('Post publié sur Instagram !', 'success');
         await loadPosts();
         if (currentView === 'calendar') renderCalendar(); else renderList();
       });
-      sock.on('instagram:post:failed', async ({ id, error }) => {
-        showToast(`❌ Échec publication : ${error}`, 'error');
+      sock.on('instagram:post:failed', async ({ error }) => {
+        announce(`Échec de la publication : ${error}`);
+        showToast(`Échec publication : ${error}`, 'error');
         await loadPosts();
         if (currentView === 'calendar') renderCalendar(); else renderList();
-      });
-      sock.on('instagram:post:publishing', () => {
-        // Optionnel : indicateur visuel
       });
       sock.on('instagram:post:created', async () => { await loadPosts(); if (currentView==='calendar') renderCalendar(); else renderList(); });
       sock.on('instagram:post:updated', async () => { await loadPosts(); if (currentView==='calendar') renderCalendar(); else renderList(); });
       sock.on('instagram:post:deleted', async () => { await loadPosts(); if (currentView==='calendar') renderCalendar(); else renderList(); });
       sock.on('instagram:token_expiring', ({ accountName, daysLeft }) => {
-        showToast(`⚠️ Token "${accountName}" expire dans ${daysLeft} jours — mettez à jour dans Comptes`, 'warning');
+        showToast(`Token "${accountName}" expire dans ${daysLeft} jours — mettez à jour dans Comptes`, 'warning');
       });
-    }
-
-    // ── Utils ────────────────────────────────────────────────────────────────────
-    function escHtml(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
   </script>
 </body>

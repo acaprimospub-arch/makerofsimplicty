@@ -10,366 +10,221 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MOS">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
   <style>
     /* ── Navigation date ── */
-    .date-nav {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 14px;
-    }
+    .date-nav { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
     .date-nav button {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 8px;
-      padding: 6px 12px;
-      font-size: 13px;
-      cursor: pointer;
+      background:var(--bg-card); border:1px solid var(--border);
+      color:var(--text); border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer;
     }
-    .date-nav button:active { opacity: .7; }
+    .date-nav button:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .date-nav input[type="date"] {
-      flex: 1;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 13px;
-      text-align: center;
+      flex:1; background:var(--bg-card); border:1px solid var(--border);
+      color:var(--text); border-radius:8px; padding:6px 10px;
+      font-size:13px; text-align:center;
     }
+    .date-nav input:focus-visible { box-shadow:var(--focus-ring); outline:none; }
 
     /* ── Chips statuts ── */
-    .status-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 14px;
-    }
+    .status-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
     .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
+      display:inline-flex; align-items:center; gap:4px; padding:3px 10px;
+      border-radius:20px; font-size:11px; font-weight:600;
+      background:var(--bg-card); border:1px solid var(--border); color:var(--text-muted);
     }
-    .chip.total   { border-color: var(--primary); color: var(--primary); }
-    .chip.orange  { border-color: var(--orange);  color: var(--orange); }
-    .chip.green   { border-color: var(--success); color: var(--success); }
-    .chip.blue    { border-color: var(--info);    color: var(--info); }
+    .chip.total  { border-color:var(--primary); color:var(--primary); }
+    .chip.orange { border-color:var(--orange);  color:var(--orange); }
+    .chip.green  { border-color:var(--success); color:var(--success); }
+    .chip.blue   { border-color:var(--info);    color:var(--info); }
 
     /* ── Cartes réservation ── */
     .res-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin-bottom: 10px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.12);
+      background:var(--bg-card); border:1px solid var(--border);
+      border-left:4px solid var(--border); border-radius:10px;
+      padding:12px 14px; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,.12);
     }
-    .res-card.st-confirmed { border-left-color: var(--info);    background: var(--info-bg); }
-    .res-card.st-arrived   { border-left-color: var(--success); background: var(--success-bg); }
-    .res-card.st-no_show   { border-left-color: var(--danger);  background: rgba(232,84,84,.06); opacity:.75; }
-    .res-card.st-cancelled { border-left-color: #555;           background: rgba(85,85,85,.06); opacity:.55; }
-
-    .res-top {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 6px;
-    }
-    .res-time {
-      font-size: 1.2rem;
-      font-weight: 700;
-      line-height: 1;
-      min-width: 46px;
-    }
-    .res-name {
-      font-size: 15px;
-      font-weight: 600;
-      flex: 1;
-    }
-    .res-pax {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-    .res-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-    }
-    .res-meta a { color: var(--info); text-decoration: none; }
-    .res-notes {
-      font-size: 12px;
-      color: var(--text-muted);
-      font-style: italic;
-      margin-bottom: 8px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .res-actions {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    .res-actions button {
-      font-size: 12px;
-      padding: 5px 12px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      color: var(--text);
-      cursor: pointer;
-    }
-    .res-actions button:active { opacity: .7; }
-    .btn-edit   { border-color: var(--info)!important;    color: var(--info)!important; }
-    .btn-devis  { border-color: var(--primary)!important; color: var(--primary)!important; }
-    .btn-del    { border-color: var(--danger)!important;  color: var(--danger)!important; }
-
-    .devis-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      font-size: 10px;
-      padding: 2px 7px;
-      border-radius: 20px;
-      background: rgba(205,164,67,.15);
-      color: var(--primary);
-      border: 1px solid rgba(205,164,67,.3);
-      font-weight: 600;
-    }
-    .has-devis { background: rgba(205,164,67,.12); border: 1px dashed var(--primary); border-radius: 10px; }
+    .res-card.st-confirmed { border-left-color:var(--info);    background:var(--info-bg); }
+    .res-card.st-arrived   { border-left-color:var(--success); background:var(--success-bg); }
+    .res-card.st-no_show   { border-left-color:var(--danger);  background:rgba(232,84,84,.06); opacity:.75; }
+    .res-card.st-cancelled { border-left-color:#555;           background:rgba(85,85,85,.06); opacity:.55; }
+    .res-top { display:flex; align-items:flex-start; gap:10px; margin-bottom:6px; }
+    .res-time { font-size:1.2rem; font-weight:700; line-height:1; min-width:46px; }
+    .res-name { font-size:15px; font-weight:600; flex:1; }
+    .res-pax  { font-size:12px; color:var(--text-muted); }
+    .res-meta { display:flex; flex-wrap:wrap; gap:6px; font-size:12px; color:var(--text-muted); margin-bottom:6px; }
+    .res-meta a { color:var(--info); text-decoration:none; }
+    .res-notes { font-size:12px; color:var(--text-muted); font-style:italic; margin-bottom:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .res-actions { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+    .res-actions button { font-size:12px; padding:5px 12px; border-radius:6px; border:1px solid var(--border); background:var(--bg-card); color:var(--text); cursor:pointer; }
+    .res-actions button:focus-visible { box-shadow:var(--focus-ring); outline:none; }
+    .btn-edit   { border-color:var(--info)!important;    color:var(--info)!important; }
+    .btn-devis  { border-color:var(--primary)!important; color:var(--primary)!important; }
+    .devis-badge { display:inline-flex; align-items:center; gap:3px; font-size:10px; padding:2px 7px; border-radius:20px; background:rgba(230,184,74,.15); color:var(--primary); border:1px solid rgba(230,184,74,.3); font-weight:600; }
 
     /* ── Drawer ── */
     .drawer-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; }
     .drawer-overlay.open { display:block; }
     .drawer {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      background: var(--bg-card);
-      border-radius: 16px 16px 0 0;
-      padding: 20px 16px calc(env(safe-area-inset-bottom) + 20px);
-      z-index: 201;
-      max-height: 92vh;
-      overflow-y: auto;
-      transform: translateY(100%);
-      transition: transform .3s ease;
+      position:fixed; bottom:0; left:0; right:0;
+      background:var(--bg-card); border-radius:16px 16px 0 0;
+      padding:0 16px calc(env(safe-area-inset-bottom) + 20px);
+      z-index:201; max-height:92vh; overflow-y:auto;
+      transform:translateY(100%); transition:transform .3s ease;
+      display:flex; flex-direction:column;
     }
-    .drawer.open { transform: translateY(0); }
+    .drawer.open { transform:translateY(0); }
+    @media (prefers-reduced-motion: reduce) { .drawer { transition: none; } }
     @media(min-width:600px) {
-      .drawer { max-width: 520px; left: 50%; right: auto; bottom: auto; top: 50%; transform: translateX(-50%) translateY(-40%) scale(.96); border-radius: 16px; opacity: 0; pointer-events: none; transition: transform .25s ease, opacity .25s ease; }
-      .drawer.open { transform: translateX(-50%) translateY(-50%) scale(1); opacity: 1; pointer-events: auto; }
+      .drawer { max-width:520px; left:50%; right:auto; bottom:auto; top:50%; transform:translateX(-50%) translateY(-40%) scale(.96); border-radius:16px; opacity:0; pointer-events:none; transition:transform .25s ease,opacity .25s ease; }
+      .drawer.open { transform:translateX(-50%) translateY(-50%) scale(1); opacity:1; pointer-events:auto; }
     }
-    .drawer-handle {
-      width: 36px; height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      margin: 0 auto 16px;
-    }
-    .drawer-title {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 16px;
-    }
-    .form-group { margin-bottom: 14px; }
-    .form-group label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 5px;
-    }
+    .drawer-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:12px auto 16px; flex-shrink:0; }
+    .drawer-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-shrink:0; }
+    .drawer-title-el { font-size:16px; font-weight:700; }
+    .drawer-close { width:30px; height:30px; border-radius:50%; background:var(--bg-surface); color:var(--text-muted); display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; }
+    .drawer-close:focus-visible { box-shadow:var(--focus-ring); outline:none; }
+    .form-group { margin-bottom:14px; }
+    .form-group label { display:block; font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:5px; }
     .form-group input, .form-group textarea, .form-group select {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 8px;
-      padding: 9px 12px;
-      font-size: 14px;
-      box-sizing: border-box;
+      width:100%; background:var(--bg); border:1px solid var(--border);
+      color:var(--text); border-radius:8px; padding:9px 12px;
+      font-size:14px; box-sizing:border-box; font-family:inherit;
     }
-    .form-group textarea { min-height: 70px; resize: vertical; }
-    .pax-stepper {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .pax-stepper button {
-      width: 32px; height: 32px;
-      border-radius: 50%;
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      color: var(--text);
-      font-size: 18px;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .pax-stepper input { width: 56px; text-align: center; }
+    .form-group input:focus-visible, .form-group textarea:focus-visible, .form-group select:focus-visible { box-shadow:var(--focus-ring); outline:none; }
+    .form-group textarea { min-height:70px; resize:vertical; }
+    .pax-stepper { display:flex; align-items:center; gap:10px; }
+    .pax-stepper button { width:32px; height:32px; border-radius:50%; border:1px solid var(--border); background:var(--bg-card); color:var(--text); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .pax-stepper button:focus-visible { box-shadow:var(--focus-ring); outline:none; }
+    .pax-stepper input { width:56px; text-align:center; }
 
     /* ── Pièces jointes ── */
     .attach-list { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
-    .attach-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 10px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 12px;
-    }
-    .attach-icon { font-size: 18px; }
-    .attach-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .attach-size { color: var(--text-muted); }
+    .attach-item { display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; font-size:12px; }
+    .attach-icon { font-size:18px; }
+    .attach-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .attach-size { color:var(--text-muted); }
     .attach-actions { display:flex; gap:4px; }
-    .attach-actions a, .attach-actions button {
-      font-size: 11px;
-      padding: 3px 8px;
-      border-radius: 5px;
-      border: 1px solid var(--border);
-      background: none;
-      color: var(--text);
-      cursor: pointer;
-      text-decoration: none;
-    }
+    .attach-actions a, .attach-actions button { font-size:11px; padding:3px 8px; border-radius:5px; border:1px solid var(--border); background:none; color:var(--text); cursor:pointer; text-decoration:none; }
+    .attach-actions a:focus-visible, .attach-actions button:focus-visible { box-shadow:var(--focus-ring); outline:none; }
+    .attach-upload-label { display:inline-block; cursor:pointer; }
+    .attach-upload-label input { position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
 
     .empty-state { text-align:center; color:var(--text-muted); font-size:13px; padding:24px 0; }
-    .section-sep { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+    .section-sep { border:none; border-top:1px solid var(--border); margin:14px 0; }
+    .joy-note { display:none; margin-bottom:14px; padding:10px 12px; background:rgba(230,184,74,.08); border:1px solid rgba(230,184,74,.3); border-radius:8px; font-size:12px; color:var(--primary); }
 
-    @media(min-width: 900px) {
-      /* Conteneur élargi */
-      .container-sm { max-width: 1100px !important; }
+    /* Confirm */
+    .confirm-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:400; display:flex; align-items:center; justify-content:center; padding:20px; }
+    .confirm-overlay.hidden { display:none; }
+    .confirm-box { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:24px; max-width:340px; width:100%; }
+    .confirm-box p { font-size:.92rem; margin-bottom:20px; line-height:1.5; }
+    .confirm-actions { display:flex; gap:10px; justify-content:flex-end; }
 
-      /* Masque l'overlay sur desktop */
-      .drawer-overlay { display: none !important; }
-
-      /* Panel latéral droit */
-      .drawer {
-        left: auto !important;
-        right: -480px !important;
-        bottom: 0 !important;
-        top: 56px !important;
-        width: 460px !important;
-        max-width: 460px !important;
-        max-height: calc(100vh - 56px) !important;
-        border-radius: 0 !important;
-        border-left: 1px solid var(--border) !important;
-        transform: none !important;
-        opacity: 1 !important;
-        transition: right .3s ease !important;
-        pointer-events: none !important;
-        box-shadow: -4px 0 24px rgba(0,0,0,.18) !important;
-      }
-      .drawer.open {
-        right: 0 !important;
-        pointer-events: auto !important;
-      }
-      /* Décale le contenu quand le panel est ouvert */
-      .page { transition: padding-right .3s ease; }
-      .page.panel-open { padding-right: 460px; }
-
-      /* Masque la poignée mobile sur desktop */
-      .drawer-handle { display: none; }
-
-      /* Liste en 2 colonnes si beaucoup de résas */
-      #resaList { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-      #resaList .empty-state { grid-column: 1 / -1; }
+    @media(min-width:900px) {
+      .container-sm { max-width:1100px !important; }
+      .drawer-overlay { display:none !important; }
+      .drawer { left:auto !important; right:-480px !important; bottom:0 !important; top:56px !important; width:460px !important; max-width:460px !important; max-height:calc(100vh - 56px) !important; border-radius:0 !important; border-left:1px solid var(--border) !important; transform:none !important; opacity:1 !important; transition:right .3s ease !important; pointer-events:none !important; box-shadow:-4px 0 24px rgba(0,0,0,.18) !important; }
+      .drawer.open { right:0 !important; pointer-events:auto !important; }
+      .page { transition:padding-right .3s ease; }
+      .page.panel-open { padding-right:460px; }
+      .drawer-handle { display:none; }
+      #resaList { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+      #resaList .empty-state { grid-column:1/-1; }
     }
   </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
 
-  <div class="page">
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container-sm">
 
       <!-- En-tête -->
       <div class="card-header" style="margin-bottom:14px">
-        <h1 class="card-title">📋 Gestion des réservations</h1>
+        <h1 class="card-title">Gestion des réservations</h1>
         <div style="display:flex;gap:8px">
-          <button class="btn" id="syncBtn" onclick="syncJoy()" style="font-size:12px;padding:7px 12px;border-color:rgba(205,164,67,.4);color:var(--primary)">🔄 Joy</button>
-          <button class="btn btn-primary" onclick="openCreate()">+ Nouvelle</button>
+          <button class="btn" id="syncBtn" style="font-size:12px;padding:7px 12px;border-color:rgba(230,184,74,.4);color:var(--primary)">
+            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            Joy
+          </button>
+          <button class="btn btn-primary" id="btnNewResa">+ Nouvelle</button>
         </div>
       </div>
 
       <!-- Navigation date -->
-      <div class="date-nav">
-        <button onclick="shiftDate(-1)">‹</button>
-        <input type="date" id="dateInput" onchange="loadResas()">
-        <button onclick="shiftDate(1)">›</button>
+      <div class="date-nav" role="group" aria-label="Navigation par date">
+        <button id="btnPrevDay" aria-label="Jour précédent">‹</button>
+        <label for="dateInput" class="sr-only">Sélectionner une date</label>
+        <input type="date" id="dateInput" aria-label="Date sélectionnée">
+        <button id="btnNextDay" aria-label="Jour suivant">›</button>
       </div>
-      <div id="dateLabelEl" style="font-size:13px;color:var(--text-muted);margin-bottom:10px;text-align:center"></div>
+      <p id="dateLabelEl" style="font-size:13px;color:var(--text-muted);margin-bottom:10px;text-align:center" aria-live="polite" aria-atomic="true"></p>
 
       <!-- Chips résumé + filtre Joy -->
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:10px">
-        <div class="status-chips" id="chips" style="margin-bottom:0"></div>
-        <button id="joyFilterBtn" onclick="toggleJoyFilter()" style="font-size:11px;padding:4px 12px;border-radius:20px;border:1px solid rgba(205,164,67,.4);background:none;color:var(--primary);cursor:pointer;font-weight:600">🔗 Joy uniquement</button>
+        <div class="status-chips" id="chips" style="margin-bottom:0" aria-live="polite" aria-atomic="true"></div>
+        <button id="joyFilterBtn" aria-pressed="false" style="font-size:11px;padding:4px 12px;border-radius:20px;border:1px solid rgba(230,184,74,.4);background:none;color:var(--primary);cursor:pointer;font-weight:600">Joy uniquement</button>
       </div>
 
       <!-- Liste -->
-      <div id="resaList"><div class="empty-state">Chargement…</div></div>
+      <div id="resaList" aria-live="polite"><p class="empty-state">Chargement…</p></div>
 
     </div>
-  </div>
+  </main>
 
   <!-- Overlay + Drawer édition -->
-  <div class="drawer-overlay" id="editOverlay" onclick="closeEdit()"></div>
-  <div class="drawer" id="editDrawer">
-    <div class="drawer-handle"></div>
-    <div class="drawer-title" id="editTitle">Réservation</div>
+  <div class="drawer-overlay" id="editOverlay" aria-hidden="true"></div>
+  <div class="drawer" id="editDrawer" role="dialog" aria-modal="true" aria-labelledby="editTitle" hidden>
+    <div class="drawer-handle" aria-hidden="true"></div>
+    <div class="drawer-head">
+      <h2 class="drawer-title-el" id="editTitle">Réservation</h2>
+      <button class="drawer-close" id="btnCloseDrawer" aria-label="Fermer">
+        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
 
     <div class="form-group">
-      <label>Nom du client *</label>
-      <input type="text" id="eName" placeholder="Jean Dupont">
+      <label for="eName">Nom du client <span aria-hidden="true">*</span></label>
+      <input type="text" id="eName" aria-required="true" placeholder="Jean Dupont" autocomplete="off">
     </div>
     <div class="form-group">
-      <label>Téléphone</label>
-      <input type="tel" id="ePhone" placeholder="06 XX XX XX XX">
+      <label for="ePhone">Téléphone</label>
+      <input type="tel" id="ePhone" placeholder="06 XX XX XX XX" autocomplete="off">
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-group">
-        <label>Date *</label>
-        <input type="date" id="eDate">
+        <label for="eDate">Date <span aria-hidden="true">*</span></label>
+        <input type="date" id="eDate" aria-required="true">
       </div>
       <div class="form-group">
-        <label>Heure *</label>
-        <input type="time" id="eTime">
+        <label for="eTime">Heure <span aria-hidden="true">*</span></label>
+        <input type="time" id="eTime" aria-required="true">
       </div>
     </div>
     <div class="form-group">
-      <label>Nombre de personnes</label>
+      <label for="ePax">Nombre de personnes</label>
       <div class="pax-stepper">
-        <button type="button" onclick="stepPax(-1)">−</button>
-        <input type="number" id="ePax" value="2" min="1" max="500">
-        <button type="button" onclick="stepPax(1)">+</button>
+        <button type="button" id="btnPaxMinus" aria-label="Diminuer le nombre de personnes">−</button>
+        <input type="number" id="ePax" value="2" min="1" max="500" aria-label="Nombre de personnes">
+        <button type="button" id="btnPaxPlus" aria-label="Augmenter le nombre de personnes">+</button>
       </div>
     </div>
     <div class="form-group">
-      <label>Espace / Salle</label>
-      <input type="text" id="eSpace" placeholder="ex. Terrasse, Salle privée…">
+      <label for="eSpace">Espace / Salle</label>
+      <input type="text" id="eSpace" placeholder="ex. Terrasse, Salle privée…" autocomplete="off">
     </div>
     <div class="form-group">
-      <label>Notes client</label>
+      <label for="eNotes">Notes client</label>
       <textarea id="eNotes" placeholder="Allergies, occasion spéciale…"></textarea>
     </div>
     <div class="form-group">
-      <label>Notes internes (équipe)</label>
+      <label for="eAdminNotes">Notes internes (équipe)</label>
       <textarea id="eAdminNotes" placeholder="Devis envoyé le…, acompte reçu…"></textarea>
     </div>
     <div class="form-group">
-      <label>Statut</label>
+      <label for="eStatus">Statut</label>
       <select id="eStatus">
         <option value="confirmed">Confirmée</option>
         <option value="arrived">Arrivée</option>
@@ -381,34 +236,54 @@
     <hr class="section-sep">
 
     <!-- Pièces jointes / Devis -->
-    <div style="font-size:13px;font-weight:600;margin-bottom:10px">📎 Pièces jointes & devis</div>
-    <div class="attach-list" id="attachList"></div>
-    <label style="display:block;cursor:pointer">
-      <input type="file" id="fileInput" style="display:none" multiple accept="image/*,.pdf,.docx,.xlsx,.txt" onchange="uploadFiles()">
-      <span class="btn" style="display:inline-block;font-size:13px;padding:8px 16px;border-radius:8px;border:1px dashed var(--primary);color:var(--primary);background:rgba(205,164,67,.06)">
-        + Ajouter un fichier
+    <p style="font-size:13px;font-weight:600;margin-bottom:10px">Pièces jointes &amp; devis</p>
+    <div class="attach-list" id="attachList" aria-live="polite"></div>
+    <label class="attach-upload-label">
+      <input type="file" id="fileInput" multiple accept="image/*,.pdf,.docx,.xlsx,.txt" aria-label="Ajouter un fichier à la réservation">
+      <span class="btn" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:8px 16px;border-radius:8px;border:1px dashed var(--primary);color:var(--primary);background:rgba(230,184,74,.06)">
+        <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Ajouter un fichier
       </span>
     </label>
 
     <hr class="section-sep">
 
     <!-- Note Joy -->
-    <div id="joyNote" style="display:none;margin-bottom:14px;padding:10px 12px;background:rgba(205,164,67,.08);border:1px solid rgba(205,164,67,.3);border-radius:8px;font-size:12px;color:var(--primary)">
-      🔗 <strong>Réservation Joy.io</strong> — Le nom, la date et l'heure sont gérés par Joy. Vous pouvez modifier le statut, les notes et les pièces jointes.
+    <div id="joyNote" class="joy-note" role="note">
+      <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      <strong>Réservation Joy.io</strong> — Le nom, la date et l'heure sont gérés par Joy. Vous pouvez modifier le statut, les notes et les pièces jointes.
     </div>
 
     <div style="display:flex;gap:8px">
-      <button class="btn btn-primary" style="flex:1" onclick="saveEdit()">Enregistrer</button>
-      <button class="btn" style="flex:1" onclick="closeEdit()">Annuler</button>
+      <button class="btn btn-primary" id="btnSaveEdit" style="flex:1">Enregistrer</button>
+      <button class="btn" id="btnCancelEdit" style="flex:1">Annuler</button>
     </div>
     <div id="devisBtn" style="margin-top:8px">
-      <button class="btn" style="width:100%;border-color:rgba(205,164,67,.5);color:var(--primary)" onclick="openDevis()">📝 Créer un devis</button>
+      <button class="btn" id="btnOpenDevis" style="width:100%;border-color:rgba(230,184,74,.5);color:var(--primary)">
+        <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Créer un devis
+      </button>
     </div>
     <div id="deleteBtn" style="margin-top:8px">
-      <button class="btn" style="color:var(--danger);border-color:var(--danger);width:100%" onclick="deleteResa()">🗑 Supprimer cette réservation</button>
+      <button class="btn" id="btnDeleteResa" style="color:var(--danger);border-color:var(--danger);width:100%">
+        <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        Supprimer cette réservation
+      </button>
     </div>
   </div>
 
+  <!-- Confirm modal -->
+  <div class="confirm-overlay hidden" id="confirmOverlay" role="dialog" aria-modal="true" aria-labelledby="confirmMsg">
+    <div class="confirm-box">
+      <p id="confirmMsg"></p>
+      <div class="confirm-actions">
+        <button class="btn btn-secondary btn-sm" id="confirmCancel">Annuler</button>
+        <button class="btn btn-danger btn-sm" id="confirmOk">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
   <script src="/js/api.js"></script>
   <script>
     buildNav('resa-gestion');
@@ -416,14 +291,31 @@
     let resasCache = [];
     let editingId = null;
     let joyFilterActive = false;
+    let _drawerTrigger = null;
+    let _confirmCb = null;
 
-    // ── Sync Joy ──
+    // ── Confirm modal ─────────────────────────────────────────────
+    function showConfirm(msg, cb) {
+      _confirmCb = cb;
+      document.getElementById('confirmMsg').textContent = msg;
+      document.getElementById('confirmOverlay').classList.remove('hidden');
+      document.getElementById('confirmOk').focus();
+    }
+    document.getElementById('confirmOk').addEventListener('click', () => {
+      document.getElementById('confirmOverlay').classList.add('hidden');
+      if (_confirmCb) { _confirmCb(); _confirmCb = null; }
+    });
+    document.getElementById('confirmCancel').addEventListener('click', () => {
+      document.getElementById('confirmOverlay').classList.add('hidden');
+      _confirmCb = null;
+    });
+
+    // ── Sync Joy ──────────────────────────────────────────────────
+    document.getElementById('syncBtn').addEventListener('click', syncJoy);
     async function syncJoy() {
       const btn = document.getElementById('syncBtn');
-      btn.textContent = '⏳ Sync…';
       btn.disabled = true;
       const res = await api.post('/api/joy/sync', {});
-      btn.textContent = '🔄 Joy';
       btn.disabled = false;
       if (res) {
         showToast(`Joy sync : ${res.synced} événement(s)`, 'success');
@@ -431,16 +323,22 @@
       }
     }
 
-    // ── Filtre Joy ──
+    // ── Filtre Joy ─────────────────────────────────────────────────
+    document.getElementById('joyFilterBtn').addEventListener('click', toggleJoyFilter);
     function toggleJoyFilter() {
       joyFilterActive = !joyFilterActive;
       const btn = document.getElementById('joyFilterBtn');
-      btn.style.background = joyFilterActive ? 'rgba(205,164,67,.15)' : 'none';
-      btn.style.borderColor = joyFilterActive ? 'var(--primary)' : 'rgba(205,164,67,.4)';
+      btn.setAttribute('aria-pressed', String(joyFilterActive));
+      btn.style.background    = joyFilterActive ? 'rgba(230,184,74,.15)' : 'none';
+      btn.style.borderColor   = joyFilterActive ? 'var(--primary)' : 'rgba(230,184,74,.4)';
       renderList(resasCache);
     }
 
-    // ── Init date ──
+    // ── Date navigation ───────────────────────────────────────────
+    document.getElementById('btnPrevDay').addEventListener('click', () => shiftDate(-1));
+    document.getElementById('btnNextDay').addEventListener('click', () => shiftDate(1));
+    document.getElementById('dateInput').addEventListener('change', loadResas);
+
     document.getElementById('dateInput').value = today();
     updateDateLabel();
     loadResas();
@@ -462,17 +360,17 @@
     async function loadResas() {
       updateDateLabel();
       const d = document.getElementById('dateInput').value;
-      document.getElementById('resaList').innerHTML = '<div class="empty-state">Chargement…</div>';
+      document.getElementById('resaList').innerHTML = '<p class="empty-state">Chargement…</p>';
       try {
         const data = await api.get(`/api/reservations?date=${d}`);
         if (!Array.isArray(data)) {
-          document.getElementById('resaList').innerHTML = '<div class="empty-state">Erreur de chargement</div>';
+          document.getElementById('resaList').innerHTML = '<p class="empty-state">Erreur de chargement</p>';
           return;
         }
         resasCache = data;
         renderList(data);
       } catch(e) {
-        document.getElementById('resaList').innerHTML = '<div class="empty-state">Erreur de chargement</div>';
+        document.getElementById('resaList').innerHTML = '<p class="empty-state">Erreur de chargement</p>';
       }
     }
 
@@ -480,67 +378,78 @@
       let sorted = [...resas].sort((a, b) => a.time.localeCompare(b.time));
       if (joyFilterActive) sorted = sorted.filter(r => r.joy_event_id);
 
-      const all = [...resas];
-      const active = all.filter(r => r.status !== 'cancelled');
-      const pax = active.reduce((s, r) => s + (r.party_size || 0), 0);
-      const confirmed = all.filter(r => r.status === 'confirmed').length;
-      const joyCount  = all.filter(r => r.joy_event_id).length;
+      const all        = [...resas];
+      const active     = all.filter(r => r.status !== 'cancelled');
+      const pax        = active.reduce((s, r) => s + (r.party_size || 0), 0);
+      const confirmed  = all.filter(r => r.status === 'confirmed').length;
+      const joyCount   = all.filter(r => r.joy_event_id).length;
       const nonPlacees = all.filter(r => {
         if (r.status !== 'confirmed') return false;
         const ids = JSON.parse(r.table_ids || '[]');
         return ids.length === 0;
       }).length;
 
-      // Chips
       document.getElementById('chips').innerHTML = `
         <span class="chip total">${all.length} rés.</span>
         <span class="chip blue">${pax} couverts</span>
         <span class="chip orange">${nonPlacees} non placées</span>
         <span class="chip green">${confirmed} confirmées</span>
-        ${joyCount ? `<span class="chip" style="border-color:rgba(205,164,67,.5);color:var(--primary)">🔗 ${joyCount} Joy</span>` : ''}
+        ${joyCount ? `<span class="chip" style="border-color:rgba(230,184,74,.5);color:var(--primary)">${joyCount} Joy</span>` : ''}
       `;
 
       const list = document.getElementById('resaList');
       if (!sorted.length) {
-        list.innerHTML = `<div class="empty-state">${joyFilterActive ? 'Aucune réservation Joy ce jour' : 'Aucune réservation ce jour'}</div>`;
+        list.innerHTML = `<p class="empty-state">${joyFilterActive ? 'Aucune réservation Joy ce jour' : 'Aucune réservation ce jour'}</p>`;
         return;
       }
 
       list.innerHTML = sorted.map(r => {
         const tableIds = JSON.parse(r.table_ids || '[]');
-        const isJoy = !!r.joy_event_id;
+        const isJoy    = !!r.joy_event_id;
         const hasFiles = (r.attach_count || 0) > 0;
+        const statusLabels = { confirmed:'Confirmée', arrived:'Arrivée', no_show:'No show', cancelled:'Annulée' };
         return `
-          <div class="res-card st-${r.status}" id="card-${r.id}" style="${isJoy ? 'border-top:2px solid rgba(205,164,67,.4)' : ''}${hasFiles ? ';border-right:3px solid rgba(205,164,67,.6)' : ''}">
+          <article class="res-card st-${r.status}" id="card-${r.id}" style="${isJoy ? 'border-top:2px solid rgba(230,184,74,.4)' : ''}${hasFiles ? ';border-right:3px solid rgba(230,184,74,.6)' : ''}" aria-label="${escapeHtml(r.time)}, ${escapeHtml(r.customer_name)}, ${r.party_size} pers., ${statusLabels[r.status] || r.status}">
             <div class="res-top">
-              <span class="res-time">${r.time}</span>
-              <span class="res-name">
-                ${r.customer_name}
-                ${isJoy ? '<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:rgba(205,164,67,.15);color:var(--primary);margin-left:5px">🔗 Joy</span>' : ''}
+              <span class="res-time" aria-hidden="true">${escapeHtml(r.time)}</span>
+              <span class="res-name" aria-hidden="true">
+                ${escapeHtml(r.customer_name)}
+                ${isJoy ? '<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:rgba(230,184,74,.15);color:var(--primary);margin-left:5px">Joy</span>' : ''}
               </span>
-              <span class="res-pax">${r.party_size}p</span>
+              <span class="res-pax" aria-hidden="true">${r.party_size}p</span>
             </div>
-            <div class="res-meta">
-              ${r.phone ? `<a href="tel:${r.phone}">📞 ${r.phone}</a>` : ''}
-              ${r.space ? `<span>📍 ${r.space}</span>` : ''}
-              ${tableIds.length ? `<span>🍽️ Table(s) assignée(s)</span>` : '<span style="color:var(--orange)">⚠️ Pas de table</span>'}
-              ${hasFiles ? `<span class="devis-badge">📎 ${r.attach_count} fichier${r.attach_count > 1 ? 's' : ''}</span>` : ''}
+            <div class="res-meta" aria-hidden="true">
+              ${r.phone ? `<a href="tel:${escapeHtml(r.phone)}">${escapeHtml(r.phone)}</a>` : ''}
+              ${r.space ? `<span>${escapeHtml(r.space)}</span>` : ''}
+              ${tableIds.length ? `<span>Table(s) assignée(s)</span>` : '<span style="color:var(--orange)">Pas de table</span>'}
+              ${hasFiles ? `<span class="devis-badge">${r.attach_count} fichier${r.attach_count > 1 ? 's' : ''}</span>` : ''}
             </div>
-            ${r.notes ? `<div class="res-notes">${r.notes}</div>` : ''}
-            ${r.admin_notes ? `<div class="res-notes" style="color:var(--primary)">📌 ${r.admin_notes}</div>` : ''}
+            ${r.notes ? `<p class="res-notes" aria-hidden="true">${escapeHtml(r.notes)}</p>` : ''}
+            ${r.admin_notes ? `<p class="res-notes" style="color:var(--primary)" aria-hidden="true">${escapeHtml(r.admin_notes)}</p>` : ''}
             <div class="res-actions">
-              <button class="btn-edit" onclick="openEdit(${r.id})">✏️ Modifier</button>
-              <button class="btn-devis" onclick="openEdit(${r.id}, true)">📎 ${hasFiles ? `Devis (${r.attach_count})` : 'Devis'}</button>
-              <select style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text)" onchange="quickStatus(${r.id}, this.value)">
+              <button class="btn-edit" data-edit="${r.id}" aria-label="Modifier ${escapeHtml(r.customer_name)}">Modifier</button>
+              <button class="btn-devis" data-edit-attach="${r.id}" aria-label="Pièces jointes de ${escapeHtml(r.customer_name)}">${hasFiles ? `Fichiers (${r.attach_count})` : 'Fichiers'}</button>
+              <label for="qs-${r.id}" class="sr-only">Statut de ${escapeHtml(r.customer_name)}</label>
+              <select id="qs-${r.id}" data-quickstatus="${r.id}" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text)" aria-label="Statut de ${escapeHtml(r.customer_name)}">
                 <option value="confirmed" ${r.status==='confirmed'?'selected':''}>Confirmée</option>
                 <option value="arrived"   ${r.status==='arrived'?'selected':''}>Arrivée</option>
                 <option value="no_show"   ${r.status==='no_show'?'selected':''}>No show</option>
                 <option value="cancelled" ${r.status==='cancelled'?'selected':''}>Annulée</option>
               </select>
             </div>
-          </div>
+          </article>
         `;
       }).join('');
+
+      list.querySelectorAll('[data-edit]').forEach(btn => {
+        btn.addEventListener('click', () => openEdit(parseInt(btn.dataset.edit), false, btn));
+      });
+      list.querySelectorAll('[data-edit-attach]').forEach(btn => {
+        btn.addEventListener('click', () => openEdit(parseInt(btn.dataset.editAttach), true, btn));
+      });
+      list.querySelectorAll('[data-quickstatus]').forEach(sel => {
+        sel.addEventListener('change', () => quickStatus(parseInt(sel.dataset.quickstatus), sel.value));
+      });
     }
 
     async function quickStatus(id, status) {
@@ -548,14 +457,33 @@
       await loadResas();
     }
 
-    // ── Ouvrir le drawer édition ──
-    async function openEdit(id, scrollToAttach = false) {
+    // ── Focus trap ─────────────────────────────────────────────────
+    function _getFocusable(el) {
+      return Array.from(el.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+    }
+    function _trapFocus(e) {
+      const el = document.getElementById('editDrawer');
+      const items = _getFocusable(el);
+      if (!items.length) return;
+      if (e.key === 'Tab') {
+        if (e.shiftKey) {
+          if (document.activeElement === items[0]) { e.preventDefault(); items[items.length-1].focus(); }
+        } else {
+          if (document.activeElement === items[items.length-1]) { e.preventDefault(); items[0].focus(); }
+        }
+      }
+      if (e.key === 'Escape') closeEdit();
+    }
+
+    // ── Drawer édition ────────────────────────────────────────────
+    async function openEdit(id, scrollToAttach = false, triggerEl = null) {
       editingId = id;
+      _drawerTrigger = triggerEl || document.activeElement;
       const r = resasCache.find(x => x.id === id);
       if (!r) return;
 
       const isJoy = !!r.joy_event_id;
-      document.getElementById('editTitle').textContent = isJoy ? `🔗 Joy — ${r.customer_name}` : `✏️ ${r.customer_name}`;
+      document.getElementById('editTitle').textContent = isJoy ? `Joy — ${r.customer_name}` : r.customer_name;
       document.getElementById('eName').value = r.customer_name || '';
       document.getElementById('ePhone').value = r.phone || '';
       document.getElementById('eDate').value = r.date || '';
@@ -566,31 +494,22 @@
       document.getElementById('eAdminNotes').value = r.admin_notes || '';
       document.getElementById('eStatus').value = r.status || 'confirmed';
 
-      // Résa Joy : certains champs sont gérés par Joy.io
-      const joyNote = document.getElementById('joyNote');
-      const deleteBtn = document.getElementById('deleteBtn');
-      if (isJoy) {
-        joyNote.style.display = '';
-        deleteBtn.style.display = 'none';
-      } else {
-        joyNote.style.display = 'none';
-        deleteBtn.style.display = '';
-      }
+      document.getElementById('joyNote').style.display = isJoy ? '' : 'none';
+      document.getElementById('deleteBtn').style.display = isJoy ? 'none' : '';
 
-      // Pièces jointes
       await loadAttachments(id);
-
       openPanel();
 
       if (scrollToAttach) {
-        setTimeout(() => {
-          document.getElementById('attachList').scrollIntoView({ behavior: 'smooth' });
-        }, 350);
+        setTimeout(() => document.getElementById('attachList').scrollIntoView({ behavior: 'smooth' }), 350);
       }
     }
 
-    function openCreate() {
+    document.getElementById('btnNewResa').addEventListener('click', () => openCreate());
+
+    function openCreate(triggerEl = null) {
       editingId = null;
+      _drawerTrigger = triggerEl || document.activeElement;
       document.getElementById('editTitle').textContent = '+ Nouvelle réservation';
       document.getElementById('eName').value = '';
       document.getElementById('ePhone').value = '';
@@ -601,36 +520,61 @@
       document.getElementById('eNotes').value = '';
       document.getElementById('eAdminNotes').value = '';
       document.getElementById('eStatus').value = 'confirmed';
-      document.getElementById('attachList').innerHTML = '<div style="font-size:12px;color:var(--text-muted)">Aucun fichier</div>';
+      document.getElementById('attachList').innerHTML = '<p style="font-size:12px;color:var(--text-muted)">Aucun fichier</p>';
       document.getElementById('joyNote').style.display = 'none';
       document.getElementById('deleteBtn').style.display = 'none';
       openPanel();
     }
 
     function openPanel() {
+      const drawer = document.getElementById('editDrawer');
+      drawer.hidden = false;
       document.getElementById('editOverlay').classList.add('open');
-      document.getElementById('editDrawer').classList.add('open');
+      drawer.classList.add('open');
       document.querySelector('.page').classList.add('panel-open');
+      document.body.style.overflow = 'hidden';
+      drawer.addEventListener('keydown', _trapFocus);
+      requestAnimationFrame(() => {
+        const first = _getFocusable(drawer)[0];
+        if (first) first.focus();
+      });
     }
 
     function closeEdit() {
+      const drawer = document.getElementById('editDrawer');
+      drawer.classList.remove('open');
       document.getElementById('editOverlay').classList.remove('open');
-      document.getElementById('editDrawer').classList.remove('open');
       document.querySelector('.page').classList.remove('panel-open');
+      document.body.style.overflow = '';
+      drawer.removeEventListener('keydown', _trapFocus);
+      setTimeout(() => { drawer.hidden = true; }, 350);
       editingId = null;
+      if (_drawerTrigger && typeof _drawerTrigger.focus === 'function') {
+        _drawerTrigger.focus();
+        _drawerTrigger = null;
+      }
     }
+
+    document.getElementById('btnCloseDrawer').addEventListener('click', closeEdit);
+    document.getElementById('btnCancelEdit').addEventListener('click', closeEdit);
+    document.getElementById('editOverlay').addEventListener('click', closeEdit);
+    document.getElementById('btnSaveEdit').addEventListener('click', saveEdit);
+    document.getElementById('btnOpenDevis').addEventListener('click', openDevis);
+    document.getElementById('btnDeleteResa').addEventListener('click', deleteResa);
+    document.getElementById('btnPaxMinus').addEventListener('click', () => stepPax(-1));
+    document.getElementById('btnPaxPlus').addEventListener('click',  () => stepPax(1));
 
     async function saveEdit() {
       const body = {
         customer_name: document.getElementById('eName').value.trim(),
-        phone: document.getElementById('ePhone').value.trim(),
-        date: document.getElementById('eDate').value,
-        time: document.getElementById('eTime').value,
-        party_size: parseInt(document.getElementById('ePax').value) || 2,
-        space: document.getElementById('eSpace').value.trim(),
-        notes: document.getElementById('eNotes').value.trim(),
-        admin_notes: document.getElementById('eAdminNotes').value.trim(),
-        status: document.getElementById('eStatus').value,
+        phone:         document.getElementById('ePhone').value.trim(),
+        date:          document.getElementById('eDate').value,
+        time:          document.getElementById('eTime').value,
+        party_size:    parseInt(document.getElementById('ePax').value) || 2,
+        space:         document.getElementById('eSpace').value.trim(),
+        notes:         document.getElementById('eNotes').value.trim(),
+        admin_notes:   document.getElementById('eAdminNotes').value.trim(),
+        status:        document.getElementById('eStatus').value,
       };
       if (!body.customer_name || !body.date || !body.time) {
         showToast('Nom, date et heure sont requis', 'error');
@@ -649,20 +593,21 @@
 
     function openDevis() {
       const r = resasCache.find(x => x.id === editingId);
-      const name  = r ? encodeURIComponent(r.customer_name) : '';
-      const pax   = r ? r.party_size : '';
-      const date  = r ? r.date : '';
-      const id    = editingId || '';
+      const name = r ? encodeURIComponent(r.customer_name) : '';
+      const pax  = r ? r.party_size : '';
+      const date = r ? r.date : '';
+      const id   = editingId || '';
       window.location.href = `/resa/devis.html?resaId=${id}&name=${name}&pax=${pax}&date=${date}`;
     }
 
     async function deleteResa() {
       if (!editingId) return;
-      if (!confirm('Supprimer cette réservation ?')) return;
-      await api.delete(`/api/reservations/${editingId}`);
-      showToast('Réservation supprimée', 'info');
-      closeEdit();
-      loadResas();
+      showConfirm('Supprimer cette réservation ?', async () => {
+        await api.delete(`/api/reservations/${editingId}`);
+        showToast('Réservation supprimée', 'info');
+        closeEdit();
+        loadResas();
+      });
     }
 
     function stepPax(n) {
@@ -670,12 +615,12 @@
       inp.value = Math.max(1, (parseInt(inp.value) || 2) + n);
     }
 
-    // ── Pièces jointes ──
+    // ── Pièces jointes ────────────────────────────────────────────
     async function loadAttachments(id) {
       const list = document.getElementById('attachList');
       const attachments = await api.get(`/api/reservations/${id}/attachments`);
       if (!attachments || !attachments.length) {
-        list.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">Aucun fichier</div>';
+        list.innerHTML = '<p style="font-size:12px;color:var(--text-muted)">Aucun fichier</p>';
         return;
       }
       list.innerHTML = attachments.map(a => {
@@ -690,31 +635,35 @@
         const viewerUrl = `/resa/viewer.html?id=${a.id}&name=${encodeURIComponent(a.original_name)}&mime=${encodeURIComponent(a.mimetype||'')}&size=${a.size}&from=/resa/gestion.html`;
         return `
           <div class="attach-item">
-            <span class="attach-icon">${icon}</span>
-            <span class="attach-name" title="${a.original_name}">${a.original_name}</span>
+            <span class="attach-icon" aria-hidden="true">${icon}</span>
+            <span class="attach-name" title="${escapeHtml(a.original_name)}">${escapeHtml(a.original_name)}</span>
             <span class="attach-size">${size}</span>
             <div class="attach-actions">
-              <a href="${viewerUrl}">Voir</a>
-              <button onclick="deleteAttachment(${a.id})">🗑</button>
+              <a href="${escapeHtml(viewerUrl)}" aria-label="Voir ${escapeHtml(a.original_name)}">Voir</a>
+              <button data-del-att="${a.id}" aria-label="Supprimer ${escapeHtml(a.original_name)}">
+                <svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
             </div>
           </div>
         `;
       }).join('');
+
+      list.querySelectorAll('[data-del-att]').forEach(btn => {
+        btn.addEventListener('click', () => deleteAttachment(parseInt(btn.dataset.delAtt)));
+      });
     }
+
+    document.getElementById('fileInput').addEventListener('change', uploadFiles);
 
     async function uploadFiles() {
       if (!editingId) return;
       const input = document.getElementById('fileInput');
       const files = input.files;
       if (!files.length) return;
-
       for (const file of files) {
         const fd = new FormData();
         fd.append('file', file);
-        const r = await fetch(`/api/reservations/${editingId}/attachments`, {
-          method: 'POST',
-          body: fd
-        });
+        const r = await fetch(`/api/reservations/${editingId}/attachments`, { method:'POST', body:fd });
         if (r.status === 401) { window.location.href = '/'; return; }
       }
       input.value = '';
@@ -724,10 +673,11 @@
     }
 
     async function deleteAttachment(attachId) {
-      if (!confirm('Supprimer ce fichier ?')) return;
-      await api.delete(`/api/attachments/${attachId}`);
-      if (editingId) await loadAttachments(editingId);
-      loadResas();
+      showConfirm('Supprimer ce fichier ?', async () => {
+        await api.delete(`/api/attachments/${attachId}`);
+        if (editingId) await loadAttachments(editingId);
+        loadResas();
+      });
     }
   </script>
 </body>

@@ -10,51 +10,49 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MOS">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
   <style>
     .task-item.my-done { border-left-color: var(--gold); background: rgba(212,175,55,0.06); }
     .task-item.my-done .task-desc { text-decoration: line-through; color: var(--text-muted); }
     .task-item.my-done .task-checkbox { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 900; }
-
     .task-item.others-done { border-left-color: #5b8dee; background: rgba(91,141,238,0.04); }
     .task-item.others-done .task-desc { text-decoration: line-through; color: var(--text-muted); }
     .task-item.others-done .task-checkbox { background: rgba(91,141,238,0.18); color: #5b8dee; border-color: #5b8dee; }
+    button.task-item { display:flex; align-items:flex-start; gap:12px; width:100%; text-align:left; cursor:pointer; padding:16px 14px !important; min-height:60px !important; }
+    button.task-item:focus-visible { box-shadow:var(--focus-ring); outline:none; }
+    .task-checkbox { width:28px !important; height:28px !important; font-size:1rem !important; border-radius:8px !important; }
+    @keyframes task-check { 0%{transform:scale(1)} 35%{transform:scale(.93)} 100%{transform:scale(1)} }
+    .task-item.toggling { animation: task-check 0.2s ease-out; }
+    @media (prefers-reduced-motion: reduce) { .task-item.toggling { animation: none; } }
 
     .task-completers { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-    .completer-avatar { width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; flex-shrink:0; cursor:default; }
+    .completer-avatar { width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; flex-shrink:0; }
     .completer-avatar.me { background:rgba(212,175,55,0.25); color:var(--gold); border:2px solid var(--gold); }
     .completer-avatar.other { background:rgba(91,141,238,0.18); color:#5b8dee; border:2px solid rgba(91,141,238,0.6); }
     .tab-count { display:inline-block; font-size:0.72rem; font-weight:700; opacity:0.6; margin-left:5px; }
-    .tab.active .tab-count { opacity:1; color:var(--primary); }
-    .task-item { padding: 16px 14px !important; min-height: 60px !important; }
-    .task-checkbox { width: 28px !important; height: 28px !important; font-size: 1rem !important; border-radius: 8px !important; }
-    @keyframes task-check { 0%{transform:scale(1)} 35%{transform:scale(.93)} 100%{transform:scale(1)} }
-    .task-item.toggling { animation: task-check 0.2s ease-out; }
+    [aria-selected="true"] .tab-count { opacity:1; color:var(--primary); }
+    .subsection-count { font-size:0.72rem; color:var(--text-muted); font-weight:400; margin-left:8px; }
+    .subsection-count .done-count { color:var(--gold); font-weight:600; }
 
-    .team-stats-bar { display: flex; align-items: center; gap: 6px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 16px; margin-bottom: 16px; flex-wrap: wrap; }
-    .team-stat-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; white-space: nowrap; }
-    .team-stat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .team-stat-dot.mine { background: var(--gold); }
-    .team-stat-dot.team { background: #5b8dee; }
-    .team-stat-dot.left { background: var(--border); border: 1px solid #555; }
-    .team-stat-label { color: var(--text-muted); }
-    .team-stat-value { font-weight: 700; color: var(--text); }
-    .team-stat-sep { color: var(--border); margin: 0 4px; }
+    .team-stats-bar { display:flex; align-items:center; gap:6px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:10px 16px; margin-bottom:16px; flex-wrap:wrap; }
+    .team-stat-item { display:flex; align-items:center; gap:6px; font-size:0.82rem; white-space:nowrap; }
+    .team-stat-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .team-stat-dot.mine { background:var(--gold); }
+    .team-stat-dot.team { background:#5b8dee; }
+    .team-stat-dot.left { background:var(--border); border:1px solid #555; }
+    .team-stat-label { color:var(--text-muted); }
+    .team-stat-value { font-weight:700; color:var(--text); }
+    .team-stat-sep { color:var(--border); margin:0 4px; }
 
-    .subsection-count { font-size: 0.72rem; color: var(--text-muted); font-weight: 400; margin-left: 8px; }
-    .subsection-count .done-count { color: var(--gold); font-weight: 600; }
+    .team-overview { margin-top:28px; }
+    .team-overview-title { font-size:.82rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
+    .team-member-row { display:flex; align-items:center; gap:12px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:12px 16px; margin-bottom:8px; }
+    .tm-name { font-weight:700; font-size:.95rem; flex:1; }
+    .tm-count { font-size:.82rem; color:var(--text-muted); }
+    .tm-count b { color:var(--text); }
+    .tm-bar { flex:2; height:6px; background:var(--bg-surface); border-radius:3px; overflow:hidden; }
+    .tm-bar-fill { height:100%; border-radius:3px; background:var(--primary); transition:width .4s; }
 
-    /* ── Qui fait quoi ── */
-    .team-overview { margin-top: 28px; }
-    .team-overview-title { font-size: .82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
-    .team-member-row { display: flex; align-items: center; gap: 12px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 8px; }
-    .tm-name { font-weight: 700; font-size: .95rem; flex: 1; }
-    .tm-count { font-size: .82rem; color: var(--text-muted); }
-    .tm-count b { color: var(--text); }
-    .tm-bar { flex: 2; height: 6px; background: var(--bg-surface); border-radius: 3px; overflow: hidden; }
-    .tm-bar-fill { height: 100%; border-radius: 3px; background: var(--primary); transition: width .4s; }
-
-    /* ── Gestion tâches (chef) ── */
     .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s; }
     .drawer-backdrop.open { opacity:1; pointer-events:auto; }
     .drawer { position:fixed; bottom:0; left:0; right:0; z-index:201; background:var(--bg-card); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.5); transform:translateY(102%); transition:transform .3s cubic-bezier(.32,.72,0,1); max-height:92dvh; display:flex; flex-direction:column; }
@@ -67,7 +65,8 @@
     @media (min-width:641px) { .drawer-handle { display:none; } }
     .drawer-head { display:flex; align-items:center; justify-content:space-between; padding:14px 20px 12px; flex-shrink:0; border-bottom:1px solid var(--border); }
     .drawer-title { font-size:1rem; font-weight:700; }
-    .drawer-close { width:30px; height:30px; border-radius:50%; background:var(--bg-surface); color:var(--text-muted); display:flex; align-items:center; justify-content:center; font-size:.9rem; cursor:pointer; border:none; }
+    .drawer-close { width:30px; height:30px; border-radius:50%; background:var(--bg-surface); color:var(--text-muted); display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; }
+    .drawer-close:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .drawer-body { overflow-y:auto; padding:16px 20px; flex:1; }
     .drawer-footer { display:flex; gap:8px; padding:10px 20px calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); flex-shrink:0; }
     .drawer-footer .btn { flex:1; justify-content:center; min-height:46px; }
@@ -79,20 +78,21 @@
     .task-manage-desc { flex:1; font-size:.88rem; }
     .task-manage-cat { font-size:.7rem; color:var(--text-muted); margin-top:2px; }
     .task-manage-actions { display:flex; gap:6px; flex-shrink:0; }
-    .btn-icon { width:32px; height:32px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--bg-card); color:var(--text-muted); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:.85rem; }
+    .btn-icon { width:32px; height:32px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--bg-card); color:var(--text-muted); cursor:pointer; display:flex; align-items:center; justify-content:center; }
     .btn-icon:hover { border-color:var(--primary); color:var(--primary); }
     .btn-icon.danger:hover { border-color:var(--danger); color:var(--danger); }
+    .btn-icon:focus-visible { box-shadow:var(--focus-ring); outline:none; }
 
-    /* ── Signalement retard / heures supp ── */
-    .signal-section { margin-top: 24px; }
+    .signal-section { margin-top:24px; }
     .signal-title { font-size:.82rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
     .signal-btns { display:flex; gap:10px; }
     .btn-signal { flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:14px 10px; cursor:pointer; font-size:.85rem; font-weight:600; transition:border-color .15s,background .12s; }
     .btn-signal:active { background:var(--bg-surface); }
+    .btn-signal:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .btn-signal.retard { border-color:rgba(240,180,41,.35); }
     .btn-signal.retard:hover { border-color:var(--warning); background:rgba(240,180,41,.07); }
     .btn-signal.supp   { border-color:rgba(76,175,106,.35); }
-    .btn-signal.supp:hover   { border-color:var(--success); background:rgba(76,175,106,.07); }
+    .btn-signal.supp:hover { border-color:var(--success); background:rgba(76,175,106,.07); }
     .btn-signal-icon { font-size:1.4rem; }
     .time-events-list { display:flex; flex-direction:column; gap:6px; margin-top:10px; }
     .time-event-item { display:flex; align-items:center; gap:10px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 14px; }
@@ -101,166 +101,189 @@
     .te-supp   { background:rgba(76,175,106,.12); color:var(--success); border:1px solid rgba(76,175,106,.3); }
     .te-info { flex:1; font-size:.85rem; }
     .te-note { font-size:.75rem; color:var(--text-muted); margin-top:2px; }
-    .te-del { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:.85rem; padding:4px; }
+    .te-del { background:none; border:none; color:var(--text-muted); cursor:pointer; padding:4px; min-width:30px; min-height:30px; border-radius:var(--radius-sm); }
     .te-del:hover { color:var(--danger); }
+    .te-del:focus-visible { box-shadow:var(--focus-ring); outline:none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .drawer, .drawer-backdrop, .tm-bar-fill { transition: none !important; }
+    }
   </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
 
-  <div class="page">
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container-sm">
-      <div class="page-header">
+      <header class="page-header">
         <div>
-          <div class="page-title" id="pageTitle">🍳 Tâches Cuisine</div>
-          <div class="page-subtitle" id="dateLabel"></div>
+          <h1 class="page-title">Tâches Cuisine</h1>
+          <p class="page-subtitle" id="dateLabel"></p>
         </div>
-      </div>
+      </header>
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:12px;">
-        <div class="tabs" id="tabBar"></div>
-        <div style="display:flex;align-items:center;gap:10px;min-width:220px;">
+        <div role="tablist" aria-label="Catégories de tâches" class="tabs" id="tabBar"></div>
+        <div style="display:flex;align-items:center;gap:10px;min-width:220px;" aria-hidden="true">
           <div class="progress-bar" style="flex:1;">
             <div class="progress-fill" id="progressFill" style="width:0%"></div>
           </div>
           <span class="text-sm text-muted" id="progressLabel">0/0</span>
         </div>
+        <progress id="progressEl" class="sr-only" aria-label="Progression des tâches" value="0" max="1"></progress>
       </div>
 
-      <div class="team-stats-bar" id="teamStatsBar">
+      <div class="team-stats-bar" role="status" aria-label="Statistiques des tâches">
         <div class="team-stat-item">
-          <div class="team-stat-dot mine"></div>
+          <div class="team-stat-dot mine" aria-hidden="true"></div>
           <span class="team-stat-label">Moi :</span>
           <span class="team-stat-value" id="statMe">0</span>
         </div>
-        <span class="team-stat-sep">·</span>
+        <span class="team-stat-sep" aria-hidden="true">·</span>
         <div class="team-stat-item">
-          <div class="team-stat-dot team"></div>
+          <div class="team-stat-dot team" aria-hidden="true"></div>
           <span class="team-stat-label">Collègues :</span>
           <span class="team-stat-value" id="statTeam">0</span>
         </div>
-        <span class="team-stat-sep">·</span>
+        <span class="team-stat-sep" aria-hidden="true">·</span>
         <div class="team-stat-item">
-          <div class="team-stat-dot left"></div>
+          <div class="team-stat-dot left" aria-hidden="true"></div>
           <span class="team-stat-label">Restantes :</span>
           <span class="team-stat-value" id="statLeft">0</span>
         </div>
       </div>
 
-      <div id="tasksList"></div>
+      <div id="tasksList" aria-live="polite" aria-atomic="true"></div>
 
-      <!-- Qui fait quoi (chef only) -->
       <div class="team-overview hidden" id="teamOverview">
-        <div class="team-overview-title">👥 Qui fait quoi aujourd'hui</div>
+        <h2 class="team-overview-title">Qui fait quoi aujourd'hui</h2>
         <div id="teamOverviewList"></div>
       </div>
 
-      <!-- Gestion tâches (chef only) -->
       <div class="hidden" id="chefControls" style="margin-top:20px;">
-        <button class="btn btn-secondary" style="width:100%" onclick="openTaskManager()">⚙️ Gérer les tâches</button>
+        <button class="btn btn-secondary" style="width:100%" id="btnOpenTaskManager">Gérer les tâches</button>
       </div>
 
-      <!-- Signalement retard / heures supp -->
-      <div class="signal-section">
-        <div class="signal-title">⏱ Signalement</div>
+      <section class="signal-section" aria-labelledby="signal-title">
+        <h2 class="signal-title" id="signal-title">Signalement</h2>
         <div class="signal-btns">
-          <button class="btn-signal retard" onclick="openSignal('retard')">
-            <span class="btn-signal-icon">⏰</span>
+          <button class="btn-signal retard" id="btnRetard">
+            <span class="btn-signal-icon" aria-hidden="true">⏰</span>
             <span>Retard</span>
           </button>
-          <button class="btn-signal supp" onclick="openSignal('supp')">
-            <span class="btn-signal-icon">➕</span>
+          <button class="btn-signal supp" id="btnSupp">
+            <span class="btn-signal-icon" aria-hidden="true">➕</span>
             <span>Heures supp</span>
           </button>
         </div>
-        <div class="time-events-list" id="timeEventsList"></div>
-      </div>
+        <div class="time-events-list" id="timeEventsList" aria-live="polite" aria-atomic="true"></div>
+      </section>
     </div>
-  </div>
+  </main>
 
   <!-- Backdrop -->
-  <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
 
   <!-- Drawer: gestion tâches -->
-  <div class="drawer" id="taskManagerDrawer">
-    <div class="drawer-handle"></div>
+  <div class="drawer" id="taskManagerDrawer" role="dialog" aria-modal="true" aria-labelledby="taskManagerTitle">
+    <div class="drawer-handle" aria-hidden="true"></div>
     <div class="drawer-head">
-      <div class="drawer-title">⚙️ Gestion des tâches</div>
-      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+      <h2 class="drawer-title" id="taskManagerTitle">Gestion des tâches</h2>
+      <button class="drawer-close" id="closeTaskManager" aria-label="Fermer la gestion des tâches">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M10 2L2 10M2 2l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </button>
     </div>
     <div class="drawer-body">
-      <button class="btn btn-primary" style="width:100%;margin-bottom:14px" onclick="openTaskForm()">+ Nouvelle tâche</button>
+      <button class="btn btn-primary" style="width:100%;margin-bottom:14px" id="btnNewTask">+ Nouvelle tâche</button>
       <div class="task-manage-list" id="taskManageList"></div>
     </div>
   </div>
 
   <!-- Drawer: formulaire tâche -->
-  <div class="drawer" id="taskFormDrawer">
-    <div class="drawer-handle"></div>
+  <div class="drawer" id="taskFormDrawer" role="dialog" aria-modal="true" aria-labelledby="taskFormTitle">
+    <div class="drawer-handle" aria-hidden="true"></div>
     <div class="drawer-head">
-      <div class="drawer-title" id="taskFormTitle">Nouvelle tâche</div>
-      <button class="drawer-close" onclick="closeTaskForm()">✕</button>
+      <h2 class="drawer-title" id="taskFormTitle">Nouvelle tâche</h2>
+      <button class="drawer-close" id="closeTaskForm" aria-label="Fermer le formulaire">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M10 2L2 10M2 2l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </button>
     </div>
     <div class="drawer-body">
-      <form id="taskForm" onsubmit="saveTask(event)">
+      <form id="taskForm">
         <input type="hidden" id="taskId">
         <div class="frow">
           <div class="fgroup">
-            <label>Description *</label>
-            <input type="text" id="taskDesc" placeholder="Ex : Nettoyer le grill" required autocomplete="off">
+            <label for="taskDesc">Description <span aria-hidden="true">*</span></label>
+            <input type="text" id="taskDesc" class="form-input" placeholder="Ex : Nettoyer le grill" required autocomplete="off" aria-required="true">
           </div>
           <div class="fgroup">
-            <label>Catégorie</label>
-            <select id="taskCat">
-              <option value="fermeture">🔒 Fermeture</option>
-              <option value="nettoyage">🧽 Nettoyage</option>
+            <label for="taskCat">Catégorie</label>
+            <select id="taskCat" class="form-select">
+              <option value="fermeture">Fermeture</option>
+              <option value="nettoyage">Nettoyage</option>
             </select>
           </div>
           <div class="fgroup">
-            <label>Section</label>
-            <input type="text" id="taskSection" placeholder="Ex : Cuisine" value="Cuisine">
+            <label for="taskSection">Section</label>
+            <input type="text" id="taskSection" class="form-input" placeholder="Ex : Cuisine" value="Cuisine">
           </div>
           <div class="fgroup">
-            <label>Sous-section</label>
-            <input type="text" id="taskSubsection" placeholder="Ex : Matériel de cuisson">
+            <label for="taskSubsection">Sous-section</label>
+            <input type="text" id="taskSubsection" class="form-input" placeholder="Ex : Matériel de cuisson">
           </div>
         </div>
       </form>
     </div>
     <div class="drawer-footer">
-      <button class="btn btn-secondary" onclick="closeTaskForm()">Annuler</button>
+      <button class="btn btn-secondary" id="cancelTaskForm">Annuler</button>
       <button type="submit" form="taskForm" class="btn btn-primary">Enregistrer</button>
     </div>
   </div>
 
   <!-- Drawer: signalement -->
-  <div class="drawer" id="signalDrawer">
-    <div class="drawer-handle"></div>
+  <div class="drawer" id="signalDrawer" role="dialog" aria-modal="true" aria-labelledby="signalDrawerTitle">
+    <div class="drawer-handle" aria-hidden="true"></div>
     <div class="drawer-head">
-      <div class="drawer-title" id="signalDrawerTitle">Signaler un retard</div>
-      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+      <h2 class="drawer-title" id="signalDrawerTitle">Signaler un retard</h2>
+      <button class="drawer-close" id="closeSignalDrawer" aria-label="Fermer le signalement">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M10 2L2 10M2 2l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </button>
     </div>
     <div class="drawer-body">
-      <form id="signalForm" onsubmit="submitSignal(event)">
+      <form id="signalForm">
         <input type="hidden" id="signalType">
         <div class="frow">
           <div class="fgroup">
-            <label id="signalMinLabel">Minutes de retard</label>
+            <label for="signalMinutes" id="signalMinLabel">Minutes de retard</label>
             <div style="display:flex;align-items:center;gap:10px">
-              <input type="number" id="signalMinutes" min="1" max="480" placeholder="Ex : 15" style="flex:1" required>
-              <span style="color:var(--text-muted);font-size:.85rem">min</span>
+              <input type="number" id="signalMinutes" class="form-input" min="1" max="480" placeholder="Ex : 15" style="flex:1" required aria-required="true">
+              <span style="color:var(--text-muted);font-size:.85rem" aria-hidden="true">min</span>
             </div>
           </div>
           <div class="fgroup">
-            <label>Note <span style="font-weight:400;color:var(--text-muted)">(optionnel)</span></label>
-            <input type="text" id="signalNote" placeholder="Ex : Transport, problème..." autocomplete="off">
+            <label for="signalNote">Note <span style="font-weight:400;color:var(--text-muted)">(optionnel)</span></label>
+            <input type="text" id="signalNote" class="form-input" placeholder="Ex : Transport, problème..." autocomplete="off">
           </div>
         </div>
       </form>
     </div>
     <div class="drawer-footer">
-      <button class="btn btn-secondary" onclick="closeDrawer()">Annuler</button>
+      <button class="btn btn-secondary" id="cancelSignalDrawer">Annuler</button>
       <button type="submit" form="signalForm" class="btn btn-primary">Envoyer</button>
+    </div>
+  </div>
+
+  <!-- Modal confirmation -->
+  <div class="modal-overlay hidden" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="confirm-title">Confirmer</h2>
+      </div>
+      <p id="confirmMsg" style="font-size:.9rem;color:var(--text-muted);"></p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="confirmCancel">Annuler</button>
+        <button class="btn btn-danger" id="confirmOk">Confirmer</button>
+      </div>
     </div>
   </div>
 
@@ -268,6 +291,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/api.js"></script>
   <script>
+    'use strict';
     buildNav('cuisine-taches');
     document.getElementById('dateLabel').textContent = formatDate(today());
 
@@ -275,28 +299,95 @@
     let allTasks = [];
     let currentTab = 'fermeture';
     let currentUser = null;
+    let isChef = false;
+    let managedTasks = [];
+    let timeEvents = [];
 
     const TABS = [
-      { key: 'fermeture', label: '🔒 FERMETURE' },
-      { key: 'nettoyage', label: '🧽 NETTOYAGE' },
+      { key: 'fermeture', label: 'Fermeture' },
+      { key: 'nettoyage', label: 'Nettoyage' },
     ];
+    const SECTION_ICONS = { 'Cuisine': '🍳', 'Plan de Nettoyage': '🧽' };
 
-    const SECTION_ICONS = {
-      'Cuisine': '🍳',
-      'Plan de Nettoyage': '🧽',
-    };
+    // ── Drawers ──────────────────────────────────────────────────────────────
+    let _drawerTrigger = null;
 
+    function openDrawer(id, triggerEl = null) {
+      _drawerTrigger = triggerEl;
+      document.getElementById('drawerBackdrop').classList.add('open');
+      const drawer = document.getElementById(id);
+      drawer.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => {
+        const first = drawer.querySelector('button:not([disabled]),input,select,textarea');
+        if (first) first.focus();
+      }, 50);
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawerBackdrop').classList.remove('open');
+      document.querySelectorAll('.drawer').forEach(d => d.classList.remove('open'));
+      document.body.style.overflow = '';
+      if (_drawerTrigger) { _drawerTrigger.focus(); _drawerTrigger = null; }
+    }
+
+    document.querySelectorAll('.drawer').forEach(drawer => {
+      drawer.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { closeDrawer(); return; }
+        if (e.key !== 'Tab') return;
+        const focusable = Array.from(drawer.querySelectorAll('button:not([disabled]),input,select,textarea')).filter(el => el.offsetParent !== null);
+        if (!focusable.length) return;
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      });
+    });
+
+    document.getElementById('drawerBackdrop').addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDrawer(); } });
+
+    document.getElementById('closeTaskManager').addEventListener('click', closeDrawer);
+    document.getElementById('closeTaskForm').addEventListener('click', () => { closeDrawer(); setTimeout(() => openTaskManager(), 50); });
+    document.getElementById('cancelTaskForm').addEventListener('click', () => { closeDrawer(); setTimeout(() => openTaskManager(), 50); });
+    document.getElementById('closeSignalDrawer').addEventListener('click', closeDrawer);
+    document.getElementById('cancelSignalDrawer').addEventListener('click', closeDrawer);
+
+    // ── Modal confirmation ───────────────────────────────────────────────────
+    let _confirmCb = null;
+    function showConfirm(msg, cb) {
+      _confirmCb = cb;
+      document.getElementById('confirmMsg').textContent = msg;
+      showModal('confirmModal');
+      setTimeout(() => document.getElementById('confirmCancel').focus(), 50);
+    }
+    document.getElementById('confirmCancel').addEventListener('click', () => { hideModal('confirmModal'); _confirmCb = null; });
+    document.getElementById('confirmOk').addEventListener('click', () => { hideModal('confirmModal'); if (_confirmCb) { _confirmCb(); _confirmCb = null; } });
+
+    // ── Init ─────────────────────────────────────────────────────────────────
     async function init() {
       currentUser = await api.get('/api/auth/me');
       if (!currentUser) return;
-
       isChef = currentUser.role === 'admin' || (currentUser.role === 'manager' && currentUser.shift === 'cuisine');
 
-      document.getElementById('tabBar').innerHTML = TABS.map(t => `
-        <button class="tab ${t.key === currentTab ? 'active' : ''}"
-                id="tab-${t.key}"
-                onclick="switchTab('${t.key}')">${t.label}</button>
+      // Build ARIA tabs
+      const tabBar = document.getElementById('tabBar');
+      tabBar.innerHTML = TABS.map(t => `
+        <button role="tab" class="tab${t.key === currentTab ? ' active' : ''}"
+          id="tab-${t.key}"
+          aria-selected="${t.key === currentTab ? 'true' : 'false'}"
+          aria-controls="tasksList"
+          tabindex="${t.key === currentTab ? '0' : '-1'}">${t.label}</button>
       `).join('');
+
+      TABS.forEach(t => {
+        document.getElementById(`tab-${t.key}`).addEventListener('click', () => switchTab(t.key));
+      });
+      tabBar.addEventListener('keydown', e => {
+        const keys = TABS.map(t => t.key);
+        const idx  = keys.indexOf(currentTab);
+        if (e.key === 'ArrowRight') { e.preventDefault(); const next = keys[(idx+1)%keys.length]; switchTab(next); document.getElementById(`tab-${next}`).focus(); }
+        if (e.key === 'ArrowLeft')  { e.preventDefault(); const prev = keys[(idx-1+keys.length)%keys.length]; switchTab(prev); document.getElementById(`tab-${prev}`).focus(); }
+      });
 
       await loadTasks();
       await loadTimeEvents();
@@ -317,34 +408,38 @@
 
     function switchTab(tab) {
       currentTab = tab;
-      document.querySelectorAll('.tab').forEach(btn => {
-        btn.classList.toggle('active', btn.id === `tab-${tab}`);
+      TABS.forEach(t => {
+        const btn = document.getElementById(`tab-${t.key}`);
+        btn.setAttribute('aria-selected', t.key === tab ? 'true' : 'false');
+        btn.setAttribute('tabindex', t.key === tab ? '0' : '-1');
+        btn.classList.toggle('active', t.key === tab);
       });
       renderTab();
     }
 
     function renderTab() {
-      const tasks = allTasks.filter(t => t.category === currentTab);
-
+      const tasks     = allTasks.filter(t => t.category === currentTab);
       const totalDone = tasks.filter(t => t.completion_count > 0).length;
       const myDone    = tasks.filter(t => t.my_completed).length;
       const onlyTeam  = tasks.filter(t => t.completion_count > 0 && !t.my_completed).length;
       const remaining = tasks.filter(t => t.completion_count === 0).length;
-
       const pct = tasks.length ? Math.round(totalDone / tasks.length * 100) : 0;
+
       const fill = document.getElementById('progressFill');
       fill.style.width = pct + '%';
       fill.className = 'progress-fill' + (pct === 100 ? ' success' : '');
       document.getElementById('progressLabel').innerHTML =
         `<span style="font-size:1.05rem;font-weight:800;color:var(--text)">${pct}%</span>` +
         `<span style="color:var(--text-muted);font-size:.8rem;margin-left:5px">${totalDone}/${tasks.length}</span>`;
+      const prog = document.getElementById('progressEl');
+      prog.value = totalDone; prog.max = tasks.length;
+      prog.setAttribute('aria-label', `Progression : ${totalDone} sur ${tasks.length} tâches — ${pct}%`);
 
-      // Compteurs dans les onglets
       TABS.forEach(tabCfg => {
         const tabTasks = allTasks.filter(t => t.category === tabCfg.key);
         const tabDone  = tabTasks.filter(t => t.completion_count > 0).length;
         const tabEl    = document.getElementById(`tab-${tabCfg.key}`);
-        if (tabEl) tabEl.innerHTML = `${tabCfg.label} <span class="tab-count">${tabDone}/${tabTasks.length}</span>`;
+        if (tabEl) tabEl.innerHTML = `${tabCfg.label} <span class="tab-count" aria-hidden="true">${tabDone}/${tabTasks.length}</span>`;
       });
 
       document.getElementById('statMe').textContent   = myDone;
@@ -359,169 +454,134 @@
       });
 
       const container = document.getElementById('tasksList');
-
       if (!tasks.length) {
-        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">Aucune tâche pour cette catégorie</div></div>`;
+        container.innerHTML = `<div class="empty-state"><div class="empty-state-text">Aucune tâche pour cette catégorie</div></div>`;
         return;
       }
 
       container.innerHTML = Object.entries(sections).map(([section, subsections]) => `
         <div class="task-section">
           <div class="task-section-header">
-            <span class="task-section-icon">${SECTION_ICONS[section] || '📌'}</span>
-            <span class="task-section-title">${section}</span>
+            <span class="task-section-icon" aria-hidden="true">${SECTION_ICONS[section] || '📌'}</span>
+            <span class="task-section-title">${escapeHtml(section)}</span>
           </div>
           ${Object.entries(subsections).map(([sub, items]) => {
             const subDone = items.filter(t => t.completion_count > 0).length;
             const countLabel = subDone > 0
-              ? `<span class="subsection-count">(<span class="done-count">${subDone}</span>/${items.length} faite${subDone > 1 ? 's' : ''})</span>`
-              : `<span class="subsection-count">(${items.length})</span>`;
-            return `
-              <div class="task-subsection">
-                <div class="task-subsection-header">${sub} ${countLabel}</div>
-                ${items.map(t => renderTask(t)).join('')}
-              </div>`;
+              ? `<span class="subsection-count" aria-label="${subDone} sur ${items.length} complétées">(<span class="done-count" aria-hidden="true">${subDone}</span><span aria-hidden="true">/${items.length})</span></span>`
+              : `<span class="subsection-count" aria-hidden="true">(${items.length})</span>`;
+            return `<div class="task-subsection">
+              <div class="task-subsection-header">${escapeHtml(sub)} ${countLabel}</div>
+              ${items.map(t => renderTask(t)).join('')}
+            </div>`;
           }).join('')}
-        </div>
-      `).join('');
+        </div>`).join('');
+
+      container.querySelectorAll('[data-task-id]').forEach(btn => {
+        btn.addEventListener('click', () => toggleTask(parseInt(btn.dataset.taskId)));
+      });
     }
 
     function renderTask(t) {
       const isMine  = !!t.my_completed;
       const anyDone = t.completion_count > 0;
-
-      let cssClass = 'task-item';
-      if (isMine)       cssClass += ' my-done';
-      else if (anyDone) cssClass += ' others-done';
-
+      let cls = 'task-item' + (isMine ? ' my-done' : anyDone ? ' others-done' : '');
       let badgesHtml = '';
       if (anyDone && t.completers) {
         const names = t.completers.split(', ');
-        badgesHtml = `<div class="task-completers">
-          ${names.map(name => {
-            const isMe = currentUser && name === currentUser.name;
-            const initials = name.split(' ').map(n => n[0] || '').join('').toUpperCase().slice(0, 2);
-            return `<span class="completer-avatar ${isMe ? 'me' : 'other'}" title="${name}">${initials}</span>`;
-          }).join('')}
-        </div>`;
+        badgesHtml = `<div class="task-completers">${names.map(name => {
+          const isMe = currentUser && name === currentUser.name;
+          const initials = name.split(' ').map(n => n[0]||'').join('').toUpperCase().slice(0,2);
+          return `<span class="completer-avatar ${isMe?'me':'other'}" role="img" aria-label="${isMe?'Complété par moi':'Complété par '+escapeHtml(name)}">${escapeHtml(initials)}</span>`;
+        }).join('')}</div>`;
       }
-
-      return `
-        <div class="${cssClass}" id="task-${t.id}" onclick="toggleTask(${t.id})">
-          <div class="task-checkbox">${isMine ? '✓' : (anyDone ? '✓' : '')}</div>
-          <div class="task-content">
-            <div class="task-desc">${t.description}</div>
-            ${badgesHtml}
-          </div>
+      const stateLabel = isMine ? ' — complétée par moi' : anyDone ? ' — complétée' : '';
+      return `<button type="button" class="${cls}" data-task-id="${t.id}"
+        aria-pressed="${isMine?'true':'false'}"
+        aria-label="${escapeHtml(t.description)}${stateLabel}">
+        <div class="task-checkbox" aria-hidden="true">${isMine||anyDone?'✓':''}</div>
+        <div class="task-content">
+          <div class="task-desc" aria-hidden="true">${escapeHtml(t.description)}</div>
+          ${badgesHtml}
         </div>
-      `;
+      </button>`;
     }
 
     async function toggleTask(id) {
       const task = allTasks.find(t => t.id === id);
       if (!task) return;
-
       if (task.my_completed) {
         await api.delete(`/api/tasks/${id}/complete`);
-        task.my_completed = 0;
-        task.my_completion_id = null;
-        task.completion_count = Math.max(0, (task.completion_count || 1) - 1);
-        if (task.completers && currentUser) {
-          const names = task.completers.split(', ').filter(n => n !== currentUser.name);
-          task.completers = names.join(', ') || null;
-        }
+        task.my_completed = 0; task.my_completion_id = null;
+        task.completion_count = Math.max(0, (task.completion_count||1)-1);
+        if (task.completers && currentUser)
+          task.completers = task.completers.split(', ').filter(n => n !== currentUser.name).join(', ') || null;
+        announce(`Tâche "${task.description}" décochée`);
       } else {
         await api.post(`/api/tasks/${id}/complete`, {});
-        task.my_completed = 1;
-        task.my_completion_id = 1;
-        task.completion_count = (task.completion_count || 0) + 1;
+        task.my_completed = 1; task.my_completion_id = 1;
+        task.completion_count = (task.completion_count||0)+1;
         if (currentUser) {
           const names = task.completers ? task.completers.split(', ') : [];
           if (!names.includes(currentUser.name)) names.push(currentUser.name);
           task.completers = names.join(', ');
         }
+        announce(`Tâche "${task.description}" complétée`);
       }
-      const el = document.getElementById(`task-${id}`);
-      if (el) {
-        el.classList.add('toggling');
-        setTimeout(() => { el.classList.remove('toggling'); renderTab(); }, 200);
-      } else {
-        renderTab();
-      }
-    }
-
-    socket.on('task:updated', ({ taskId, userId, userName, completed }) => {
-      if (userId === currentUser?.id) return;
-      const task = allTasks.find(t => t.id === taskId);
-      if (!task) return;
-
-      const names = task.completers ? task.completers.split(', ') : [];
-      if (completed) {
-        if (!names.includes(userName)) names.push(userName);
-        task.completion_count = (task.completion_count || 0) + 1;
-      } else {
-        const idx = names.indexOf(userName);
-        if (idx > -1) names.splice(idx, 1);
-        task.completion_count = Math.max(0, (task.completion_count || 1) - 1);
-      }
-      task.completers = names.join(', ') || null;
       renderTab();
-      if (isChef) loadTeamOverview();
-    });
-
-    // ── Gestion tâches (chef) ──────────────────────────────────────────────────
-    let managedTasks = [];
-    let editingTaskId = null;
-    let isChef = false;
-
-    function openDrawer(id) {
-      document.getElementById('drawerBackdrop').classList.add('open');
-      document.getElementById(id).classList.add('open');
-      document.body.style.overflow = 'hidden';
-    }
-    function closeDrawer() {
-      document.getElementById('drawerBackdrop').classList.remove('open');
-      document.querySelectorAll('.drawer').forEach(d => d.classList.remove('open'));
-      document.body.style.overflow = '';
-    }
-    function closeTaskForm() {
-      closeDrawer();
-      setTimeout(() => openTaskManager(), 50);
     }
 
-    async function openTaskManager() {
+    // ── Qui fait quoi ─────────────────────────────────────────────────────────
+    async function loadTeamOverview() {
+      const data = await api.get(`/api/cuisine/completions?date=${today()}`);
+      if (!data) return;
+      document.getElementById('teamOverviewList').innerHTML = data.map(m => {
+        const pct = m.total > 0 ? Math.round(m.done/m.total*100) : 0;
+        return `<div class="team-member-row">
+          <div class="tm-name">${escapeHtml(m.name)}</div>
+          <div class="tm-bar" aria-hidden="true"><div class="tm-bar-fill" style="width:${pct}%"></div></div>
+          <div class="tm-count" aria-label="${escapeHtml(m.name)} : ${m.done} sur ${m.total}"><b>${m.done}</b>/${m.total}</div>
+        </div>`;
+      }).join('');
+    }
+
+    // ── Gestion tâches (chef) ─────────────────────────────────────────────────
+    document.getElementById('btnOpenTaskManager').addEventListener('click', e => openTaskManager(e.currentTarget));
+    document.getElementById('btnNewTask').addEventListener('click', e => openTaskForm(null, e.currentTarget));
+
+    async function openTaskManager(triggerEl = null) {
       closeDrawer();
       const data = await api.get('/api/cuisine/tasks');
       if (!data) return;
       managedTasks = data;
-      renderTaskManageList();
-      openDrawer('taskManagerDrawer');
-    }
-
-    function renderTaskManageList() {
-      const catLabel = { fermeture: '🔒 Fermeture', nettoyage: '🧽 Nettoyage' };
+      const catLabel = { fermeture: 'Fermeture', nettoyage: 'Nettoyage' };
       const el = document.getElementById('taskManageList');
       if (!managedTasks.length) {
         el.innerHTML = '<div style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:20px">Aucune tâche</div>';
-        return;
+      } else {
+        el.innerHTML = managedTasks.map(t => `
+          <div class="task-manage-item">
+            <div style="flex:1;min-width:0">
+              <div class="task-manage-desc">${escapeHtml(t.description)}</div>
+              <div class="task-manage-cat">${escapeHtml(catLabel[t.category]||t.category)} · ${escapeHtml(t.section||'')} · ${escapeHtml(t.subsection||'')}</div>
+            </div>
+            <div class="task-manage-actions">
+              <button class="btn-icon" data-edit="${t.id}" aria-label="Modifier : ${escapeHtml(t.description)}">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M9.5 2L12 4.5 4.5 12H2v-2.5L9.5 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+              </button>
+              <button class="btn-icon danger" data-delete="${t.id}" aria-label="Supprimer : ${escapeHtml(t.description)}">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><path d="M2 4h10M5 4V2h4v2M6 6v5M8 6v5M3 4l1 8h6l1-8"/></svg>
+              </button>
+            </div>
+          </div>`).join('');
+        el.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', () => openTaskForm(parseInt(btn.dataset.edit), btn)));
+        el.querySelectorAll('[data-delete]').forEach(btn => btn.addEventListener('click', () => deleteTask(parseInt(btn.dataset.delete))));
       }
-      el.innerHTML = managedTasks.map(t => `
-        <div class="task-manage-item">
-          <div style="flex:1;min-width:0">
-            <div class="task-manage-desc">${t.description}</div>
-            <div class="task-manage-cat">${catLabel[t.category] || t.category} · ${t.section || ''} · ${t.subsection || ''}</div>
-          </div>
-          <div class="task-manage-actions">
-            <button class="btn-icon" onclick="openTaskForm(${t.id})" title="Modifier">✏️</button>
-            <button class="btn-icon danger" onclick="deleteTask(${t.id})" title="Supprimer">🗑</button>
-          </div>
-        </div>
-      `).join('');
+      openDrawer('taskManagerDrawer', triggerEl);
     }
 
-    function openTaskForm(id = null) {
+    function openTaskForm(id = null, triggerEl = null) {
       closeDrawer();
-      editingTaskId = id;
       document.getElementById('taskFormTitle').textContent = id ? 'Modifier la tâche' : 'Nouvelle tâche';
       if (id) {
         const t = managedTasks.find(x => x.id === id);
@@ -539,11 +599,11 @@
         document.getElementById('taskSection').value = 'Cuisine';
         document.getElementById('taskSubsection').value = '';
       }
-      openDrawer('taskFormDrawer');
+      openDrawer('taskFormDrawer', triggerEl);
       setTimeout(() => document.getElementById('taskDesc').focus(), 350);
     }
 
-    async function saveTask(e) {
+    document.getElementById('taskForm').addEventListener('submit', async e => {
       e.preventDefault();
       const id = document.getElementById('taskId').value;
       const body = {
@@ -553,44 +613,20 @@
         subsection:  document.getElementById('taskSubsection').value.trim() || null,
         domain:      'cuisine',
       };
-      if (id) {
-        await api.put(`/api/cuisine/tasks/${id}`, body);
-        showToast('Tâche modifiée ✓', 'success');
-      } else {
-        await api.post('/api/cuisine/tasks', body);
-        showToast('Tâche créée ✓', 'success');
-      }
-      closeDrawer();
-      await loadTasks();
-    }
+      if (id) { await api.put(`/api/cuisine/tasks/${id}`, body); showToast('Tâche modifiée', 'success'); }
+      else    { await api.post('/api/cuisine/tasks', body); showToast('Tâche créée', 'success'); }
+      closeDrawer(); await loadTasks();
+    });
 
-    async function deleteTask(id) {
-      if (!confirm('Supprimer cette tâche ?')) return;
-      await api.delete(`/api/cuisine/tasks/${id}`);
-      showToast('Tâche supprimée', 'info');
-      closeDrawer();
-      await loadTasks();
-    }
-
-    // ── Qui fait quoi ─────────────────────────────────────────────────────────
-    async function loadTeamOverview() {
-      const data = await api.get(`/api/cuisine/completions?date=${today()}`);
-      if (!data) return;
-      const el = document.getElementById('teamOverviewList');
-      el.innerHTML = data.map(m => {
-        const pct = m.total > 0 ? Math.round(m.done / m.total * 100) : 0;
-        return `
-          <div class="team-member-row">
-            <div class="tm-name">${m.name}</div>
-            <div class="tm-bar"><div class="tm-bar-fill" style="width:${pct}%"></div></div>
-            <div class="tm-count"><b>${m.done}</b>/${m.total}</div>
-          </div>`;
-      }).join('');
+    function deleteTask(id) {
+      showConfirm('Supprimer cette tâche ?', async () => {
+        await api.delete(`/api/cuisine/tasks/${id}`);
+        showToast('Tâche supprimée', 'info');
+        closeDrawer(); await loadTasks();
+      });
     }
 
     // ── Signalement ───────────────────────────────────────────────────────────
-    let timeEvents = [];
-
     async function loadTimeEvents() {
       const data = await api.get(`/api/cuisine/time-events?date=${today()}`);
       if (!data) return;
@@ -601,35 +637,36 @@
     function renderTimeEvents() {
       const el = document.getElementById('timeEventsList');
       if (!timeEvents.length) { el.innerHTML = ''; return; }
-      const myEvents = isChef ? timeEvents : timeEvents.filter(e => e.user_id === currentUser?.id);
-      if (!myEvents.length) { el.innerHTML = ''; return; }
-      el.innerHTML = myEvents.map(e => {
-        const label = e.type === 'retard' ? 'Retard' : 'Heure supp';
-        const cls   = e.type === 'retard' ? 'te-retard' : 'te-supp';
-        const who   = isChef ? `<b>${e.user_name}</b> · ` : '';
-        return `
-          <div class="time-event-item">
-            <span class="te-badge ${cls}">${label}</span>
-            <div class="te-info">
-              <div>${who}${e.minutes} min</div>
-              ${e.note ? `<div class="te-note">${e.note}</div>` : ''}
-            </div>
-            <button class="te-del" onclick="deleteTimeEvent(${e.id})" title="Supprimer">✕</button>
-          </div>`;
-      }).join('');
+      const list = isChef ? timeEvents : timeEvents.filter(e => e.user_id === currentUser?.id);
+      if (!list.length) { el.innerHTML = ''; return; }
+      el.innerHTML = list.map(e => `
+        <div class="time-event-item">
+          <span class="te-badge ${e.type==='retard'?'te-retard':'te-supp'}">${e.type==='retard'?'Retard':'Heure supp'}</span>
+          <div class="te-info">
+            <div>${isChef?`<b>${escapeHtml(e.user_name)}</b> · `:''}${e.minutes} min</div>
+            ${e.note?`<div class="te-note">${escapeHtml(e.note)}</div>`:''}
+          </div>
+          <button class="te-del" data-del="${e.id}" aria-label="Supprimer le signalement de ${e.minutes} min">✕</button>
+        </div>`).join('');
+      el.querySelectorAll('[data-del]').forEach(btn => {
+        btn.addEventListener('click', () => deleteTimeEvent(parseInt(btn.dataset.del)));
+      });
     }
 
-    function openSignal(type) {
+    document.getElementById('btnRetard').addEventListener('click', e => openSignal('retard', e.currentTarget));
+    document.getElementById('btnSupp').addEventListener('click', e => openSignal('supp', e.currentTarget));
+
+    function openSignal(type, triggerEl = null) {
       document.getElementById('signalType').value = type;
-      document.getElementById('signalDrawerTitle').textContent = type === 'retard' ? '⏰ Signaler un retard' : '➕ Heures supplémentaires';
+      document.getElementById('signalDrawerTitle').textContent = type === 'retard' ? 'Signaler un retard' : 'Heures supplémentaires';
       document.getElementById('signalMinLabel').textContent = type === 'retard' ? 'Minutes de retard' : 'Minutes supplémentaires';
       document.getElementById('signalMinutes').value = '';
       document.getElementById('signalNote').value = '';
-      openDrawer('signalDrawer');
+      openDrawer('signalDrawer', triggerEl);
       setTimeout(() => document.getElementById('signalMinutes').focus(), 350);
     }
 
-    async function submitSignal(e) {
+    document.getElementById('signalForm').addEventListener('submit', async e => {
       e.preventDefault();
       const type    = document.getElementById('signalType').value;
       const minutes = parseInt(document.getElementById('signalMinutes').value) || 0;
@@ -637,20 +674,31 @@
       if (!minutes) return;
       await api.post('/api/cuisine/time-events', { type, minutes, note });
       closeDrawer();
-      showToast(type === 'retard' ? 'Retard signalé ✓' : 'Heures supp signalées ✓', 'success');
+      showToast(type === 'retard' ? 'Retard signalé' : 'Heures supp signalées', 'success');
       await loadTimeEvents();
-    }
+    });
 
     async function deleteTimeEvent(id) {
       await api.delete(`/api/cuisine/time-events/${id}`);
       await loadTimeEvents();
     }
 
+    // ── Socket.io ─────────────────────────────────────────────────────────────
+    socket.on('task:updated', ({ taskId, userId, userName, completed }) => {
+      if (userId === currentUser?.id) return;
+      const task = allTasks.find(t => t.id === taskId);
+      if (!task) return;
+      const names = task.completers ? task.completers.split(', ') : [];
+      if (completed) { if (!names.includes(userName)) names.push(userName); task.completion_count = (task.completion_count||0)+1; }
+      else           { const i = names.indexOf(userName); if (i>-1) names.splice(i,1); task.completion_count = Math.max(0,(task.completion_count||1)-1); }
+      task.completers = names.join(', ') || null;
+      renderTab();
+      announce(`${escapeHtml(userName)} a ${completed?'complété':'décoché'} une tâche`);
+      if (isChef) loadTeamOverview();
+    });
+
     socket.on('cuisine:time-events:updated', ({ date: d, events }) => {
-      if (d === today()) {
-        timeEvents = events;
-        renderTimeEvents();
-      }
+      if (d === today()) { timeEvents = events; renderTimeEvents(); }
     });
 
     init();

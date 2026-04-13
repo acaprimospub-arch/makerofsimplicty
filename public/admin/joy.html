@@ -8,129 +8,145 @@
   <link rel="manifest" href="/manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
   <style>
-    .joy-header-bar {
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 10px; margin-bottom: 16px;
-    }
-    .sync-info { font-size: 0.8rem; color: var(--text-muted); }
+    .sync-info { font-size:0.8rem; color:var(--text-muted); }
 
-    /* Cartes événements */
-    .joy-list { display: flex; flex-direction: column; gap: 10px; }
+    .joy-list { display:flex; flex-direction:column; gap:10px; }
     .joy-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--primary);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      display: flex; align-items: flex-start; gap: 14px;
+      background:var(--bg-card); border:1px solid var(--border);
+      border-left:4px solid var(--primary); border-radius:var(--radius);
+      padding:14px 16px; display:flex; align-items:flex-start; gap:14px;
     }
-    .joy-card.cancelled { border-left-color: var(--danger); opacity: 0.6; }
+    .joy-card.cancelled { border-left-color:var(--danger); opacity:0.6; }
     .joy-date-block {
-      flex-shrink: 0; text-align: center;
-      background: var(--primary-dim); border-radius: 8px;
-      padding: 8px 12px; min-width: 58px;
+      flex-shrink:0; text-align:center;
+      background:var(--primary-dim); border-radius:8px;
+      padding:8px 12px; min-width:58px;
     }
-    .joy-day   { font-size: 1.4rem; font-weight: 800; line-height: 1; color: var(--primary); }
-    .joy-month { font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); margin-top: 2px; }
-    .joy-body  { flex: 1; min-width: 0; }
-    .joy-name  { font-weight: 700; font-size: 1rem; margin-bottom: 3px; }
-    .joy-meta  { display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.82rem; color: var(--text-muted); }
-    .joy-meta span { display: flex; align-items: center; gap: 4px; }
-    .joy-space { margin-top: 6px; font-size: 0.82rem; }
-    .joy-space .badge-space {
-      background: var(--primary-dim); color: var(--primary);
-      padding: 3px 8px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+    .joy-day   { font-size:1.4rem; font-weight:800; line-height:1; color:var(--primary); }
+    .joy-month { font-size:0.72rem; text-transform:uppercase; color:var(--text-muted); margin-top:2px; }
+    .joy-body  { flex:1; min-width:0; }
+    .joy-name  { font-weight:700; font-size:1rem; margin-bottom:3px; }
+    .joy-meta  { display:flex; flex-wrap:wrap; gap:10px; font-size:0.82rem; color:var(--text-muted); }
+    .joy-space { margin-top:6px; font-size:0.82rem; }
+    .badge-space {
+      background:var(--primary-dim); color:var(--primary);
+      padding:3px 8px; border-radius:20px; font-size:0.78rem; font-weight:600;
     }
-    .joy-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; flex-shrink: 0; }
-    .joy-status {
-      font-size: 0.72rem; font-weight: 700; padding: 3px 8px;
-      border-radius: 20px;
-    }
-    .joy-status.confirmed { background: var(--success-bg); color: var(--success); }
-    .joy-status.cancelled { background: var(--danger-bg);  color: var(--danger); }
+    .joy-actions { display:flex; flex-direction:column; gap:6px; align-items:flex-end; flex-shrink:0; }
 
-    /* Filtres */
-    .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: flex-end; }
-    .filters .form-group { margin: 0; }
+    .filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; align-items:flex-end; }
+    .filters .form-group { margin:0; }
 
-    /* Config URL */
     .config-card {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 16px; margin-bottom: 16px;
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--radius); padding:16px; margin-bottom:16px;
     }
-    .config-card summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--text-muted); }
+    .config-card summary {
+      cursor:pointer; font-weight:600; font-size:0.9rem; color:var(--text-muted);
+    }
+    .config-card summary:focus-visible {
+      outline:none; box-shadow:var(--focus-ring); border-radius:4px;
+    }
 
-    @media (max-width: 600px) {
-      .joy-card { flex-direction: column; gap: 10px; }
-      .joy-date-block { display: flex; align-items: center; gap: 10px; width: 100%; border-radius: 6px; }
-      .joy-day { font-size: 1.1rem; }
-      .joy-actions { flex-direction: row; align-items: center; }
+    @media (max-width:600px) {
+      .joy-card { flex-direction:column; gap:10px; }
+      .joy-date-block { display:flex; align-items:center; gap:10px; width:100%; border-radius:6px; }
+      .joy-day { font-size:1.1rem; }
+      .joy-actions { flex-direction:row; align-items:center; }
     }
   </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
-  <div class="page">
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
+
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container-sm">
 
-      <div class="page-header">
+      <header class="page-header">
         <div>
-          <div class="page-title">🎉 Événements Joy.io</div>
-          <div class="page-subtitle">Réservations groupes & événements privés</div>
+          <h1 class="page-title">Événements Joy.io</h1>
+          <p class="page-subtitle">Réservations groupes &amp; événements privés</p>
         </div>
-        <button class="btn btn-primary" onclick="sync()" id="btnSync">🔄 Synchroniser</button>
-      </div>
+        <button class="btn btn-primary" id="btnSync">Synchroniser</button>
+      </header>
 
       <!-- Infos sync -->
-      <div class="sync-info" id="syncInfo" style="margin-bottom:12px;"></div>
+      <div id="syncInfo" class="sync-info" style="margin-bottom:12px;" aria-live="polite" aria-atomic="true"></div>
 
       <!-- Config URL (admin only) -->
       <details class="config-card" id="configSection" style="display:none;">
-        <summary>⚙️ Configuration iCal</summary>
-        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;">
+        <summary>Configuration iCal</summary>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
           <div class="form-group" style="flex:1;min-width:200px;margin:0;">
-            <label class="form-label">URL iCal Joy.io</label>
+            <label class="form-label" for="icalUrl">URL iCal Joy.io</label>
             <input type="url" id="icalUrl" class="form-input" placeholder="https://prvt.re/...">
           </div>
-          <button class="btn btn-secondary" onclick="saveUrl()">Enregistrer</button>
+          <button class="btn btn-secondary" id="btnSaveUrl">Enregistrer</button>
         </div>
       </details>
 
       <!-- Filtres -->
-      <div class="filters">
+      <div role="group" aria-label="Filtres" class="filters">
         <div class="form-group">
-          <label class="form-label">Filtre</label>
-          <select id="filterType" class="form-select" onchange="loadEvents()">
+          <label class="form-label" for="filterType">Filtre</label>
+          <select id="filterType" class="form-select">
             <option value="upcoming">À venir</option>
             <option value="all">Tous</option>
             <option value="date">Par date</option>
           </select>
         </div>
-        <div class="form-group" id="dateFilterGroup" style="display:none;">
-          <label class="form-label">Date</label>
-          <input type="date" id="filterDate" class="form-input" onchange="loadEvents()">
+        <div class="form-group" id="dateFilterGroup" hidden>
+          <label class="form-label" for="filterDate">Date</label>
+          <input type="date" id="filterDate" class="form-input">
         </div>
       </div>
 
       <!-- Liste -->
-      <div id="joyList"><div class="empty-state"><div class="empty-state-text">Chargement...</div></div></div>
+      <div id="joyList" aria-live="polite" aria-atomic="true">
+        <div class="empty-state"><div class="empty-state-text">Chargement…</div></div>
+      </div>
 
     </div>
+  </main>
+
+  <!-- Modal suppression -->
+  <div class="modal-overlay hidden" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="delete-modal-title">Supprimer l'événement</h2>
+        <button class="modal-close" id="delete-modal-close" aria-label="Fermer">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+          </svg>
+        </button>
+      </div>
+      <p style="font-size:.9rem;color:var(--text-muted);">Cette action est irréversible.</p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="delete-cancel-btn">Annuler</button>
+        <button class="btn btn-danger"    id="delete-confirm-btn">Supprimer</button>
+      </div>
+    </div>
   </div>
+
   <div id="toast-container"></div>
   <script src="/js/api.js"></script>
   <script>
+    'use strict';
+
     buildNav('joy');
-    let userRole = null;
 
     const MONTHS = ['jan.','fév.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+    let userRole = null;
+    let _pendingDeleteId = null;
 
+    // ─── Init ─────────────────────────────────────────────────────────────────
     async function init() {
       const me = await api.get('/api/auth/me');
       if (!me) return;
       userRole = me.role;
+
       if (me.role === 'admin') {
         document.getElementById('configSection').style.display = '';
         const cfg = await api.get('/api/joy/config');
@@ -149,13 +165,17 @@
       const el = document.getElementById('syncInfo');
       if (!lastSync) { el.textContent = 'Jamais synchronisé'; return; }
       const d = new Date(lastSync);
-      el.textContent = `Dernière sync : ${d.toLocaleDateString('fr-FR')} à ${d.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'})}`;
+      el.textContent = `Dernière sync : ${d.toLocaleDateString('fr-FR')} à ${d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })}`;
     }
 
+    // ─── Filtres ──────────────────────────────────────────────────────────────
     document.getElementById('filterType').addEventListener('change', function() {
-      document.getElementById('dateFilterGroup').style.display = this.value === 'date' ? '' : 'none';
+      document.getElementById('dateFilterGroup').hidden = this.value !== 'date';
+      loadEvents();
     });
+    document.getElementById('filterDate').addEventListener('change', loadEvents);
 
+    // ─── Chargement liste ─────────────────────────────────────────────────────
     async function loadEvents() {
       const type = document.getElementById('filterType').value;
       const date = document.getElementById('filterDate').value;
@@ -170,74 +190,102 @@
       const container = document.getElementById('joyList');
       if (!events.length) {
         container.innerHTML = `<div class="empty-state">
-          <div class="empty-state-icon">📭</div>
           <div class="empty-state-text">Aucun événement trouvé</div>
           <div class="empty-state-sub">Cliquez sur "Synchroniser" pour importer depuis Joy.io</div>
         </div>`;
         return;
       }
 
-      container.innerHTML = `<div class="joy-list">${events.map(ev => {
-        const d = ev.date ? new Date(ev.date + 'T12:00:00') : null;
-        const day   = d ? d.getDate() : '?';
-        const month = d ? MONTHS[d.getMonth()] : '';
-        const timeRange = [ev.time_start, ev.time_end].filter(Boolean).join(' → ');
-        const isCancelled = ev.status === 'cancelled';
+      const canDelete = userRole === 'admin' || userRole === 'manager';
+      container.innerHTML = `<ul class="joy-list" role="list">` +
+        events.map(ev => {
+          const d = ev.date ? new Date(ev.date + 'T12:00:00') : null;
+          const day       = d ? d.getDate() : '?';
+          const month     = d ? MONTHS[d.getMonth()] : '';
+          const timeRange = [ev.time_start, ev.time_end].filter(Boolean).join(' → ');
+          const cancelled = ev.status === 'cancelled';
 
-        return `<div class="joy-card ${isCancelled ? 'cancelled' : ''}">
-          <div class="joy-date-block">
-            <div class="joy-day">${day}</div>
-            <div class="joy-month">${month}</div>
-          </div>
-          <div class="joy-body">
-            <div class="joy-name">${ev.customer_name || '—'}</div>
-            <div class="joy-meta">
-              ${ev.participants ? `<span>👥 ${ev.participants} pers.</span>` : ''}
-              ${timeRange ? `<span>🕐 ${timeRange}</span>` : ''}
+          return `<li class="joy-card${cancelled ? ' cancelled' : ''}" aria-label="Événement : ${escapeHtml(ev.customer_name || 'Sans nom')}, ${day} ${month}${cancelled ? ', annulé' : ''}">
+            <div class="joy-date-block" aria-hidden="true">
+              <div class="joy-day">${day}</div>
+              <div class="joy-month">${month}</div>
             </div>
-            ${ev.space ? `<div class="joy-space"><span class="badge-space">📍 ${ev.space}</span></div>` : ''}
-            ${ev.raw_description && ev.raw_description !== ev.raw_summary ? `
-              <div style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;line-height:1.4;">
-                ${ev.raw_description.substring(0, 120)}${ev.raw_description.length > 120 ? '…' : ''}
-              </div>` : ''}
-          </div>
-          <div class="joy-actions">
-            <span class="joy-status ${ev.status}">${ev.status === 'confirmed' ? '✅ Confirmé' : '❌ Annulé'}</span>
-            ${userRole === 'admin' || userRole === 'manager' ? `<button class="btn-del" onclick="deleteEvent(${ev.id})" aria-label="Supprimer cet événement">🗑</button>` : ''}
-          </div>
-        </div>`;
-      }).join('')}</div>`;
+            <div class="joy-body">
+              <div class="joy-name">${escapeHtml(ev.customer_name || '—')}</div>
+              <div class="joy-meta">
+                ${ev.participants ? `<span>${ev.participants} pers.</span>` : ''}
+                ${timeRange ? `<span><time>${escapeHtml(timeRange)}</time></span>` : ''}
+              </div>
+              ${ev.space ? `<div class="joy-space"><span class="badge-space">${escapeHtml(ev.space)}</span></div>` : ''}
+              ${ev.raw_description && ev.raw_description !== ev.raw_summary ? `
+                <div style="font-size:.78rem;color:var(--text-muted);margin-top:6px;line-height:1.4;">
+                  ${escapeHtml(ev.raw_description.substring(0, 120))}${ev.raw_description.length > 120 ? '…' : ''}
+                </div>` : ''}
+            </div>
+            <div class="joy-actions">
+              <span class="badge ${cancelled ? 'badge-danger' : 'badge-success'}">${cancelled ? 'Annulé' : 'Confirmé'}</span>
+              ${canDelete ? `<button class="btn-del" data-id="${ev.id}" aria-label="Supprimer l'événement de ${escapeHtml(ev.customer_name || 'inconnu')}">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><path d="M2 4h10M5 4V2h4v2M6 6v5M8 6v5M3 4l1 8h6l1-8"/></svg>
+              </button>` : ''}
+            </div>
+          </li>`;
+        }).join('') +
+        `</ul>`;
+
+      // Bind delete buttons
+      container.querySelectorAll('[data-id]').forEach(btn => {
+        btn.addEventListener('click', function() {
+          _pendingDeleteId = parseInt(this.dataset.id, 10);
+          showModal('deleteModal', this);
+          setTimeout(() => document.getElementById('delete-cancel-btn').focus(), 50);
+        });
+      });
     }
 
-    async function sync() {
-      const btn = document.getElementById('btnSync');
-      btn.disabled = true;
-      btn.textContent = '⏳ Sync...';
+    // ─── Sync ─────────────────────────────────────────────────────────────────
+    document.getElementById('btnSync').addEventListener('click', async function() {
+      this.disabled = true;
+      this.textContent = 'Sync…';
       const result = await api.post('/api/joy/sync', {});
-      btn.disabled = false;
-      btn.textContent = '🔄 Synchroniser';
+      this.disabled = false;
+      this.textContent = 'Synchroniser';
       if (result?.error) {
-        showToast('❌ ' + result.error, 'error');
+        showToast(escapeHtml(result.error), 'error');
       } else {
-        showToast(`✅ ${result.synced} événements synchronisés`, 'success');
+        showToast(`${result.synced} événement${result.synced > 1 ? 's' : ''} synchronisé${result.synced > 1 ? 's' : ''}`, 'success');
         showSyncInfo(new Date().toISOString());
         loadEvents();
       }
-    }
+    });
 
-    async function saveUrl() {
+    // ─── Save URL ─────────────────────────────────────────────────────────────
+    document.getElementById('btnSaveUrl').addEventListener('click', async function() {
       const url = document.getElementById('icalUrl').value.trim();
       if (!url) return;
       await api.put('/api/joy/config', { url });
       showToast('URL enregistrée', 'success');
-    }
+    });
 
-    async function deleteEvent(id) {
-      if (!confirm('Supprimer cet événement ?')) return;
-      await api.delete(`/api/joy/events/${id}`);
+    // ─── Delete modal ─────────────────────────────────────────────────────────
+    document.getElementById('delete-modal-close').addEventListener('click', () => {
+      hideModal('deleteModal');
+      _pendingDeleteId = null;
+    });
+    document.getElementById('delete-cancel-btn').addEventListener('click', () => {
+      hideModal('deleteModal');
+      _pendingDeleteId = null;
+    });
+    document.getElementById('deleteModal').addEventListener('click', e => {
+      if (e.target.id === 'deleteModal') { hideModal('deleteModal'); _pendingDeleteId = null; }
+    });
+    document.getElementById('delete-confirm-btn').addEventListener('click', async function() {
+      if (!_pendingDeleteId) return;
+      await api.delete(`/api/joy/events/${_pendingDeleteId}`);
+      hideModal('deleteModal');
+      _pendingDeleteId = null;
       showToast('Événement supprimé', 'success');
       loadEvents();
-    }
+    });
 
     init();
   </script>

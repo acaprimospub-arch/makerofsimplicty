@@ -9,143 +9,195 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="MOS">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
   <style>
-    .config-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:20px; }
-    .config-title { font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+    .config-card {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--radius); padding:24px; margin-bottom:20px;
+    }
+    .config-title {
+      font-size:.78rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.06em; color:var(--text-muted); margin-bottom:16px;
+      display:flex; align-items:center; gap:8px;
+    }
     .fgroup { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
-    .fgroup label { font-size:.82rem; font-weight:600; color:var(--text-muted); }
     .fgroup input { width:100%; box-sizing:border-box; }
-    .status-badge { display:inline-flex; align-items:center; gap:6px; font-size:.82rem; font-weight:600; padding:5px 12px; border-radius:99px; }
-    .status-badge.ok  { background:rgba(34,197,94,.15); color:#22c55e; border:1px solid rgba(34,197,94,.3); }
-    .status-badge.nok { background:rgba(239,68,68,.1);  color:#ef4444; border:1px solid rgba(239,68,68,.3); }
-    .help-box { background:rgba(205,164,67,.08); border:1px solid rgba(205,164,67,.3); border-radius:10px; padding:14px 16px; font-size:.83rem; line-height:1.6; }
-    .help-box b { color:var(--primary); }
+    .help-box {
+      background:rgba(230,184,74,.08); border:1px solid rgba(230,184,74,.3);
+      border-radius:10px; padding:14px 16px; font-size:.83rem; line-height:1.6;
+    }
+    .help-box strong { color:var(--primary); }
     .help-box ol { margin:8px 0 0 16px; padding:0; }
     .help-box li { margin-bottom:4px; }
     .help-box code { background:rgba(255,255,255,.1); padding:1px 6px; border-radius:4px; font-size:.8rem; }
+    .info-card { border-color:rgba(230,184,74,.3); background:rgba(230,184,74,.05); }
   </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
-  <div class="page">
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
+
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container-sm">
 
-      <div class="page-header" style="margin-bottom:24px;">
+      <header class="page-header" style="margin-bottom:24px;">
         <div>
-          <div class="page-title">📧 Email Planning</div>
-          <div class="page-subtitle">Envoi automatique chaque lundi à pverdier.mospub@gmail.com</div>
+          <h1 class="page-title">Email Planning</h1>
+          <p class="page-subtitle">Envoi automatique chaque lundi à pverdier.mospub@gmail.com</p>
         </div>
-      </div>
+      </header>
 
       <!-- Statut -->
-      <div class="config-card">
-        <div class="config-title">📊 Statut</div>
+      <section class="config-card" aria-labelledby="status-section-title">
+        <h2 class="config-title" id="status-section-title">Statut</h2>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-          <div id="statusBadge"></div>
-          <div style="font-size:.82rem;color:var(--text-muted);">Dernier envoi : <span id="lastSent" style="color:var(--text)">—</span></div>
+          <div id="statusBadge" aria-live="polite" aria-atomic="true"></div>
+          <div style="font-size:.82rem;color:var(--text-muted);">
+            Dernier envoi : <span id="lastSent" style="color:var(--text)">—</span>
+          </div>
         </div>
-      </div>
+      </section>
 
       <!-- Config SMTP -->
-      <div class="config-card">
-        <div class="config-title">⚙️ Configuration Gmail</div>
+      <section class="config-card" aria-labelledby="config-section-title">
+        <h2 class="config-title" id="config-section-title">Configuration Gmail</h2>
 
-        <div class="help-box" style="margin-bottom:20px;">
-          <b>Comment obtenir le mot de passe d'application Gmail ?</b>
+        <div class="help-box" style="margin-bottom:20px;" role="note" aria-label="Instructions pour obtenir un mot de passe d'application Gmail">
+          <strong>Comment obtenir le mot de passe d'application Gmail ?</strong>
           <ol>
-            <li>Va sur <b>myaccount.google.com</b> → Sécurité</li>
-            <li>Active la <b>validation en 2 étapes</b> si ce n'est pas fait</li>
-            <li>Cherche <b>"Mots de passe des applications"</b></li>
+            <li>Va sur <strong>myaccount.google.com</strong> → Sécurité</li>
+            <li>Active la <strong>validation en 2 étapes</strong> si ce n'est pas fait</li>
+            <li>Cherche <strong>"Mots de passe des applications"</strong></li>
             <li>Crée un mot de passe pour <code>Mos Pub</code></li>
             <li>Copie le code de 16 caractères généré → colle-le ci-dessous</li>
           </ol>
         </div>
 
-        <form id="configForm" onsubmit="saveConfig(event)">
+        <form id="configForm" novalidate>
           <div class="fgroup">
-            <label>Adresse Gmail (expéditeur)</label>
-            <input type="email" id="emailUser" placeholder="exemple@gmail.com" autocomplete="off">
+            <label class="form-label" for="emailUser">Adresse Gmail (expéditeur) <span class="required" aria-hidden="true">*</span></label>
+            <input type="email" id="emailUser" placeholder="exemple@gmail.com" autocomplete="off"
+                   aria-required="true" aria-describedby="emailUser-hint">
+            <div class="field-error" id="emailUser-error" role="alert" hidden></div>
           </div>
           <div class="fgroup">
-            <label>Mot de passe d'application <span style="font-weight:400;color:var(--text-muted)">(16 caractères)</span></label>
-            <input type="password" id="emailPass" placeholder="xxxx xxxx xxxx xxxx" autocomplete="new-password">
-            <span style="font-size:.75rem;color:var(--text-muted);">Laisse vide pour ne pas modifier le mot de passe existant</span>
+            <label class="form-label" for="emailPass">
+              Mot de passe d'application
+              <span style="font-weight:400;color:var(--text-muted)">(16 caractères)</span>
+            </label>
+            <input type="password" id="emailPass" placeholder="xxxx xxxx xxxx xxxx"
+                   autocomplete="new-password" aria-describedby="emailPass-hint">
+            <p id="emailPass-hint" class="field-hint">Laisse vide pour ne pas modifier le mot de passe existant.</p>
           </div>
-          <button type="submit" class="btn btn-primary" style="width:100%">💾 Enregistrer</button>
+          <button type="submit" class="btn btn-primary" style="width:100%">Enregistrer</button>
         </form>
-      </div>
+      </section>
 
       <!-- Test -->
-      <div class="config-card">
-        <div class="config-title">🧪 Test d'envoi</div>
+      <section class="config-card" aria-labelledby="test-section-title">
+        <h2 class="config-title" id="test-section-title">Test d'envoi</h2>
         <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:16px;">
-          Envoie immédiatement le planning de la semaine en cours à <b>pverdier.mospub@gmail.com</b> pour vérifier que tout fonctionne.
+          Envoie immédiatement le planning de la semaine en cours à <strong>pverdier.mospub@gmail.com</strong> pour vérifier que tout fonctionne.
         </p>
-        <button class="btn btn-secondary" style="width:100%" onclick="testSend()" id="btnTest">
-          📤 Envoyer un email de test maintenant
+        <button class="btn btn-secondary" style="width:100%" id="btnTest" aria-describedby="test-section-title">
+          Envoyer un email de test maintenant
         </button>
-      </div>
+        <div id="test-result" aria-live="polite" aria-atomic="true" style="margin-top:10px;"></div>
+      </section>
 
       <!-- Info -->
-      <div class="config-card" style="border-color:rgba(205,164,67,.3);background:rgba(205,164,67,.05);">
-        <div class="config-title">ℹ️ Envoi automatique</div>
+      <section class="config-card info-card" aria-labelledby="auto-section-title">
+        <h2 class="config-title" id="auto-section-title">Envoi automatique</h2>
         <p style="font-size:.84rem;color:var(--text-muted);line-height:1.6;margin:0;">
-          Chaque <b style="color:var(--text)">lundi matin entre 8h et 10h</b>, le planning de la semaine en cours est envoyé automatiquement avec :<br>
-          • Le tableau des horaires (par personne et par jour)<br>
-          • Le total des heures planifiées<br>
-          • Les heures supplémentaires signalées<br>
-          • Un onglet détail des signalements (retards + heures supp)
+          Chaque <strong style="color:var(--text)">lundi matin entre 8h et 10h</strong>, le planning de la semaine en cours est envoyé automatiquement avec :
         </p>
-      </div>
+        <ul style="font-size:.84rem;color:var(--text-muted);line-height:1.8;margin:8px 0 0 18px;padding:0;">
+          <li>Le tableau des horaires (par personne et par jour)</li>
+          <li>Le total des heures planifiées</li>
+          <li>Les heures supplémentaires signalées</li>
+          <li>Un onglet détail des signalements (retards + heures supp)</li>
+        </ul>
+      </section>
 
     </div>
-  </div>
+  </main>
 
   <div id="toast-container"></div>
   <script src="/js/api.js"></script>
   <script>
+    'use strict';
+
     buildNav('email');
 
     async function loadStatus() {
       const data = await api.get('/api/admin/email-config');
       if (!data) return;
-      document.getElementById('statusBadge').innerHTML = data.configured
-        ? `<span class="status-badge ok">✅ Gmail configuré</span>`
-        : `<span class="status-badge nok">⚠️ Non configuré</span>`;
+
+      const badgeEl = document.getElementById('statusBadge');
+      if (data.configured) {
+        badgeEl.innerHTML = `
+          <span class="badge badge-success" role="status">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M10 3L5 8.5 2 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            Gmail configuré
+          </span>`;
+      } else {
+        badgeEl.innerHTML = `
+          <span class="badge badge-warning" role="status">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M6 2v5M6 9v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+            Non configuré
+          </span>`;
+      }
+
       if (data.user) document.getElementById('emailUser').value = data.user;
       document.getElementById('lastSent').textContent = data.lastSent
-        ? new Date(data.lastSent + 'T00:00:00').toLocaleDateString('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric'})
+        ? new Date(data.lastSent + 'T00:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
         : 'Jamais';
     }
 
-    async function saveConfig(e) {
+    document.getElementById('configForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const user = document.getElementById('emailUser').value.trim();
+      const userEl = document.getElementById('emailUser');
+      const user   = userEl.value.trim();
+      const errEl  = document.getElementById('emailUser-error');
+
+      if (!user) {
+        userEl.setAttribute('aria-invalid', 'true');
+        errEl.textContent = 'Adresse Gmail requise.';
+        errEl.hidden = false;
+        userEl.focus();
+        return;
+      }
+      userEl.setAttribute('aria-invalid', 'false');
+      errEl.hidden = true;
+
       const pass = document.getElementById('emailPass').value.trim();
-      if (!user) { showToast('Adresse Gmail requise', 'warning'); return; }
-      const res = await api.put('/api/admin/email-config', { user, pass: pass || undefined });
+      const res  = await api.put('/api/admin/email-config', { user, pass: pass || undefined });
       if (res?.ok) {
-        showToast('Configuration enregistrée ✓', 'success');
+        showToast('Configuration enregistrée', 'success');
         document.getElementById('emailPass').value = '';
         await loadStatus();
       }
-    }
+    });
 
-    async function testSend() {
-      const btn = document.getElementById('btnTest');
-      btn.disabled = true;
-      btn.textContent = '⏳ Envoi en cours…';
+    document.getElementById('btnTest').addEventListener('click', async function() {
+      const btn       = this;
+      const resultEl  = document.getElementById('test-result');
+      btn.disabled    = true;
+      btn.textContent = 'Envoi en cours…';
+      resultEl.textContent = '';
+
       const res = await api.post('/api/admin/email-test', {});
-      btn.disabled = false;
-      btn.textContent = '📤 Envoyer un email de test maintenant';
+      btn.disabled    = false;
+      btn.textContent = 'Envoyer un email de test maintenant';
+
       if (res?.ok) {
-        showToast('✅ Email envoyé à pverdier.mospub@gmail.com !', 'success');
+        resultEl.innerHTML = `<span class="badge badge-success">Email envoyé à pverdier.mospub@gmail.com</span>`;
+        showToast('Email envoyé', 'success');
         await loadStatus();
       } else {
-        showToast(`❌ Erreur : ${res?.error || 'Vérifiez la configuration'}`, 'error');
+        resultEl.innerHTML = `<span class="badge badge-danger">Erreur : ${escapeHtml(res?.error || 'Vérifiez la configuration')}</span>`;
+        showToast('Erreur d\'envoi', 'error');
       }
-    }
+    });
 
     loadStatus();
   </script>

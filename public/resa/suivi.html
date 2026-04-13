@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MOS">
-  <meta name="theme-color" content="#0b2d3e">
+  <meta name="theme-color" content="#08141c">
   <style>
     /* ── Sélecteur de période ── */
     .period-tabs {
@@ -34,10 +34,8 @@
       cursor: pointer;
       text-align: center;
     }
-    .period-tab.active {
-      background: var(--primary);
-      color: #000;
-    }
+    .period-tab[aria-selected="true"] { background: var(--primary); color: #000; }
+    .period-tab:focus-visible { box-shadow: var(--focus-ring); outline: none; }
 
     /* ── Filtres statut ── */
     .filter-row {
@@ -55,7 +53,8 @@
       font-size: 12px;
       cursor: pointer;
     }
-    .filter-btn.active { background: var(--primary); color: #000; border-color: var(--primary); font-weight:600; }
+    .filter-btn[aria-pressed="true"] { background: var(--primary); color: #000; border-color: var(--primary); font-weight:600; }
+    .filter-btn:focus-visible { box-shadow: var(--focus-ring); outline: none; }
 
     /* ── KPIs résumé ── */
     .summary-bar {
@@ -74,12 +73,12 @@
       text-align: center;
       min-width: 70px;
     }
-    .summary-val { font-size: 1.4rem; font-weight: 700; line-height: 1; color: var(--primary); }
+    .summary-val { font-size: 1.4rem; font-weight: 800; line-height: 1; color: var(--primary); }
     .summary-lab { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
     .summary-item.green .summary-val { color: var(--success); }
     .summary-item.orange .summary-val { color: var(--orange); }
     .summary-item.red .summary-val { color: var(--danger); }
-    .summary-item.grey .summary-val { color: #666; }
+    .summary-item.grey .summary-val { color: #888; }
 
     /* ── Groupes par date ── */
     .date-group { margin-bottom: 18px; }
@@ -95,10 +94,7 @@
       display: flex;
       justify-content: space-between;
     }
-    .date-group-header .day-pax {
-      font-weight: 400;
-      font-size: 11px;
-    }
+    .date-group-header .day-pax { font-weight: 400; font-size: 11px; }
 
     /* ── Lignes de réservation ── */
     .suivi-row {
@@ -125,18 +121,21 @@
     .tag {
       display: inline-flex;
       align-items: center;
+      gap: 3px;
       padding: 1px 6px;
       border-radius: 10px;
       font-size: 10px;
       font-weight: 600;
     }
-    .tag-devis   { background: rgba(205,164,67,.18); color: var(--primary); }
+    .tag-devis   { background: rgba(230,184,74,.18); color: var(--primary); }
     .tag-note    { background: rgba(91,141,238,.15);  color: #5b8dee; }
     .tag-noplace { background: rgba(245,166,36,.15);  color: var(--orange); }
     .tag-joy     { background: rgba(255,255,255,.08); color: var(--text-muted); border: 1px solid var(--border); }
 
     .status-badge {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
       padding: 2px 8px;
       border-radius: 10px;
       font-size: 10px;
@@ -151,107 +150,75 @@
     .empty-state { text-align:center; color:var(--text-muted); font-size:13px; padding:32px 0; }
 
     /* ── Range custom ── */
-    .custom-range {
-      display: none;
-      gap: 8px;
-      margin-bottom: 14px;
-      align-items: center;
-    }
-    .custom-range.visible { display: flex; }
+    .custom-range { display:none; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+    .custom-range.visible { display:flex; }
     .custom-range input {
-      flex: 1;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 8px;
-      padding: 7px 10px;
-      font-size: 13px;
+      flex:1; min-width:120px;
+      background:var(--bg-card); border:1px solid var(--border);
+      color:var(--text); border-radius:8px; padding:7px 10px; font-size:13px;
     }
-    .custom-range button {
-      padding: 7px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--primary);
-      background: rgba(205,164,67,.1);
-      color: var(--primary);
-      font-size: 13px;
-      cursor: pointer;
-    }
+    .custom-range input:focus-visible { box-shadow:var(--focus-ring); outline:none; }
 
     @media(min-width: 900px) {
       .container-sm { max-width: 1100px !important; }
-
-      /* Summary en grille au lieu du scroll horizontal */
-      .summary-bar {
-        display: grid !important;
-        grid-template-columns: repeat(6, 1fr);
-        overflow: visible;
-      }
+      .summary-bar { display: grid !important; grid-template-columns: repeat(6, 1fr); overflow: visible; }
       .summary-item { min-width: 0; }
-
-      /* Contrôles sur une ligne */
-      .suivi-top-bar {
-        display: grid;
-        grid-template-columns: auto auto 1fr;
-        gap: 12px;
-        align-items: start;
-        margin-bottom: 16px;
-      }
+      .suivi-top-bar { display: grid; grid-template-columns: auto auto 1fr; gap: 12px; align-items: start; margin-bottom: 16px; }
       .period-tabs { margin-bottom: 0; }
       .filter-row  { margin-bottom: 0; justify-content: flex-end; }
-
-      /* Liste en 2 colonnes par date */
-      .suivi-cols {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0 24px;
-      }
+      .suivi-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
     }
   </style>
 </head>
 <body>
-  <nav class="nav" id="nav"></nav>
+  <a href="#main-content" class="skip-link">Aller au contenu principal</a>
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
 
-  <div class="page">
+  <main class="page" id="main-content" tabindex="-1">
     <div class="container-sm">
 
       <div class="card-header" style="margin-bottom:14px">
-        <h1 class="card-title">📈 Suivi des réservations</h1>
+        <h1 class="card-title">Suivi des réservations</h1>
       </div>
 
       <div class="suivi-top-bar">
         <!-- Sélecteur de période -->
-        <div class="period-tabs">
-          <button class="period-tab active" onclick="setPeriod('week', this)">Cette semaine</button>
-          <button class="period-tab" onclick="setPeriod('month', this)">Ce mois</button>
-          <button class="period-tab" onclick="setPeriod('custom', this)">Période…</button>
+        <div class="period-tabs" role="tablist" aria-label="Période d'affichage">
+          <button class="period-tab" id="tabWeek" role="tab" aria-selected="true" aria-controls="suiviList">Cette semaine</button>
+          <button class="period-tab" id="tabMonth" role="tab" aria-selected="false" aria-controls="suiviList">Ce mois</button>
+          <button class="period-tab" id="tabCustom" role="tab" aria-selected="false" aria-controls="suiviList">Période…</button>
         </div>
 
         <!-- Range custom -->
-        <div class="custom-range" id="customRange">
-          <input type="date" id="rangeFrom">
-          <span style="color:var(--text-muted);font-size:12px">→</span>
-          <input type="date" id="rangeTo">
-          <button onclick="loadCustom()">OK</button>
+        <div class="custom-range" id="customRange" role="group" aria-label="Plage de dates personnalisée">
+          <label for="rangeFrom" class="sr-only">Date de début</label>
+          <input type="date" id="rangeFrom" aria-label="Date de début">
+          <span aria-hidden="true" style="color:var(--text-muted);font-size:12px">→</span>
+          <label for="rangeTo" class="sr-only">Date de fin</label>
+          <input type="date" id="rangeTo" aria-label="Date de fin">
+          <button class="btn btn-secondary btn-sm" id="btnLoadCustom">OK</button>
         </div>
 
         <!-- Filtres statut -->
-        <div class="filter-row">
-          <button class="filter-btn active" onclick="setFilter('all', this)">Tous</button>
-          <button class="filter-btn" onclick="setFilter('confirmed', this)">Confirmées</button>
-          <button class="filter-btn" onclick="setFilter('arrived', this)">Arrivées</button>
-          <button class="filter-btn" onclick="setFilter('no_show', this)">No show</button>
-          <button class="filter-btn" onclick="setFilter('cancelled', this)">Annulées</button>
+        <div class="filter-row" role="group" aria-label="Filtrer par statut">
+          <button class="filter-btn" data-filter="all" aria-pressed="true">Tous</button>
+          <button class="filter-btn" data-filter="confirmed" aria-pressed="false">Confirmées</button>
+          <button class="filter-btn" data-filter="arrived" aria-pressed="false">Arrivées</button>
+          <button class="filter-btn" data-filter="no_show" aria-pressed="false">No show</button>
+          <button class="filter-btn" data-filter="cancelled" aria-pressed="false">Annulées</button>
         </div>
       </div>
 
       <!-- Résumé KPIs -->
-      <div class="summary-bar" id="summaryBar" style="margin-bottom:16px"></div>
+      <div class="summary-bar" id="summaryBar" style="margin-bottom:16px" role="list" aria-label="Résumé" aria-live="polite"></div>
 
       <!-- Liste groupée par date -->
-      <div class="suivi-cols" id="suiviList"><div class="empty-state">Chargement…</div></div>
+      <div class="suivi-cols" id="suiviList" role="region" aria-label="Liste des réservations" aria-live="polite">
+        <p class="empty-state">Chargement…</p>
+      </div>
 
     </div>
-  </div>
+  </main>
 
   <script src="/js/api.js"></script>
   <script>
@@ -259,22 +226,28 @@
 
     let allResas = [];
     let currentFilter = 'all';
-
-    // ── Init ──
     const todayStr = today();
-    setPeriod('week', document.querySelector('.period-tab.active'));
+
+    const STATUS_LABELS = { confirmed:'Confirmée', arrived:'Arrivée', no_show:'No show', cancelled:'Annulée' };
+    const STATUS_ICONS = {
+      confirmed: `<svg aria-hidden="true" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
+      arrived:   `<svg aria-hidden="true" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+      no_show:   `<svg aria-hidden="true" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`,
+      cancelled: `<svg aria-hidden="true" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+    };
+
+    // ── Period tabs ──────────────────────────────────────────────
+    document.getElementById('tabWeek').addEventListener('click', () => setPeriod('week'));
+    document.getElementById('tabMonth').addEventListener('click', () => setPeriod('month'));
+    document.getElementById('tabCustom').addEventListener('click', () => setPeriod('custom'));
+    document.getElementById('btnLoadCustom').addEventListener('click', loadCustom);
 
     function getWeekRange() {
-      const d = new Date(todayStr);
-      const day = d.getDay() || 7;
+      const d = new Date(todayStr); const day = d.getDay() || 7;
       const mon = new Date(d); mon.setDate(d.getDate() - day + 1);
       const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-      return {
-        from: mon.toISOString().split('T')[0],
-        to:   sun.toISOString().split('T')[0],
-      };
+      return { from: mon.toISOString().split('T')[0], to: sun.toISOString().split('T')[0] };
     }
-
     function getMonthRange() {
       const d = new Date(todayStr);
       return {
@@ -283,9 +256,13 @@
       };
     }
 
-    async function setPeriod(mode, btn) {
-      document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+    async function setPeriod(mode) {
+      ['tabWeek','tabMonth','tabCustom'].forEach(id => {
+        const t = document.getElementById(id); t.setAttribute('aria-selected', 'false');
+      });
+      const map = { week:'tabWeek', month:'tabMonth', custom:'tabCustom' };
+      document.getElementById(map[mode]).setAttribute('aria-selected', 'true');
+
       const customRange = document.getElementById('customRange');
       if (mode === 'custom') {
         customRange.classList.add('visible');
@@ -307,49 +284,56 @@
     }
 
     async function loadRange(from, to) {
-      document.getElementById('suiviList').innerHTML = '<div class="empty-state">Chargement…</div>';
+      document.getElementById('suiviList').innerHTML = '<p class="empty-state">Chargement…</p>';
       const data = await api.get(`/api/reservations/range?from=${from}&to=${to}`);
       if (!data) return;
       allResas = data;
       renderSuivi();
     }
 
-    function setFilter(f, btn) {
-      currentFilter = f;
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderSuivi();
-    }
+    // ── Filters ──────────────────────────────────────────────────
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentFilter = btn.dataset.filter;
+        document.querySelectorAll('.filter-btn').forEach(b => b.setAttribute('aria-pressed', 'false'));
+        btn.setAttribute('aria-pressed', 'true');
+        renderSuivi();
+      });
+    });
 
     function renderSuivi() {
       const filtered = currentFilter === 'all'
         ? allResas
         : allResas.filter(r => r.status === currentFilter);
 
-      // KPIs
-      const total = allResas.length;
+      const total    = allResas.length;
       const confirmed = allResas.filter(r => r.status === 'confirmed').length;
       const arrived   = allResas.filter(r => r.status === 'arrived').length;
       const noshow    = allResas.filter(r => r.status === 'no_show').length;
       const cancelled = allResas.filter(r => r.status === 'cancelled').length;
       const paxTotal  = allResas.filter(r => r.status !== 'cancelled').reduce((s, r) => s + (r.party_size || 0), 0);
 
-      document.getElementById('summaryBar').innerHTML = `
-        <div class="summary-item"><div class="summary-val">${total}</div><div class="summary-lab">Total</div></div>
-        <div class="summary-item"><div class="summary-val">${paxTotal}</div><div class="summary-lab">Couverts</div></div>
-        <div class="summary-item green"><div class="summary-val">${arrived}</div><div class="summary-lab">Arrivées</div></div>
-        <div class="summary-item orange"><div class="summary-val">${confirmed}</div><div class="summary-lab">Confirmées</div></div>
-        <div class="summary-item red"><div class="summary-val">${noshow}</div><div class="summary-lab">No show</div></div>
-        <div class="summary-item grey"><div class="summary-val">${cancelled}</div><div class="summary-lab">Annulées</div></div>
-      `;
+      const summaryData = [
+        { val: total,     lab: 'Total',      cls: '',       key:'total' },
+        { val: paxTotal,  lab: 'Couverts',   cls: '',       key:'pax' },
+        { val: arrived,   lab: 'Arrivées',   cls: 'green',  key:'arrived' },
+        { val: confirmed, lab: 'Confirmées', cls: 'orange', key:'confirmed' },
+        { val: noshow,    lab: 'No show',    cls: 'red',    key:'noshow' },
+        { val: cancelled, lab: 'Annulées',   cls: 'grey',   key:'cancelled' },
+      ];
+      document.getElementById('summaryBar').innerHTML = summaryData.map(s =>
+        `<div class="summary-item ${s.cls}" role="listitem" aria-label="${s.lab} : ${s.val}">
+          <div class="summary-val">${s.val}</div>
+          <div class="summary-lab">${s.lab}</div>
+        </div>`
+      ).join('');
 
       const list = document.getElementById('suiviList');
       if (!filtered.length) {
-        list.innerHTML = '<div class="empty-state">Aucune réservation pour cette période</div>';
+        list.innerHTML = '<p class="empty-state">Aucune réservation pour cette période</p>';
         return;
       }
 
-      // Grouper par date
       const byDate = {};
       filtered.forEach(r => {
         if (!byDate[r.date]) byDate[r.date] = [];
@@ -367,26 +351,27 @@
         return `
           <div class="date-group">
             <div class="date-group-header" style="${isPast && !isToday ? 'opacity:.6' : ''}">
-              <span>${label}</span>
+              <span>${escapeHtml(label)}</span>
               <span class="day-pax">${resas.length} rés. · ${dayPax} couverts</span>
             </div>
             ${resas.map(r => {
               const tableIds = JSON.parse(r.table_ids || '[]');
               const hasDevis = (r.attach_count || 0) > 0;
               const noTable  = r.status === 'confirmed' && tableIds.length === 0;
-              const statusLabels = { confirmed:'Confirmée', arrived:'Arrivée', no_show:'No show', cancelled:'Annulée' };
+              const sl = STATUS_LABELS[r.status] || r.status;
+              const si = STATUS_ICONS[r.status] || '';
               return `
-                <div class="suivi-row st-${r.status}">
-                  <span class="suivi-time">${r.time}</span>
-                  <span class="suivi-name">${r.customer_name}</span>
-                  <span class="suivi-pax">${r.party_size}p</span>
-                  <div class="suivi-tags">
-                    ${hasDevis   ? '<span class="tag tag-devis">📄 Devis</span>'       : ''}
-                    ${r.admin_notes ? '<span class="tag tag-note">📌 Note</span>'      : ''}
-                    ${noTable    ? '<span class="tag tag-noplace">⚠️ Table</span>'     : ''}
-                    ${r.joy_event_id ? '<span class="tag tag-joy">Joy</span>'          : ''}
+                <div class="suivi-row st-${r.status}" aria-label="${escapeHtml(r.time)}, ${escapeHtml(r.customer_name)}, ${r.party_size} personnes, ${sl}">
+                  <span class="suivi-time" aria-hidden="true">${escapeHtml(r.time)}</span>
+                  <span class="suivi-name" aria-hidden="true">${escapeHtml(r.customer_name)}</span>
+                  <span class="suivi-pax" aria-hidden="true">${r.party_size}p</span>
+                  <div class="suivi-tags" aria-hidden="true">
+                    ${hasDevis   ? '<span class="tag tag-devis">Devis</span>'   : ''}
+                    ${r.admin_notes ? '<span class="tag tag-note">Note</span>'  : ''}
+                    ${noTable    ? '<span class="tag tag-noplace">Table</span>' : ''}
+                    ${r.joy_event_id ? '<span class="tag tag-joy">Joy</span>'   : ''}
                   </div>
-                  <span class="status-badge sb-${r.status}">${statusLabels[r.status] || r.status}</span>
+                  <span class="status-badge sb-${r.status}" aria-hidden="true">${si}${sl}</span>
                 </div>
               `;
             }).join('')}
@@ -394,6 +379,9 @@
         `;
       }).join('');
     }
+
+    // ── Init ──────────────────────────────────────────────────────
+    setPeriod('week');
   </script>
 </body>
 </html>
