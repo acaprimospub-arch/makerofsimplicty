@@ -1847,6 +1847,106 @@ function getScheduledStartTime(user_id, date) {
   return cuisineShift ? cuisineShift.start_time : null;
 }
 
+// ─── Températures ─────────────────────────────────────────────────────────────
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS temperature_materiels (
+      id   INTEGER PRIMARY KEY AUTOINCREMENT,
+      nom  TEXT NOT NULL,
+      type TEXT NOT NULL,
+      actif INTEGER DEFAULT 1
+    );
+    CREATE TABLE IF NOT EXISTS temperature_releves (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      materiel_id INTEGER NOT NULL,
+      date        TEXT NOT NULL,
+      shift       TEXT NOT NULL,
+      temperature REAL NOT NULL,
+      statut      TEXT NOT NULL,
+      user_id     INTEGER,
+      user_name   TEXT,
+      releve_at   TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY(materiel_id) REFERENCES temperature_materiels(id)
+    );
+  `);
+} catch(e) {}
+
+try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_tm_nom ON temperature_materiels(nom)"); } catch(e) {}
+try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_tr_session ON temperature_releves(materiel_id, date, shift)"); } catch(e) {}
+
+// Seed 13 unités
+{
+  const _insM = db.prepare("INSERT OR IGNORE INTO temperature_materiels (nom, type) VALUES (?, ?)");
+  for (const [n, t] of [
+    ['CONGEL STEACK',    'negatif'],
+    ['FRIGO MEP',        'positif'],
+    ['FRIGO PLANCHE',    'positif'],
+    ['CONGEL PJ',        'negatif'],
+    ['FRIGO DESSERTS',   'positif'],
+    ['CONGEL CUISINE',   'negatif'],
+    ['FRIGO FRITES',     'positif'],
+    ['CONGEL GAUFFRES',  'negatif'],
+    ['FRIGO STEACK',     'positif'],
+    ['CONGEL FRITES',    'negatif'],
+    ['FRIGO ECO MEP',    'positif'],
+    ['FRIGO ECO SALADE', 'positif'],
+    ['CONGEL PAIN',      'negatif'],
+  ]) _insM.run(n, t);
+}
+
+function getTempMateriels() {
+  return db.prepare("SELECT * FROM temperature_materiels WHERE actif = 1 ORDER BY type DESC, nom").all();
+}
+
+function getTempSession(date, shift) {
+  return db.prepare(`
+    SELECT r.*, m.nom AS materiel_nom, m.type AS materiel_type
+    FROM temperature_releves r
+    JOIN temperature_materiels m ON m.id = r.materiel_id
+    WHERE r.date = ? AND r.shift = ?
+    ORDER BY m.type DESC, m.nom
+  `).all(date, shift);
+}
+
+function getTempHistory({ from, to, limit = 100 }) {
+  let q = `
+    SELECT r.*, m.nom AS materiel_nom, m.type AS materiel_type
+    FROM temperature_releves r
+    JOIN temperature_materiels m ON m.id = r.materiel_id
+    WHERE 1=1
+  `;
+  const p = [];
+  if (from) { q += ' AND r.date >= ?'; p.push(from); }
+  if (to)   { q += ' AND r.date <= ?'; p.push(to); }
+  q += ' ORDER BY r.date DESC, r.shift DESC, m.type DESC, m.nom LIMIT ?';
+  p.push(limit);
+  return db.prepare(q).all(...p);
+}
+
+function upsertTempReleve({ materiel_id, date, shift, temperature, statut, user_id, user_name }) {
+  return db.prepare(`
+    INSERT INTO temperature_releves (materiel_id, date, shift, temperature, statut, user_id, user_name)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(materiel_id, date, shift) DO UPDATE SET
+      temperature = excluded.temperature,
+      statut      = excluded.statut,
+      user_id     = excluded.user_id,
+      user_name   = excluded.user_name,
+      releve_at   = datetime('now', 'localtime')
+  `).run(materiel_id, date, shift, temperature, statut, user_id, user_name);
+}
+
+function getTempWeekReport(from, to) {
+  return db.prepare(`
+    SELECT r.date, r.shift, m.nom AS materiel_nom, m.type AS materiel_type,
+           r.temperature, r.statut, r.user_name, r.releve_at
+    FROM temperature_releves r
+    JOIN temperature_materiels m ON m.id = r.materiel_id
+    WHERE r.date >= ? AND r.date <= ?
+    ORDER BY r.date, r.shift, m.type DESC, m.nom
+  `).all(from, to);
+}
+
 module.exports = {
   getUserByPin, getUserById, getAllUsers, createUser, updateUser, deleteUser,
   getTasksWithCompletions, getTaskById, getAllTasks, completeTask, uncompleteTask, createTask, updateTask, deactivateTask,
@@ -1874,4 +1974,5 @@ module.exports = {
   getScheduledStartTime,
   getCuisineProduits, getCuisineProduitById, createCuisineProduit, updateCuisineProduit, deleteCuisineProduit,
   logEtiquette, getEtiquettesLog,
+  getTempMateriels, getTempSession, getTempHistory, upsertTempReleve, getTempWeekReport,
 };

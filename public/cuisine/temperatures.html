@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Températures — Cuisine MOS</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    body { background: #0f1923; color: #e8dcc8; font-family: 'Segoe UI', sans-serif; margin: 0; }
+
+    .page-header {
+      background: linear-gradient(135deg, #1a2f3a 0%, #0f1923 100%);
+      border-bottom: 1px solid #2a3f4a;
+      padding: 20px 24px 16px;
+    }
+    .page-header h1 { margin: 0 0 4px; font-size: 1.4rem; color: #c9a84c; font-weight: 600; }
+    .page-header .sub { color: #7a9bb0; font-size: .85rem; }
+
+    .shift-bar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 24px;
+      background: #131f2a;
+      border-bottom: 1px solid #2a3f4a;
+    }
+    .shift-bar .date-label { color: #7a9bb0; font-size: .85rem; margin-right: auto; }
+    .shift-btn {
+      padding: 8px 20px; border-radius: 20px; border: 2px solid #2a3f4a;
+      background: transparent; color: #8aa5b5; font-size: .9rem; font-weight: 600;
+      cursor: pointer; transition: all .2s;
+    }
+    .shift-btn.active { background: #c9a84c; border-color: #c9a84c; color: #0f1923; }
+    .shift-btn:hover:not(.active) { border-color: #c9a84c; color: #c9a84c; }
+
+    .session-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 20px; font-size: .8rem; font-weight: 600;
+    }
+    .session-badge.done    { background: #1a3a2a; color: #4ade80; border: 1px solid #22543d; }
+    .session-badge.missing { background: #2a1a1a; color: #f87171; border: 1px solid #7f1d1d; }
+
+    .content { padding: 20px 24px; max-width: 1100px; margin: 0 auto; }
+
+    .section-title {
+      font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+      color: #7a9bb0; margin: 0 0 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: #2a3f4a; }
+
+    .type-block { margin-bottom: 28px; }
+
+    .materiels-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .mat-card {
+      background: #1a2f3a; border: 1px solid #2a3f4a; border-radius: 10px;
+      padding: 14px 16px; transition: border-color .2s;
+    }
+    .mat-card.ok      { border-color: #22543d; }
+    .mat-card.limite  { border-color: #92400e; }
+    .mat-card.hors    { border-color: #7f1d1d; }
+
+    .mat-name { font-size: .85rem; font-weight: 700; color: #c9a84c; margin-bottom: 10px; line-height: 1.2; }
+
+    .temp-input-wrap { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+    .temp-input {
+      width: 100%; padding: 8px 10px; border-radius: 8px;
+      border: 1.5px solid #2a3f4a; background: #0f1923;
+      color: #e8dcc8; font-size: 1.1rem; font-weight: 600;
+      text-align: center; transition: border-color .2s;
+      -moz-appearance: textfield;
+    }
+    .temp-input::-webkit-outer-spin-button,
+    .temp-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .temp-input:focus { outline: none; border-color: #c9a84c; }
+    .temp-unit { color: #7a9bb0; font-size: .85rem; white-space: nowrap; }
+
+    .temp-status {
+      font-size: .75rem; font-weight: 700; text-align: center; padding: 3px 0; border-radius: 4px;
+    }
+    .temp-status.ok     { background: #1a3a2a; color: #4ade80; }
+    .temp-status.limite { background: #2a1a0a; color: #fb923c; }
+    .temp-status.hors   { background: #2a1a1a; color: #f87171; }
+    .temp-status.empty  { color: #4a6070; background: transparent; }
+
+    /* Read-only mode */
+    .mat-card.readonly .temp-input {
+      background: #0a1218; border-color: #1a2f3a; cursor: default; color: #c9a84c;
+    }
+    .mat-recorded { font-size: .72rem; color: #4a6070; margin-top: 6px; text-align: center; }
+
+    .save-bar {
+      position: sticky; bottom: 0; background: #0f1923; border-top: 1px solid #2a3f4a;
+      padding: 14px 24px; display: flex; align-items: center; gap: 12px;
+    }
+    .save-btn {
+      padding: 11px 28px; border-radius: 8px; border: none;
+      background: #c9a84c; color: #0f1923; font-size: .95rem; font-weight: 700;
+      cursor: pointer; transition: all .2s;
+    }
+    .save-btn:hover { background: #e0be6a; }
+    .save-btn:disabled { background: #3a4f5a; color: #5a7080; cursor: not-allowed; }
+    .save-info { font-size: .82rem; color: #4a6070; }
+    .save-alerts { display: flex; gap: 8px; flex-wrap: wrap; }
+    .alert-chip {
+      font-size: .75rem; padding: 3px 10px; border-radius: 12px; font-weight: 600;
+    }
+    .alert-chip.hors   { background: #2a1a1a; color: #f87171; border: 1px solid #7f1d1d; }
+    .alert-chip.limite { background: #2a1a0a; color: #fb923c; border: 1px solid #92400e; }
+
+    /* History */
+    .history-section { margin-top: 32px; padding-bottom: 80px; }
+    .history-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+    }
+    .export-btn {
+      margin-left: auto; padding: 7px 16px; border-radius: 8px;
+      background: transparent; border: 1.5px solid #2a3f4a; color: #7a9bb0;
+      font-size: .82rem; cursor: pointer; transition: all .2s;
+    }
+    .export-btn:hover { border-color: #c9a84c; color: #c9a84c; }
+
+    .history-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .history-table th {
+      text-align: left; padding: 8px 10px; border-bottom: 2px solid #2a3f4a;
+      color: #7a9bb0; font-weight: 600; font-size: .75rem; text-transform: uppercase; letter-spacing: .05em;
+    }
+    .history-table td { padding: 7px 10px; border-bottom: 1px solid #1a2f3a; color: #c5d5e0; }
+    .history-table tr:last-child td { border-bottom: none; }
+
+    .stat-ok     { color: #4ade80; font-weight: 700; }
+    .stat-limite { color: #fb923c; font-weight: 700; }
+    .stat-hors   { color: #f87171; font-weight: 700; }
+
+    .tabs { display: flex; gap: 0; border-bottom: 2px solid #2a3f4a; margin-bottom: 20px; }
+    .tab-btn {
+      padding: 10px 20px; background: transparent; border: none; border-bottom: 2px solid transparent;
+      color: #7a9bb0; font-size: .88rem; font-weight: 600; cursor: pointer; margin-bottom: -2px;
+      transition: all .2s;
+    }
+    .tab-btn.active { color: #c9a84c; border-bottom-color: #c9a84c; }
+    .tab-btn:hover:not(.active) { color: #c5d5e0; }
+
+    .empty-state { text-align: center; padding: 40px; color: #4a6070; }
+
+    @media (max-width: 600px) {
+      .materiels-grid { grid-template-columns: repeat(2, 1fr); }
+      .content { padding: 16px; }
+      .save-bar { flex-direction: column; align-items: stretch; }
+      .history-table { font-size: .75rem; }
+    }
+  </style>
+</head>
+<body>
+  <nav id="nav"></nav>
+
+  <div class="page-header">
+    <h1>🌡️ Relevés de températures</h1>
+    <div class="sub">Contrôle HACCP — frigos &amp; congélateurs cuisine</div>
+  </div>
+
+  <div class="shift-bar">
+    <span class="date-label" id="date-label"></span>
+    <button class="shift-btn" id="btn-midi" onclick="selectShift('midi')">Midi</button>
+    <button class="shift-btn" id="btn-soir" onclick="selectShift('soir')">Soir</button>
+    <span id="session-state"></span>
+  </div>
+
+  <div class="content" id="main-content">
+    <div class="positifs-block type-block">
+      <p class="section-title">Frigos positifs (0°C → 4°C)</p>
+      <div class="materiels-grid" id="grid-positif"></div>
+    </div>
+    <div class="negatifs-block type-block">
+      <p class="section-title">Congélateurs négatifs (≤ −18°C)</p>
+      <div class="materiels-grid" id="grid-negatif"></div>
+    </div>
+  </div>
+
+  <div class="save-bar" id="save-bar" style="display:none">
+    <div>
+      <div class="save-alerts" id="save-alerts"></div>
+      <div class="save-info" id="save-info"></div>
+    </div>
+    <button class="save-btn" id="save-btn" onclick="saveReleves()">Enregistrer le relevé</button>
+  </div>
+
+  <div class="content history-section">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('today')" id="tab-today">Aujourd'hui</button>
+      <button class="tab-btn" onclick="switchTab('week')" id="tab-week">7 derniers jours</button>
+    </div>
+    <div id="tab-panel-today"></div>
+    <div id="tab-panel-week" style="display:none">
+      <div class="history-header">
+        <span class="section-title" style="margin:0">Historique</span>
+        <button class="export-btn" onclick="exportCSV()">⬇ Exporter CSV</button>
+      </div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let me = null;
+    let materiels = [];
+    let currentShift = null;
+    let currentSession = [];
+    let isReadonly = false;
+    const today = new Date().toISOString().split('T')[0];
+
+    function todayLabel() {
+      return new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function calcStatut(type, temp) {
+      if (isNaN(temp)) return 'empty';
+      if (type === 'positif') {
+        if (temp >= 0 && temp <= 4) return 'ok';
+        if (temp > 4  && temp <= 8) return 'limite';
+        return 'hors';
+      } else {
+        if (temp <= -18) return 'ok';
+        if (temp > -18 && temp <= -15) return 'limite';
+        return 'hors';
+      }
+    }
+
+    function statutLabel(s) {
+      return s === 'ok' ? '✅ OK' : s === 'limite' ? '⚠️ Limite' : s === 'hors' ? '❌ Hors plage' : '—';
+    }
+
+    function renderGrid(readonly, sessionData) {
+      const sessionMap = {};
+      for (const r of sessionData) sessionMap[r.materiel_id] = r;
+
+      for (const type of ['positif', 'negatif']) {
+        const grid = document.getElementById(`grid-${type}`);
+        grid.innerHTML = '';
+        for (const m of materiels.filter(x => x.type === type)) {
+          const rec = sessionMap[m.id];
+          const temp = rec ? rec.temperature : '';
+          const statut = rec ? (rec.statut === 'hors_plage' ? 'hors' : rec.statut) : 'empty';
+
+          const card = document.createElement('div');
+          card.className = `mat-card${statut !== 'empty' ? ' ' + statut : ''}${readonly ? ' readonly' : ''}`;
+          card.dataset.id   = m.id;
+          card.dataset.type = m.type;
+
+          const recHtml = rec
+            ? `<div class="mat-recorded">Par ${rec.user_name || '—'} à ${rec.releve_at ? rec.releve_at.slice(11,16) : ''}</div>`
+            : '';
+
+          card.innerHTML = `
+            <div class="mat-name">${m.nom}</div>
+            <div class="temp-input-wrap">
+              <input
+                type="number" step="0.1" class="temp-input"
+                id="temp-${m.id}" value="${temp}"
+                ${readonly ? 'readonly' : ''}
+                oninput="onTempInput(${m.id}, '${m.type}', this)"
+                placeholder="—"
+              >
+              <span class="temp-unit">°C</span>
+            </div>
+            <div class="temp-status ${statut}" id="stat-${m.id}">${statutLabel(statut)}</div>
+            ${recHtml}
+          `;
+          grid.appendChild(card);
+        }
+      }
+    }
+
+    function onTempInput(id, type, input) {
+      const val = parseFloat(input.value);
+      const stat = calcStatut(type, val);
+      const statEl = document.getElementById(`stat-${id}`);
+      statEl.className = `temp-status ${stat}`;
+      statEl.textContent = isNaN(val) ? '—' : statutLabel(stat);
+
+      const card = input.closest('.mat-card');
+      card.className = `mat-card ${isNaN(val) ? '' : stat}`;
+
+      updateSaveBar();
+    }
+
+    function updateSaveBar() {
+      const inputs = document.querySelectorAll('.temp-input:not([readonly])');
+      const alerts = document.getElementById('save-alerts');
+      const info   = document.getElementById('save-info');
+      const btn    = document.getElementById('save-btn');
+
+      let hors = 0, limite = 0, filled = 0;
+      for (const inp of inputs) {
+        const val = parseFloat(inp.value);
+        if (isNaN(val)) continue;
+        filled++;
+        const card = inp.closest('.mat-card');
+        const type = card.dataset.type;
+        const s = calcStatut(type, val);
+        if (s === 'hors')   hors++;
+        if (s === 'limite') limite++;
+      }
+
+      alerts.innerHTML = '';
+      if (hors)   alerts.innerHTML += `<span class="alert-chip hors">❌ ${hors} hors plage</span>`;
+      if (limite) alerts.innerHTML += `<span class="alert-chip limite">⚠️ ${limite} en limite</span>`;
+      info.textContent = `${filled} / ${inputs.length} relevés saisis`;
+      btn.disabled = filled === 0;
+    }
+
+    async function selectShift(shift) {
+      currentShift = shift;
+      document.getElementById('btn-midi').classList.toggle('active', shift === 'midi');
+      document.getElementById('btn-soir').classList.toggle('active', shift === 'soir');
+
+      const session = await api.get(`/api/cuisine/temperatures/session?date=${today}&shift=${shift}`);
+      currentSession = session || [];
+      isReadonly = currentSession.length > 0;
+
+      const stateEl = document.getElementById('session-state');
+      if (isReadonly) {
+        const who = currentSession[0]?.user_name || '';
+        stateEl.innerHTML = `<span class="session-badge done">✅ Relevé ${shift} enregistré${who ? ' par ' + who : ''}</span>`;
+        document.getElementById('save-bar').style.display = 'none';
+      } else {
+        stateEl.innerHTML = `<span class="session-badge missing">⏳ Relevé ${shift} à saisir</span>`;
+        document.getElementById('save-bar').style.display = 'flex';
+      }
+
+      renderGrid(isReadonly, currentSession);
+      if (!isReadonly) updateSaveBar();
+      renderTodaySummary();
+    }
+
+    async function saveReleves() {
+      const inputs = document.querySelectorAll('.temp-input:not([readonly])');
+      const releves = [];
+      for (const inp of inputs) {
+        const val = parseFloat(inp.value);
+        if (isNaN(val)) continue;
+        const card = inp.closest('.mat-card');
+        releves.push({ materiel_id: parseInt(card.dataset.id), temperature: val });
+      }
+      if (!releves.length) { showToast('Aucune température saisie.', 'warning'); return; }
+
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true; btn.textContent = 'Enregistrement…';
+
+      const r = await api.post('/api/cuisine/temperatures/releves', { date: today, shift: currentShift, releves });
+      if (r?.ok) {
+        showToast(`Relevé ${currentShift} enregistré ✅`, 'success');
+        await selectShift(currentShift);
+        loadHistory();
+      } else {
+        showToast('Erreur lors de l\'enregistrement.', 'error');
+        btn.disabled = false; btn.textContent = 'Enregistrer le relevé';
+      }
+    }
+
+    function renderTodaySummary() {
+      const el = document.getElementById('tab-panel-today');
+      const shifts = ['midi', 'soir'];
+      const current = currentSession;
+
+      if (!current.length) {
+        el.innerHTML = `<div class="empty-state">Aucun relevé enregistré pour le shift ${currentShift} aujourd'hui.</div>`;
+        return;
+      }
+
+      const hors   = current.filter(r => r.statut === 'hors_plage');
+      const limite = current.filter(r => r.statut === 'limite');
+      let html = '';
+
+      if (hors.length) {
+        html += `<div style="background:#2a1a1a;border:1px solid #7f1d1d;border-radius:8px;padding:12px 16px;margin-bottom:12px">
+          <strong style="color:#f87171">❌ ${hors.length} relevé(s) hors plage</strong><br>
+          <div style="margin-top:6px;font-size:.82rem;color:#fca5a5">${hors.map(r => `${r.materiel_nom} : ${r.temperature}°C`).join(' — ')}</div>
+        </div>`;
+      }
+      if (limite.length) {
+        html += `<div style="background:#2a1a0a;border:1px solid #92400e;border-radius:8px;padding:12px 16px;margin-bottom:12px">
+          <strong style="color:#fb923c">⚠️ ${limite.length} relevé(s) en limite</strong><br>
+          <div style="margin-top:6px;font-size:.82rem;color:#fdba74">${limite.map(r => `${r.materiel_nom} : ${r.temperature}°C`).join(' — ')}</div>
+        </div>`;
+      }
+
+      html += `<table class="history-table">
+        <thead><tr>
+          <th>Matériel</th><th>Type</th><th>Temp.</th><th>Statut</th><th>Par</th><th>Heure</th>
+        </tr></thead><tbody>`;
+      for (const r of current) {
+        const s = r.statut === 'hors_plage' ? 'hors' : r.statut;
+        html += `<tr>
+          <td style="font-weight:600">${r.materiel_nom}</td>
+          <td>${r.materiel_type === 'positif' ? '❄️ Positif' : '🧊 Négatif'}</td>
+          <td style="font-weight:700;color:#c9a84c">${r.temperature}°C</td>
+          <td class="stat-${s}">${statutLabel(s)}</td>
+          <td>${r.user_name || '—'}</td>
+          <td style="color:#4a6070">${r.releve_at ? r.releve_at.slice(11,16) : ''}</td>
+        </tr>`;
+      }
+      html += '</tbody></table>';
+      el.innerHTML = html;
+    }
+
+    async function loadHistory() {
+      const from = new Date(); from.setDate(from.getDate() - 6);
+      const fromStr = from.toISOString().split('T')[0];
+      const rows = await api.get(`/api/cuisine/temperatures/history?from=${fromStr}&to=${today}&limit=500`);
+      const el = document.getElementById('history-list');
+      if (!rows?.length) { el.innerHTML = '<div class="empty-state">Aucun historique sur les 7 derniers jours.</div>'; return; }
+
+      // Group by date + shift
+      const groups = {};
+      for (const r of rows) {
+        const key = `${r.date}-${r.shift}`;
+        if (!groups[key]) groups[key] = { date: r.date, shift: r.shift, rows: [] };
+        groups[key].rows.push(r);
+      }
+
+      let html = '';
+      for (const g of Object.values(groups)) {
+        const hors   = g.rows.filter(r => r.statut === 'hors_plage').length;
+        const limite = g.rows.filter(r => r.statut === 'limite').length;
+        const dateStr = new Date(g.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+        const badge = hors ? `<span style="color:#f87171;font-size:.75rem">❌ ${hors} hors plage</span>`
+                    : limite ? `<span style="color:#fb923c;font-size:.75rem">⚠️ ${limite} limite</span>`
+                    : `<span style="color:#4ade80;font-size:.75rem">✅ OK</span>`;
+
+        html += `<details style="margin-bottom:8px;background:#1a2f3a;border:1px solid #2a3f4a;border-radius:8px;overflow:hidden">
+          <summary style="padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none;user-select:none">
+            <span style="font-weight:700;color:#c9a84c">${dateStr}</span>
+            <span style="background:#2a3f4a;color:#7a9bb0;font-size:.75rem;padding:2px 8px;border-radius:10px;font-weight:600">${g.shift.toUpperCase()}</span>
+            ${badge}
+            <span style="margin-left:auto;color:#4a6070;font-size:.8rem">${g.rows[0]?.user_name || ''}</span>
+          </summary>
+          <div style="padding:0 16px 14px">
+            <table class="history-table">
+              <thead><tr><th>Matériel</th><th>Type</th><th>Temp.</th><th>Statut</th><th>Heure</th></tr></thead>
+              <tbody>
+                ${g.rows.map(r => {
+                  const s = r.statut === 'hors_plage' ? 'hors' : r.statut;
+                  return `<tr>
+                    <td style="font-weight:600">${r.materiel_nom}</td>
+                    <td>${r.materiel_type === 'positif' ? '❄️ Positif' : '🧊 Négatif'}</td>
+                    <td style="font-weight:700;color:#c9a84c">${r.temperature}°C</td>
+                    <td class="stat-${s}">${statutLabel(s)}</td>
+                    <td style="color:#4a6070">${r.releve_at ? r.releve_at.slice(11,16) : ''}</td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </details>`;
+      }
+      el.innerHTML = html;
+    }
+
+    function switchTab(tab) {
+      document.getElementById('tab-today').classList.toggle('active', tab === 'today');
+      document.getElementById('tab-week').classList.toggle('active', tab === 'week');
+      document.getElementById('tab-panel-today').style.display = tab === 'today' ? '' : 'none';
+      document.getElementById('tab-panel-week').style.display  = tab === 'week'  ? '' : 'none';
+    }
+
+    function exportCSV() {
+      const from = new Date(); from.setDate(from.getDate() - 6);
+      const fromStr = from.toISOString().split('T')[0];
+      window.open(`/api/cuisine/temperatures/export?from=${fromStr}&to=${today}`, '_blank');
+    }
+
+    async function init() {
+      me = await api.get('/api/auth/me');
+      if (!me) return;
+      await buildNav('cuisine-temperatures');
+
+      document.getElementById('date-label').textContent = todayLabel();
+
+      materiels = await api.get('/api/cuisine/temperatures/materiels') || [];
+
+      // Auto-select shift based on current hour
+      const hour = new Date().getHours();
+      await selectShift(hour < 17 ? 'midi' : 'soir');
+
+      loadHistory();
+    }
+
+    init();
+  </script>
+</body>
+</html>

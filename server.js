@@ -545,6 +545,70 @@ app.get('/api/cuisine/etiquettes/log', requireAuth, (req, res) => {
   res.json(db.getEtiquettesLog({ from, to, limit: limit ? parseInt(limit) : 200 }));
 });
 
+// ─── Températures cuisine ─────────────────────────────────────────────────────
+function _tempStatut(type, temperature) {
+  if (type === 'positif') {
+    if (temperature >= 0 && temperature <= 4) return 'ok';
+    if (temperature > 4 && temperature <= 8)  return 'limite';
+    return 'hors_plage';
+  } else {
+    if (temperature <= -18)                    return 'ok';
+    if (temperature > -18 && temperature <= -15) return 'limite';
+    return 'hors_plage';
+  }
+}
+
+app.get('/api/cuisine/temperatures/materiels', requireAuth, (req, res) => {
+  res.json(db.getTempMateriels());
+});
+
+app.get('/api/cuisine/temperatures/session', requireAuth, (req, res) => {
+  const { date, shift } = req.query;
+  if (!date || !shift) return res.status(400).json({ error: 'date et shift requis' });
+  res.json(db.getTempSession(date, shift));
+});
+
+app.post('/api/cuisine/temperatures/releves', requireAuth, (req, res) => {
+  const { date, shift, releves } = req.body;
+  if (!date || !shift || !Array.isArray(releves)) return res.status(400).json({ error: 'Données invalides' });
+  const materiels = db.getTempMateriels();
+  for (const r of releves) {
+    const mat = materiels.find(m => m.id === r.materiel_id);
+    if (!mat) continue;
+    db.upsertTempReleve({
+      materiel_id: r.materiel_id,
+      date, shift,
+      temperature: r.temperature,
+      statut: _tempStatut(mat.type, r.temperature),
+      user_id:   req.session.userId,
+      user_name: req.session.name,
+    });
+  }
+  res.json({ ok: true });
+});
+
+app.get('/api/cuisine/temperatures/history', requireAuth, (req, res) => {
+  const { from, to, limit } = req.query;
+  res.json(db.getTempHistory({ from, to, limit: limit ? parseInt(limit) : 200 }));
+});
+
+app.get('/api/cuisine/temperatures/export', requireAuth, (req, res) => {
+  const { from, to } = req.query;
+  if (!from || !to) return res.status(400).json({ error: 'from et to requis' });
+  const rows = db.getTempWeekReport(from, to);
+  const headers = ['Date','Shift','Matériel','Type','Température (°C)','Statut','Relevé par','Heure'];
+  const csv = [headers.join(';'),
+    ...rows.map(r => [
+      r.date, r.shift, r.materiel_nom, r.materiel_type === 'positif' ? 'Froid Positif' : 'Froid Négatif',
+      String(r.temperature).replace('.', ','), r.statut, r.user_name || '',
+      r.releve_at ? r.releve_at.slice(11,16) : ''
+    ].join(';'))
+  ].join('\n');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="temperatures-${from}-${to}.csv"`);
+  res.send('﻿' + csv);
+});
+
 // ─── Tables (floor plan) ───────────────────────────────────────────────────────
 app.get('/api/tables', requireAuth, (req, res) => {
   res.json(db.getTables());
@@ -1550,6 +1614,88 @@ setInterval(() => {
   if (paris.getHours() === 23 && paris.getMinutes() === 45) {
     const date = paris.toISOString().split('T')[0];
     _takeSalleSnapshot(date);
+  }
+}, 60 * 1000);
+
+// Cron : rapport hebdo températures tous les lundis à 07h00 (Paris)
+setInterval(async () => {
+  const now = new Date();
+  const paris = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  if (paris.getDay() !== 1 || paris.getHours() !== 7 || paris.getMinutes() !== 0) return;
+
+  const todayStr = paris.toISOString().split('T')[0];
+  const lastSent = db.getSetting('temp_report_last_sent');
+  if (lastSent === todayStr) return;
+
+  try {
+    const to = new Date(paris); to.setDate(to.getDate() - 1);
+    const from = new Date(to); from.setDate(from.getDate() - 6);
+    const fromStr = from.toISOString().split('T')[0];
+    const toStr   = to.toISOString().split('T')[0];
+    const rows = db.getTempWeekReport(fromStr, toStr);
+    if (!rows.length) return;
+
+    const transporter = createMailTransporter();
+    if (!transporter) return;
+
+    const fmt = d => new Date(d).toLocaleDateString('fr-FR');
+    const weekLabel = `${fmt(fromStr)} → ${fmt(toStr)}`;
+
+    const hors = rows.filter(r => r.statut === 'hors_plage');
+    const limite = rows.filter(r => r.statut === 'limite');
+
+    const tableRows = rows.map(r => {
+      const color = r.statut === 'ok' ? '#d4edda' : r.statut === 'limite' ? '#fff3cd' : '#f8d7da';
+      const icon  = r.statut === 'ok' ? '✅' : r.statut === 'limite' ? '⚠️' : '❌';
+      return `<tr style="background:${color}">
+        <td style="padding:4px 8px;border:1px solid #ddd">${r.date}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd">${r.shift.toUpperCase()}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd">${r.materiel_nom}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd">${r.materiel_type === 'positif' ? 'Positif' : 'Négatif'}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd;font-weight:bold">${r.temperature}°C</td>
+        <td style="padding:4px 8px;border:1px solid #ddd">${icon} ${r.statut}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd">${r.user_name || ''}</td>
+      </tr>`;
+    }).join('');
+
+    const alertBlock = hors.length ? `
+      <div style="background:#f8d7da;border:1px solid #f5c6cb;padding:12px;border-radius:6px;margin-bottom:16px">
+        <strong>❌ ${hors.length} relevé(s) hors plage cette semaine</strong><br>
+        ${hors.map(r => `${r.date} ${r.shift.toUpperCase()} — ${r.materiel_nom} : <strong>${r.temperature}°C</strong>`).join('<br>')}
+      </div>` : '';
+
+    const limiteBlock = limite.length ? `
+      <div style="background:#fff3cd;border:1px solid #ffeeba;padding:12px;border-radius:6px;margin-bottom:16px">
+        <strong>⚠️ ${limite.length} relevé(s) en limite cette semaine</strong><br>
+        ${limite.map(r => `${r.date} ${r.shift.toUpperCase()} — ${r.materiel_nom} : <strong>${r.temperature}°C</strong>`).join('<br>')}
+      </div>` : '';
+
+    await transporter.sendMail({
+      from: `"Mos Pub Mercière" <${db.getSetting('email_smtp_user')}>`,
+      to:   PLANNING_RECIPIENT,
+      subject: `🌡️ Relevés températures cuisine — Semaine ${weekLabel}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:700px">
+        <h2 style="color:#1a3a4a">🌡️ Relevés températures — ${weekLabel}</h2>
+        ${alertBlock}${limiteBlock}
+        <table style="border-collapse:collapse;width:100%;font-size:13px">
+          <thead><tr style="background:#1a3a4a;color:#fff">
+            <th style="padding:6px 8px;border:1px solid #ddd">Date</th>
+            <th style="padding:6px 8px;border:1px solid #ddd">Shift</th>
+            <th style="padding:6px 8px;border:1px solid #ddd">Matériel</th>
+            <th style="padding:6px 8px;border:1px solid #ddd">Type</th>
+            <th style="padding:6px 8px;border:1px solid #ddd">Temp.</th>
+            <th style="padding:6px 8px;border:1px solid #ddd">Statut</th>
+            <th style="padding:6px 8px;border:1px solid #ddd">Par</th>
+          </tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+        <p style="color:#888;font-size:12px;margin-top:16px">— Mos Pub Mercière</p>
+      </div>`,
+    });
+    db.setSetting('temp_report_last_sent', todayStr);
+    console.log(`[Temp] ✅ Rapport hebdo envoyé à ${PLANNING_RECIPIENT} (${fromStr} → ${toStr})`);
+  } catch(e) {
+    console.error('[Temp] ❌ Erreur envoi rapport:', e.message);
   }
 }, 60 * 1000);
 
