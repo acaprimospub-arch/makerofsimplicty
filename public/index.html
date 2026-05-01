@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MOS">
-  <meta name="theme-color" content="#08141c">
+  <meta name="theme-color" content="#060e15">
 </head>
 <body>
   <main class="login-page" id="main-content">
@@ -21,15 +21,13 @@
              onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='block'">
         <div id="logo-fallback" style="display:none;">
           <div class="login-logo-text">MOS</div>
-          <div style="font-size:0.75rem;color:var(--text-subtle);letter-spacing:2px;margin-top:4px;text-transform:uppercase;">Maker of Stories</div>
         </div>
-        <p style="margin-top:10px;color:var(--text-subtle);font-size:0.8rem;letter-spacing:1px;">Mos Pub Mercière</p>
+        <div class="login-logo-sub">Mos Pub Mercière</div>
       </div>
 
       <section class="login-card" aria-label="Connexion par code PIN">
         <h1 class="login-title">Entrez votre code PIN</h1>
 
-        <!-- Affichage du PIN (annoncé aux lecteurs d'écran) -->
         <output
           id="pin-display"
           aria-live="polite"
@@ -43,7 +41,6 @@
           <span class="pin-dot" aria-hidden="true"></span>
         </output>
 
-        <!-- Pavé numérique -->
         <div class="pin-pad" role="group" aria-label="Pavé numérique">
           <button class="pin-key" type="button" aria-label="Chiffre 1">1</button>
           <button class="pin-key" type="button" aria-label="Chiffre 2">2</button>
@@ -64,7 +61,6 @@
           <button class="pin-key enter" type="button" id="btn-ok" aria-label="Valider le code PIN">OK</button>
         </div>
 
-        <!-- Message d'erreur — annoncé immédiatement (role="alert") -->
         <p class="pin-error" id="pin-error" role="alert" aria-live="assertive" aria-atomic="true"></p>
       </section>
 
@@ -82,7 +78,7 @@
 
     function updateDisplay() {
       dots.forEach((dot, i) => dot.classList.toggle('filled', i < pin.length));
-      display.setAttribute('aria-label', `Code saisi\u00a0: ${pin.length} chiffre${pin.length !== 1 ? 's' : ''}`);
+      display.setAttribute('aria-label', `Code saisi : ${pin.length} chiffre${pin.length !== 1 ? 's' : ''}`);
     }
 
     function pressKey(k) {
@@ -116,7 +112,6 @@
           errorEl.textContent = data.error || 'Code PIN incorrect';
           pin = '';
           updateDisplay();
-          // Secousse (respecte prefers-reduced-motion via CSS)
           const card = document.querySelector('.login-card');
           card.classList.remove('shake');
           void card.offsetWidth;
@@ -136,7 +131,6 @@
       }
     }
 
-    // ── Pavé numérique — event listeners ──
     document.querySelectorAll('.pin-key[aria-label^="Chiffre"]').forEach(btn => {
       const digit = btn.getAttribute('aria-label').replace('Chiffre ', '');
       btn.addEventListener('click', () => pressKey(digit));
@@ -144,14 +138,12 @@
     document.getElementById('btn-del').addEventListener('click', deleteKey);
     document.getElementById('btn-ok').addEventListener('click', submitPin);
 
-    // ── Support clavier physique ──
     document.addEventListener('keydown', e => {
       if (e.key >= '0' && e.key <= '9') pressKey(e.key);
       else if (e.key === 'Backspace') { e.preventDefault(); deleteKey(); }
       else if (e.key === 'Enter') submitPin();
     });
 
-    // ── Déjà connecté ? Redirection immédiate ──
     fetch('/api/auth/me')
       .then(r => r.json())
       .then(user => { if (user && user.id) window.location.href = '/menu.html'; })
