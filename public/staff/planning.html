@@ -130,7 +130,6 @@
           <div style="display:flex;justify-content:flex-end;margin-bottom:10px;gap:8px">
             <span style="font-size:.72rem;color:var(--text-muted);display:flex;align-items:center;gap:10px">
               <span style="color:var(--text-muted)">P = Prévu</span>
-              <span style="color:var(--primary)">R = Réalisé</span>
               <span style="color:var(--success)">S = Supp</span>
             </span>
           </div>
@@ -168,7 +167,6 @@
           <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
             <span style="font-size:.72rem;color:var(--text-muted);display:flex;gap:10px">
               <span style="color:var(--text-muted)">P = Prévu</span>
-              <span style="color:var(--primary)">R = Réalisé</span>
               <span style="color:var(--success)">S = Supp</span>
             </span>
           </div>
@@ -218,28 +216,12 @@
     }
     function todayStr() { return new Date().toISOString().split('T')[0]; }
     function fmtMins(m) { if (!m) return '—'; const h = Math.floor(m/60), mn = m%60; return h > 0 ? (mn > 0 ? `${h}h${String(mn).padStart(2,'0')}` : `${h}h`) : `${mn}min`; }
-    function computeActual(pointages, userId, date) {
-      const day = pointages.filter(p => p.user_id === userId && p.timestamp?.slice(0,10) === date);
-      const arr = day.filter(p => p.type === 'arrivee').sort((a,b) => a.timestamp > b.timestamp ? 1 : -1);
-      const dep = day.filter(p => p.type === 'depart').sort((a,b) => a.timestamp > b.timestamp ? 1 : -1);
-      let mins = 0, start = null, end = null;
-      const pairs = Math.min(arr.length, dep.length);
-      for (let i = 0; i < pairs; i++) {
-        const a = new Date(arr[i].timestamp.replace(' ','T'));
-        const d = new Date(dep[i].timestamp.replace(' ','T'));
-        mins += Math.max(0, Math.round((d - a) / 60000));
-      }
-      if (arr[0]) start = arr[0].timestamp.slice(11,16);
-      if (dep[dep.length-1]) end = dep[dep.length-1].timestamp.slice(11,16);
-      return { mins, start, end };
-    }
-
     let currentUser = null;
     let weekData    = null;
     let editCtx     = null;
 
     // ── GRILLE (commune admin + staff) ────────────────────────────────────────────
-    function buildGrid(tableEl, { users, shifts, pointages, timeEvents }, isAdmin, myId) {
+    function buildGrid(tableEl, { users, shifts, timeEvents }, isAdmin, myId) {
       const week = isAdmin ? adminWeek : staffWeek;
       const today = todayStr();
       const dayDates = Array.from({ length:7 }, (_,i) => addDays(week, i));
@@ -259,9 +241,8 @@
         html += `<tr><td class="staff-cell">${escapeHtml(u.name)}<span class="shift-badge ${u.shift}">${u.shift}</span></td>`;
         dayDates.forEach(dd => {
           const isToday = dd === today;
-          const plan    = shifts.find(s => s.user_id === u.id && s.day_date === dd);
-          const actual  = computeActual(pointages, u.id, dd);
-          const supp    = (timeEvents || []).filter(e => e.user_id === u.id && e.date === dd).reduce((acc,e) => acc + (e.minutes||0), 0);
+          const plan = shifts.find(s => s.user_id === u.id && s.day_date === dd);
+          const supp = (timeEvents || []).filter(e => e.user_id === u.id && e.date === dd).reduce((acc,e) => acc + (e.minutes||0), 0);
 
           let inner = '', cls = 'is-empty';
 
@@ -270,10 +251,8 @@
             inner = `<span class="dc-off">Repos</span>`;
           } else {
             const hasPlanned = plan?.start_time;
-            const hasActual  = actual.start;
-            if (hasPlanned || hasActual || supp > 0) {
+            if (hasPlanned || supp > 0) {
               if (hasPlanned) inner += `<div class="dc-row"><span class="dc-label">P</span><span class="dc-val prevu">${plan.start_time.slice(0,5)}→${plan.end_time?.slice(0,5)||'?'}</span></div>`;
-              if (hasActual)  inner += `<div class="dc-row"><span class="dc-label">R</span><span class="dc-val realise">${actual.start}→${actual.end||'...'}</span></div>`;
               if (supp > 0)   inner += `<span class="dc-supp">+${fmtMins(supp)} supp</span>`;
             } else {
               inner = `<span style="font-size:.68rem;color:var(--text-muted)">${canClick ? '+' : '—'}</span>`;
@@ -309,9 +288,8 @@
 
       document.getElementById('drawerTitle').textContent = `${uname} — ${DAYS_F[dayIdx]}`;
 
-      const plan   = weekData?.shifts.find(s => s.user_id === uid && s.day_date === date);
-      const actual = computeActual(weekData?.pointages || [], uid, date);
-      const supps  = (weekData?.timeEvents || []).filter(e => e.user_id === uid && e.date === date);
+      const plan  = weekData?.shifts.find(s => s.user_id === uid && s.day_date === date);
+      const supps = (weekData?.timeEvents || []).filter(e => e.user_id === uid && e.date === date);
 
       let content = '', footer = '';
 
@@ -329,12 +307,6 @@
               <div class="fgroup"><label for="drawerStart">Début</label><input type="time" id="drawerStart" class="form-input" value="${plan?.start_time?.slice(0,5)||'10:00'}"></div>
               <div class="fgroup"><label for="drawerEnd">Fin</label><input type="time" id="drawerEnd" class="form-input" value="${plan?.end_time?.slice(0,5)||'18:00'}"></div>
             </div>
-          </div>
-          <div>
-            <div class="drawer-section-title">Heures réalisées (pointeuse)</div>
-            <div class="info-row"><span class="lbl">Arrivée</span><span class="val realise">${actual.start || '—'}</span></div>
-            <div class="info-row" style="margin-top:6px"><span class="lbl">Départ</span><span class="val realise">${actual.end || '—'}</span></div>
-            <div class="info-row" style="margin-top:6px"><span class="lbl">Total</span><span class="val realise">${fmtMins(actual.mins)}</span></div>
           </div>
           <div>
             <div class="drawer-section-title">Heures supplémentaires</div>
@@ -360,12 +332,6 @@
             ${plan?.is_off ? '<div class="dc-off" style="padding:8px 0">Repos</div>' :
               plan?.start_time ? `<div class="info-row"><span class="lbl">Créneau</span><span class="val">${plan.start_time.slice(0,5)} → ${plan.end_time?.slice(0,5)||'?'}</span></div>` :
               '<div style="font-size:.8rem;color:var(--text-muted);padding:4px 0">Non planifié</div>'}
-          </div>
-          <div>
-            <div class="drawer-section-title">Heures réalisées (pointeuse)</div>
-            <div class="info-row"><span class="lbl">Arrivée</span><span class="val realise">${actual.start || '—'}</span></div>
-            <div class="info-row" style="margin-top:6px"><span class="lbl">Départ</span><span class="val realise">${actual.end || '—'}</span></div>
-            <div class="info-row" style="margin-top:6px"><span class="lbl">Total</span><span class="val realise">${fmtMins(actual.mins)}</span></div>
           </div>
           <div>
             <div class="drawer-section-title">Mes heures supplémentaires</div>

@@ -72,10 +72,6 @@ const uploadPlanning = multer({
   fileFilter: (_req, file, cb) => cb(null, file.mimetype === 'application/pdf')
 });
 
-// ─── Pointages (photos time-clock) ────────────────────────────────────────────
-const POINTAGES_DIR = path.join(__dirname, 'uploads', 'pointages');
-if (!fs.existsSync(POINTAGES_DIR)) fs.mkdirSync(POINTAGES_DIR, { recursive: true });
-
 // ─── Joy.io iCal Sync ──────────────────────────────────────────────────────────
 function fetchUrl(url, depth = 0) {
   if (depth > 5) return Promise.reject(new Error('Too many redirects'));
@@ -430,19 +426,14 @@ app.delete('/api/salle/planning', requireAdminOrManager, (req, res) => {
   res.json({ ok: true });
 });
 
-// Endpoint combiné : planning + pointages + heures supp + snapshot
+// Endpoint combiné : planning + heures supp + snapshot
 app.get('/api/salle/hours', requireAuth, (req, res) => {
   const weekStart = req.query.weekStart;
   if (!weekStart) return res.status(400).json({ error: 'weekStart requis' });
-  const weekEnd = (() => { const d = new Date(weekStart); d.setDate(d.getDate() + 6); return d.toISOString().split('T')[0]; })();
-  const planning    = db.getSallePlanning(weekStart);
-  const pointages   = db.getPointagesRange(weekStart, weekEnd, null).filter(p => {
-    const u = planning.users.find(u => u.id === p.user_id);
-    return !!u;
-  });
-  const timeEvents  = db.getSalleTimeEventsForWeek(weekStart);
-  const snapshots   = db.getSalleSnapshot(weekStart);
-  res.json({ ...planning, pointages, timeEvents, snapshots });
+  const planning   = db.getSallePlanning(weekStart);
+  const timeEvents = db.getSalleTimeEventsForWeek(weekStart);
+  const snapshots  = db.getSalleSnapshot(weekStart);
+  res.json({ ...planning, timeEvents, snapshots });
 });
 
 // Heures supp salle
@@ -1151,7 +1142,6 @@ app.put('/api/admin/conge-requests/:id', requireAdminOrManager, (req, res) => {
 
 // ─── Planning PDF salle ────────────────────────────────────────────────────────
 app.use('/uploads/planning', requireAuth, express.static(PLANNING_DIR));
-app.use('/uploads/pointages', requireAdminOrManager, express.static(POINTAGES_DIR));
 
 app.post('/api/admin/planning-pdf', requireAdminOrManager, uploadPlanning.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'PDF requis (max 20 Mo)' });
@@ -1489,25 +1479,10 @@ function _takeSalleSnapshot(date) {
       return d.toISOString().split('T')[0];
     })();
     const { users, shifts } = db.getSallePlanning(weekStart);
-    const pointagesDay = db.getPointagesRange(date, date, null);
     const timeEventsDay = db.getSalleTimeEventsForWeek(date).filter(e => e.date === date);
 
     for (const u of users) {
       const plan = shifts.find(s => s.user_id === u.id && s.day_date === date);
-      const userPointages = pointagesDay.filter(p => p.user_id === u.id).sort((a, b) => a.timestamp > b.timestamp ? 1 : -1);
-      const arrivees = userPointages.filter(p => p.type === 'arrivee');
-      const departs  = userPointages.filter(p => p.type === 'depart');
-
-      let actual_start = arrivees[0]?.timestamp?.slice(11, 16) || null;
-      let actual_end   = departs[departs.length - 1]?.timestamp?.slice(11, 16) || null;
-
-      let total_actual_min = 0;
-      const pairs = Math.min(arrivees.length, departs.length);
-      for (let i = 0; i < pairs; i++) {
-        const a = new Date(arrivees[i].timestamp.replace(' ', 'T'));
-        const dp = new Date(departs[i].timestamp.replace(' ', 'T'));
-        total_actual_min += Math.max(0, Math.round((dp - a) / 60000));
-      }
 
       const plannedMin = (() => {
         if (!plan || plan.is_off || !plan.start_time || !plan.end_time) return 0;
@@ -1522,9 +1497,9 @@ function _takeSalleSnapshot(date) {
         user_id: u.id, date,
         planned_start: plan?.start_time?.slice(0, 5) || null,
         planned_end:   plan?.end_time?.slice(0, 5) || null,
-        actual_start, actual_end,
+        actual_start: null, actual_end: null,
         total_planned_min: plannedMin,
-        total_actual_min,
+        total_actual_min: 0,
         supp_min: suppMin,
       });
     }
@@ -1572,138 +1547,6 @@ setInterval(() => {
     }
   });
 }, 30000); // Check every 30 seconds
-
-// ─── Pointeuse Routes ──────────────────────────────────────────────────────────
-
-// Vérifie le statut (arrivée ou départ attendu) pour un PIN — sans session
-app.get('/api/pointage/check/:pin', (req, res) => {
-  const user = db.getUserByPin(req.params.pin);
-  if (!user) return res.status(404).json({ error: 'PIN inconnu' });
-  const today = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
-  const last = db.getLastPointageToday(user.id, today);
-  const next_type = (!last || last.type === 'depart') ? 'arrivee' : 'depart';
-  res.json({ name: user.name, next_type, last: last || null });
-});
-
-// Pointe arrivée ou départ avec capture photo — sans session
-app.post('/api/pointage/clock', (req, res) => {
-  const { pin, photo_base64 } = req.body;
-  if (!pin) return res.status(400).json({ error: 'PIN requis' });
-
-  const user = db.getUserByPin(pin);
-  if (!user) return res.status(401).json({ error: 'PIN invalide' });
-
-  const nowStr = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).replace('T', ' ');
-  const today = nowStr.slice(0, 10);
-  const timeNow = nowStr.slice(11, 16); // HH:MM
-
-  const last = db.getLastPointageToday(user.id, today);
-  const type = (!last || last.type === 'depart') ? 'arrivee' : 'depart';
-
-  // Sauvegarde de la photo
-  let photo_filename = null;
-  if (photo_base64) {
-    try {
-      const b64 = photo_base64.replace(/^data:image\/\w+;base64,/, '');
-      const dayDir = path.join(POINTAGES_DIR, today);
-      if (!fs.existsSync(dayDir)) fs.mkdirSync(dayDir, { recursive: true });
-      const safeName = user.name.replace(/[^a-zA-Z0-9]/g, '_');
-      const filename = `${safeName}-${user.id}-${type}-${Date.now()}.jpg`;
-      fs.writeFileSync(path.join(dayDir, filename), Buffer.from(b64, 'base64'));
-      photo_filename = `${today}/${filename}`;
-    } catch (e) {
-      console.error('[Pointage] Erreur sauvegarde photo:', e.message);
-    }
-  }
-
-  // Vérification retard (uniquement à l'arrivée)
-  let late_min = 0;
-  if (type === 'arrivee') {
-    try {
-      const graceMin = parseInt(db.getSetting('pointage_grace_min') || '10');
-      const shiftStart = db.getScheduledStartTime(user.id, today);
-
-      if (shiftStart) {
-        const [sh, sm] = shiftStart.slice(0, 5).split(':').map(Number);
-        const [ah, am] = timeNow.split(':').map(Number);
-        const diff = (ah * 60 + am) - (sh * 60 + sm);
-        if (diff > graceMin) {
-          late_min = diff;
-          db.createHrEvent({
-            user_id: user.id,
-            date: today,
-            type: 'retard',
-            duration_min: late_min,
-            note: `Retard pointeuse — prévu ${shiftStart.slice(0, 5)}, arrivée ${timeNow}`,
-            created_by: null
-          });
-        }
-      }
-    } catch (e) {
-      console.error('[Pointage] Erreur vérification retard:', e.message);
-    }
-  }
-
-  const id = db.createPointage({ user_id: user.id, type, timestamp: nowStr, photo_filename, late_min });
-
-  res.json({ ok: true, id, type, name: user.name, timestamp: nowStr, late_min, photo_filename });
-});
-
-// Liste des pointages d'une date (admin/manager)
-app.get('/api/admin/pointages', requireAdminOrManager, (req, res) => {
-  const date = req.query.date || new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
-  const user_id = req.query.user_id ? parseInt(req.query.user_id) : null;
-  res.json(db.getPointagesByDate(date, user_id));
-});
-
-// Stats hebdomadaires : heures travaillées + retards (admin/manager)
-app.get('/api/admin/pointages/stats', requireAdminOrManager, (req, res) => {
-  const today = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
-  const d = new Date(today);
-  const dow = d.getDay();
-  d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
-  const weekStart = d.toISOString().split('T')[0];
-  const from = req.query.from || weekStart;
-  const to   = req.query.to   || today;
-
-  const rows = db.getPointagesRange(from, to, null);
-
-  // Grouper par user → par jour → paires arrivee/depart
-  const byUser = {};
-  for (const row of rows) {
-    if (!byUser[row.user_id]) {
-      byUser[row.user_id] = { user_id: row.user_id, name: row.user_name, shift: row.shift, days: {} };
-    }
-    const day = row.timestamp.slice(0, 10);
-    if (!byUser[row.user_id].days[day]) byUser[row.user_id].days[day] = [];
-    byUser[row.user_id].days[day].push(row);
-  }
-
-  const stats = Object.values(byUser).map(u => {
-    let worked_min = 0, late_count = 0, total_late_min = 0;
-    const daily = [];
-    for (const [day, events] of Object.entries(u.days)) {
-      const arrivees = events.filter(e => e.type === 'arrivee').sort((a, b) => a.timestamp > b.timestamp ? 1 : -1);
-      const departs  = events.filter(e => e.type === 'depart').sort((a, b) => a.timestamp > b.timestamp ? 1 : -1);
-      let day_min = 0;
-      const pairs = Math.min(arrivees.length, departs.length);
-      for (let i = 0; i < pairs; i++) {
-        const a = new Date(arrivees[i].timestamp.replace(' ', 'T'));
-        const dp = new Date(departs[i].timestamp.replace(' ', 'T'));
-        day_min += Math.max(0, Math.round((dp - a) / 60000));
-      }
-      const late = arrivees.reduce((acc, e) => acc + (e.late_min || 0), 0);
-      if (late > 0) { late_count++; total_late_min += late; }
-      worked_min += day_min;
-      daily.push({ date: day, worked_min: day_min, late_min: late, arrivees, departs });
-    }
-    return { ...u, worked_min, late_count, total_late_min, daily };
-  });
-
-  res.json({ from, to, stats });
-});
-
-// ─── Fin routes Pointeuse ───────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {

@@ -163,7 +163,6 @@ const NAV_ICONS = {
   email:                 `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>`,
   planning:              `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>`,
   conges:                `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>`,
-  pointages:             `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>`,
   joy:                   `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM6.293 5.293a1 1 0 011.414 0L9 6.586V5a1 1 0 112 0v1.586l1.293-1.293a1 1 0 011.414 1.414L12.414 8H14a1 1 0 110 2h-1.586l1.293 1.293a1 1 0 01-1.414 1.414L11 11.414V13a1 1 0 11-2 0v-1.586l-1.293 1.293a1 1 0 01-1.414-1.414L7.586 10H6a1 1 0 110-2h1.586L6.293 6.707a1 1 0 010-1.414z"/></svg>`,
   'marketing-dashboard': `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>`,
   'cuisine-taches':      `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>`,
@@ -206,14 +205,12 @@ async function buildNav(activePage) {
     { href: '/admin/email.html',        label: 'Email',        key: 'email' },
     { href: '/resa/devis.html',         label: 'Devis',        key: 'resa-devis' },
     { href: '/staff/planning.html',     label: 'Planning',     key: 'planning' },
-    { href: '/admin/pointages.html',    label: 'Pointeuse',    key: 'pointages' },
   ];
   const managerMidiLinks = [
     { href: '/admin/dashboard.html',    label: 'Dashboard',    key: 'dashboard' },
     { href: '/staff/taches.html',       label: 'Mes Tâches',   key: 'taches' },
     { href: '/staff/reservations.html', label: 'Réservations', key: 'reservations' },
     { href: '/staff/tables.html',       label: 'Plan de Salle',key: 'tables' },
-    { href: '/admin/pointages.html',    label: 'Pointeuse',    key: 'pointages' },
   ];
   const managerSoirLinks = [
     { href: '/admin/dashboard.html',    label: 'Dashboard',    key: 'dashboard' },
@@ -221,7 +218,6 @@ async function buildNav(activePage) {
     { href: '/staff/reservations.html', label: 'Réservations', key: 'reservations' },
     { href: '/staff/tables.html',       label: 'Plan de Salle',key: 'tables' },
     { href: '/staff/planning.html',     label: 'Planning',     key: 'planning' },
-    { href: '/admin/pointages.html',    label: 'Pointeuse',    key: 'pointages' },
   ];
   const staffMidiLinks = [
     { href: '/staff/taches.html',       label: 'Mes Tâches',   key: 'taches' },
