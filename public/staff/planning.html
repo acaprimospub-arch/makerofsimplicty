@@ -12,30 +12,80 @@
   <meta name="apple-mobile-web-app-title" content="MOS">
   <meta name="theme-color" content="#08141c">
   <style>
-    @media(min-width:900px) {
-      .planning-layout { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
-      .container-sm { max-width:1100px !important; }
+    .week-nav { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:20px; }
+    .week-nav-btn { background:var(--bg-card); border:1px solid var(--border); color:var(--text-muted); border-radius:20px; padding:7px 16px; font-size:.82rem; cursor:pointer; transition:border-color .15s,color .15s; white-space:nowrap; }
+    .week-nav-btn:hover { border-color:var(--primary); color:var(--primary); }
+    .week-nav-btn:focus-visible { box-shadow:var(--focus-ring); outline:none; }
+    .week-label { font-size:.92rem; font-weight:700; text-align:center; flex:1; }
+
+    .planning-grid { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .planning-table { width:100%; border-collapse:collapse; min-width:660px; }
+    .planning-table th { background:var(--bg-surface); border:1px solid var(--border); padding:7px 5px; font-size:.72rem; font-weight:700; text-align:center; color:var(--text-muted); white-space:nowrap; }
+    .planning-table th.today-col { background:var(--primary-dim); color:var(--primary); border-color:var(--primary); }
+    .planning-table td { border:1px solid var(--border); padding:3px; vertical-align:top; min-width:88px; }
+    .staff-cell { background:var(--bg-card); padding:8px 10px; font-weight:700; font-size:.85rem; white-space:nowrap; min-width:110px; }
+    .shift-badge { display:inline-block; font-size:.62rem; font-weight:600; padding:2px 6px; border-radius:10px; margin-left:4px; vertical-align:middle; }
+    .shift-badge.midi { background:rgba(205,164,67,.15); color:var(--primary); }
+    .shift-badge.soir { background:rgba(99,102,241,.15); color:#818cf8; }
+    .group-sep td { background:var(--bg-surface); height:4px; padding:0; border:none; }
+
+    .day-cell { background:var(--bg-card); min-height:64px; display:flex; flex-direction:column; gap:2px; border-radius:4px; padding:5px 6px; position:relative; }
+    .day-cell.clickable { cursor:pointer; transition:background .12s; }
+    .day-cell.clickable:hover { background:var(--bg-hover); }
+    .day-cell.clickable:focus-visible { box-shadow:var(--focus-ring); outline:none; }
+    .day-cell.is-off { background:rgba(232,84,84,.06); border:1px solid rgba(232,84,84,.2); }
+    .day-cell.is-empty { border:1.5px dashed var(--border); }
+    .dc-off { font-size:.72rem; font-weight:600; color:var(--danger); }
+    .dc-row { display:flex; align-items:center; gap:4px; font-size:.72rem; line-height:1.3; }
+    .dc-label { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.3px; opacity:.6; min-width:14px; }
+    .dc-val { font-weight:700; }
+    .dc-val.prevu { color:var(--text-muted); }
+    .dc-val.realise { color:var(--primary); }
+    .dc-supp { font-size:.65rem; font-weight:700; color:var(--success); background:var(--success-bg); border-radius:8px; padding:1px 5px; display:inline-block; margin-top:1px; }
+    .today-col .day-cell { background:rgba(205,164,67,.04); }
+    .today-col .day-cell.clickable:hover { background:rgba(205,164,67,.12); }
+
+    /* Drawer */
+    .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s; }
+    .drawer-backdrop.open { opacity:1; pointer-events:auto; }
+    .drawer { position:fixed; bottom:0; left:0; right:0; z-index:201; background:var(--bg-card); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.5); transform:translateY(102%); transition:transform .3s cubic-bezier(.32,.72,0,1); max-height:92dvh; display:flex; flex-direction:column; }
+    .drawer.open { transform:translateY(0); }
+    @media (min-width:641px) {
+      .drawer { bottom:auto; top:50%; left:50%; right:auto; transform:translate(-50%,-40%); opacity:0; pointer-events:none; border-radius:var(--radius); width:100%; max-width:400px; transition:transform .25s ease,opacity .25s ease; }
+      .drawer.open { transform:translate(-50%,-50%); opacity:1; pointer-events:auto; }
     }
-    .form-group { margin-bottom:14px; }
-    .form-group label { display:block; font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:5px; }
-    .form-group input,
-    .form-group textarea { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:10px 12px; font-size:14px; box-sizing:border-box; font-family:inherit; }
-    .form-group input[readonly] { opacity:.6; cursor:default; }
-    .form-group textarea { resize:vertical; min-height:80px; }
-    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .drawer-handle { width:40px; height:4px; background:rgba(255,255,255,.15); border-radius:2px; margin:10px auto 0; flex-shrink:0; }
+    @media (min-width:641px) { .drawer-handle { display:none; } }
+    .drawer-head { display:flex; align-items:center; justify-content:space-between; padding:14px 20px 12px; flex-shrink:0; border-bottom:1px solid var(--border); }
+    .drawer-title { font-size:1rem; font-weight:700; }
+    .drawer-close { width:30px; height:30px; border-radius:50%; background:var(--bg-surface); color:var(--text-muted); display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; font-size:1.1rem; }
+    .drawer-body { overflow-y:auto; padding:16px 20px; flex:1; }
+    .drawer-footer { display:flex; gap:8px; padding:10px 20px calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); flex-shrink:0; }
+    .drawer-footer .btn { flex:1; justify-content:center; min-height:46px; }
+    .frow { display:flex; flex-direction:column; gap:12px; }
+    .fgroup { display:flex; flex-direction:column; gap:5px; }
+    .fgroup label { font-size:.8rem; font-weight:600; color:var(--text-muted); }
+    .f2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .form-input { background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:9px 12px; font-size:14px; width:100%; box-sizing:border-box; font-family:inherit; }
+    .off-toggle-label { display:flex; align-items:center; gap:12px; background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 16px; cursor:pointer; }
+    .off-toggle-label input { width:18px; height:18px; cursor:pointer; accent-color:var(--danger); }
+    .info-row { display:flex; justify-content:space-between; font-size:.82rem; padding:8px 12px; background:var(--bg-surface); border-radius:8px; border:1px solid var(--border); }
+    .info-row .lbl { color:var(--text-muted); }
+    .info-row .val { font-weight:700; }
+    .info-row .val.realise { color:var(--primary); }
+    .drawer-section-title { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); margin-bottom:6px; margin-top:4px; }
+    .supp-item { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; background:var(--bg-surface); border-radius:8px; border:1px solid var(--border); font-size:.82rem; }
+    .supp-item .supp-del { background:none; border:none; color:var(--danger); cursor:pointer; font-size:.9rem; padding:2px 6px; }
+    .add-supp-row { display:flex; gap:8px; align-items:flex-end; }
+    .add-supp-row .form-input { flex:1; }
 
-    .sig-wrap { border:1px solid var(--border); border-radius:10px; overflow:hidden; background:#fff; position:relative; }
-    .sig-wrap canvas { display:block; width:100%; touch-action:none; cursor:crosshair; }
-    .sig-placeholder { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#aaa; font-size:13px; pointer-events:none; user-select:none; }
-    .sig-clear { position:absolute; top:8px; right:8px; background:rgba(0,0,0,.12); border:none; border-radius:6px; color:#555; font-size:11px; padding:3px 8px; cursor:pointer; }
+    /* Staff view */
+    .btn-conge { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:15px; background:var(--primary); color:#000; font-weight:700; font-size:.95rem; border-radius:var(--radius-sm); border:none; cursor:pointer; margin-bottom:18px; transition:opacity .15s; }
+    .btn-conge:hover { opacity:.88; }
+    .btn-cuisine-link { display:inline-flex; align-items:center; gap:7px; padding:9px 16px; background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text-muted); font-size:.85rem; font-weight:600; text-decoration:none; transition:border-color .15s,color .15s; }
+    .btn-cuisine-link:hover { border-color:var(--primary); color:var(--primary); }
 
-    .sent-state { display:none; text-align:center; padding:32px 16px; }
-    .sent-state .sent-icon  { font-size:3rem; margin-bottom:8px; }
-    .sent-state .sent-title { font-size:1.1rem; font-weight:700; margin-bottom:6px; }
-    .sent-state .sent-sub   { font-size:13px; color:var(--text-muted); }
-
-    .admin-section { margin-top:24px; }
-
+    /* Congés admin */
     .demande-item { display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; margin-bottom:8px; font-size:13px; }
     .demande-info { flex:1; min-width:0; }
     .demande-info strong { display:block; font-size:13px; }
@@ -45,10 +95,12 @@
     .demande-actions { display:flex; gap:6px; flex-shrink:0; }
     .btn-approve { padding:4px 10px; border-radius:6px; border:1px solid var(--success); background:var(--success-bg); color:var(--success); font-size:11px; font-weight:700; cursor:pointer; }
     .btn-reject  { padding:4px 10px; border-radius:6px; border:1px solid var(--danger); background:rgba(232,84,84,.08); color:var(--danger); font-size:11px; font-weight:700; cursor:pointer; }
-    .sp-pending  { background:rgba(245,166,36,.15); color:var(--orange, #F5A624); }
+    .sp-pending  { background:rgba(245,166,36,.15); color:var(--orange,#F5A624); }
     .sp-approved { background:var(--success-bg); color:var(--success); }
     .sp-rejected { background:rgba(232,84,84,.12); color:var(--danger); }
     .status-pill { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; flex-shrink:0; }
+
+    @media (prefers-reduced-motion:reduce) { .drawer,.drawer-backdrop { transition:none !important; } }
   </style>
 </head>
 <body>
@@ -57,99 +109,91 @@
   <main class="page" id="main-content" tabindex="-1">
     <div class="container-sm">
 
-      <header style="margin-bottom:18px">
-        <h1 class="card-title">Planning &amp; Congés</h1>
-      </header>
+      <!-- ── VUE ADMIN / MANAGER ── -->
+      <div id="adminView" style="display:none">
+        <header class="page-header" style="margin-bottom:20px">
+          <div>
+            <h1 class="page-title">Planning Salle</h1>
+          </div>
+          <a href="/cuisine/planning.html" class="btn-cuisine-link">
+            <svg viewBox="0 0 20 20" fill="currentColor" style="width:15px;height:15px"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+            Cuisine
+          </a>
+        </header>
 
-      <!-- Planning de service (PDF) -->
-      <section class="card" id="planningPDFCard" style="margin-bottom:20px;display:none" aria-labelledby="planning-pdf-title">
-        <div class="card-header">
-          <h2 class="card-title" id="planning-pdf-title" style="font-size:13px">Planning de service</h2>
-          <div id="planningPDFDate" style="font-size:.72rem;color:var(--text-muted)" aria-live="polite"></div>
+        <div class="card" style="margin-bottom:20px">
+          <div class="week-nav">
+            <button class="week-nav-btn" id="aPrev" type="button">← Préc.</button>
+            <span class="week-label" id="aWeekLabel"></span>
+            <button class="week-nav-btn" id="aNext" type="button">Suiv. →</button>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-bottom:10px;gap:8px">
+            <span style="font-size:.72rem;color:var(--text-muted);display:flex;align-items:center;gap:10px">
+              <span style="color:var(--text-muted)">P = Prévu</span>
+              <span style="color:var(--primary)">R = Réalisé</span>
+              <span style="color:var(--success)">S = Supp</span>
+            </span>
+          </div>
+          <div class="planning-grid">
+            <table class="planning-table" id="adminTable" aria-label="Planning de la salle"></table>
+          </div>
         </div>
-        <div id="planningPDFBody" style="margin-top:12px"></div>
-      </section>
 
-      <div class="planning-layout">
-
-        <!-- Colonne gauche : formulaire congés -->
-        <section class="card" aria-labelledby="conge-form-title">
+        <section class="card" style="margin-bottom:20px" aria-labelledby="conges-admin-title">
           <div class="card-header" style="margin-bottom:16px">
-            <h2 class="card-title" id="conge-form-title" style="font-size:13px">Nouvelle demande de congés</h2>
+            <h2 class="card-title" id="conges-admin-title" style="font-size:13px">Demandes de congés</h2>
+            <button class="btn" id="btnRefreshConges" style="font-size:11px;padding:5px 10px" type="button">Actualiser</button>
           </div>
-
-          <div id="congeForm">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="fName">Employé(e)</label>
-                <input type="text" id="fName" readonly aria-readonly="true">
-              </div>
-              <div class="form-group">
-                <label for="fToday">Date de la demande</label>
-                <input type="text" id="fToday" readonly aria-readonly="true">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="fFrom">Début souhaité <span aria-hidden="true">*</span></label>
-                <input type="date" id="fFrom" required aria-required="true">
-              </div>
-              <div class="form-group">
-                <label for="fTo">Fin souhaitée <span aria-hidden="true">*</span></label>
-                <input type="date" id="fTo" required aria-required="true">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="fMotif">Motif <span style="font-weight:400;text-transform:none;">(facultatif)</span></label>
-              <textarea id="fMotif" placeholder="Ex : vacances, raison personnelle…"></textarea>
-            </div>
-
-            <div class="form-group">
-              <label id="sig-label">Signature <span aria-hidden="true">*</span></label>
-              <div class="sig-wrap" role="img" aria-labelledby="sig-label" aria-describedby="sig-hint">
-                <canvas id="sigCanvas" height="120" aria-label="Zone de signature"></canvas>
-                <span class="sig-placeholder" id="sigPlaceholder" aria-hidden="true">Signez ici</span>
-                <button class="sig-clear" id="btnClearSig" type="button" aria-label="Effacer la signature">Effacer</button>
-              </div>
-              <p id="sig-hint" style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Dessinez votre signature avec le doigt ou la souris.</p>
-            </div>
-
-            <button class="btn btn-primary" id="btnSubmitConge" style="width:100%;margin-top:6px" type="button">Envoyer la demande</button>
-          </div>
-
-          <div class="sent-state" id="sentState" role="alert" aria-live="assertive">
-            <div class="sent-icon" aria-hidden="true">✅</div>
-            <div class="sent-title">Demande envoyée !</div>
-            <div class="sent-sub">Votre demande a été transmise à la direction.</div>
-            <button class="btn" id="btnNewConge" style="margin-top:20px" type="button">Nouvelle demande</button>
-          </div>
+          <div id="allDemandesList" aria-live="polite"><div class="empty-state">Chargement…</div></div>
         </section>
-
-        <!-- Colonne droite : mes demandes + admin -->
-        <div>
-          <!-- Mes demandes -->
-          <section class="card" style="margin-bottom:16px" aria-labelledby="mes-demandes-title">
-            <div class="card-header" style="margin-bottom:16px">
-              <h2 class="card-title" id="mes-demandes-title" style="font-size:13px">Mes demandes</h2>
-            </div>
-            <div id="demandesList" aria-live="polite"><div class="empty-state">Chargement…</div></div>
-          </section>
-
-          <!-- Section admin (visible uniquement admin/manager) -->
-          <section class="card admin-section" id="adminSection" style="display:none" aria-labelledby="all-demandes-title">
-            <div class="card-header" style="margin-bottom:16px">
-              <h2 class="card-title" id="all-demandes-title" style="font-size:13px">Toutes les demandes</h2>
-              <button class="btn" id="btnRefreshAdmin" style="font-size:11px;padding:5px 10px" type="button">Actualiser</button>
-            </div>
-            <div id="allDemandesList" aria-live="polite"><div class="empty-state">Chargement…</div></div>
-          </section>
-        </div>
-
       </div>
+
+      <!-- ── VUE STAFF ── -->
+      <div id="staffView" style="display:none">
+        <header class="page-header" style="margin-bottom:16px">
+          <h1 class="page-title">Mon Planning</h1>
+        </header>
+
+        <button class="btn-conge" id="btnGoConge" type="button">
+          <svg viewBox="0 0 20 20" fill="currentColor" style="width:18px;height:18px;flex-shrink:0"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
+          Demande de congés
+        </button>
+
+        <div class="card">
+          <div class="week-nav">
+            <button class="week-nav-btn" id="sPrev" type="button">← Préc.</button>
+            <span class="week-label" id="sWeekLabel"></span>
+            <button class="week-nav-btn" id="sNext" type="button">Suiv. →</button>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+            <span style="font-size:.72rem;color:var(--text-muted);display:flex;gap:10px">
+              <span style="color:var(--text-muted)">P = Prévu</span>
+              <span style="color:var(--primary)">R = Réalisé</span>
+              <span style="color:var(--success)">S = Supp</span>
+            </span>
+          </div>
+          <div class="planning-grid">
+            <table class="planning-table" id="staffTable" aria-label="Planning de la semaine"></table>
+          </div>
+        </div>
+      </div>
+
     </div>
   </main>
+
+  <!-- Drawer (admin = edit tout / staff = voir + supp) -->
+  <div class="drawer-backdrop" id="backdrop" aria-hidden="true"></div>
+  <div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true">
+    <div class="drawer-handle" aria-hidden="true"></div>
+    <div class="drawer-head">
+      <span class="drawer-title" id="drawerTitle">Créneau</span>
+      <button class="drawer-close" id="drawerClose" type="button" aria-label="Fermer">×</button>
+    </div>
+    <div class="drawer-body">
+      <div class="frow" id="drawerContent"></div>
+    </div>
+    <div class="drawer-footer" id="drawerFooter"></div>
+  </div>
 
   <div id="toast-container"></div>
   <script src="/js/api.js"></script>
@@ -157,214 +201,355 @@
     'use strict';
 
     buildNav('planning');
-    document.getElementById('fToday').value = new Date().toLocaleDateString('fr-FR');
+
+    const DAYS   = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+    const DAYS_F = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+
+    function getMonday(d = new Date()) {
+      const day = d.getDay(), diff = day === 0 ? -6 : 1 - day;
+      const mon = new Date(d); mon.setDate(d.getDate() + diff);
+      return mon.toISOString().split('T')[0];
+    }
+    function addDays(s, n) { const d = new Date(s); d.setDate(d.getDate() + n); return d.toISOString().split('T')[0]; }
+    function fmtWeek(w) {
+      const e = addDays(w, 6), s = new Date(w), en = new Date(e);
+      const f = d => `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
+      return `${f(s)} — ${f(en)}`;
+    }
+    function todayStr() { return new Date().toISOString().split('T')[0]; }
+    function fmtMins(m) { if (!m) return '—'; const h = Math.floor(m/60), mn = m%60; return h > 0 ? (mn > 0 ? `${h}h${String(mn).padStart(2,'0')}` : `${h}h`) : `${mn}min`; }
+    function computeActual(pointages, userId, date) {
+      const day = pointages.filter(p => p.user_id === userId && p.timestamp?.slice(0,10) === date);
+      const arr = day.filter(p => p.type === 'arrivee').sort((a,b) => a.timestamp > b.timestamp ? 1 : -1);
+      const dep = day.filter(p => p.type === 'depart').sort((a,b) => a.timestamp > b.timestamp ? 1 : -1);
+      let mins = 0, start = null, end = null;
+      const pairs = Math.min(arr.length, dep.length);
+      for (let i = 0; i < pairs; i++) {
+        const a = new Date(arr[i].timestamp.replace(' ','T'));
+        const d = new Date(dep[i].timestamp.replace(' ','T'));
+        mins += Math.max(0, Math.round((d - a) / 60000));
+      }
+      if (arr[0]) start = arr[0].timestamp.slice(11,16);
+      if (dep[dep.length-1]) end = dep[dep.length-1].timestamp.slice(11,16);
+      return { mins, start, end };
+    }
 
     let currentUser = null;
+    let weekData    = null;
+    let editCtx     = null;
 
-    // ── Planning PDF de service ───────────────────────────────────────────────
-    async function loadPlanningPDF() {
-      const pdf = await api.get('/api/staff/planning-pdf');
-      if (!pdf) return;
-      document.getElementById('planningPDFCard').style.display = '';
-      document.getElementById('planningPDFDate').textContent = 'Mis à jour le ' + (pdf.uploaded_at || '').slice(0, 16).replace('T', ' ');
-      document.getElementById('planningPDFBody').innerHTML = `
-        <iframe src="${pdf.url}" style="width:100%;height:480px;border:none;border-radius:var(--radius-sm);background:#fff;"
-                title="Planning de service de la semaine"></iframe>
-        <a href="${pdf.url}" download="${escapeHtml(pdf.original_name)}" class="btn btn-secondary btn-sm"
-           style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;">
-          Télécharger le PDF
-        </a>
-      `;
+    // ── GRILLE (commune admin + staff) ────────────────────────────────────────────
+    function buildGrid(tableEl, { users, shifts, pointages, timeEvents }, isAdmin, myId) {
+      const week = isAdmin ? adminWeek : staffWeek;
+      const today = todayStr();
+      const dayDates = Array.from({ length:7 }, (_,i) => addDays(week, i));
+
+      let html = '<thead><tr><th style="text-align:left;min-width:110px">Employé</th>';
+      dayDates.forEach((dd,i) => {
+        html += `<th class="${dd===today?'today-col':''}">${DAYS[i]}<br><span style="font-weight:400;font-size:.65rem">${dd.slice(8)}</span></th>`;
+      });
+      html += '</tr></thead><tbody>';
+
+      let lastShift = null;
+      users.forEach(u => {
+        if (lastShift && u.shift !== lastShift) html += '<tr class="group-sep"><td colspan="8"></td></tr>';
+        lastShift = u.shift;
+        const canClick = isAdmin || u.id === myId;
+
+        html += `<tr><td class="staff-cell">${escapeHtml(u.name)}<span class="shift-badge ${u.shift}">${u.shift}</span></td>`;
+        dayDates.forEach(dd => {
+          const isToday = dd === today;
+          const plan    = shifts.find(s => s.user_id === u.id && s.day_date === dd);
+          const actual  = computeActual(pointages, u.id, dd);
+          const supp    = (timeEvents || []).filter(e => e.user_id === u.id && e.date === dd).reduce((acc,e) => acc + (e.minutes||0), 0);
+
+          let inner = '', cls = 'is-empty';
+
+          if (plan?.is_off) {
+            cls = 'is-off';
+            inner = `<span class="dc-off">Repos</span>`;
+          } else {
+            const hasPlanned = plan?.start_time;
+            const hasActual  = actual.start;
+            if (hasPlanned || hasActual || supp > 0) {
+              if (hasPlanned) inner += `<div class="dc-row"><span class="dc-label">P</span><span class="dc-val prevu">${plan.start_time.slice(0,5)}→${plan.end_time?.slice(0,5)||'?'}</span></div>`;
+              if (hasActual)  inner += `<div class="dc-row"><span class="dc-label">R</span><span class="dc-val realise">${actual.start}→${actual.end||'...'}</span></div>`;
+              if (supp > 0)   inner += `<span class="dc-supp">+${fmtMins(supp)} supp</span>`;
+            } else {
+              inner = `<span style="font-size:.68rem;color:var(--text-muted)">${canClick ? '+' : '—'}</span>`;
+            }
+          }
+
+          html += `<td class="${isToday?'today-col':''}">
+            <div class="day-cell ${cls}${canClick?' clickable':''}"
+                 ${canClick?`role="button" tabindex="0"`:''}
+                 data-uid="${u.id}" data-uname="${escapeHtml(u.name)}" data-date="${dd}" data-dayidx="${dayDates.indexOf(dd)}"
+                 aria-label="${escapeHtml(u.name)} — ${DAYS_F[dayDates.indexOf(dd)]}">
+              ${inner}
+            </div></td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody>';
+      tableEl.innerHTML = html;
+
+      tableEl.querySelectorAll('.day-cell.clickable').forEach(cell => {
+        cell.addEventListener('click', () => openDrawer(cell, isAdmin));
+        cell.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDrawer(cell, isAdmin); } });
+      });
     }
-    loadPlanningPDF();
 
-    // ── Init user ─────────────────────────────────────────────────────────────
-    async function initUser() {
-      if (!window.__mosUser) await api.get('/api/auth/me');
-      currentUser = window.__mosUser;
-      if (!currentUser) currentUser = await api.get('/api/auth/me');
-      if (currentUser) {
-        document.getElementById('fName').value = currentUser.name;
-        if (currentUser.role === 'admin' || currentUser.role === 'manager') {
-          document.getElementById('adminSection').style.display = '';
-          loadAllDemandes();
-        }
-      }
-    }
-    initUser();
+    // ── DRAWER ────────────────────────────────────────────────────────────────────
+    function openDrawer(cell, isAdmin) {
+      const uid   = parseInt(cell.dataset.uid);
+      const date  = cell.dataset.date;
+      const dayIdx = parseInt(cell.dataset.dayidx);
+      const uname = cell.dataset.uname;
+      editCtx = { uid, date, uname };
 
-    const labels  = { pending:'En attente', approved:'Validée', rejected:'Refusée' };
-    const classes = { pending:'sp-pending', approved:'sp-approved', rejected:'sp-rejected' };
-    const fmtDate = d => new Date(d).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' });
+      document.getElementById('drawerTitle').textContent = `${uname} — ${DAYS_F[dayIdx]}`;
 
-    // ── Mes demandes ──────────────────────────────────────────────────────────
-    async function loadDemandes() {
-      const data = await api.get('/api/staff/conge-requests');
-      const el   = document.getElementById('demandesList');
-      if (!data || !data.length) {
-        el.innerHTML = '<div class="empty-state">Aucune demande pour le moment</div>';
-        return;
-      }
-      el.innerHTML = `<ul role="list" style="list-style:none;margin:0;padding:0;">` +
-        data.map(d => `
-          <li class="demande-item">
-            <div class="demande-info">
-              <strong>${escapeHtml(fmtDate(d.date_from))} → ${escapeHtml(fmtDate(d.date_to))}</strong>
-              <small>Demandé le ${escapeHtml(new Date(d.requested_at).toLocaleDateString('fr-FR'))}</small>
-              ${d.motif ? `<div class="demande-motif">${escapeHtml(d.motif)}</div>` : ''}
+      const plan   = weekData?.shifts.find(s => s.user_id === uid && s.day_date === date);
+      const actual = computeActual(weekData?.pointages || [], uid, date);
+      const supps  = (weekData?.timeEvents || []).filter(e => e.user_id === uid && e.date === date);
+
+      let content = '', footer = '';
+
+      if (isAdmin) {
+        // Admin/manager : édition heures prévues + supp
+        const isOff = plan?.is_off ? true : false;
+        content = `
+          <div>
+            <div class="drawer-section-title">Heures prévues</div>
+            <label class="off-toggle-label" style="margin-bottom:10px">
+              <input type="checkbox" id="drawerIsOff" ${isOff ? 'checked' : ''}>
+              <span style="font-size:.9rem;font-weight:600">Jour de repos</span>
+            </label>
+            <div class="f2" id="timeFields" style="${isOff ? 'display:none' : ''}">
+              <div class="fgroup"><label for="drawerStart">Début</label><input type="time" id="drawerStart" class="form-input" value="${plan?.start_time?.slice(0,5)||'10:00'}"></div>
+              <div class="fgroup"><label for="drawerEnd">Fin</label><input type="time" id="drawerEnd" class="form-input" value="${plan?.end_time?.slice(0,5)||'18:00'}"></div>
             </div>
-            <span class="status-pill ${classes[d.status] || 'sp-pending'}" role="status">${escapeHtml(labels[d.status] || d.status)}</span>
-          </li>`).join('') +
-        `</ul>`;
-    }
-    loadDemandes();
+          </div>
+          <div>
+            <div class="drawer-section-title">Heures réalisées (pointeuse)</div>
+            <div class="info-row"><span class="lbl">Arrivée</span><span class="val realise">${actual.start || '—'}</span></div>
+            <div class="info-row" style="margin-top:6px"><span class="lbl">Départ</span><span class="val realise">${actual.end || '—'}</span></div>
+            <div class="info-row" style="margin-top:6px"><span class="lbl">Total</span><span class="val realise">${fmtMins(actual.mins)}</span></div>
+          </div>
+          <div>
+            <div class="drawer-section-title">Heures supplémentaires</div>
+            ${supps.length ? supps.map(s => `
+              <div class="supp-item" id="supp-${s.id}">
+                <span>+${fmtMins(s.minutes)}${s.note ? ` — ${escapeHtml(s.note)}` : ''}</span>
+                <button class="supp-del" data-sid="${s.id}" type="button" aria-label="Supprimer">✕</button>
+              </div>`).join('') : '<div style="font-size:.8rem;color:var(--text-muted);padding:4px 0">Aucune heure supp</div>'}
+            <div class="add-supp-row" style="margin-top:8px">
+              <div class="fgroup" style="flex:1"><label for="suppMin">Minutes supp</label><input type="number" id="suppMin" class="form-input" placeholder="ex: 30" min="0" max="480"></div>
+              <div class="fgroup" style="flex:1"><label for="suppNote">Note</label><input type="text" id="suppNote" class="form-input" placeholder="optionnel"></div>
+              <button class="btn btn-secondary" id="btnAddSupp" type="button" style="flex-shrink:0;padding:9px 12px;align-self:flex-end">+</button>
+            </div>
+          </div>`;
+        footer = `
+          <button class="btn btn-secondary" id="drawerDelete" type="button">Effacer prévu</button>
+          <button class="btn btn-primary" id="drawerSave" type="button">Enregistrer prévu</button>`;
+      } else {
+        // Staff : lecture + ajout supp propres
+        content = `
+          <div>
+            <div class="drawer-section-title">Heures prévues</div>
+            ${plan?.is_off ? '<div class="dc-off" style="padding:8px 0">Repos</div>' :
+              plan?.start_time ? `<div class="info-row"><span class="lbl">Créneau</span><span class="val">${plan.start_time.slice(0,5)} → ${plan.end_time?.slice(0,5)||'?'}</span></div>` :
+              '<div style="font-size:.8rem;color:var(--text-muted);padding:4px 0">Non planifié</div>'}
+          </div>
+          <div>
+            <div class="drawer-section-title">Heures réalisées (pointeuse)</div>
+            <div class="info-row"><span class="lbl">Arrivée</span><span class="val realise">${actual.start || '—'}</span></div>
+            <div class="info-row" style="margin-top:6px"><span class="lbl">Départ</span><span class="val realise">${actual.end || '—'}</span></div>
+            <div class="info-row" style="margin-top:6px"><span class="lbl">Total</span><span class="val realise">${fmtMins(actual.mins)}</span></div>
+          </div>
+          <div>
+            <div class="drawer-section-title">Mes heures supplémentaires</div>
+            ${supps.length ? supps.map(s => `
+              <div class="supp-item" id="supp-${s.id}">
+                <span>+${fmtMins(s.minutes)}${s.note ? ` — ${escapeHtml(s.note)}` : ''}</span>
+                <button class="supp-del" data-sid="${s.id}" type="button" aria-label="Supprimer">✕</button>
+              </div>`).join('') : '<div style="font-size:.8rem;color:var(--text-muted);padding:4px 0">Aucune heure supp</div>'}
+            <div class="add-supp-row" style="margin-top:8px">
+              <div class="fgroup" style="flex:1"><label for="suppMin">Minutes supp</label><input type="number" id="suppMin" class="form-input" placeholder="ex: 30" min="0" max="480"></div>
+              <div class="fgroup" style="flex:1"><label for="suppNote">Note</label><input type="text" id="suppNote" class="form-input" placeholder="optionnel"></div>
+              <button class="btn btn-secondary" id="btnAddSupp" type="button" style="flex-shrink:0;padding:9px 12px;align-self:flex-end">+</button>
+            </div>
+          </div>`;
+        footer = `<button class="btn btn-primary" id="drawerOk" type="button" style="width:100%">Fermer</button>`;
+      }
 
-    // ── Toutes les demandes (admin) ───────────────────────────────────────────
+      document.getElementById('drawerContent').innerHTML = content;
+      document.getElementById('drawerFooter').innerHTML  = footer;
+
+      // Wiring admin
+      const isOffEl = document.getElementById('drawerIsOff');
+      if (isOffEl) isOffEl.addEventListener('change', e => { document.getElementById('timeFields').style.display = e.target.checked ? 'none' : ''; });
+      const saveEl = document.getElementById('drawerSave');
+      if (saveEl) saveEl.addEventListener('click', savePlanned);
+      const delEl = document.getElementById('drawerDelete');
+      if (delEl) delEl.addEventListener('click', deletePlanned);
+      const okEl = document.getElementById('drawerOk');
+      if (okEl) okEl.addEventListener('click', closeDrawer);
+
+      // Supp events
+      document.getElementById('btnAddSupp').addEventListener('click', addSupp);
+      document.querySelectorAll('.supp-del').forEach(btn => {
+        btn.addEventListener('click', () => deleteSupp(parseInt(btn.dataset.sid)));
+      });
+
+      document.getElementById('backdrop').classList.add('open');
+      document.getElementById('drawer').classList.add('open');
+      document.getElementById('drawer').removeAttribute('aria-hidden');
+    }
+
+    function closeDrawer() {
+      document.getElementById('backdrop').classList.remove('open');
+      document.getElementById('drawer').classList.remove('open');
+      document.getElementById('drawer').setAttribute('aria-hidden','true');
+      editCtx = null;
+    }
+    document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+    document.getElementById('backdrop').addEventListener('click', closeDrawer);
+
+    async function savePlanned() {
+      if (!editCtx) return;
+      const isOff = document.getElementById('drawerIsOff').checked;
+      const res = await api.put('/api/salle/planning', {
+        user_id: editCtx.uid, week_start: adminWeek, day_date: editCtx.date,
+        start_time: isOff ? null : document.getElementById('drawerStart').value,
+        end_time:   isOff ? null : document.getElementById('drawerEnd').value,
+        is_off: isOff ? 1 : 0,
+      });
+      if (res?.ok) { closeDrawer(); loadAdminWeek(); }
+      else showToast(res?.error || 'Erreur', 'error');
+    }
+
+    async function deletePlanned() {
+      if (!editCtx) return;
+      const res = await api.delete('/api/salle/planning', { user_id: editCtx.uid, day_date: editCtx.date, week_start: adminWeek });
+      if (res?.ok) { closeDrawer(); loadAdminWeek(); }
+      else showToast(res?.error || 'Erreur', 'error');
+    }
+
+    async function addSupp() {
+      if (!editCtx) return;
+      const min = parseInt(document.getElementById('suppMin').value) || 0;
+      if (!min) { showToast('Entrez un nombre de minutes', 'warning'); return; }
+      const note = document.getElementById('suppNote').value.trim();
+      const res = await api.post('/api/salle/time-events', { user_id: editCtx.uid, date: editCtx.date, minutes: min, note });
+      if (res?.ok) {
+        await reloadWeekData();
+        openDrawer(document.querySelector(`[data-uid="${editCtx.uid}"][data-date="${editCtx.date}"]`) || { dataset: editCtx }, currentUser?.role === 'admin' || currentUser?.role === 'manager');
+      } else showToast(res?.error || 'Erreur', 'error');
+    }
+
+    async function deleteSupp(id) {
+      const res = await api.delete(`/api/salle/time-events/${id}`);
+      if (res?.ok) {
+        await reloadWeekData();
+        const cell = document.querySelector(`[data-uid="${editCtx?.uid}"][data-date="${editCtx?.date}"]`);
+        if (cell && editCtx) openDrawer(cell, currentUser?.role === 'admin' || currentUser?.role === 'manager');
+      } else showToast(res?.error || 'Erreur', 'error');
+    }
+
+    // ── ADMIN PLANNING ────────────────────────────────────────────────────────────
+    let adminWeek = getMonday();
+
+    async function loadAdminWeek() {
+      document.getElementById('aWeekLabel').textContent = fmtWeek(adminWeek);
+      const data = await api.get(`/api/salle/hours?weekStart=${adminWeek}`);
+      if (!data) return;
+      weekData = data;
+      buildGrid(document.getElementById('adminTable'), data, true, currentUser?.id);
+    }
+
+    async function reloadWeekData() {
+      const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'manager';
+      const week = isAdmin ? adminWeek : staffWeek;
+      const data = await api.get(`/api/salle/hours?weekStart=${week}`);
+      if (data) {
+        weekData = data;
+        if (isAdmin) buildGrid(document.getElementById('adminTable'), data, true, currentUser?.id);
+        else buildGrid(document.getElementById('staffTable'), data, false, currentUser?.id);
+      }
+    }
+
+    document.getElementById('aPrev').addEventListener('click', () => { adminWeek = addDays(adminWeek,-7); loadAdminWeek(); });
+    document.getElementById('aNext').addEventListener('click', () => { adminWeek = addDays(adminWeek, 7); loadAdminWeek(); });
+
+    // ── STAFF PLANNING ────────────────────────────────────────────────────────────
+    let staffWeek = getMonday();
+
+    async function loadStaffWeek() {
+      document.getElementById('sWeekLabel').textContent = fmtWeek(staffWeek);
+      const data = await api.get(`/api/salle/hours?weekStart=${staffWeek}`);
+      if (!data) return;
+      weekData = data;
+      buildGrid(document.getElementById('staffTable'), data, false, currentUser?.id);
+    }
+
+    document.getElementById('sPrev').addEventListener('click', () => { staffWeek = addDays(staffWeek,-7); loadStaffWeek(); });
+    document.getElementById('sNext').addEventListener('click', () => { staffWeek = addDays(staffWeek, 7); loadStaffWeek(); });
+    document.getElementById('btnGoConge').addEventListener('click', () => { window.location.href = '/staff/conges.html'; });
+
+    // ── CONGÉS ADMIN ──────────────────────────────────────────────────────────────
+    const labC  = { pending:'En attente', approved:'Validée', rejected:'Refusée' };
+    const clsC  = { pending:'sp-pending', approved:'sp-approved', rejected:'sp-rejected' };
+    const fmtD  = d => new Date(d).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' });
+
     async function loadAllDemandes() {
       const data = await api.get('/api/admin/conge-requests');
       const el   = document.getElementById('allDemandesList');
-      if (!data || !data.length) {
-        el.innerHTML = '<div class="empty-state">Aucune demande</div>';
-        return;
-      }
+      if (!data?.length) { el.innerHTML = '<div class="empty-state">Aucune demande</div>'; return; }
       el.innerHTML = `<ul role="list" style="list-style:none;margin:0;padding:0;">` +
         data.map(d => `
           <li class="demande-item" id="adm-${d.id}">
             <div class="demande-info">
               <div class="demande-name">${escapeHtml(d.user_name)}</div>
-              <strong>${escapeHtml(fmtDate(d.date_from))} → ${escapeHtml(fmtDate(d.date_to))}</strong>
+              <strong>${escapeHtml(fmtD(d.date_from))} → ${escapeHtml(fmtD(d.date_to))}</strong>
               <small>Demandé le ${escapeHtml(new Date(d.requested_at).toLocaleDateString('fr-FR'))}${d.reviewed_by ? ` · Par ${escapeHtml(d.reviewed_by)}` : ''}</small>
               ${d.motif ? `<div class="demande-motif">${escapeHtml(d.motif)}</div>` : ''}
             </div>
             ${d.status === 'pending' ? `
-              <div class="demande-actions" role="group" aria-label="Actions pour la demande de ${escapeHtml(d.user_name)}">
-                <button class="btn-approve" type="button" data-review="${d.id}" data-action="approved" aria-label="Valider la demande de ${escapeHtml(d.user_name)}">Valider</button>
-                <button class="btn-reject"  type="button" data-review="${d.id}" data-action="rejected" aria-label="Refuser la demande de ${escapeHtml(d.user_name)}">Refuser</button>
-              </div>
-            ` : `
-              <span class="status-pill ${classes[d.status]}" role="status">${escapeHtml(labels[d.status])}</span>
-            `}
-          </li>`).join('') +
-        `</ul>`;
+              <div class="demande-actions">
+                <button class="btn-approve" type="button" data-review="${d.id}" data-action="approved">Valider</button>
+                <button class="btn-reject"  type="button" data-review="${d.id}" data-action="rejected">Refuser</button>
+              </div>` : `<span class="status-pill ${clsC[d.status]}">${escapeHtml(labC[d.status])}</span>`}
+          </li>`).join('') + `</ul>`;
 
       el.querySelectorAll('[data-review]').forEach(btn => {
-        btn.addEventListener('click', () => reviewDemande(parseInt(btn.dataset.review, 10), btn.dataset.action));
+        btn.addEventListener('click', () => reviewDemande(parseInt(btn.dataset.review), btn.dataset.action));
       });
     }
 
     async function reviewDemande(id, status) {
       const res = await api.put(`/api/admin/conge-requests/${id}`, { status });
-      if (res && res.ok) {
-        showToast(status === 'approved' ? 'Demande validée' : 'Demande refusée', status === 'approved' ? 'success' : 'error');
+      if (res?.ok) { showToast(status === 'approved' ? 'Validée' : 'Refusée', status === 'approved' ? 'success' : 'error'); loadAllDemandes(); }
+      else showToast(res?.error || 'Erreur', 'error');
+    }
+
+    document.getElementById('btnRefreshConges').addEventListener('click', loadAllDemandes);
+
+    // ── INIT ──────────────────────────────────────────────────────────────────────
+    (async () => {
+      currentUser = await api.get('/api/auth/me');
+      if (!currentUser) return;
+
+      const isAdmin = currentUser.role === 'admin' || currentUser.role === 'manager';
+      if (isAdmin) {
+        document.getElementById('adminView').style.display = '';
+        loadAdminWeek();
         loadAllDemandes();
-        loadDemandes();
       } else {
-        showToast(res?.error || 'Erreur lors de la mise à jour', 'error');
+        document.getElementById('staffView').style.display = '';
+        loadStaffWeek();
       }
-    }
-
-    document.getElementById('btnRefreshAdmin').addEventListener('click', loadAllDemandes);
-
-    // ── Signature canvas ──────────────────────────────────────────────────────
-    const sigCanvas = document.getElementById('sigCanvas');
-    const ctx       = sigCanvas.getContext('2d');
-    let drawing = false, hasSig = false;
-
-    function resizeCanvas() {
-      const w = sigCanvas.offsetWidth;
-      sigCanvas.width  = w;
-      sigCanvas.height = 120;
-      ctx.strokeStyle = '#1a1a2e';
-      ctx.lineWidth   = 2;
-      ctx.lineCap     = 'round';
-      ctx.lineJoin    = 'round';
-    }
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    function getPos(e) {
-      const r   = sigCanvas.getBoundingClientRect();
-      const src = e.touches ? e.touches[0] : e;
-      return {
-        x: (src.clientX - r.left) * (sigCanvas.width / r.width),
-        y: (src.clientY - r.top)  * (sigCanvas.height / r.height)
-      };
-    }
-
-    sigCanvas.addEventListener('mousedown',  e => { drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
-    sigCanvas.addEventListener('mousemove',  e => {
-      if (!drawing) return;
-      const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke();
-      hasSig = true;
-      document.getElementById('sigPlaceholder').style.display = 'none';
-    });
-    sigCanvas.addEventListener('mouseup',    () => { drawing = false; });
-    sigCanvas.addEventListener('mouseleave', () => { drawing = false; });
-    sigCanvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }, { passive:false });
-    sigCanvas.addEventListener('touchmove',  e => {
-      e.preventDefault();
-      if (!drawing) return;
-      const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke();
-      hasSig = true;
-      document.getElementById('sigPlaceholder').style.display = 'none';
-    }, { passive:false });
-    sigCanvas.addEventListener('touchend', () => { drawing = false; });
-
-    document.getElementById('btnClearSig').addEventListener('click', clearSig);
-    function clearSig() {
-      ctx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
-      hasSig = false;
-      document.getElementById('sigPlaceholder').style.display = '';
-    }
-
-    // ── Soumettre ─────────────────────────────────────────────────────────────
-    document.getElementById('btnSubmitConge').addEventListener('click', submitConge);
-
-    async function submitConge() {
-      const dateFrom = document.getElementById('fFrom').value;
-      const dateTo   = document.getElementById('fTo').value;
-      if (!dateFrom || !dateTo) { showToast('Veuillez renseigner les dates', 'warning'); return; }
-      if (new Date(dateFrom) > new Date(dateTo)) { showToast('La date de fin doit être après le début', 'warning'); return; }
-      if (!hasSig) { showToast('Veuillez signer le formulaire', 'warning'); return; }
-
-      const btn = document.getElementById('btnSubmitConge');
-      btn.disabled    = true;
-      btn.textContent = 'Envoi…';
-
-      try {
-        const res = await api.post('/api/staff/conge-request', {
-          dateFrom,
-          dateTo,
-          motif:     document.getElementById('fMotif').value.trim(),
-          signature: sigCanvas.toDataURL('image/png'),
-        });
-        if (res && res.ok) {
-          document.getElementById('congeForm').style.display = 'none';
-          document.getElementById('sentState').style.display = 'block';
-          document.getElementById('sentState').focus();
-          loadDemandes();
-        } else {
-          showToast(res?.error || "Erreur lors de l'envoi", 'error');
-          btn.disabled = false; btn.textContent = 'Envoyer la demande';
-        }
-      } catch(e) {
-        showToast('Erreur : ' + escapeHtml(e.message), 'error');
-        btn.disabled = false; btn.textContent = 'Envoyer la demande';
-      }
-    }
-
-    document.getElementById('btnNewConge').addEventListener('click', resetForm);
-    function resetForm() {
-      document.getElementById('fFrom').value  = '';
-      document.getElementById('fTo').value    = '';
-      document.getElementById('fMotif').value = '';
-      clearSig();
-      document.getElementById('congeForm').style.display = '';
-      document.getElementById('sentState').style.display = 'none';
-      const btn = document.getElementById('btnSubmitConge');
-      btn.disabled = false; btn.textContent = 'Envoyer la demande';
-      btn.focus();
-    }
+    })();
   </script>
 </body>
 </html>

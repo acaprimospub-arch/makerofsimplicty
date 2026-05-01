@@ -162,7 +162,7 @@ const NAV_ICONS = {
   cuisine:               `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>`,
   email:                 `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>`,
   planning:              `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>`,
-  instagram:             `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2c-2.236 0-2.516.01-3.394.049-.876.04-1.474.178-1.997.38a4.03 4.03 0 00-1.457.948 4.03 4.03 0 00-.948 1.457c-.202.523-.34 1.121-.38 1.997C2.01 7.484 2 7.764 2 10s.01 2.516.049 3.394c.04.876.178 1.474.38 1.997a4.03 4.03 0 00.948 1.457c.455.455.944.738 1.457.948.523.202 1.121.34 1.997.38C7.484 17.99 7.764 18 10 18s2.516-.01 3.394-.049c.876-.04 1.474-.178 1.997-.38a4.03 4.03 0 001.457-.948 4.03 4.03 0 00.948-1.457c.202-.523.34-1.121.38-1.997C17.99 12.516 18 12.236 18 10s-.01-2.516-.049-3.394c-.04-.876-.178-1.474-.38-1.997a4.03 4.03 0 00-.948-1.457 4.03 4.03 0 00-1.457-.948c-.523-.202-1.121-.34-1.997-.38C12.516 2.01 12.236 2 10 2zm0 1.5c2.2 0 2.46.008 3.328.048.804.036 1.24.168 1.53.28.384.15.658.328.946.616.288.288.466.562.615.946.112.29.244.726.28 1.53.04.868.048 1.128.048 3.328s-.008 2.46-.048 3.328c-.036.804-.168 1.24-.28 1.53a2.553 2.553 0 01-.615.946 2.553 2.553 0 01-.946.615c-.29.112-.726.244-1.53.28-.868.04-1.128.048-3.328.048s-2.46-.008-3.328-.048c-.804-.036-1.24-.168-1.53-.28a2.553 2.553 0 01-.946-.615 2.553 2.553 0 01-.615-.946c-.112-.29-.244-.726-.28-1.53C3.508 12.46 3.5 12.2 3.5 10s.008-2.46.048-3.328c.036-.804.168-1.24.28-1.53.15-.384.327-.658.615-.946.288-.288.562-.466.946-.615.29-.112.726-.244 1.53-.28C7.54 3.508 7.8 3.5 10 3.5zm0 2.5a4 4 0 100 8 4 4 0 000-8zm0 1.5a2.5 2.5 0 110 5 2.5 2.5 0 010-5zm4.5-1.5a.75.75 0 100 1.5.75.75 0 000-1.5z" clip-rule="evenodd"/></svg>`,
+  conges:                `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>`,
   pointages:             `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>`,
   joy:                   `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM6.293 5.293a1 1 0 011.414 0L9 6.586V5a1 1 0 112 0v1.586l1.293-1.293a1 1 0 011.414 1.414L12.414 8H14a1 1 0 110 2h-1.586l1.293 1.293a1 1 0 01-1.414 1.414L11 11.414V13a1 1 0 11-2 0v-1.586l-1.293 1.293a1 1 0 01-1.414-1.414L7.586 10H6a1 1 0 110-2h1.586L6.293 6.707a1 1 0 010-1.414z"/></svg>`,
   'marketing-dashboard': `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>`,
@@ -206,7 +206,6 @@ async function buildNav(activePage) {
     { href: '/admin/email.html',        label: 'Email',        key: 'email' },
     { href: '/resa/devis.html',         label: 'Devis',        key: 'resa-devis' },
     { href: '/staff/planning.html',     label: 'Planning',     key: 'planning' },
-    { href: '/instagram/index.html',    label: 'Instagram',    key: 'instagram' },
     { href: '/admin/pointages.html',    label: 'Pointeuse',    key: 'pointages' },
   ];
   const managerMidiLinks = [
@@ -239,11 +238,10 @@ async function buildNav(activePage) {
   const cuisineLinks = [
     { href: '/cuisine/taches.html',   label: 'Tâches',    key: 'cuisine-taches' },
     { href: '/cuisine/planning.html', label: 'Planning',  key: 'cuisine-planning' },
-    { href: '/staff/planning.html',   label: 'Congés',    key: 'planning' },
+    { href: '/staff/conges.html',     label: 'Congés',    key: 'conges' },
   ];
   const marketingLinks = [
     { href: '/marketing/dashboard.html',    label: 'Dashboard',    key: 'marketing-dashboard' },
-    { href: '/instagram/index.html',        label: 'Instagram',    key: 'instagram' },
     { href: '/marketing/reservations.html', label: 'Réservations', key: 'marketing-reservations' },
     { href: '/admin/joy.html',              label: 'Joy.io',       key: 'joy' },
     { href: '/admin/manager.html',          label: 'Manager',      key: 'manager' },

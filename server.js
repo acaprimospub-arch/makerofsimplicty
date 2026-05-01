@@ -408,6 +408,69 @@ app.get('/api/cuisine/completions', requireCuisineManager, (req, res) => {
   res.json(db.getCuisineCompletionsByDate(date));
 });
 
+// ─── Salle Planning ────────────────────────────────────────────────────────────
+app.get('/api/salle/planning', requireAuth, (req, res) => {
+  const weekStart = req.query.weekStart;
+  if (!weekStart) return res.status(400).json({ error: 'weekStart requis' });
+  res.json(db.getSallePlanning(weekStart));
+});
+
+app.put('/api/salle/planning', requireAdminOrManager, (req, res) => {
+  db.upsertSallePlanning(req.body);
+  const data = db.getSallePlanning(req.body.week_start);
+  io.emit('salle:planning:updated', { weekStart: req.body.week_start, data });
+  res.json({ ok: true });
+});
+
+app.delete('/api/salle/planning', requireAdminOrManager, (req, res) => {
+  const { user_id, day_date, week_start } = req.body;
+  db.deleteSallePlanningShift(user_id, day_date);
+  const data = db.getSallePlanning(week_start);
+  io.emit('salle:planning:updated', { weekStart: week_start, data });
+  res.json({ ok: true });
+});
+
+// Endpoint combiné : planning + pointages + heures supp + snapshot
+app.get('/api/salle/hours', requireAuth, (req, res) => {
+  const weekStart = req.query.weekStart;
+  if (!weekStart) return res.status(400).json({ error: 'weekStart requis' });
+  const weekEnd = (() => { const d = new Date(weekStart); d.setDate(d.getDate() + 6); return d.toISOString().split('T')[0]; })();
+  const planning    = db.getSallePlanning(weekStart);
+  const pointages   = db.getPointagesRange(weekStart, weekEnd, null).filter(p => {
+    const u = planning.users.find(u => u.id === p.user_id);
+    return !!u;
+  });
+  const timeEvents  = db.getSalleTimeEventsForWeek(weekStart);
+  const snapshots   = db.getSalleSnapshot(weekStart);
+  res.json({ ...planning, pointages, timeEvents, snapshots });
+});
+
+// Heures supp salle
+app.post('/api/salle/time-events', requireAuth, (req, res) => {
+  const { user_id, date, minutes, note } = req.body;
+  const targetId = parseInt(user_id);
+  // Staff can only add for themselves
+  if (req.session.role === 'staff' && targetId !== req.session.userId) {
+    return res.status(403).json({ error: 'Accès refusé' });
+  }
+  const id = db.createSalleTimeEvent({ user_id: targetId, date, minutes: parseInt(minutes) || 0, note, created_by: req.session.userId });
+  io.emit('salle:hours:updated', { date });
+  res.json({ ok: true, id });
+});
+
+app.delete('/api/salle/time-events/:id', requireAuth, (req, res) => {
+  db.deleteSalleTimeEvent(req.params.id);
+  io.emit('salle:hours:updated', {});
+  res.json({ ok: true });
+});
+
+// Snapshot manuel (admin/manager)
+app.post('/api/salle/snapshot', requireAdminOrManager, (req, res) => {
+  const date = req.body.date || new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
+  _takeSalleSnapshot(date);
+  res.json({ ok: true });
+});
+
 // ─── Cuisine — Planning ────────────────────────────────────────────────────────
 app.get('/api/cuisine/planning', requireAuth, (req, res) => {
   const weekStart = req.query.weekStart;
@@ -1416,6 +1479,70 @@ setInterval(() => {
     }
   });
 }, 24 * 60 * 60 * 1000);
+
+// ─── Snapshot quotidien des heures salle ───────────────────────────────────────
+function _takeSalleSnapshot(date) {
+  try {
+    const weekStart = (() => {
+      const d = new Date(date); const day = d.getDay();
+      d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+      return d.toISOString().split('T')[0];
+    })();
+    const { users, shifts } = db.getSallePlanning(weekStart);
+    const pointagesDay = db.getPointagesRange(date, date, null);
+    const timeEventsDay = db.getSalleTimeEventsForWeek(date).filter(e => e.date === date);
+
+    for (const u of users) {
+      const plan = shifts.find(s => s.user_id === u.id && s.day_date === date);
+      const userPointages = pointagesDay.filter(p => p.user_id === u.id).sort((a, b) => a.timestamp > b.timestamp ? 1 : -1);
+      const arrivees = userPointages.filter(p => p.type === 'arrivee');
+      const departs  = userPointages.filter(p => p.type === 'depart');
+
+      let actual_start = arrivees[0]?.timestamp?.slice(11, 16) || null;
+      let actual_end   = departs[departs.length - 1]?.timestamp?.slice(11, 16) || null;
+
+      let total_actual_min = 0;
+      const pairs = Math.min(arrivees.length, departs.length);
+      for (let i = 0; i < pairs; i++) {
+        const a = new Date(arrivees[i].timestamp.replace(' ', 'T'));
+        const dp = new Date(departs[i].timestamp.replace(' ', 'T'));
+        total_actual_min += Math.max(0, Math.round((dp - a) / 60000));
+      }
+
+      const plannedMin = (() => {
+        if (!plan || plan.is_off || !plan.start_time || !plan.end_time) return 0;
+        const [sh, sm] = plan.start_time.slice(0,5).split(':').map(Number);
+        const [eh, em] = plan.end_time.slice(0,5).split(':').map(Number);
+        return Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
+      })();
+
+      const suppMin = timeEventsDay.filter(e => e.user_id === u.id).reduce((acc, e) => acc + (e.minutes || 0), 0);
+
+      db.upsertSalleSnapshot({
+        user_id: u.id, date,
+        planned_start: plan?.start_time?.slice(0, 5) || null,
+        planned_end:   plan?.end_time?.slice(0, 5) || null,
+        actual_start, actual_end,
+        total_planned_min: plannedMin,
+        total_actual_min,
+        supp_min: suppMin,
+      });
+    }
+    console.log(`[Snapshot] ✅ Salle ${date}`);
+  } catch(e) {
+    console.error('[Snapshot] ❌', e.message);
+  }
+}
+
+// Cron : snapshot quotidien à 23h45 (Paris)
+setInterval(() => {
+  const now = new Date();
+  const paris = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  if (paris.getHours() === 23 && paris.getMinutes() === 45) {
+    const date = paris.toISOString().split('T')[0];
+    _takeSalleSnapshot(date);
+  }
+}, 60 * 1000);
 
 // Auto-sync Joy.io au démarrage puis toutes les 2 min
 setTimeout(syncJoyEvents, 8000);

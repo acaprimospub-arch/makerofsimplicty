@@ -155,6 +155,57 @@ try {
 
 try {
   db.exec(`
+    CREATE TABLE IF NOT EXISTS salle_planning (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      week_start TEXT NOT NULL,
+      day_date TEXT NOT NULL,
+      start_time TEXT,
+      end_time TEXT,
+      is_off INTEGER DEFAULT 0,
+      UNIQUE(user_id, day_date),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+} catch(e) {}
+
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS salle_time_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      minutes INTEGER NOT NULL DEFAULT 0,
+      note TEXT,
+      created_by INTEGER,
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+} catch(e) {}
+
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS salle_daily_snapshot (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      planned_start TEXT,
+      planned_end TEXT,
+      actual_start TEXT,
+      actual_end TEXT,
+      total_planned_min INTEGER DEFAULT 0,
+      total_actual_min INTEGER DEFAULT 0,
+      supp_min INTEGER DEFAULT 0,
+      snapshotted_at TEXT DEFAULT (datetime('now','localtime')),
+      UNIQUE(user_id, date),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+} catch(e) {}
+
+try {
+  db.exec(`
     CREATE TABLE IF NOT EXISTS cuisine_planning (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -1210,6 +1261,75 @@ function deleteCuisinePlanningShift(userId, dayDate) {
   db.prepare("DELETE FROM cuisine_planning WHERE user_id = ? AND day_date = ?").run(userId, dayDate);
 }
 
+// ─── Salle Planning ─────────────────────────────────────────────────────────────
+function getSallePlanning(weekStart) {
+  const users = db.prepare("SELECT id, name, shift FROM users WHERE shift IN ('midi','soir') AND active = 1 ORDER BY shift ASC, sort_order ASC, name ASC").all();
+  const shifts = db.prepare("SELECT * FROM salle_planning WHERE week_start = ?").all(weekStart);
+  return { users, shifts };
+}
+
+function upsertSallePlanning({ user_id, week_start, day_date, start_time, end_time, is_off }) {
+  db.prepare(`
+    INSERT INTO salle_planning (user_id, week_start, day_date, start_time, end_time, is_off)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(user_id, day_date) DO UPDATE SET
+      week_start = excluded.week_start,
+      start_time = excluded.start_time,
+      end_time   = excluded.end_time,
+      is_off     = excluded.is_off
+  `).run(user_id, week_start, day_date, start_time || null, end_time || null, is_off ? 1 : 0);
+}
+
+function deleteSallePlanningShift(userId, dayDate) {
+  db.prepare("DELETE FROM salle_planning WHERE user_id = ? AND day_date = ?").run(userId, dayDate);
+}
+
+// ─── Salle Time Events (heures supp) ───────────────────────────────────────────
+function getSalleTimeEventsForWeek(weekStart) {
+  const weekEnd = (() => { const d = new Date(weekStart); d.setDate(d.getDate() + 6); return d.toISOString().split('T')[0]; })();
+  return db.prepare(`
+    SELECT ste.*, u.name as user_name
+    FROM salle_time_events ste
+    JOIN users u ON u.id = ste.user_id
+    WHERE ste.date BETWEEN ? AND ?
+    ORDER BY ste.date, u.name
+  `).all(weekStart, weekEnd);
+}
+
+function createSalleTimeEvent({ user_id, date, minutes, note, created_by }) {
+  const r = db.prepare(`
+    INSERT INTO salle_time_events (user_id, date, minutes, note, created_by)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(user_id, date, minutes, note || null, created_by || null);
+  return r.lastInsertRowid;
+}
+
+function deleteSalleTimeEvent(id) {
+  db.prepare("DELETE FROM salle_time_events WHERE id = ?").run(id);
+}
+
+// ─── Salle Daily Snapshot ───────────────────────────────────────────────────────
+function upsertSalleSnapshot({ user_id, date, planned_start, planned_end, actual_start, actual_end, total_planned_min, total_actual_min, supp_min }) {
+  db.prepare(`
+    INSERT INTO salle_daily_snapshot (user_id, date, planned_start, planned_end, actual_start, actual_end, total_planned_min, total_actual_min, supp_min, snapshotted_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now','localtime'))
+    ON CONFLICT(user_id, date) DO UPDATE SET
+      planned_start    = excluded.planned_start,
+      planned_end      = excluded.planned_end,
+      actual_start     = excluded.actual_start,
+      actual_end       = excluded.actual_end,
+      total_planned_min= excluded.total_planned_min,
+      total_actual_min = excluded.total_actual_min,
+      supp_min         = excluded.supp_min,
+      snapshotted_at   = excluded.snapshotted_at
+  `).run(user_id, date, planned_start || null, planned_end || null, actual_start || null, actual_end || null, total_planned_min || 0, total_actual_min || 0, supp_min || 0);
+}
+
+function getSalleSnapshot(weekStart) {
+  const weekEnd = (() => { const d = new Date(weekStart); d.setDate(d.getDate() + 6); return d.toISOString().split('T')[0]; })();
+  return db.prepare("SELECT * FROM salle_daily_snapshot WHERE date BETWEEN ? AND ?").all(weekStart, weekEnd);
+}
+
 function getCuisineCompletionsByDate(date) {
   const users = db.prepare("SELECT id, name FROM users WHERE shift = 'cuisine' AND active = 1 ORDER BY sort_order ASC, name").all();
   const total = db.prepare("SELECT COUNT(*) as c FROM tasks WHERE domain = 'cuisine' AND active = 1").get().c;
@@ -1587,6 +1707,9 @@ module.exports = {
   getJoyEvents, deleteJoyEvent, assignTableToJoyEvent,
   getShiftMessages, upsertShiftMessage,
   getCuisinePlanning, upsertCuisinePlanning, deleteCuisinePlanningShift,
+  getSallePlanning, upsertSallePlanning, deleteSallePlanningShift,
+  getSalleTimeEventsForWeek, createSalleTimeEvent, deleteSalleTimeEvent,
+  upsertSalleSnapshot, getSalleSnapshot,
   getCuisineCompletionsByDate,
   logTimeEvent, getTimeEventsByDate, getTimeEventsRange, deleteTimeEvent,
   addReservationAttachment, getReservationAttachments, getAttachmentById, deleteAttachment,
