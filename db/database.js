@@ -1705,6 +1705,93 @@ try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_cp_nom ON cuisine_produits(
   for (const r of _haccp) _ins.run(...r);
 }
 
+{
+  const _insRaw = db.prepare("INSERT OR IGNORE INTO cuisine_produits (nom, categorie, fournisseur, dlc_jours, type_date, allergenes, configured, actif) VALUES (?, ?, ?, ?, ?, ?, 1, 1)");
+  const _rawProds = [
+    // PASSIONFROID
+    ['Bavette aloyau bœuf angus',       'Viandes',          'PASSIONFROID', 3,  'dlc',  '["sulfites"]'],
+    ['Bavette aloyau Simmental',         'Viandes',          'PASSIONFROID', 3,  'dlc',  '["sulfites"]'],
+    ['Steak haché bœuf',                 'Viandes',          'PASSIONFROID', 2,  'dlc',  '[]'],
+    ['Carré de porc',                    'Viandes',          'PASSIONFROID', 4,  'dlc',  '[]'],
+    ['Poitrine de veau',                 'Viandes',          'PASSIONFROID', 4,  'dlc',  '[]'],
+    ['Rôti de porc',                     'Viandes',          'PASSIONFROID', 4,  'dlc',  '[]'],
+    ['Cuisses de poulet',                'Viandes',          'PASSIONFROID', 3,  'dlc',  '[]'],
+    ['Saucisson sec Savoie',             'Charcuterie',      'PASSIONFROID', 7,  'dlc',  '[]'],
+    ['Jambon cuit supérieur',            'Charcuterie',      'PASSIONFROID', 5,  'dlc',  '[]'],
+    ['Rosette',                          'Charcuterie',      'PASSIONFROID', 7,  'dlc',  '[]'],
+    ['Spianata piccante',                'Charcuterie',      'PASSIONFROID', 7,  'dlc',  '[]'],
+    ['Saucisson sec nature',             'Charcuterie',      'PASSIONFROID', 7,  'dlc',  '[]'],
+    ['Burrata',                          'Fromages',         'PASSIONFROID', 3,  'dlc',  '["lait"]'],
+    ['Stracciatella',                    'Fromages',         'PASSIONFROID', 3,  'dlc',  '["lait"]'],
+    ['Brie pasteurisé',                  'Fromages',         'PASSIONFROID', 7,  'dlc',  '["lait"]'],
+    ['Saint-Nectaire AOP',               'Fromages',         'PASSIONFROID', 7,  'dlc',  '["lait"]'],
+    ['Tomme de Savoie',                  'Fromages',         'PASSIONFROID', 7,  'dlc',  '["lait"]'],
+    ['Grana Padano',                     'Fromages',         'PASSIONFROID', 10, 'dlc',  '["lait"]'],
+    ['Cheddar rouge',                    'Fromages',         'PASSIONFROID', 7,  'dlc',  '["lait"]'],
+    ['Lait entier UHT',                  'Produits laitiers','PASSIONFROID', 5,  'dluo', '["lait"]'],
+    ['Beurre doux',                      'Produits laitiers','PASSIONFROID', 7,  'dlc',  '["lait"]'],
+    ['Beurre micro Président',           'Produits laitiers','PASSIONFROID', 10, 'dlc',  '["lait"]'],
+    ['Crème 30% UHT',                    'Produits laitiers','PASSIONFROID', 7,  'dluo', '["lait"]'],
+    ['Thon albacore',                    'Poissons',         'PASSIONFROID', 2,  'dlc',  '["poisson"]'],
+    ['Poulet pané cornflakes',           'Surgelés',         'PASSIONFROID', 3,  'dlc',  '["gluten","oeufs"]'],
+    ['Fish & chips cabillaud',           'Surgelés',         'PASSIONFROID', 3,  'dlc',  '["gluten","poisson"]'],
+    ['Purée de pommes de terre',         'Surgelés',         'PASSIONFROID', 3,  'dlc',  '["lait"]'],
+    ['Baguette précuite',                'Boulangerie',      'PASSIONFROID', 2,  'dlc',  '["gluten"]'],
+    ['Gaufre Bruxelles',                 'Boulangerie',      'PASSIONFROID', 3,  'dluo', '["gluten","oeufs","lait"]'],
+    ['Sauce truffe noire',               'Condiments',       'PASSIONFROID', 14, 'dluo', '["sulfites"]'],
+    // FRANCE FRAIS
+    ['Chair à saucisse',                 'Viandes',          'FRANCE FRAIS', 3,  'dlc',  '[]'],
+    ['Cuisse de poulet',                 'Viandes',          'FRANCE FRAIS', 3,  'dlc',  '[]'],
+    ['Épaule de porcelet',               'Viandes',          'FRANCE FRAIS', 4,  'dlc',  '[]'],
+    ['Jambon de Navarre',                'Charcuterie',      'FRANCE FRAIS', 5,  'dlc',  '[]'],
+    ['Mortadelle pistache',              'Charcuterie',      'FRANCE FRAIS', 7,  'dlc',  '["fruits_coque"]'],
+    ['Rosette de Lyon',                  'Charcuterie',      'FRANCE FRAIS', 7,  'dlc',  '[]'],
+    ['Salame piccante',                  'Charcuterie',      'FRANCE FRAIS', 7,  'dlc',  '[]'],
+    ['Pâté en croûte moutarde',          'Charcuterie',      'FRANCE FRAIS', 5,  'dlc',  '["gluten","oeufs","moutarde"]'],
+    ['Poitrine fumée TULIP',             'Charcuterie',      'FRANCE FRAIS', 5,  'dlc',  '[]'],
+    ['Pâté de pintade aux morilles',     'Charcuterie',      'FRANCE FRAIS', 5,  'dlc',  '["gluten","oeufs"]'],
+    ['Saint-Marcellin',                  'Fromages',         'FRANCE FRAIS', 5,  'dlc',  '["lait"]'],
+    ['Brie 24%',                         'Fromages',         'FRANCE FRAIS', 7,  'dlc',  '["lait"]'],
+    ['Emmental râpé',                    'Fromages',         'FRANCE FRAIS', 10, 'dlc',  '["lait"]'],
+    ['Saint-Nectaire AOP FF',            'Fromages',         'FRANCE FRAIS', 7,  'dlc',  '["lait"]'],
+    ['Bleu d\'Auvergne',                 'Fromages',         'FRANCE FRAIS', 7,  'dlc',  '["lait"]'],
+    ['Cheddar 33%',                      'Fromages',         'FRANCE FRAIS', 7,  'dlc',  '["lait"]'],
+    ['Crème chantilly DEBIC',            'Produits laitiers','FRANCE FRAIS', 3,  'dluo', '["lait"]'],
+    ['Crème UHT TDF',                    'Produits laitiers','FRANCE FRAIS', 7,  'dluo', '["lait"]'],
+    ['Lait Valcost',                     'Produits laitiers','FRANCE FRAIS', 5,  'dluo', '["lait"]'],
+    ['Beurre Président',                 'Produits laitiers','FRANCE FRAIS', 10, 'dlc',  '["lait"]'],
+    ['Saumon Trim B',                    'Poissons',         'FRANCE FRAIS', 2,  'dlc',  '["poisson"]'],
+    ['Ciabatta précuite',                'Boulangerie',      'FRANCE FRAIS', 2,  'dlc',  '["gluten"]'],
+    ['Bun sésame',                       'Boulangerie',      'FRANCE FRAIS', 2,  'dlc',  '["gluten","sesame"]'],
+    ['Mayonnaise haute fermeté',         'Condiments',       'FRANCE FRAIS', 14, 'dluo', '["oeufs","moutarde"]'],
+    ['Moutarde de Beaufort',             'Condiments',       'FRANCE FRAIS', 30, 'dluo', '["moutarde","sulfites"]'],
+    ['Cornichons',                       'Condiments',       'FRANCE FRAIS', 30, 'dluo', '[]'],
+    ['Vinaigre cristal',                 'Condiments',       'FRANCE FRAIS', 30, 'dluo', '["sulfites"]'],
+    ['Farine de blé T55',                'Épicerie',         'FRANCE FRAIS', 30, 'dluo', '["gluten"]'],
+    ['Piment d\'Espelette',              'Épicerie',         'FRANCE FRAIS', 30, 'dluo', '[]'],
+    // BANNETON
+    ['Pain de mie artisanal',            'Boulangerie',      'BANNETON',     3,  'dlc',  '["gluten","oeufs","lait"]'],
+    // BOULANGERIE ELGARNI
+    ['Pain de campagne',                 'Boulangerie',      'BOULANGERIE ELGARNI', 3, 'dlc', '["gluten"]'],
+    ['Baguettes',                        'Boulangerie',      'BOULANGERIE ELGARNI', 2, 'dlc', '["gluten"]'],
+    // EPISAVEURS
+    ['Mayonnaise col 10G',               'Condiments',       'EPISAVEURS',   30, 'dluo', '["oeufs","moutarde"]'],
+    ['Ketchup col 10G',                  'Condiments',       'EPISAVEURS',   30, 'dluo', '[]'],
+    ['Sauce champignons truffe',         'Condiments',       'EPISAVEURS',   14, 'dluo', '["sulfites"]'],
+    ['Huile de tournesol',               'Épicerie',         'EPISAVEURS',   7,  'dluo', '[]'],
+    ['Épices cajun',                     'Épicerie',         'EPISAVEURS',   30, 'dluo', '[]'],
+    ['Ail semoule',                      'Épicerie',         'EPISAVEURS',   30, 'dluo', '[]'],
+    ['Oignon frit',                      'Épicerie',         'EPISAVEURS',   30, 'dluo', '[]'],
+    ['Amandes effilées',                 'Épicerie',         'EPISAVEURS',   30, 'dluo', '["fruits_coque"]'],
+    ['Pralin concassé',                  'Épicerie',         'EPISAVEURS',   30, 'dluo', '["fruits_coque"]'],
+    // AGRIZ
+    ['Herbes fraîches',                  'Fruits & légumes', 'AGRIZ',        3,  'dlc',  '[]'],
+    ['Légumes frais',                    'Fruits & légumes', 'AGRIZ',        5,  'dlc',  '[]'],
+    ['Fruits frais',                     'Fruits & légumes', 'AGRIZ',        5,  'dlc',  '[]'],
+  ];
+  for (const r of _rawProds) _insRaw.run(...r);
+}
+
 function getCuisineProduits() {
   return db.prepare("SELECT * FROM cuisine_produits WHERE actif = 1 ORDER BY fournisseur NULLS LAST, categorie, nom").all();
 }
