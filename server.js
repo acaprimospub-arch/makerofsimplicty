@@ -511,6 +511,40 @@ app.delete('/api/cuisine/time-events/:id', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── Étiquettes Cuisine ────────────────────────────────────────────────────────
+app.get('/api/cuisine/produits', requireAuth, (req, res) => {
+  res.json(db.getCuisineProduits());
+});
+
+app.post('/api/cuisine/produits', requireAuth, (req, res) => {
+  const id = db.createCuisineProduit({ ...req.body, created_by: req.session.userId });
+  res.json(db.getCuisineProduitById(id));
+});
+
+app.put('/api/cuisine/produits/:id', requireAuth, (req, res) => {
+  db.updateCuisineProduit(req.params.id, req.body);
+  res.json(db.getCuisineProduitById(req.params.id));
+});
+
+app.delete('/api/cuisine/produits/:id', requireAuth, (req, res) => {
+  db.deleteCuisineProduit(req.params.id);
+  res.json({ ok: true });
+});
+
+app.post('/api/cuisine/etiquettes/log', requireAuth, (req, res) => {
+  const id = db.logEtiquette({
+    ...req.body,
+    user_id: req.session.userId,
+    user_name: req.session.name,
+  });
+  res.json({ id });
+});
+
+app.get('/api/cuisine/etiquettes/log', requireAuth, (req, res) => {
+  const { from, to, limit } = req.query;
+  res.json(db.getEtiquettesLog({ from, to, limit: limit ? parseInt(limit) : 200 }));
+});
+
 // ─── Tables (floor plan) ───────────────────────────────────────────────────────
 app.get('/api/tables', requireAuth, (req, res) => {
   res.json(db.getTables());

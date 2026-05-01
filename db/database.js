@@ -1623,6 +1623,78 @@ function deletePlanningPDF(id) {
   return db.prepare('DELETE FROM planning_pdfs WHERE id = ?').run(id);
 }
 
+// ─── Étiquettes Cuisine ────────────────────────────────────────────────────────
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS cuisine_produits (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nom TEXT NOT NULL,
+      categorie TEXT DEFAULT 'autre',
+      allergenes TEXT DEFAULT '[]',
+      notes TEXT,
+      actif INTEGER DEFAULT 1,
+      created_by INTEGER,
+      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (created_by) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS cuisine_etiquettes_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL,
+      produit_nom TEXT NOT NULL,
+      categorie TEXT,
+      date_fab TEXT,
+      date_dlc TEXT,
+      quantite INTEGER DEFAULT 1,
+      allergenes TEXT DEFAULT '[]',
+      notes TEXT,
+      user_id INTEGER,
+      user_name TEXT,
+      printed_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+} catch(e) {}
+
+function getCuisineProduits() {
+  return db.prepare("SELECT * FROM cuisine_produits WHERE actif = 1 ORDER BY categorie, nom").all();
+}
+function getCuisineProduitById(id) {
+  return db.prepare("SELECT * FROM cuisine_produits WHERE id = ?").get(id);
+}
+function createCuisineProduit({ nom, categorie, allergenes, notes, created_by }) {
+  return db.prepare(
+    "INSERT INTO cuisine_produits (nom, categorie, allergenes, notes, created_by) VALUES (?, ?, ?, ?, ?)"
+  ).run(nom, categorie || 'autre', JSON.stringify(allergenes || []), notes || null, created_by || null).lastInsertRowid;
+}
+function updateCuisineProduit(id, data) {
+  const fields = ['nom', 'categorie', 'allergenes', 'notes', 'actif'];
+  const updates = fields.filter(f => data[f] !== undefined).map(f => `${f} = ?`);
+  const values = fields.filter(f => data[f] !== undefined).map(f =>
+    f === 'allergenes' ? JSON.stringify(data[f]) : data[f]
+  );
+  if (!updates.length) return;
+  db.prepare(`UPDATE cuisine_produits SET ${updates.join(', ')} WHERE id = ?`).run(...values, id);
+}
+function deleteCuisineProduit(id) {
+  db.prepare("UPDATE cuisine_produits SET actif = 0 WHERE id = ?").run(id);
+}
+
+function logEtiquette({ type, produit_nom, categorie, date_fab, date_dlc, quantite, allergenes, notes, user_id, user_name }) {
+  return db.prepare(
+    "INSERT INTO cuisine_etiquettes_log (type, produit_nom, categorie, date_fab, date_dlc, quantite, allergenes, notes, user_id, user_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  ).run(type, produit_nom, categorie || null, date_fab || null, date_dlc || null, quantite || 1, JSON.stringify(allergenes || []), notes || null, user_id || null, user_name || null).lastInsertRowid;
+}
+function getEtiquettesLog({ from, to, limit } = {}) {
+  let q = "SELECT * FROM cuisine_etiquettes_log WHERE 1=1";
+  const params = [];
+  if (from) { q += ' AND date(printed_at) >= ?'; params.push(from); }
+  if (to)   { q += ' AND date(printed_at) <= ?'; params.push(to); }
+  q += ' ORDER BY printed_at DESC';
+  if (limit) { q += ' LIMIT ?'; params.push(limit); }
+  return db.prepare(q).all(...params);
+}
+
 // ─── Pointages ─────────────────────────────────────────────────────────────────
 function getScheduledStartTime(user_id, date) {
   const schedShift = db.prepare(`
@@ -1664,4 +1736,6 @@ module.exports = {
   addInstagramMedia, getInstagramMedia, getInstagramMediaById, deleteInstagramMedia, reorderInstagramMedia,
   addPlanningPDF, getLatestPlanningPDF, deletePlanningPDF,
   getScheduledStartTime,
+  getCuisineProduits, getCuisineProduitById, createCuisineProduit, updateCuisineProduit, deleteCuisineProduit,
+  logEtiquette, getEtiquettesLog,
 };

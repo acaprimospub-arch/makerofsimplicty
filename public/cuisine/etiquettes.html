@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Étiquettes Cuisine — Mos Pub Mercière</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MOS">
+  <meta name="theme-color" content="#060e15">
+  <style>
+    /* ── Layout ── */
+    .et-layout { display:grid; grid-template-columns:1fr 340px; gap:20px; align-items:start; }
+    @media(max-width:900px){ .et-layout { grid-template-columns:1fr; } }
+
+    /* ── Type tabs ── */
+    .type-tabs { display:flex; gap:8px; margin-bottom:20px; }
+    .type-tab { flex:1; padding:10px 8px; border-radius:var(--radius); border:1.5px solid var(--border);
+      background:var(--bg-card); color:var(--text-muted); font-size:.85rem; font-weight:600;
+      cursor:pointer; transition:all .18s var(--ease-out); text-align:center; }
+    .type-tab:hover { border-color:var(--primary-dim); color:var(--text); }
+    .type-tab.active { border-color:var(--primary); background:rgba(212,162,74,.12); color:var(--primary); }
+    .type-tab .tab-icon { display:block; font-size:1.2rem; margin-bottom:3px; }
+
+    /* ── Form section ── */
+    .form-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px; }
+    .form-row { margin-bottom:14px; }
+    .form-row label { display:block; font-size:.8rem; font-weight:600; color:var(--text-muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.05em; }
+    .form-row input, .form-row textarea, .form-row select {
+      width:100%; background:var(--bg-surface); border:1.5px solid var(--border); border-radius:var(--radius);
+      color:var(--text); padding:9px 12px; font-size:.9rem; font-family:inherit;
+      transition:border-color .15s; box-sizing:border-box; }
+    .form-row input:focus, .form-row textarea:focus, .form-row select:focus {
+      outline:none; border-color:var(--primary); }
+    .form-row textarea { resize:vertical; min-height:60px; }
+    .form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+    .qte-row { display:flex; align-items:center; gap:10px; }
+    .qte-btn { width:34px; height:34px; border-radius:8px; border:1.5px solid var(--border); background:var(--bg-surface);
+      color:var(--text); font-size:1.2rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      transition:all .15s; }
+    .qte-btn:hover { border-color:var(--primary); color:var(--primary); }
+    .qte-val { font-size:1.1rem; font-weight:700; min-width:28px; text-align:center; }
+
+    /* ── Autocomplete ── */
+    .autocomplete-wrap { position:relative; }
+    .autocomplete-list { position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:100;
+      background:var(--bg-surface); border:1.5px solid var(--primary); border-radius:var(--radius);
+      max-height:180px; overflow-y:auto; display:none; }
+    .autocomplete-list.open { display:block; }
+    .ac-item { padding:9px 12px; cursor:pointer; font-size:.88rem; transition:background .12s; }
+    .ac-item:hover, .ac-item.focused { background:rgba(212,162,74,.12); color:var(--primary); }
+    .ac-item-sub { font-size:.75rem; color:var(--text-muted); margin-top:2px; }
+
+    /* ── Allergènes ── */
+    .allergen-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; }
+    .allergen-check { display:flex; align-items:center; gap:7px; padding:7px 9px;
+      background:var(--bg-surface); border:1.5px solid var(--border); border-radius:8px;
+      cursor:pointer; transition:all .15s; font-size:.82rem; }
+    .allergen-check input { display:none; }
+    .allergen-check .a-box { width:16px; height:16px; border-radius:4px; border:1.5px solid var(--border);
+      background:transparent; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .15s; }
+    .allergen-check input:checked ~ .a-box { background:var(--primary); border-color:var(--primary); }
+    .allergen-check input:checked ~ .a-box::after { content:'✓'; font-size:.65rem; color:#000; font-weight:900; }
+    .allergen-check:has(input:checked) { border-color:var(--primary); background:rgba(212,162,74,.08); color:var(--primary); }
+    .allergen-check .a-icon { font-size:.9rem; }
+
+    /* ── Catégorie chips ── */
+    .cat-chips { display:flex; flex-wrap:wrap; gap:6px; }
+    .cat-chip { padding:5px 12px; border-radius:20px; border:1.5px solid var(--border);
+      background:var(--bg-surface); color:var(--text-muted); font-size:.8rem; font-weight:600;
+      cursor:pointer; transition:all .15s; }
+    .cat-chip:hover { border-color:var(--primary-dim); color:var(--text); }
+    .cat-chip.active { border-color:var(--primary); background:rgba(212,162,74,.12); color:var(--primary); }
+
+    /* ── Print button ── */
+    .btn-print { width:100%; padding:14px; font-size:1rem; font-weight:700; margin-top:8px;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      background:var(--primary); color:#000; border-radius:var(--radius); border:none;
+      cursor:pointer; transition:all .18s var(--ease-out);
+      box-shadow:0 2px 12px rgba(212,162,74,.28); }
+    .btn-print:hover { transform:translateY(-1px); box-shadow:0 4px 20px rgba(212,162,74,.4); }
+    .btn-print:active { transform:translateY(0); }
+    .btn-print .btn-print-qty { opacity:.7; font-weight:400; font-size:.88rem; }
+
+    /* ── Preview panel ── */
+    .preview-panel { position:sticky; top:80px; }
+    .preview-title { font-size:.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
+    .preview-scale-wrap { display:flex; justify-content:center; padding:20px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); }
+    .preview-scale { transform-origin:top center; }
+    /* Label réel 58×40mm. À 96dpi: 1mm=3.779px → 58mm≈219px, 40mm≈151px */
+    /* On affiche à 2× pour la lisibilité */
+    .label-preview { width:219px; height:151px; transform:scale(2); transform-origin:top left; margin-bottom:151px; }
+
+    /* ── Label styles (commun écran + impression) ── */
+    .label-box {
+      width:219px; height:151px; box-sizing:border-box;
+      font-family:'Inter',Arial,sans-serif; color:#000; background:#fff;
+      border:1.5px solid #333; border-radius:3px; padding:5px 7px;
+      display:flex; flex-direction:column; overflow:hidden; }
+    .lb-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:3px; }
+    .lb-brand { font-size:5.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#333; }
+    .lb-type-badge { font-size:5px; font-weight:700; padding:1.5px 4px; border-radius:2px; text-transform:uppercase; letter-spacing:.05em; }
+    .lb-type-badge.dlc { background:#d32f2f; color:#fff; }
+    .lb-type-badge.produit { background:#1565c0; color:#fff; }
+    .lb-type-badge.preparation { background:#2e7d32; color:#fff; }
+    .lb-sep { height:1px; background:#333; margin-bottom:4px; }
+    .lb-produit { font-size:8px; font-weight:900; margin-bottom:3px; line-height:1.15; word-break:break-word; }
+    .lb-row { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px; }
+    .lb-label { font-size:5.5px; color:#555; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+    .lb-value { font-size:6.5px; font-weight:700; }
+    .lb-dlc-box { border:2px solid #d32f2f; border-radius:2px; padding:2px 5px; text-align:center; margin:3px 0; }
+    .lb-dlc-label { font-size:5px; color:#d32f2f; font-weight:700; text-transform:uppercase; }
+    .lb-dlc-date { font-size:10px; font-weight:900; color:#d32f2f; line-height:1.1; }
+    .lb-allergenes { margin-top:3px; }
+    .lb-allergenes-label { font-size:5px; color:#555; font-weight:700; text-transform:uppercase; margin-bottom:1.5px; }
+    .lb-allergenes-list { font-size:5.5px; font-weight:600; line-height:1.4; word-break:break-word; }
+    .lb-notes { font-size:5.5px; color:#555; font-style:italic; margin-top:3px; line-height:1.3; word-break:break-word; }
+    .lb-footer { margin-top:auto; display:flex; justify-content:space-between; align-items:center; }
+    .lb-footer-left { font-size:5px; color:#888; }
+    .lb-footer-right { font-size:5px; color:#888; }
+
+    /* ── Catalogue ── */
+    .catalogue-header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px;
+      cursor:pointer; user-select:none; }
+    .catalogue-body { padding:0 16px 16px; display:none; }
+    .catalogue-body.open { display:block; }
+    .produit-list { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; max-height:300px; overflow-y:auto; }
+    .produit-item { display:flex; align-items:center; gap:10px; padding:10px 12px;
+      background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius); }
+    .pi-name { font-weight:700; font-size:.88rem; flex:1; }
+    .pi-cat { font-size:.75rem; color:var(--text-muted); }
+    .pi-allergens { font-size:.72rem; color:var(--primary); }
+    .pi-actions { display:flex; gap:6px; }
+    .pi-btn { padding:4px 10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-card);
+      color:var(--text-muted); font-size:.75rem; cursor:pointer; transition:all .12s; }
+    .pi-btn:hover { border-color:var(--primary); color:var(--primary); }
+    .pi-btn.del:hover { border-color:#e74c3c; color:#e74c3c; }
+
+    /* ── Historique ── */
+    .log-item { display:flex; align-items:center; gap:10px; padding:10px 12px; margin-bottom:6px;
+      background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius); }
+    .log-badge { font-size:.7rem; font-weight:700; padding:2px 7px; border-radius:4px; text-transform:uppercase; flex-shrink:0; }
+    .log-badge.dlc { background:rgba(211,47,47,.18); color:#e57373; }
+    .log-badge.produit { background:rgba(21,101,192,.18); color:#64b5f6; }
+    .log-badge.preparation { background:rgba(46,125,50,.18); color:#81c784; }
+    .log-nom { font-weight:700; font-size:.88rem; flex:1; }
+    .log-meta { font-size:.75rem; color:var(--text-muted); white-space:nowrap; }
+    .log-empty { text-align:center; padding:24px; color:var(--text-muted); font-size:.88rem; }
+
+    /* ── Section collapsible ── */
+    .collapsible-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); margin-top:16px; }
+    .collapsible-trigger { display:flex; align-items:center; gap:10px; padding:14px 16px; cursor:pointer; user-select:none; width:100%; text-align:left; }
+    .collapsible-trigger .ct-icon { font-size:1rem; }
+    .collapsible-trigger .ct-label { font-weight:700; font-size:.9rem; flex:1; }
+    .collapsible-trigger .ct-arrow { font-size:.8rem; color:var(--text-muted); transition:transform .2s; }
+    .collapsible-trigger.open .ct-arrow { transform:rotate(180deg); }
+    .collapsible-body { padding:0 16px 16px; display:none; }
+    .collapsible-body.open { display:block; }
+
+    /* ── @media print ── */
+    @media print {
+      @page { size: 58mm 40mm; margin: 0; }
+      html, body { margin:0; padding:0; background:#fff !important; }
+      body > * { display:none !important; }
+      #label-print-area { display:block !important; }
+      .label-box { width:58mm; height:40mm; border:none; border-radius:0; padding:2mm 2.5mm; font-size:inherit; }
+      .lb-brand { font-size:1.8mm; }
+      .lb-type-badge { font-size:1.6mm; padding:0.5mm 1mm; }
+      .lb-produit { font-size:2.8mm; }
+      .lb-label { font-size:1.7mm; }
+      .lb-value { font-size:2mm; }
+      .lb-dlc-label { font-size:1.6mm; }
+      .lb-dlc-date { font-size:3.2mm; }
+      .lb-allergenes-label { font-size:1.6mm; }
+      .lb-allergenes-list { font-size:1.8mm; }
+      .lb-notes { font-size:1.8mm; }
+      .lb-footer-left, .lb-footer-right { font-size:1.5mm; }
+    }
+    #label-print-area { display:none; }
+  </style>
+</head>
+<body>
+<nav class="nav" id="nav-bar" aria-label="Navigation principale"></nav>
+
+<main class="container" style="padding-top:80px; padding-bottom:40px;">
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
+    <div>
+      <h1 style="font-size:1.4rem; font-weight:800; margin:0;">Étiquettes Cuisine</h1>
+      <p style="color:var(--text-muted); font-size:.85rem; margin:2px 0 0;">Impression DLC · Produit · Préparation</p>
+    </div>
+  </div>
+
+  <div class="et-layout">
+    <!-- Formulaire -->
+    <div>
+      <!-- Type tabs -->
+      <div class="type-tabs" role="tablist" aria-label="Type d'étiquette">
+        <button class="type-tab active" data-type="dlc" role="tab" aria-selected="true">
+          <span class="tab-icon">🗓️</span>DLC
+        </button>
+        <button class="type-tab" data-type="produit" role="tab" aria-selected="false">
+          <span class="tab-icon">📦</span>Produit
+        </button>
+        <button class="type-tab" data-type="preparation" role="tab" aria-selected="false">
+          <span class="tab-icon">🍳</span>Préparation
+        </button>
+      </div>
+
+      <div class="form-card">
+        <!-- Nom produit (autocomplete) -->
+        <div class="form-row">
+          <label for="input-nom">Nom du produit / plat</label>
+          <div class="autocomplete-wrap">
+            <input type="text" id="input-nom" placeholder="Ex: Sauce tomate, Burger du chef…" autocomplete="off">
+            <div class="autocomplete-list" id="ac-list"></div>
+          </div>
+        </div>
+
+        <!-- Catégorie (visible pour Produit et Prépa) -->
+        <div class="form-row" id="row-cat">
+          <label>Catégorie</label>
+          <div class="cat-chips">
+            <button class="cat-chip active" data-cat="sauces">Sauces</button>
+            <button class="cat-chip" data-cat="viandes">Viandes</button>
+            <button class="cat-chip" data-cat="poissons">Poissons</button>
+            <button class="cat-chip" data-cat="legumes">Légumes</button>
+            <button class="cat-chip" data-cat="desserts">Desserts</button>
+            <button class="cat-chip" data-cat="marinades">Marinades</button>
+            <button class="cat-chip" data-cat="feculents">Féculents</button>
+            <button class="cat-chip" data-cat="autre">Autre</button>
+          </div>
+        </div>
+
+        <!-- Dates (visibles pour DLC) -->
+        <div id="row-dates">
+          <div class="form-row-2">
+            <div class="form-row" style="margin-bottom:0">
+              <label for="input-fab">Date de fabrication</label>
+              <input type="date" id="input-fab">
+            </div>
+            <div class="form-row" style="margin-bottom:0">
+              <label for="input-dlc">À consommer avant</label>
+              <input type="date" id="input-dlc">
+            </div>
+          </div>
+        </div>
+
+        <!-- Date/heure prépa (visible pour Préparation) -->
+        <div class="form-row" id="row-prep-datetime" style="display:none;">
+          <label for="input-prep-dt">Date et heure de préparation</label>
+          <input type="datetime-local" id="input-prep-dt">
+        </div>
+
+        <!-- Allergènes -->
+        <div class="form-row" id="row-allergens">
+          <label>Allergènes</label>
+          <div class="allergen-grid" id="allergen-grid"></div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-row">
+          <label for="input-notes">Notes (optionnel)</label>
+          <textarea id="input-notes" placeholder="Informations complémentaires…" rows="2"></textarea>
+        </div>
+
+        <!-- Quantité -->
+        <div class="form-row">
+          <label>Quantité d'étiquettes</label>
+          <div class="qte-row">
+            <button class="qte-btn" id="btn-qte-minus" aria-label="Diminuer">−</button>
+            <span class="qte-val" id="qte-display">1</span>
+            <button class="qte-btn" id="btn-qte-plus" aria-label="Augmenter">+</button>
+          </div>
+        </div>
+
+        <button class="btn-print" id="btn-print">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Imprimer
+          <span class="btn-print-qty" id="print-qty-label"></span>
+        </button>
+      </div>
+
+      <!-- Catalogue -->
+      <div class="collapsible-card">
+        <button class="collapsible-trigger" id="cat-trigger">
+          <span class="ct-icon">📦</span>
+          <span class="ct-label">Catalogue produits</span>
+          <span class="ct-count" id="cat-count" style="font-size:.78rem; color:var(--text-muted); margin-right:6px;"></span>
+          <span class="ct-arrow">▼</span>
+        </button>
+        <div class="collapsible-body" id="cat-body">
+          <div style="display:flex; gap:8px; margin-bottom:12px;">
+            <input type="text" id="cat-search" placeholder="Rechercher…" style="flex:1; background:var(--bg-surface); border:1.5px solid var(--border); border-radius:var(--radius); color:var(--text); padding:7px 10px; font-size:.85rem; font-family:inherit;">
+            <button class="btn btn-sm" id="btn-add-produit" style="white-space:nowrap;">+ Ajouter</button>
+          </div>
+          <div class="produit-list" id="produit-list"></div>
+        </div>
+      </div>
+
+      <!-- Historique -->
+      <div class="collapsible-card">
+        <button class="collapsible-trigger" id="log-trigger">
+          <span class="ct-icon">📋</span>
+          <span class="ct-label">Historique des impressions</span>
+          <span class="ct-arrow">▼</span>
+        </button>
+        <div class="collapsible-body" id="log-body">
+          <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center;">
+            <input type="date" id="log-from" style="background:var(--bg-surface); border:1.5px solid var(--border); border-radius:var(--radius); color:var(--text); padding:6px 10px; font-size:.82rem; font-family:inherit;">
+            <span style="color:var(--text-muted); font-size:.8rem;">→</span>
+            <input type="date" id="log-to" style="background:var(--bg-surface); border:1.5px solid var(--border); border-radius:var(--radius); color:var(--text); padding:6px 10px; font-size:.82rem; font-family:inherit;">
+            <button class="btn btn-sm" id="btn-log-filter">Filtrer</button>
+          </div>
+          <div id="log-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prévisualisation -->
+    <div class="preview-panel">
+      <div class="preview-title">Aperçu de l'étiquette</div>
+      <div class="preview-scale-wrap">
+        <div class="preview-scale">
+          <div class="label-preview" id="label-preview-wrap">
+            <!-- Rendu dynamiquement -->
+          </div>
+        </div>
+      </div>
+      <p style="text-align:center; font-size:.75rem; color:var(--text-muted); margin-top:8px;">
+        Format réel : 58 × 40 mm · Affiché à 2×
+      </p>
+    </div>
+  </div>
+</main>
+
+<!-- Zone d'impression (cachée à l'écran, visible uniquement à l'impression) -->
+<div id="label-print-area"></div>
+
+<script src="/js/api.js"></script>
+<script>
+'use strict';
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let labelType = 'dlc';
+let qte = 1;
+let selectedCat = 'sauces';
+let selectedAllergens = new Set();
+let produits = [];
+let me = null;
+
+const ALLERGENS = [
+  { key:'gluten',     label:'Gluten',          icon:'🌾' },
+  { key:'crustaces',  label:'Crustacés',        icon:'🦐' },
+  { key:'oeufs',      label:'Œufs',             icon:'🥚' },
+  { key:'poisson',    label:'Poisson',           icon:'🐟' },
+  { key:'arachides',  label:'Arachides',         icon:'🥜' },
+  { key:'soja',       label:'Soja',              icon:'🫘' },
+  { key:'lait',       label:'Lait / Lactose',    icon:'🥛' },
+  { key:'fruits_coque', label:'Fruits à coque',  icon:'🌰' },
+  { key:'celeri',     label:'Céleri',            icon:'🥬' },
+  { key:'moutarde',   label:'Moutarde',          icon:'🌿' },
+  { key:'sesame',     label:'Sésame',            icon:'🌱' },
+  { key:'sulfites',   label:'Sulfites',          icon:'🍷' },
+  { key:'lupin',      label:'Lupin',             icon:'🌼' },
+  { key:'mollusques', label:'Mollusques',        icon:'🐚' },
+];
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function today() { return new Date().toISOString().split('T')[0]; }
+function nowLocal() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') +
+    'T' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+function fmtDatetime(iso) {
+  if (!iso) return '—';
+  const [date, time] = iso.split('T');
+  return fmtDate(date) + ' à ' + (time || '').slice(0,5);
+}
+function diffDays(from, to) {
+  if (!from || !to) return null;
+  return Math.round((new Date(to) - new Date(from)) / 86400000);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+async function init() {
+  me = await apiFetch('/api/auth/me').catch(() => null);
+
+  buildAllergenGrid();
+  setDefaults();
+  loadProduits();
+  loadLog();
+  bindEvents();
+  renderPreview();
+}
+
+function setDefaults() {
+  document.getElementById('input-fab').value = today();
+  const dlcDate = new Date(); dlcDate.setDate(dlcDate.getDate() + 3);
+  document.getElementById('input-dlc').value = dlcDate.toISOString().split('T')[0];
+  document.getElementById('input-prep-dt').value = nowLocal();
+}
+
+// ── Allergen grid ──────────────────────────────────────────────────────────────
+function buildAllergenGrid() {
+  const grid = document.getElementById('allergen-grid');
+  grid.innerHTML = ALLERGENS.map(a => `
+    <label class="allergen-check" data-key="${a.key}">
+      <input type="checkbox" value="${a.key}" class="ac-cb">
+      <span class="a-box"></span>
+      <span class="a-icon">${a.icon}</span>
+      <span>${a.label}</span>
+    </label>
+  `).join('');
+  grid.querySelectorAll('.ac-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      cb.checked ? selectedAllergens.add(cb.value) : selectedAllergens.delete(cb.value);
+      renderPreview();
+    });
+  });
+}
+
+function setAllergens(list) {
+  selectedAllergens = new Set(list || []);
+  document.querySelectorAll('.ac-cb').forEach(cb => {
+    cb.checked = selectedAllergens.has(cb.value);
+  });
+  renderPreview();
+}
+
+// ── Catégorie chips ────────────────────────────────────────────────────────────
+document.addEventListener('click', e => {
+  const chip = e.target.closest('.cat-chip');
+  if (!chip) return;
+  document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  selectedCat = chip.dataset.cat;
+  renderPreview();
+});
+
+// ── Type tabs ─────────────────────────────────────────────────────────────────
+function bindEvents() {
+  document.querySelectorAll('.type-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.type-tab').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+      btn.classList.add('active'); btn.setAttribute('aria-selected','true');
+      labelType = btn.dataset.type;
+      updateFormVisibility();
+      renderPreview();
+    });
+  });
+
+  // Quantité
+  document.getElementById('btn-qte-minus').addEventListener('click', () => { if (qte > 1) { qte--; updateQte(); } });
+  document.getElementById('btn-qte-plus').addEventListener('click', () => { if (qte < 20) { qte++; updateQte(); } });
+
+  // Live preview on input change
+  ['input-nom','input-fab','input-dlc','input-prep-dt','input-notes'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', renderPreview);
+  });
+
+  // Print
+  document.getElementById('btn-print').addEventListener('click', doPrint);
+
+  // Catalogue collapsible
+  document.getElementById('cat-trigger').addEventListener('click', () => toggleCollapsible('cat-trigger', 'cat-body'));
+  document.getElementById('log-trigger').addEventListener('click', () => toggleCollapsible('log-trigger', 'log-body'));
+
+  // Catalogue add
+  document.getElementById('btn-add-produit').addEventListener('click', openAddProduitModal);
+
+  // Catalogue search filter
+  document.getElementById('cat-search').addEventListener('input', renderProduitList);
+
+  // Log filter
+  document.getElementById('btn-log-filter').addEventListener('click', loadLog);
+
+  // Log default dates
+  document.getElementById('log-from').value = (() => { const d = new Date(); d.setDate(d.getDate()-30); return d.toISOString().split('T')[0]; })();
+  document.getElementById('log-to').value = today();
+
+  // Autocomplete
+  bindAutocomplete();
+}
+
+function toggleCollapsible(triggerId, bodyId) {
+  const trigger = document.getElementById(triggerId);
+  const body = document.getElementById(bodyId);
+  trigger.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+function updateQte() {
+  document.getElementById('qte-display').textContent = qte;
+  const lbl = document.getElementById('print-qty-label');
+  lbl.textContent = qte > 1 ? `(${qte} exemplaires)` : '';
+}
+
+function updateFormVisibility() {
+  const isDlc  = labelType === 'dlc';
+  const isProd = labelType === 'produit';
+  const isPrep = labelType === 'preparation';
+  document.getElementById('row-dates').style.display = isDlc ? '' : 'none';
+  document.getElementById('row-prep-datetime').style.display = isPrep ? '' : 'none';
+  document.getElementById('row-cat').style.display = (isProd || isPrep) ? '' : 'none';
+  document.getElementById('row-allergens').style.display = (isDlc || isProd) ? '' : 'none';
+}
+updateFormVisibility();
+
+// ── Autocomplete ───────────────────────────────────────────────────────────────
+function bindAutocomplete() {
+  const input = document.getElementById('input-nom');
+  const list  = document.getElementById('ac-list');
+  let acIdx = -1;
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    const matches = q.length > 0 ? produits.filter(p => p.nom.toLowerCase().includes(q)) : [];
+    if (!matches.length) { list.classList.remove('open'); return; }
+    list.innerHTML = matches.slice(0,6).map((p,i) => `
+      <div class="ac-item" data-idx="${i}" data-id="${p.id}">
+        ${p.nom}
+        <div class="ac-item-sub">${p.categorie} ${getAllergensList(JSON.parse(p.allergenes||'[]')).slice(0,3).join(', ')}</div>
+      </div>
+    `).join('');
+    list._matches = matches;
+    list.classList.add('open');
+    acIdx = -1;
+  });
+
+  list.addEventListener('click', e => {
+    const item = e.target.closest('.ac-item');
+    if (!item) return;
+    const p = list._matches[item.dataset.idx];
+    selectProduit(p);
+  });
+
+  input.addEventListener('keydown', e => {
+    const items = list.querySelectorAll('.ac-item');
+    if (e.key === 'ArrowDown') { acIdx = Math.min(acIdx+1, items.length-1); highlightAc(items, acIdx); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { acIdx = Math.max(acIdx-1, 0); highlightAc(items, acIdx); e.preventDefault(); }
+    else if (e.key === 'Enter' && acIdx >= 0 && list._matches) { selectProduit(list._matches[acIdx]); e.preventDefault(); }
+    else if (e.key === 'Escape') { list.classList.remove('open'); }
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.autocomplete-wrap')) list.classList.remove('open');
+  });
+
+  input.addEventListener('blur', () => setTimeout(() => list.classList.remove('open'), 150));
+}
+
+function highlightAc(items, idx) {
+  items.forEach((it,i) => it.classList.toggle('focused', i===idx));
+}
+
+function selectProduit(p) {
+  document.getElementById('input-nom').value = p.nom;
+  document.getElementById('ac-list').classList.remove('open');
+  // Set catégorie
+  const allergens = JSON.parse(p.allergenes || '[]');
+  setAllergens(allergens);
+  // Set cat chip
+  document.querySelectorAll('.cat-chip').forEach(c => c.classList.toggle('active', c.dataset.cat === p.categorie));
+  selectedCat = p.categorie || 'autre';
+  renderPreview();
+}
+
+function getAllergensList(keys) {
+  return keys.map(k => ALLERGENS.find(a => a.key === k)?.label).filter(Boolean);
+}
+
+// ── Label HTML ─────────────────────────────────────────────────────────────────
+function buildLabelHTML() {
+  const nom   = document.getElementById('input-nom').value.trim() || 'Nom du produit';
+  const notes = document.getElementById('input-notes').value.trim();
+  const allergens = [...selectedAllergens].map(k => ALLERGENS.find(a=>a.key===k)?.label).filter(Boolean);
+  const userName = me?.name || '—';
+
+  if (labelType === 'dlc') {
+    const fab = document.getElementById('input-fab').value;
+    const dlc = document.getElementById('input-dlc').value;
+    const diff = diffDays(fab, dlc);
+    return `<div class="label-box">
+      <div class="lb-header">
+        <span class="lb-brand">Mos Pub Mercière</span>
+        <span class="lb-type-badge dlc">DLC</span>
+      </div>
+      <div class="lb-sep"></div>
+      <div class="lb-produit">${nom}</div>
+      <div class="lb-row">
+        <span class="lb-label">Fabriqué le</span>
+        <span class="lb-value">${fmtDate(fab)}</span>
+      </div>
+      <div class="lb-dlc-box">
+        <div class="lb-dlc-label">À consommer avant le</div>
+        <div class="lb-dlc-date">${fmtDate(dlc)}</div>
+      </div>
+      ${allergens.length ? `<div class="lb-allergenes"><div class="lb-allergenes-label">Allergènes</div><div class="lb-allergenes-list">${allergens.join(' · ')}</div></div>` : ''}
+      ${notes ? `<div class="lb-notes">${notes}</div>` : ''}
+      <div class="lb-footer">
+        <span class="lb-footer-left">Par ${userName}</span>
+        <span class="lb-footer-right">${diff !== null ? diff+'j' : ''}</span>
+      </div>
+    </div>`;
+  }
+
+  if (labelType === 'produit') {
+    return `<div class="label-box">
+      <div class="lb-header">
+        <span class="lb-brand">Mos Pub Mercière</span>
+        <span class="lb-type-badge produit">Produit</span>
+      </div>
+      <div class="lb-sep"></div>
+      <div class="lb-produit">${nom}</div>
+      <div class="lb-row">
+        <span class="lb-label">Catégorie</span>
+        <span class="lb-value">${selectedCat}</span>
+      </div>
+      ${allergens.length ? `<div class="lb-allergenes"><div class="lb-allergenes-label">Contient</div><div class="lb-allergenes-list">${allergens.join(' · ')}</div></div>` : '<div class="lb-allergenes"><div class="lb-allergenes-label">Allergènes</div><div class="lb-allergenes-list" style="color:#888;">Aucun</div></div>'}
+      ${notes ? `<div class="lb-notes">${notes}</div>` : ''}
+      <div class="lb-footer">
+        <span class="lb-footer-left">${today().split('-').reverse().join('/')}</span>
+        <span class="lb-footer-right">Par ${userName}</span>
+      </div>
+    </div>`;
+  }
+
+  // preparation
+  const prepDt = document.getElementById('input-prep-dt').value;
+  return `<div class="label-box">
+    <div class="lb-header">
+      <span class="lb-brand">Mos Pub Mercière</span>
+      <span class="lb-type-badge preparation">Prépa</span>
+    </div>
+    <div class="lb-sep"></div>
+    <div class="lb-produit">${nom}</div>
+    <div class="lb-row">
+      <span class="lb-label">Préparé le</span>
+      <span class="lb-value">${fmtDatetime(prepDt)}</span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-label">Catégorie</span>
+      <span class="lb-value">${selectedCat}</span>
+    </div>
+    ${notes ? `<div class="lb-notes">${notes}</div>` : ''}
+    <div class="lb-footer">
+      <span class="lb-footer-left">Par ${userName}</span>
+      <span class="lb-footer-right"></span>
+    </div>
+  </div>`;
+}
+
+// ── Preview ────────────────────────────────────────────────────────────────────
+function renderPreview() {
+  document.getElementById('label-preview-wrap').innerHTML = buildLabelHTML();
+}
+
+// ── Print ──────────────────────────────────────────────────────────────────────
+async function doPrint() {
+  const nom = document.getElementById('input-nom').value.trim();
+  if (!nom) { showToast('Entrez un nom de produit', 'error'); return; }
+
+  // Repeat label qte times for multi-print
+  const html = Array.from({length: qte}, () => buildLabelHTML()).join('');
+  document.getElementById('label-print-area').innerHTML = html;
+
+  // Log
+  const fab  = document.getElementById('input-fab').value;
+  const dlc  = document.getElementById('input-dlc').value;
+  const prepDt = document.getElementById('input-prep-dt').value;
+  const notes = document.getElementById('input-notes').value.trim();
+  await apiFetch('/api/cuisine/etiquettes/log', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      type: labelType,
+      produit_nom: nom,
+      categorie: selectedCat,
+      date_fab: labelType === 'dlc' ? fab : null,
+      date_dlc: labelType === 'dlc' ? dlc : (labelType === 'preparation' ? prepDt : null),
+      quantite: qte,
+      allergenes: [...selectedAllergens],
+      notes,
+    })
+  }).catch(() => {});
+
+  window.print();
+  loadLog();
+}
+
+// ── Produits CRUD ─────────────────────────────────────────────────────────────
+async function loadProduits() {
+  produits = await apiFetch('/api/cuisine/produits').catch(() => []);
+  renderProduitList();
+  document.getElementById('cat-count').textContent = produits.length ? `(${produits.length})` : '';
+}
+
+function renderProduitList() {
+  const q = document.getElementById('cat-search').value.trim().toLowerCase();
+  const list = document.getElementById('produit-list');
+  const filtered = q ? produits.filter(p => p.nom.toLowerCase().includes(q) || p.categorie.includes(q)) : produits;
+  if (!filtered.length) {
+    list.innerHTML = `<div class="log-empty">Aucun produit${q ? ' correspondant' : ''}.<br>Cliquez "+ Ajouter" pour créer.</div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(p => {
+    const al = JSON.parse(p.allergenes || '[]');
+    return `<div class="produit-item" data-id="${p.id}">
+      <div style="flex:1; min-width:0;">
+        <div class="pi-name">${p.nom}</div>
+        <div class="pi-cat">${p.categorie}</div>
+        ${al.length ? `<div class="pi-allergens">${getAllergensList(al).join(' · ')}</div>` : ''}
+      </div>
+      <div class="pi-actions">
+        <button class="pi-btn" onclick="fillFromProduit(${p.id})">Utiliser</button>
+        <button class="pi-btn del" onclick="deleteProduit(${p.id})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fillFromProduit(id) {
+  const p = produits.find(x => x.id === id);
+  if (!p) return;
+  selectProduit(p);
+}
+
+async function deleteProduit(id) {
+  if (!confirm('Supprimer ce produit du catalogue ?')) return;
+  await apiFetch(`/api/cuisine/produits/${id}`, { method:'DELETE' });
+  await loadProduits();
+}
+
+function openAddProduitModal() {
+  const nom = document.getElementById('input-nom').value.trim();
+  const cat = selectedCat;
+  const allergens = [...selectedAllergens];
+
+  const name = prompt('Nom du produit :', nom);
+  if (!name?.trim()) return;
+
+  apiFetch('/api/cuisine/produits', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ nom: name.trim(), categorie: cat, allergenes: allergens })
+  }).then(() => {
+    loadProduits();
+    showToast('Produit ajouté au catalogue', 'success');
+  });
+}
+
+// ── Log ────────────────────────────────────────────────────────────────────────
+async function loadLog() {
+  const from = document.getElementById('log-from').value;
+  const to   = document.getElementById('log-to').value;
+  const params = new URLSearchParams({ from, to, limit: 100 });
+  const logs = await apiFetch(`/api/cuisine/etiquettes/log?${params}`).catch(() => []);
+  renderLog(logs);
+}
+
+function renderLog(logs) {
+  const el = document.getElementById('log-list');
+  if (!logs.length) { el.innerHTML = `<div class="log-empty">Aucune impression sur cette période.</div>`; return; }
+  el.innerHTML = logs.map(l => {
+    const al = JSON.parse(l.allergenes || '[]');
+    const alLabel = getAllergensList(al).slice(0,3).join(', ');
+    const when = l.printed_at ? l.printed_at.split(' ')[0].split('-').reverse().join('/') + ' ' + (l.printed_at.split(' ')[1]||'').slice(0,5) : '';
+    return `<div class="log-item">
+      <span class="log-badge ${l.type}">${l.type}</span>
+      <div style="flex:1; min-width:0;">
+        <div class="log-nom">${l.produit_nom}${l.quantite > 1 ? ` <span style="color:var(--text-muted);font-weight:400;">×${l.quantite}</span>` : ''}</div>
+        ${l.date_dlc ? `<div style="font-size:.75rem; color:var(--text-muted);">DLC: ${fmtDate(l.date_dlc.split('T')[0])}</div>` : ''}
+        ${alLabel ? `<div style="font-size:.72rem; color:var(--primary);">${alLabel}</div>` : ''}
+      </div>
+      <div class="log-meta">
+        <div>${l.user_name || '—'}</div>
+        <div>${when}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── apiFetch helper ────────────────────────────────────────────────────────────
+async function apiFetch(url, opts = {}) {
+  const r = await fetch(url, opts);
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+function showToast(msg, type='info') {
+  if (typeof window.showToast === 'function') return window.showToast(msg, type);
+  const t = document.createElement('div');
+  t.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9999;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 18px;font-size:.88rem;font-weight:600;color:var(--text);box-shadow:0 4px 20px rgba(0,0,0,.3);`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+init();
+</script>
+</body>
+</html>
