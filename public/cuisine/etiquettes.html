@@ -9,797 +9,709 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="MOS">
   <meta name="theme-color" content="#060e15">
   <style>
-    /* ── Layout ── */
-    .et-layout { display:grid; grid-template-columns:1fr 340px; gap:20px; align-items:start; }
-    @media(max-width:900px){ .et-layout { grid-template-columns:1fr; } }
+    /* ── Setup banner ── */
+    .setup-banner {
+      background: linear-gradient(135deg, rgba(212,162,74,.15), rgba(212,162,74,.05));
+      border: 1.5px solid var(--primary);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .setup-banner-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .setup-banner-text { flex: 1; }
+    .setup-banner-title { font-weight: 800; font-size: .95rem; color: var(--primary); }
+    .setup-banner-sub { font-size: .82rem; color: var(--text-muted); margin-top: 2px; }
+    .setup-progress { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; }
+    .setup-progress-fill { height: 100%; background: var(--primary); border-radius: 2px; transition: width .4s; }
 
-    /* ── Type tabs ── */
-    .type-tabs { display:flex; gap:8px; margin-bottom:20px; }
-    .type-tab { flex:1; padding:10px 8px; border-radius:var(--radius); border:1.5px solid var(--border);
-      background:var(--bg-card); color:var(--text-muted); font-size:.85rem; font-weight:600;
-      cursor:pointer; transition:all .18s var(--ease-out); text-align:center; }
-    .type-tab:hover { border-color:var(--primary-dim); color:var(--text); }
-    .type-tab.active { border-color:var(--primary); background:rgba(212,162,74,.12); color:var(--primary); }
-    .type-tab .tab-icon { display:block; font-size:1.2rem; margin-bottom:3px; }
+    /* ── Setup panel overlay ── */
+    .setup-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(6,14,21,.85);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: stretch; justify-content: flex-end;
+    }
+    .setup-panel {
+      width: min(560px, 100vw);
+      background: var(--bg-card);
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .setup-panel-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .setup-panel-header h2 { font-size: 1.1rem; font-weight: 800; flex: 1; margin: 0; }
+    .setup-panel-body { flex: 1; overflow-y: auto; padding: 16px; }
+    .setup-panel-footer { padding: 16px 20px; border-top: 1px solid var(--border); }
 
-    /* ── Form section ── */
-    .form-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px; }
-    .form-row { margin-bottom:14px; }
-    .form-row label { display:block; font-size:.8rem; font-weight:600; color:var(--text-muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.05em; }
-    .form-row input, .form-row textarea, .form-row select {
-      width:100%; background:var(--bg-surface); border:1.5px solid var(--border); border-radius:var(--radius);
-      color:var(--text); padding:9px 12px; font-size:.9rem; font-family:inherit;
-      transition:border-color .15s; box-sizing:border-box; }
-    .form-row input:focus, .form-row textarea:focus, .form-row select:focus {
-      outline:none; border-color:var(--primary); }
-    .form-row textarea { resize:vertical; min-height:60px; }
-    .form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
-    .qte-row { display:flex; align-items:center; gap:10px; }
-    .qte-btn { width:34px; height:34px; border-radius:8px; border:1.5px solid var(--border); background:var(--bg-surface);
-      color:var(--text); font-size:1.2rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;
-      transition:all .15s; }
-    .qte-btn:hover { border-color:var(--primary); color:var(--primary); }
-    .qte-val { font-size:1.1rem; font-weight:700; min-width:28px; text-align:center; }
+    /* ── Setup product card ── */
+    .setup-card {
+      background: var(--bg-surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-bottom: 10px;
+      overflow: hidden;
+      transition: border-color .15s;
+    }
+    .setup-card.done { border-color: rgba(46,213,115,.4); }
+    .setup-card-head {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; cursor: pointer; user-select: none;
+    }
+    .setup-card-cat { font-size: .72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+    .setup-card-name { font-weight: 700; font-size: .95rem; }
+    .setup-card-status {
+      margin-left: auto; font-size: .72rem; font-weight: 700; padding: 3px 9px;
+      border-radius: 20px; flex-shrink: 0;
+    }
+    .setup-card-status.todo { background: rgba(212,162,74,.15); color: var(--primary); }
+    .setup-card-status.ok { background: rgba(46,213,115,.15); color: #2ed573; }
+    .setup-card-body { padding: 0 16px 16px; display: none; }
+    .setup-card-body.open { display: block; }
 
-    /* ── Autocomplete ── */
-    .autocomplete-wrap { position:relative; }
-    .autocomplete-list { position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:100;
-      background:var(--bg-surface); border:1.5px solid var(--primary); border-radius:var(--radius);
-      max-height:180px; overflow-y:auto; display:none; }
-    .autocomplete-list.open { display:block; }
-    .ac-item { padding:9px 12px; cursor:pointer; font-size:.88rem; transition:background .12s; }
-    .ac-item:hover, .ac-item.focused { background:rgba(212,162,74,.12); color:var(--primary); }
-    .ac-item-sub { font-size:.75rem; color:var(--text-muted); margin-top:2px; }
+    /* ── Form fields ── */
+    .sf-label { font-size: .78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; display: block; }
+    .sf-row { margin-bottom: 12px; }
+    .sf-row input, .sf-row select {
+      width: 100%; background: var(--bg-card); border: 1.5px solid var(--border);
+      border-radius: var(--radius); color: var(--text); padding: 9px 12px;
+      font-size: .9rem; font-family: inherit; box-sizing: border-box;
+      transition: border-color .15s;
+    }
+    .sf-row input:focus, .sf-row select:focus { outline: none; border-color: var(--primary); }
+    .sf-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
 
-    /* ── Allergènes ── */
-    .allergen-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; }
-    .allergen-check { display:flex; align-items:center; gap:7px; padding:7px 9px;
-      background:var(--bg-surface); border:1.5px solid var(--border); border-radius:8px;
-      cursor:pointer; transition:all .15s; font-size:.82rem; }
-    .allergen-check input { display:none; }
-    .allergen-check .a-box { width:16px; height:16px; border-radius:4px; border:1.5px solid var(--border);
-      background:transparent; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .15s; }
-    .allergen-check input:checked ~ .a-box { background:var(--primary); border-color:var(--primary); }
-    .allergen-check input:checked ~ .a-box::after { content:'✓'; font-size:.65rem; color:#000; font-weight:900; }
-    .allergen-check:has(input:checked) { border-color:var(--primary); background:rgba(212,162,74,.08); color:var(--primary); }
-    .allergen-check .a-icon { font-size:.9rem; }
+    /* ── Allergens compact ── */
+    .al-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 5px; }
+    .al-item { display: flex; align-items: center; gap: 7px; padding: 6px 9px;
+      background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 8px;
+      cursor: pointer; font-size: .8rem; transition: all .12s; }
+    .al-item input { display: none; }
+    .al-box { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid var(--border);
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all .12s; }
+    .al-item input:checked ~ .al-box { background: var(--primary); border-color: var(--primary); }
+    .al-item input:checked ~ .al-box::after { content: '✓'; font-size: .6rem; color: #000; font-weight: 900; }
+    .al-item:has(input:checked) { border-color: rgba(212,162,74,.5); background: rgba(212,162,74,.07); }
 
-    /* ── Catégorie chips ── */
-    .cat-chips { display:flex; flex-wrap:wrap; gap:6px; }
-    .cat-chip { padding:5px 12px; border-radius:20px; border:1.5px solid var(--border);
-      background:var(--bg-surface); color:var(--text-muted); font-size:.8rem; font-weight:600;
-      cursor:pointer; transition:all .15s; }
-    .cat-chip:hover { border-color:var(--primary-dim); color:var(--text); }
-    .cat-chip.active { border-color:var(--primary); background:rgba(212,162,74,.12); color:var(--primary); }
+    /* ── Main print layout ── */
+    .print-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+    @media(max-width:860px) { .print-layout { grid-template-columns: 1fr; } }
 
-    /* ── Print button ── */
-    .btn-print { width:100%; padding:14px; font-size:1rem; font-weight:700; margin-top:8px;
-      display:flex; align-items:center; justify-content:center; gap:8px;
-      background:var(--primary); color:#000; border-radius:var(--radius); border:none;
-      cursor:pointer; transition:all .18s var(--ease-out);
-      box-shadow:0 2px 12px rgba(212,162,74,.28); }
-    .btn-print:hover { transform:translateY(-1px); box-shadow:0 4px 20px rgba(212,162,74,.4); }
-    .btn-print:active { transform:translateY(0); }
-    .btn-print .btn-print-qty { opacity:.7; font-weight:400; font-size:.88rem; }
+    /* ── Product list (print mode) ── */
+    .supplier-section { margin-bottom: 16px; }
+    .supplier-header {
+      font-size: .72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: .08em; padding: 8px 0 6px; border-bottom: 1px solid var(--border);
+      margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+    }
+    .supplier-header span { color: var(--primary); }
+    .prod-btn {
+      width: 100%; text-align: left; padding: 11px 14px; margin-bottom: 5px;
+      background: var(--bg-card); border: 1.5px solid var(--border); border-radius: var(--radius);
+      color: var(--text); cursor: pointer; transition: all .15s;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .prod-btn:hover { border-color: var(--primary-dim); background: rgba(212,162,74,.05); }
+    .prod-btn.active { border-color: var(--primary); background: rgba(212,162,74,.1); }
+    .prod-btn.unconfigured { border-color: rgba(212,162,74,.3); border-style: dashed; opacity: .7; }
+    .prod-btn-name { font-weight: 700; font-size: .9rem; flex: 1; }
+    .prod-btn-meta { font-size: .75rem; color: var(--text-muted); }
+    .prod-btn-dlc { font-size: .72rem; font-weight: 700; color: var(--primary); padding: 2px 7px;
+      background: rgba(212,162,74,.1); border-radius: 10px; flex-shrink: 0; }
+    .prod-btn-warn { font-size: .72rem; color: #e67e22; padding: 2px 7px;
+      background: rgba(230,126,34,.1); border-radius: 10px; border: 1px solid rgba(230,126,34,.3); flex-shrink: 0; }
 
-    /* ── Preview panel ── */
-    .preview-panel { position:sticky; top:80px; }
-    .preview-title { font-size:.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
-    .preview-scale-wrap { display:flex; justify-content:center; padding:20px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); }
-    .preview-scale { transform-origin:top center; }
-    /* Label réel 58×40mm. À 96dpi: 1mm=3.779px → 58mm≈219px, 40mm≈151px */
-    /* On affiche à 2× pour la lisibilité */
-    .label-preview { width:219px; height:151px; transform:scale(2); transform-origin:top left; margin-bottom:151px; }
+    /* ── Edit inline (Pierre only) ── */
+    .edit-dlc-row {
+      display: flex; align-items: center; gap: 8px; margin-top: 6px;
+    }
+    .edit-dlc-input {
+      width: 70px; background: var(--bg-surface); border: 1.5px solid var(--primary);
+      border-radius: var(--radius); color: var(--primary); padding: 6px 10px;
+      font-size: .9rem; font-weight: 700; font-family: inherit; text-align: center;
+    }
+    .edit-dlc-label { font-size: .8rem; color: var(--text-muted); }
 
-    /* ── Label styles (commun écran + impression) ── */
+    /* ── Print preview panel ── */
+    .preview-panel { position: sticky; top: 80px; }
+    .preview-panel-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+    .preview-title { font-size: .78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+    .preview-wrap { display: flex; justify-content: center; padding: 16px; background: var(--bg-surface); border-radius: var(--radius); margin-bottom: 16px; }
+    .preview-scale { transform-origin: top left; }
+    /* 58×40mm à 96dpi ≈ 219×151px ; affiché 2× */
+    .label-preview-inner { width: 219px; height: 151px; transform: scale(1.8); transform-origin: top left; margin-bottom: 122px; }
+    .btn-print {
+      width: 100%; padding: 14px; font-size: 1rem; font-weight: 800;
+      background: var(--primary); color: #000; border-radius: var(--radius);
+      border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all .18s; box-shadow: 0 2px 12px rgba(212,162,74,.28);
+    }
+    .btn-print:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(212,162,74,.4); }
+    .btn-print:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-print-sub { font-size: .78rem; opacity: .7; font-weight: 400; }
+
+    /* ── Label styles (écran + impression) ── */
     .label-box {
-      width:219px; height:151px; box-sizing:border-box;
-      font-family:'Inter',Arial,sans-serif; color:#000; background:#fff;
-      border:1.5px solid #333; border-radius:3px; padding:5px 7px;
-      display:flex; flex-direction:column; overflow:hidden; }
-    .lb-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:3px; }
-    .lb-brand { font-size:5.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#333; }
-    .lb-type-badge { font-size:5px; font-weight:700; padding:1.5px 4px; border-radius:2px; text-transform:uppercase; letter-spacing:.05em; }
-    .lb-type-badge.dlc { background:#d32f2f; color:#fff; }
-    .lb-type-badge.produit { background:#1565c0; color:#fff; }
-    .lb-type-badge.preparation { background:#2e7d32; color:#fff; }
-    .lb-sep { height:1px; background:#333; margin-bottom:4px; }
-    .lb-produit { font-size:8px; font-weight:900; margin-bottom:3px; line-height:1.15; word-break:break-word; }
-    .lb-row { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px; }
-    .lb-label { font-size:5.5px; color:#555; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
-    .lb-value { font-size:6.5px; font-weight:700; }
-    .lb-dlc-box { border:2px solid #d32f2f; border-radius:2px; padding:2px 5px; text-align:center; margin:3px 0; }
-    .lb-dlc-label { font-size:5px; color:#d32f2f; font-weight:700; text-transform:uppercase; }
-    .lb-dlc-date { font-size:10px; font-weight:900; color:#d32f2f; line-height:1.1; }
-    .lb-allergenes { margin-top:3px; }
-    .lb-allergenes-label { font-size:5px; color:#555; font-weight:700; text-transform:uppercase; margin-bottom:1.5px; }
-    .lb-allergenes-list { font-size:5.5px; font-weight:600; line-height:1.4; word-break:break-word; }
-    .lb-notes { font-size:5.5px; color:#555; font-style:italic; margin-top:3px; line-height:1.3; word-break:break-word; }
-    .lb-footer { margin-top:auto; display:flex; justify-content:space-between; align-items:center; }
-    .lb-footer-left { font-size:5px; color:#888; }
-    .lb-footer-right { font-size:5px; color:#888; }
-
-    /* ── Catalogue ── */
-    .catalogue-header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px;
-      cursor:pointer; user-select:none; }
-    .catalogue-body { padding:0 16px 16px; display:none; }
-    .catalogue-body.open { display:block; }
-    .produit-list { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; max-height:300px; overflow-y:auto; }
-    .produit-item { display:flex; align-items:center; gap:10px; padding:10px 12px;
-      background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius); }
-    .pi-name { font-weight:700; font-size:.88rem; flex:1; }
-    .pi-cat { font-size:.75rem; color:var(--text-muted); }
-    .pi-allergens { font-size:.72rem; color:var(--primary); }
-    .pi-actions { display:flex; gap:6px; }
-    .pi-btn { padding:4px 10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-card);
-      color:var(--text-muted); font-size:.75rem; cursor:pointer; transition:all .12s; }
-    .pi-btn:hover { border-color:var(--primary); color:var(--primary); }
-    .pi-btn.del:hover { border-color:#e74c3c; color:#e74c3c; }
+      width: 219px; height: 151px; box-sizing: border-box;
+      font-family: 'Inter', Arial, sans-serif;
+      background: #fff; color: #111;
+      border: 1.5px solid #222; border-radius: 2px;
+      padding: 5px 7px;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .lb-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
+    .lb-brand { font-size: 5.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #444; }
+    .lb-fourn { font-size: 5.5px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: .04em; }
+    .lb-type { font-size: 5px; font-weight: 800; padding: 1.5px 4px; border-radius: 2px; text-transform: uppercase; }
+    .lb-type.dlc { background: #c0392b; color: #fff; }
+    .lb-type.dluo { background: #2980b9; color: #fff; }
+    .lb-sep { height: 1px; background: #222; margin-bottom: 3px; }
+    .lb-name { font-size: 9px; font-weight: 900; line-height: 1.15; margin-bottom: 3px; word-break: break-word; }
+    .lb-dates { display: flex; gap: 4px; margin-bottom: 3px; }
+    .lb-date-box { flex: 1; border: 1.5px solid #c0392b; border-radius: 2px; padding: 2px 4px; text-align: center; }
+    .lb-date-label { font-size: 4.5px; color: #c0392b; font-weight: 700; text-transform: uppercase; line-height: 1.2; }
+    .lb-date-val { font-size: 9px; font-weight: 900; color: #c0392b; line-height: 1.2; }
+    .lb-fab-box { flex: 1; border: 1px solid #aaa; border-radius: 2px; padding: 2px 4px; text-align: center; }
+    .lb-fab-label { font-size: 4.5px; color: #666; font-weight: 700; text-transform: uppercase; line-height: 1.2; }
+    .lb-fab-val { font-size: 8px; font-weight: 700; color: #333; line-height: 1.2; }
+    .lb-allergens { margin-bottom: 2px; }
+    .lb-allergens-label { font-size: 4.5px; color: #555; font-weight: 700; text-transform: uppercase; }
+    .lb-allergens-val { font-size: 5.5px; font-weight: 600; word-break: break-word; line-height: 1.4; }
+    .lb-footer { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; }
+    .lb-by { font-size: 5px; color: #888; }
+    .lb-days { font-size: 5px; color: #999; }
 
     /* ── Historique ── */
-    .log-item { display:flex; align-items:center; gap:10px; padding:10px 12px; margin-bottom:6px;
-      background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius); }
-    .log-badge { font-size:.7rem; font-weight:700; padding:2px 7px; border-radius:4px; text-transform:uppercase; flex-shrink:0; }
-    .log-badge.dlc { background:rgba(211,47,47,.18); color:#e57373; }
-    .log-badge.produit { background:rgba(21,101,192,.18); color:#64b5f6; }
-    .log-badge.preparation { background:rgba(46,125,50,.18); color:#81c784; }
-    .log-nom { font-weight:700; font-size:.88rem; flex:1; }
-    .log-meta { font-size:.75rem; color:var(--text-muted); white-space:nowrap; }
-    .log-empty { text-align:center; padding:24px; color:var(--text-muted); font-size:.88rem; }
+    .log-section { margin-top: 20px; }
+    .log-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; margin-bottom: 6px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); }
+    .log-nom { font-weight: 700; font-size: .88rem; flex: 1; }
+    .log-fourn { font-size: .75rem; color: var(--primary); }
+    .log-meta { font-size: .75rem; color: var(--text-muted); text-align: right; }
+    .log-empty { text-align: center; padding: 20px; color: var(--text-muted); font-size: .85rem; }
 
-    /* ── Section collapsible ── */
-    .collapsible-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); margin-top:16px; }
-    .collapsible-trigger { display:flex; align-items:center; gap:10px; padding:14px 16px; cursor:pointer; user-select:none; width:100%; text-align:left; }
-    .collapsible-trigger .ct-icon { font-size:1rem; }
-    .collapsible-trigger .ct-label { font-weight:700; font-size:.9rem; flex:1; }
-    .collapsible-trigger .ct-arrow { font-size:.8rem; color:var(--text-muted); transition:transform .2s; }
-    .collapsible-trigger.open .ct-arrow { transform:rotate(180deg); }
-    .collapsible-body { padding:0 16px 16px; display:none; }
-    .collapsible-body.open { display:block; }
+    /* ── Empty state ── */
+    .no-product { text-align: center; padding: 40px 20px; color: var(--text-muted); }
 
     /* ── @media print ── */
     @media print {
       @page { size: 58mm 40mm; margin: 0; }
-      html, body { margin:0; padding:0; background:#fff !important; }
-      body > * { display:none !important; }
-      #label-print-area { display:block !important; }
-      .label-box { width:58mm; height:40mm; border:none; border-radius:0; padding:2mm 2.5mm; font-size:inherit; }
-      .lb-brand { font-size:1.8mm; }
-      .lb-type-badge { font-size:1.6mm; padding:0.5mm 1mm; }
-      .lb-produit { font-size:2.8mm; }
-      .lb-label { font-size:1.7mm; }
-      .lb-value { font-size:2mm; }
-      .lb-dlc-label { font-size:1.6mm; }
-      .lb-dlc-date { font-size:3.2mm; }
-      .lb-allergenes-label { font-size:1.6mm; }
-      .lb-allergenes-list { font-size:1.8mm; }
-      .lb-notes { font-size:1.8mm; }
-      .lb-footer-left, .lb-footer-right { font-size:1.5mm; }
+      html, body { margin: 0; padding: 0; background: #fff !important; }
+      body > * { display: none !important; }
+      #label-print-area { display: block !important; position: fixed; top: 0; left: 0; }
+      .label-box {
+        width: 58mm; height: 40mm; border: none; border-radius: 0; padding: 2mm 2.5mm;
+        page-break-after: always;
+      }
+      .lb-brand { font-size: 1.8mm; }
+      .lb-fourn { font-size: 1.8mm; }
+      .lb-type { font-size: 1.6mm; padding: .4mm 1mm; }
+      .lb-name { font-size: 3mm; }
+      .lb-date-label { font-size: 1.5mm; }
+      .lb-date-val { font-size: 3mm; }
+      .lb-fab-label { font-size: 1.5mm; }
+      .lb-fab-val { font-size: 2.6mm; }
+      .lb-allergens-label { font-size: 1.5mm; }
+      .lb-allergens-val { font-size: 1.8mm; }
+      .lb-by, .lb-days { font-size: 1.6mm; }
     }
-    #label-print-area { display:none; }
+    #label-print-area { display: none; }
   </style>
 </head>
 <body>
-<nav class="nav" id="nav-bar" aria-label="Navigation principale"></nav>
+<nav class="nav" id="nav-bar"></nav>
 
-<main class="container" style="padding-top:80px; padding-bottom:40px;">
-  <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
-    <div>
-      <h1 style="font-size:1.4rem; font-weight:800; margin:0;">Étiquettes Cuisine</h1>
-      <p style="color:var(--text-muted); font-size:.85rem; margin:2px 0 0;">Impression DLC · Produit · Préparation</p>
+<main class="container" style="padding-top: 80px; padding-bottom: 40px;">
+
+  <!-- Setup banner (Pierre uniquement) -->
+  <div id="setup-banner" style="display:none;" class="setup-banner">
+    <span class="setup-banner-icon">⚙️</span>
+    <div class="setup-banner-text">
+      <div class="setup-banner-title" id="setup-banner-title">Configuration requise</div>
+      <div class="setup-banner-sub" id="setup-banner-sub">Renseignez le fournisseur, la DLC et les allergènes pour chaque produit</div>
+      <div class="setup-progress"><div class="setup-progress-fill" id="setup-progress-fill" style="width:0%"></div></div>
     </div>
+    <button class="btn" id="btn-open-setup" style="flex-shrink:0; white-space:nowrap;">Configurer</button>
   </div>
 
-  <div class="et-layout">
-    <!-- Formulaire -->
+  <div class="print-layout">
+    <!-- Liste produits -->
     <div>
-      <!-- Type tabs -->
-      <div class="type-tabs" role="tablist" aria-label="Type d'étiquette">
-        <button class="type-tab active" data-type="dlc" role="tab" aria-selected="true">
-          <span class="tab-icon">🗓️</span>DLC
-        </button>
-        <button class="type-tab" data-type="produit" role="tab" aria-selected="false">
-          <span class="tab-icon">📦</span>Produit
-        </button>
-        <button class="type-tab" data-type="preparation" role="tab" aria-selected="false">
-          <span class="tab-icon">🍳</span>Préparation
-        </button>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+        <input type="text" id="search-produit" placeholder="Rechercher un produit…"
+          style="flex:1; min-width:180px; background:var(--bg-card); border:1.5px solid var(--border); border-radius:var(--radius); color:var(--text); padding:9px 12px; font-size:.9rem; font-family:inherit;">
       </div>
-
-      <div class="form-card">
-        <!-- Nom produit (autocomplete) -->
-        <div class="form-row">
-          <label for="input-nom">Nom du produit / plat</label>
-          <div class="autocomplete-wrap">
-            <input type="text" id="input-nom" placeholder="Ex: Sauce tomate, Burger du chef…" autocomplete="off">
-            <div class="autocomplete-list" id="ac-list"></div>
-          </div>
-        </div>
-
-        <!-- Catégorie (visible pour Produit et Prépa) -->
-        <div class="form-row" id="row-cat">
-          <label>Catégorie</label>
-          <div class="cat-chips">
-            <button class="cat-chip active" data-cat="sauces">Sauces</button>
-            <button class="cat-chip" data-cat="viandes">Viandes</button>
-            <button class="cat-chip" data-cat="poissons">Poissons</button>
-            <button class="cat-chip" data-cat="legumes">Légumes</button>
-            <button class="cat-chip" data-cat="desserts">Desserts</button>
-            <button class="cat-chip" data-cat="marinades">Marinades</button>
-            <button class="cat-chip" data-cat="feculents">Féculents</button>
-            <button class="cat-chip" data-cat="autre">Autre</button>
-          </div>
-        </div>
-
-        <!-- Dates (visibles pour DLC) -->
-        <div id="row-dates">
-          <div class="form-row-2">
-            <div class="form-row" style="margin-bottom:0">
-              <label for="input-fab">Date de fabrication</label>
-              <input type="date" id="input-fab">
-            </div>
-            <div class="form-row" style="margin-bottom:0">
-              <label for="input-dlc">À consommer avant</label>
-              <input type="date" id="input-dlc">
-            </div>
-          </div>
-        </div>
-
-        <!-- Date/heure prépa (visible pour Préparation) -->
-        <div class="form-row" id="row-prep-datetime" style="display:none;">
-          <label for="input-prep-dt">Date et heure de préparation</label>
-          <input type="datetime-local" id="input-prep-dt">
-        </div>
-
-        <!-- Allergènes -->
-        <div class="form-row" id="row-allergens">
-          <label>Allergènes</label>
-          <div class="allergen-grid" id="allergen-grid"></div>
-        </div>
-
-        <!-- Notes -->
-        <div class="form-row">
-          <label for="input-notes">Notes (optionnel)</label>
-          <textarea id="input-notes" placeholder="Informations complémentaires…" rows="2"></textarea>
-        </div>
-
-        <!-- Quantité -->
-        <div class="form-row">
-          <label>Quantité d'étiquettes</label>
-          <div class="qte-row">
-            <button class="qte-btn" id="btn-qte-minus" aria-label="Diminuer">−</button>
-            <span class="qte-val" id="qte-display">1</span>
-            <button class="qte-btn" id="btn-qte-plus" aria-label="Augmenter">+</button>
-          </div>
-        </div>
-
-        <button class="btn-print" id="btn-print">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          Imprimer
-          <span class="btn-print-qty" id="print-qty-label"></span>
-        </button>
-      </div>
-
-      <!-- Catalogue -->
-      <div class="collapsible-card">
-        <button class="collapsible-trigger" id="cat-trigger">
-          <span class="ct-icon">📦</span>
-          <span class="ct-label">Catalogue produits</span>
-          <span class="ct-count" id="cat-count" style="font-size:.78rem; color:var(--text-muted); margin-right:6px;"></span>
-          <span class="ct-arrow">▼</span>
-        </button>
-        <div class="collapsible-body" id="cat-body">
-          <div style="display:flex; gap:8px; margin-bottom:12px;">
-            <input type="text" id="cat-search" placeholder="Rechercher…" style="flex:1; background:var(--bg-surface); border:1.5px solid var(--border); border-radius:var(--radius); color:var(--text); padding:7px 10px; font-size:.85rem; font-family:inherit;">
-            <button class="btn btn-sm" id="btn-add-produit" style="white-space:nowrap;">+ Ajouter</button>
-          </div>
-          <div class="produit-list" id="produit-list"></div>
-        </div>
-      </div>
-
-      <!-- Historique -->
-      <div class="collapsible-card">
-        <button class="collapsible-trigger" id="log-trigger">
-          <span class="ct-icon">📋</span>
-          <span class="ct-label">Historique des impressions</span>
-          <span class="ct-arrow">▼</span>
-        </button>
-        <div class="collapsible-body" id="log-body">
-          <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center;">
-            <input type="date" id="log-from" style="background:var(--bg-surface); border:1.5px solid var(--border); border-radius:var(--radius); color:var(--text); padding:6px 10px; font-size:.82rem; font-family:inherit;">
-            <span style="color:var(--text-muted); font-size:.8rem;">→</span>
-            <input type="date" id="log-to" style="background:var(--bg-surface); border:1.5px solid var(--border); border-radius:var(--radius); color:var(--text); padding:6px 10px; font-size:.82rem; font-family:inherit;">
-            <button class="btn btn-sm" id="btn-log-filter">Filtrer</button>
-          </div>
-          <div id="log-list"></div>
-        </div>
-      </div>
+      <div id="product-list"></div>
     </div>
 
-    <!-- Prévisualisation -->
+    <!-- Panneau prévisualisation -->
     <div class="preview-panel">
-      <div class="preview-title">Aperçu de l'étiquette</div>
-      <div class="preview-scale-wrap">
-        <div class="preview-scale">
-          <div class="label-preview" id="label-preview-wrap">
-            <!-- Rendu dynamiquement -->
+      <div class="preview-panel-card">
+        <div class="preview-title">Aperçu de l'étiquette</div>
+        <div class="preview-wrap">
+          <div class="preview-scale">
+            <div class="label-preview-inner" id="label-preview-el">
+              <div class="label-box">
+                <div class="lb-top">
+                  <span class="lb-brand">Mos Pub Mercière</span>
+                  <span class="lb-type dlc">DLC</span>
+                </div>
+                <div class="lb-sep"></div>
+                <div class="lb-name" style="color:#aaa; font-weight:400; font-size:7px;">Sélectionnez un produit</div>
+              </div>
+            </div>
           </div>
         </div>
+
+        <!-- Contrôle DLC (Pierre uniquement) -->
+        <div id="dlc-control" style="display:none; margin-bottom:12px;">
+          <div class="edit-dlc-row">
+            <span class="edit-dlc-label">DLC :</span>
+            <input type="number" class="edit-dlc-input" id="dlc-input" min="1" max="365" value="3">
+            <span class="edit-dlc-label">jours</span>
+          </div>
+          <div style="font-size:.75rem; color:var(--text-muted); margin-top:4px;" id="dlc-date-display"></div>
+        </div>
+
+        <button class="btn-print" id="btn-print" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Imprimer l'étiquette
+        </button>
+        <div id="btn-print-sub" class="btn-print-sub" style="text-align:center; margin-top:6px; color:var(--text-muted);"></div>
       </div>
-      <p style="text-align:center; font-size:.75rem; color:var(--text-muted); margin-top:8px;">
-        Format réel : 58 × 40 mm · Affiché à 2×
-      </p>
+
+      <!-- Historique du jour -->
+      <div class="log-section">
+        <div style="font-size:.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px;">Impressions du jour</div>
+        <div id="log-today"></div>
+      </div>
     </div>
   </div>
 </main>
 
-<!-- Zone d'impression (cachée à l'écran, visible uniquement à l'impression) -->
+<!-- Setup panel overlay -->
+<div class="setup-overlay" id="setup-overlay" style="display:none;">
+  <div class="setup-panel">
+    <div class="setup-panel-header">
+      <button class="btn btn-sm" id="btn-close-setup" style="padding:6px 10px;">✕</button>
+      <h2>Configuration des produits</h2>
+      <span id="setup-count-badge" style="font-size:.8rem; color:var(--text-muted);"></span>
+    </div>
+    <div class="setup-panel-body" id="setup-list"></div>
+    <div class="setup-panel-footer">
+      <div style="font-size:.8rem; color:var(--text-muted); text-align:center;" id="setup-footer-msg">
+        Configurez le fournisseur, la DLC et les allergènes pour chaque produit.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Zone d'impression -->
 <div id="label-print-area"></div>
 
 <script src="/js/api.js"></script>
 <script>
 'use strict';
 
-// ── State ──────────────────────────────────────────────────────────────────────
-let labelType = 'dlc';
-let qte = 1;
-let selectedCat = 'sauces';
-let selectedAllergens = new Set();
-let produits = [];
-let me = null;
-
 const ALLERGENS = [
-  { key:'gluten',     label:'Gluten',          icon:'🌾' },
-  { key:'crustaces',  label:'Crustacés',        icon:'🦐' },
-  { key:'oeufs',      label:'Œufs',             icon:'🥚' },
-  { key:'poisson',    label:'Poisson',           icon:'🐟' },
-  { key:'arachides',  label:'Arachides',         icon:'🥜' },
-  { key:'soja',       label:'Soja',              icon:'🫘' },
-  { key:'lait',       label:'Lait / Lactose',    icon:'🥛' },
-  { key:'fruits_coque', label:'Fruits à coque',  icon:'🌰' },
-  { key:'celeri',     label:'Céleri',            icon:'🥬' },
-  { key:'moutarde',   label:'Moutarde',          icon:'🌿' },
-  { key:'sesame',     label:'Sésame',            icon:'🌱' },
-  { key:'sulfites',   label:'Sulfites',          icon:'🍷' },
-  { key:'lupin',      label:'Lupin',             icon:'🌼' },
-  { key:'mollusques', label:'Mollusques',        icon:'🐚' },
+  { key:'gluten',       label:'Gluten',          icon:'🌾' },
+  { key:'crustaces',    label:'Crustacés',        icon:'🦐' },
+  { key:'oeufs',        label:'Œufs',             icon:'🥚' },
+  { key:'poisson',      label:'Poisson',           icon:'🐟' },
+  { key:'arachides',    label:'Arachides',         icon:'🥜' },
+  { key:'soja',         label:'Soja',              icon:'🫘' },
+  { key:'lait',         label:'Lait',              icon:'🥛' },
+  { key:'fruits_coque', label:'Fruits à coques',   icon:'🌰' },
+  { key:'celeri',       label:'Céleri',            icon:'🥬' },
+  { key:'moutarde',     label:'Moutarde',          icon:'🌿' },
+  { key:'sesame',       label:'Sésame',            icon:'🌱' },
+  { key:'sulfites',     label:'Sulfites',          icon:'🍷' },
+  { key:'lupin',        label:'Lupin',             icon:'🌼' },
+  { key:'mollusques',   label:'Mollusques',        icon:'🐚' },
 ];
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-function today() { return new Date().toISOString().split('T')[0]; }
-function nowLocal() {
-  const d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') +
-    'T' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+function allergenLabel(key) {
+  return ALLERGENS.find(a => a.key === key)?.label || key;
+}
+function allergenLabels(keys) {
+  return (keys || []).map(allergenLabel).join(' · ');
+}
+
+let produits = [];
+let selectedProduit = null;
+let me = null;
+let canConfigure = false;
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+function addDays(iso, n) {
+  const d = new Date(iso); d.setDate(d.getDate() + n); return d.toISOString().split('T')[0];
 }
 function fmtDate(iso) {
   if (!iso) return '—';
-  const [y,m,d] = iso.split('-');
-  return `${d}/${m}/${y}`;
+  const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`;
 }
-function fmtDatetime(iso) {
-  if (!iso) return '—';
-  const [date, time] = iso.split('T');
-  return fmtDate(date) + ' à ' + (time || '').slice(0,5);
-}
-function diffDays(from, to) {
-  if (!from || !to) return null;
-  return Math.round((new Date(to) - new Date(from)) / 86400000);
-}
-
-// ── Init ───────────────────────────────────────────────────────────────────────
-async function init() {
-  me = await apiFetch('/api/auth/me').catch(() => null);
-
-  buildAllergenGrid();
-  setDefaults();
-  loadProduits();
-  loadLog();
-  bindEvents();
-  renderPreview();
-}
-
-function setDefaults() {
-  document.getElementById('input-fab').value = today();
-  const dlcDate = new Date(); dlcDate.setDate(dlcDate.getDate() + 3);
-  document.getElementById('input-dlc').value = dlcDate.toISOString().split('T')[0];
-  document.getElementById('input-prep-dt').value = nowLocal();
-}
-
-// ── Allergen grid ──────────────────────────────────────────────────────────────
-function buildAllergenGrid() {
-  const grid = document.getElementById('allergen-grid');
-  grid.innerHTML = ALLERGENS.map(a => `
-    <label class="allergen-check" data-key="${a.key}">
-      <input type="checkbox" value="${a.key}" class="ac-cb">
-      <span class="a-box"></span>
-      <span class="a-icon">${a.icon}</span>
-      <span>${a.label}</span>
-    </label>
-  `).join('');
-  grid.querySelectorAll('.ac-cb').forEach(cb => {
-    cb.addEventListener('change', () => {
-      cb.checked ? selectedAllergens.add(cb.value) : selectedAllergens.delete(cb.value);
-      renderPreview();
-    });
-  });
-}
-
-function setAllergens(list) {
-  selectedAllergens = new Set(list || []);
-  document.querySelectorAll('.ac-cb').forEach(cb => {
-    cb.checked = selectedAllergens.has(cb.value);
-  });
-  renderPreview();
-}
-
-// ── Catégorie chips ────────────────────────────────────────────────────────────
-document.addEventListener('click', e => {
-  const chip = e.target.closest('.cat-chip');
-  if (!chip) return;
-  document.querySelectorAll('.cat-chip').forEach(c => c.classList.remove('active'));
-  chip.classList.add('active');
-  selectedCat = chip.dataset.cat;
-  renderPreview();
-});
-
-// ── Type tabs ─────────────────────────────────────────────────────────────────
-function bindEvents() {
-  document.querySelectorAll('.type-tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.type-tab').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
-      btn.classList.add('active'); btn.setAttribute('aria-selected','true');
-      labelType = btn.dataset.type;
-      updateFormVisibility();
-      renderPreview();
-    });
-  });
-
-  // Quantité
-  document.getElementById('btn-qte-minus').addEventListener('click', () => { if (qte > 1) { qte--; updateQte(); } });
-  document.getElementById('btn-qte-plus').addEventListener('click', () => { if (qte < 20) { qte++; updateQte(); } });
-
-  // Live preview on input change
-  ['input-nom','input-fab','input-dlc','input-prep-dt','input-notes'].forEach(id => {
-    document.getElementById(id)?.addEventListener('input', renderPreview);
-  });
-
-  // Print
-  document.getElementById('btn-print').addEventListener('click', doPrint);
-
-  // Catalogue collapsible
-  document.getElementById('cat-trigger').addEventListener('click', () => toggleCollapsible('cat-trigger', 'cat-body'));
-  document.getElementById('log-trigger').addEventListener('click', () => toggleCollapsible('log-trigger', 'log-body'));
-
-  // Catalogue add
-  document.getElementById('btn-add-produit').addEventListener('click', openAddProduitModal);
-
-  // Catalogue search filter
-  document.getElementById('cat-search').addEventListener('input', renderProduitList);
-
-  // Log filter
-  document.getElementById('btn-log-filter').addEventListener('click', loadLog);
-
-  // Log default dates
-  document.getElementById('log-from').value = (() => { const d = new Date(); d.setDate(d.getDate()-30); return d.toISOString().split('T')[0]; })();
-  document.getElementById('log-to').value = today();
-
-  // Autocomplete
-  bindAutocomplete();
-}
-
-function toggleCollapsible(triggerId, bodyId) {
-  const trigger = document.getElementById(triggerId);
-  const body = document.getElementById(bodyId);
-  trigger.classList.toggle('open');
-  body.classList.toggle('open');
-}
-
-function updateQte() {
-  document.getElementById('qte-display').textContent = qte;
-  const lbl = document.getElementById('print-qty-label');
-  lbl.textContent = qte > 1 ? `(${qte} exemplaires)` : '';
-}
-
-function updateFormVisibility() {
-  const isDlc  = labelType === 'dlc';
-  const isProd = labelType === 'produit';
-  const isPrep = labelType === 'preparation';
-  document.getElementById('row-dates').style.display = isDlc ? '' : 'none';
-  document.getElementById('row-prep-datetime').style.display = isPrep ? '' : 'none';
-  document.getElementById('row-cat').style.display = (isProd || isPrep) ? '' : 'none';
-  document.getElementById('row-allergens').style.display = (isDlc || isProd) ? '' : 'none';
-}
-updateFormVisibility();
-
-// ── Autocomplete ───────────────────────────────────────────────────────────────
-function bindAutocomplete() {
-  const input = document.getElementById('input-nom');
-  const list  = document.getElementById('ac-list');
-  let acIdx = -1;
-
-  input.addEventListener('input', () => {
-    const q = input.value.trim().toLowerCase();
-    const matches = q.length > 0 ? produits.filter(p => p.nom.toLowerCase().includes(q)) : [];
-    if (!matches.length) { list.classList.remove('open'); return; }
-    list.innerHTML = matches.slice(0,6).map((p,i) => `
-      <div class="ac-item" data-idx="${i}" data-id="${p.id}">
-        ${p.nom}
-        <div class="ac-item-sub">${p.categorie} ${getAllergensList(JSON.parse(p.allergenes||'[]')).slice(0,3).join(', ')}</div>
-      </div>
-    `).join('');
-    list._matches = matches;
-    list.classList.add('open');
-    acIdx = -1;
-  });
-
-  list.addEventListener('click', e => {
-    const item = e.target.closest('.ac-item');
-    if (!item) return;
-    const p = list._matches[item.dataset.idx];
-    selectProduit(p);
-  });
-
-  input.addEventListener('keydown', e => {
-    const items = list.querySelectorAll('.ac-item');
-    if (e.key === 'ArrowDown') { acIdx = Math.min(acIdx+1, items.length-1); highlightAc(items, acIdx); e.preventDefault(); }
-    else if (e.key === 'ArrowUp') { acIdx = Math.max(acIdx-1, 0); highlightAc(items, acIdx); e.preventDefault(); }
-    else if (e.key === 'Enter' && acIdx >= 0 && list._matches) { selectProduit(list._matches[acIdx]); e.preventDefault(); }
-    else if (e.key === 'Escape') { list.classList.remove('open'); }
-  });
-
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.autocomplete-wrap')) list.classList.remove('open');
-  });
-
-  input.addEventListener('blur', () => setTimeout(() => list.classList.remove('open'), 150));
-}
-
-function highlightAc(items, idx) {
-  items.forEach((it,i) => it.classList.toggle('focused', i===idx));
-}
-
-function selectProduit(p) {
-  document.getElementById('input-nom').value = p.nom;
-  document.getElementById('ac-list').classList.remove('open');
-  // Set catégorie
-  const allergens = JSON.parse(p.allergenes || '[]');
-  setAllergens(allergens);
-  // Set cat chip
-  document.querySelectorAll('.cat-chip').forEach(c => c.classList.toggle('active', c.dataset.cat === p.categorie));
-  selectedCat = p.categorie || 'autre';
-  renderPreview();
-}
-
-function getAllergensList(keys) {
-  return keys.map(k => ALLERGENS.find(a => a.key === k)?.label).filter(Boolean);
-}
-
-// ── Label HTML ─────────────────────────────────────────────────────────────────
-function buildLabelHTML() {
-  const nom   = document.getElementById('input-nom').value.trim() || 'Nom du produit';
-  const notes = document.getElementById('input-notes').value.trim();
-  const allergens = [...selectedAllergens].map(k => ALLERGENS.find(a=>a.key===k)?.label).filter(Boolean);
-  const userName = me?.name || '—';
-
-  if (labelType === 'dlc') {
-    const fab = document.getElementById('input-fab').value;
-    const dlc = document.getElementById('input-dlc').value;
-    const diff = diffDays(fab, dlc);
-    return `<div class="label-box">
-      <div class="lb-header">
-        <span class="lb-brand">Mos Pub Mercière</span>
-        <span class="lb-type-badge dlc">DLC</span>
-      </div>
-      <div class="lb-sep"></div>
-      <div class="lb-produit">${nom}</div>
-      <div class="lb-row">
-        <span class="lb-label">Fabriqué le</span>
-        <span class="lb-value">${fmtDate(fab)}</span>
-      </div>
-      <div class="lb-dlc-box">
-        <div class="lb-dlc-label">À consommer avant le</div>
-        <div class="lb-dlc-date">${fmtDate(dlc)}</div>
-      </div>
-      ${allergens.length ? `<div class="lb-allergenes"><div class="lb-allergenes-label">Allergènes</div><div class="lb-allergenes-list">${allergens.join(' · ')}</div></div>` : ''}
-      ${notes ? `<div class="lb-notes">${notes}</div>` : ''}
-      <div class="lb-footer">
-        <span class="lb-footer-left">Par ${userName}</span>
-        <span class="lb-footer-right">${diff !== null ? diff+'j' : ''}</span>
-      </div>
-    </div>`;
-  }
-
-  if (labelType === 'produit') {
-    return `<div class="label-box">
-      <div class="lb-header">
-        <span class="lb-brand">Mos Pub Mercière</span>
-        <span class="lb-type-badge produit">Produit</span>
-      </div>
-      <div class="lb-sep"></div>
-      <div class="lb-produit">${nom}</div>
-      <div class="lb-row">
-        <span class="lb-label">Catégorie</span>
-        <span class="lb-value">${selectedCat}</span>
-      </div>
-      ${allergens.length ? `<div class="lb-allergenes"><div class="lb-allergenes-label">Contient</div><div class="lb-allergenes-list">${allergens.join(' · ')}</div></div>` : '<div class="lb-allergenes"><div class="lb-allergenes-label">Allergènes</div><div class="lb-allergenes-list" style="color:#888;">Aucun</div></div>'}
-      ${notes ? `<div class="lb-notes">${notes}</div>` : ''}
-      <div class="lb-footer">
-        <span class="lb-footer-left">${today().split('-').reverse().join('/')}</span>
-        <span class="lb-footer-right">Par ${userName}</span>
-      </div>
-    </div>`;
-  }
-
-  // preparation
-  const prepDt = document.getElementById('input-prep-dt').value;
-  return `<div class="label-box">
-    <div class="lb-header">
-      <span class="lb-brand">Mos Pub Mercière</span>
-      <span class="lb-type-badge preparation">Prépa</span>
-    </div>
-    <div class="lb-sep"></div>
-    <div class="lb-produit">${nom}</div>
-    <div class="lb-row">
-      <span class="lb-label">Préparé le</span>
-      <span class="lb-value">${fmtDatetime(prepDt)}</span>
-    </div>
-    <div class="lb-row">
-      <span class="lb-label">Catégorie</span>
-      <span class="lb-value">${selectedCat}</span>
-    </div>
-    ${notes ? `<div class="lb-notes">${notes}</div>` : ''}
-    <div class="lb-footer">
-      <span class="lb-footer-left">Par ${userName}</span>
-      <span class="lb-footer-right"></span>
-    </div>
-  </div>`;
-}
-
-// ── Preview ────────────────────────────────────────────────────────────────────
-function renderPreview() {
-  document.getElementById('label-preview-wrap').innerHTML = buildLabelHTML();
-}
-
-// ── Print ──────────────────────────────────────────────────────────────────────
-async function doPrint() {
-  const nom = document.getElementById('input-nom').value.trim();
-  if (!nom) { showToast('Entrez un nom de produit', 'error'); return; }
-
-  // Repeat label qte times for multi-print
-  const html = Array.from({length: qte}, () => buildLabelHTML()).join('');
-  document.getElementById('label-print-area').innerHTML = html;
-
-  // Log
-  const fab  = document.getElementById('input-fab').value;
-  const dlc  = document.getElementById('input-dlc').value;
-  const prepDt = document.getElementById('input-prep-dt').value;
-  const notes = document.getElementById('input-notes').value.trim();
-  await apiFetch('/api/cuisine/etiquettes/log', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      type: labelType,
-      produit_nom: nom,
-      categorie: selectedCat,
-      date_fab: labelType === 'dlc' ? fab : null,
-      date_dlc: labelType === 'dlc' ? dlc : (labelType === 'preparation' ? prepDt : null),
-      quantite: qte,
-      allergenes: [...selectedAllergens],
-      notes,
-    })
-  }).catch(() => {});
-
-  window.print();
-  loadLog();
-}
-
-// ── Produits CRUD ─────────────────────────────────────────────────────────────
-async function loadProduits() {
-  produits = await apiFetch('/api/cuisine/produits').catch(() => []);
-  renderProduitList();
-  document.getElementById('cat-count').textContent = produits.length ? `(${produits.length})` : '';
-}
-
-function renderProduitList() {
-  const q = document.getElementById('cat-search').value.trim().toLowerCase();
-  const list = document.getElementById('produit-list');
-  const filtered = q ? produits.filter(p => p.nom.toLowerCase().includes(q) || p.categorie.includes(q)) : produits;
-  if (!filtered.length) {
-    list.innerHTML = `<div class="log-empty">Aucun produit${q ? ' correspondant' : ''}.<br>Cliquez "+ Ajouter" pour créer.</div>`;
-    return;
-  }
-  list.innerHTML = filtered.map(p => {
-    const al = JSON.parse(p.allergenes || '[]');
-    return `<div class="produit-item" data-id="${p.id}">
-      <div style="flex:1; min-width:0;">
-        <div class="pi-name">${p.nom}</div>
-        <div class="pi-cat">${p.categorie}</div>
-        ${al.length ? `<div class="pi-allergens">${getAllergensList(al).join(' · ')}</div>` : ''}
-      </div>
-      <div class="pi-actions">
-        <button class="pi-btn" onclick="fillFromProduit(${p.id})">Utiliser</button>
-        <button class="pi-btn del" onclick="deleteProduit(${p.id})">✕</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function fillFromProduit(id) {
-  const p = produits.find(x => x.id === id);
-  if (!p) return;
-  selectProduit(p);
-}
-
-async function deleteProduit(id) {
-  if (!confirm('Supprimer ce produit du catalogue ?')) return;
-  await apiFetch(`/api/cuisine/produits/${id}`, { method:'DELETE' });
-  await loadProduits();
-}
-
-function openAddProduitModal() {
-  const nom = document.getElementById('input-nom').value.trim();
-  const cat = selectedCat;
-  const allergens = [...selectedAllergens];
-
-  const name = prompt('Nom du produit :', nom);
-  if (!name?.trim()) return;
-
-  apiFetch('/api/cuisine/produits', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ nom: name.trim(), categorie: cat, allergenes: allergens })
-  }).then(() => {
-    loadProduits();
-    showToast('Produit ajouté au catalogue', 'success');
-  });
-}
-
-// ── Log ────────────────────────────────────────────────────────────────────────
-async function loadLog() {
-  const from = document.getElementById('log-from').value;
-  const to   = document.getElementById('log-to').value;
-  const params = new URLSearchParams({ from, to, limit: 100 });
-  const logs = await apiFetch(`/api/cuisine/etiquettes/log?${params}`).catch(() => []);
-  renderLog(logs);
-}
-
-function renderLog(logs) {
-  const el = document.getElementById('log-list');
-  if (!logs.length) { el.innerHTML = `<div class="log-empty">Aucune impression sur cette période.</div>`; return; }
-  el.innerHTML = logs.map(l => {
-    const al = JSON.parse(l.allergenes || '[]');
-    const alLabel = getAllergensList(al).slice(0,3).join(', ');
-    const when = l.printed_at ? l.printed_at.split(' ')[0].split('-').reverse().join('/') + ' ' + (l.printed_at.split(' ')[1]||'').slice(0,5) : '';
-    return `<div class="log-item">
-      <span class="log-badge ${l.type}">${l.type}</span>
-      <div style="flex:1; min-width:0;">
-        <div class="log-nom">${l.produit_nom}${l.quantite > 1 ? ` <span style="color:var(--text-muted);font-weight:400;">×${l.quantite}</span>` : ''}</div>
-        ${l.date_dlc ? `<div style="font-size:.75rem; color:var(--text-muted);">DLC: ${fmtDate(l.date_dlc.split('T')[0])}</div>` : ''}
-        ${alLabel ? `<div style="font-size:.72rem; color:var(--primary);">${alLabel}</div>` : ''}
-      </div>
-      <div class="log-meta">
-        <div>${l.user_name || '—'}</div>
-        <div>${when}</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// ── apiFetch helper ────────────────────────────────────────────────────────────
 async function apiFetch(url, opts = {}) {
   const r = await fetch(url, opts);
   if (!r.ok) throw new Error(r.status);
   return r.json();
 }
 
-function showToast(msg, type='info') {
+// ── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  me = await apiFetch('/api/auth/me').catch(() => null);
+  if (!me) { window.location.href = '/'; return; }
+  canConfigure = me.role === 'admin' || (me.role === 'manager' && me.shift === 'cuisine');
+
+  await loadProduits();
+  bindEvents();
+  loadLogToday();
+}
+
+async function loadProduits() {
+  produits = await apiFetch('/api/cuisine/produits').catch(() => []);
+  renderProductList();
+  renderSetupBanner();
+}
+
+// ── Setup banner ──────────────────────────────────────────────────────────────
+function renderSetupBanner() {
+  if (!canConfigure) return;
+  const unconfigured = produits.filter(p => !p.configured);
+  const total = produits.length;
+  const done = total - unconfigured.length;
+
+  const banner = document.getElementById('setup-banner');
+  if (!unconfigured.length) { banner.style.display = 'none'; return; }
+  banner.style.display = 'flex';
+
+  document.getElementById('setup-banner-title').textContent = `${unconfigured.length} produit${unconfigured.length > 1 ? 's' : ''} à configurer`;
+  document.getElementById('setup-banner-sub').textContent = `${done}/${total} produits configurés avec fournisseur et DLC`;
+  document.getElementById('setup-progress-fill').style.width = `${(done / total) * 100}%`;
+}
+
+// ── Product list (print mode) ─────────────────────────────────────────────────
+function renderProductList(filter = '') {
+  const el = document.getElementById('product-list');
+  const q = filter.trim().toLowerCase();
+  const items = q ? produits.filter(p => p.nom.toLowerCase().includes(q) || (p.fournisseur || '').toLowerCase().includes(q)) : produits;
+
+  if (!items.length) {
+    el.innerHTML = `<div class="no-product">Aucun produit trouvé.</div>`;
+    return;
+  }
+
+  // Group by fournisseur
+  const groups = {};
+  for (const p of items) {
+    const key = p.fournisseur || (p.configured ? '—' : '⚠ Non configuré');
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(p);
+  }
+
+  // Sort: configured suppliers first, then unconfigured
+  const sortedKeys = Object.keys(groups).sort((a, b) => {
+    if (a.startsWith('⚠')) return 1;
+    if (b.startsWith('⚠')) return -1;
+    if (a === '—') return 1;
+    if (b === '—') return -1;
+    return a.localeCompare(b, 'fr');
+  });
+
+  el.innerHTML = sortedKeys.map(supplier => `
+    <div class="supplier-section">
+      <div class="supplier-header">
+        <span>${supplier.startsWith('⚠') ? '⚠' : '🏭'}</span>
+        <span>${supplier.replace('⚠ ', '')}</span>
+        <span style="margin-left:auto; font-weight:400; font-size:.7rem;">${groups[supplier].length} produit${groups[supplier].length > 1 ? 's' : ''}</span>
+      </div>
+      ${groups[supplier].map(p => renderProdBtn(p)).join('')}
+    </div>
+  `).join('');
+
+  el.querySelectorAll('.prod-btn').forEach(btn => {
+    btn.addEventListener('click', () => selectProduit(parseInt(btn.dataset.id)));
+  });
+}
+
+function renderProdBtn(p) {
+  const al = JSON.parse(p.allergenes || '[]');
+  const dlcText = p.dlc_jours ? `${p.dlc_jours}j` : '';
+  const isSelected = selectedProduit?.id === p.id;
+  const unconfigured = !p.configured;
+  return `<button class="prod-btn ${unconfigured ? 'unconfigured' : ''} ${isSelected ? 'active' : ''}" data-id="${p.id}">
+    <div style="flex:1; min-width:0;">
+      <div class="prod-btn-name">${p.nom}</div>
+      <div class="prod-btn-meta">${p.categorie}${al.length ? ' · ' + al.slice(0,3).map(allergenLabel).join(', ') : ''}</div>
+    </div>
+    ${dlcText ? `<span class="prod-btn-dlc">${dlcText}</span>` : ''}
+    ${unconfigured && canConfigure ? `<span class="prod-btn-warn">À configurer</span>` : ''}
+  </button>`;
+}
+
+// ── Select produit ────────────────────────────────────────────────────────────
+function selectProduit(id) {
+  selectedProduit = produits.find(p => p.id === id) || null;
+  if (!selectedProduit) return;
+
+  // Update DLC control
+  const dlcControl = document.getElementById('dlc-control');
+  const dlcInput = document.getElementById('dlc-input');
+  if (canConfigure) {
+    dlcControl.style.display = 'block';
+    dlcInput.value = selectedProduit.dlc_jours || 3;
+    updateDlcDisplay();
+  } else {
+    dlcControl.style.display = 'none';
+  }
+
+  renderPreview();
+  document.getElementById('btn-print').disabled = false;
+  document.getElementById('btn-print-sub').textContent = `${selectedProduit.nom} · ${selectedProduit.fournisseur || '—'}`;
+
+  // Highlight selected
+  document.querySelectorAll('.prod-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.id) === id));
+}
+
+function currentDlcJours() {
+  if (canConfigure) return parseInt(document.getElementById('dlc-input').value) || selectedProduit?.dlc_jours || 3;
+  return selectedProduit?.dlc_jours || 3;
+}
+
+function updateDlcDisplay() {
+  if (!selectedProduit) return;
+  const n = currentDlcJours();
+  const dlcDate = addDays(todayISO(), n);
+  document.getElementById('dlc-date-display').textContent = `DLC calculée : ${fmtDate(dlcDate)} (dans ${n} jour${n > 1 ? 's' : ''})`;
+  renderPreview();
+}
+
+// ── Label HTML ────────────────────────────────────────────────────────────────
+function buildLabelHTML(p, dlcJours) {
+  if (!p) return '<div class="label-box"></div>';
+  const al = JSON.parse(p.allergenes || '[]');
+  const today = todayISO();
+  const dlcDate = addDays(today, dlcJours);
+  const typeDate = p.type_date || 'dlc';
+  const dlcLabel = typeDate === 'dluo' ? 'DDM' : 'DLC';
+
+  return `<div class="label-box">
+    <div class="lb-top">
+      <span class="lb-brand">Mos Pub Mercière</span>
+      <span class="lb-fourn">${p.fournisseur || ''}</span>
+      <span class="lb-type ${typeDate}">${dlcLabel}</span>
+    </div>
+    <div class="lb-sep"></div>
+    <div class="lb-name">${p.nom}</div>
+    <div class="lb-dates">
+      <div class="lb-fab-box">
+        <div class="lb-fab-label">Fabriqué le</div>
+        <div class="lb-fab-val">${fmtDate(today)}</div>
+      </div>
+      <div class="lb-date-box">
+        <div class="lb-date-label">${dlcLabel} avant le</div>
+        <div class="lb-date-val">${fmtDate(dlcDate)}</div>
+      </div>
+    </div>
+    ${al.length ? `<div class="lb-allergens"><span class="lb-allergens-label">Allergènes : </span><span class="lb-allergens-val">${allergenLabels(al)}</span></div>` : ''}
+    <div class="lb-footer">
+      <span class="lb-by">Par ${me?.name || '—'}</span>
+      <span class="lb-days">${dlcJours}j</span>
+    </div>
+  </div>`;
+}
+
+function renderPreview() {
+  if (!selectedProduit) return;
+  const n = currentDlcJours();
+  document.getElementById('label-preview-el').innerHTML = buildLabelHTML(selectedProduit, n);
+}
+
+// ── Print ─────────────────────────────────────────────────────────────────────
+async function doPrint() {
+  if (!selectedProduit) return;
+  const n = currentDlcJours();
+  document.getElementById('label-print-area').innerHTML = buildLabelHTML(selectedProduit, n);
+
+  // Log
+  const dlcDate = addDays(todayISO(), n);
+  await apiFetch('/api/cuisine/etiquettes/log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: selectedProduit.type_date || 'dlc',
+      produit_nom: selectedProduit.nom,
+      categorie: selectedProduit.categorie,
+      fournisseur: selectedProduit.fournisseur,
+      date_fab: todayISO(),
+      date_dlc: dlcDate,
+      quantite: 1,
+      allergenes: JSON.parse(selectedProduit.allergenes || '[]'),
+    })
+  }).catch(() => {});
+
+  window.print();
+  loadLogToday();
+}
+
+// ── Log du jour ───────────────────────────────────────────────────────────────
+async function loadLogToday() {
+  const today = todayISO();
+  const logs = await apiFetch(`/api/cuisine/etiquettes/log?from=${today}&to=${today}&limit=20`).catch(() => []);
+  const el = document.getElementById('log-today');
+  if (!logs.length) {
+    el.innerHTML = `<div class="log-empty">Aucune impression aujourd'hui.</div>`;
+    return;
+  }
+  el.innerHTML = logs.map(l => {
+    const dlc = l.date_dlc ? fmtDate(l.date_dlc.split('T')[0]) : '';
+    const time = l.printed_at ? (l.printed_at.split(' ')[1] || '').slice(0, 5) : '';
+    return `<div class="log-item">
+      <div style="flex:1; min-width:0;">
+        <div class="log-nom">${l.produit_nom}</div>
+        ${l.date_dlc ? `<div style="font-size:.75rem; color:#e74c3c;">DLC ${dlc}</div>` : ''}
+      </div>
+      <div class="log-meta">
+        <div>${l.user_name || '—'}</div>
+        <div>${time}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Setup panel ───────────────────────────────────────────────────────────────
+function renderSetupPanel() {
+  const unconfigured = produits.filter(p => !p.configured);
+  const done = produits.length - unconfigured.length;
+  document.getElementById('setup-count-badge').textContent = `${done}/${produits.length} configurés`;
+
+  const el = document.getElementById('setup-list');
+  el.innerHTML = produits.map(p => renderSetupCard(p)).join('');
+
+  el.querySelectorAll('.setup-card-head').forEach(head => {
+    head.addEventListener('click', () => {
+      const body = head.nextElementSibling;
+      body.classList.toggle('open');
+    });
+  });
+
+  el.querySelectorAll('.btn-save-config').forEach(btn => {
+    btn.addEventListener('click', () => saveConfig(parseInt(btn.dataset.id)));
+  });
+
+  el.querySelectorAll('.al-item').forEach(label => {
+    label.addEventListener('click', () => {
+      const cb = label.querySelector('input');
+      cb.checked = !cb.checked;
+    });
+  });
+}
+
+function renderSetupCard(p) {
+  const al = JSON.parse(p.allergenes || '[]');
+  const isDone = !!p.configured;
+  return `<div class="setup-card ${isDone ? 'done' : ''}" data-id="${p.id}">
+    <div class="setup-card-head">
+      <div>
+        <div class="setup-card-cat">${p.categorie}</div>
+        <div class="setup-card-name">${p.nom}</div>
+      </div>
+      <span class="setup-card-status ${isDone ? 'ok' : 'todo'}">${isDone ? '✓ OK' : 'À faire'}</span>
+    </div>
+    <div class="setup-card-body ${!isDone ? 'open' : ''}">
+      <div class="sf-row">
+        <label class="sf-label">Fournisseur</label>
+        <input type="text" class="cfg-fournisseur" placeholder="Ex: Brake, Métro, Pomona…" value="${p.fournisseur || ''}">
+      </div>
+      <div class="sf-row-2">
+        <div>
+          <label class="sf-label">DLC (jours)</label>
+          <input type="number" class="cfg-dlc" min="1" max="365" value="${p.dlc_jours || ''}">
+        </div>
+        <div>
+          <label class="sf-label">Type</label>
+          <select class="cfg-type">
+            <option value="dlc" ${(p.type_date||'dlc') === 'dlc' ? 'selected' : ''}>DLC</option>
+            <option value="dluo" ${p.type_date === 'dluo' ? 'selected' : ''}>DLUO / DDM</option>
+          </select>
+        </div>
+      </div>
+      <div class="sf-row">
+        <label class="sf-label">Allergènes</label>
+        <div class="al-grid">
+          ${ALLERGENS.map(a => `
+            <label class="al-item">
+              <input type="checkbox" value="${a.key}" class="al-cb" ${al.includes(a.key) ? 'checked' : ''}>
+              <span class="al-box"></span>
+              <span>${a.icon} ${a.label}</span>
+            </label>
+          `).join('')}
+        </div>
+      </div>
+      <button class="btn" style="width:100%; margin-top:4px;" data-id="${p.id}" class="btn-save-config">✓ Valider</button>
+    </div>
+  </div>`;
+}
+
+async function saveConfig(id) {
+  const card = document.querySelector(`.setup-card[data-id="${id}"]`);
+  if (!card) return;
+  const fournisseur = card.querySelector('.cfg-fournisseur').value.trim();
+  const dlc_jours   = parseInt(card.querySelector('.cfg-dlc').value) || null;
+  const type_date   = card.querySelector('.cfg-type').value;
+  const allergenes  = [...card.querySelectorAll('.al-cb:checked')].map(cb => cb.value);
+
+  await apiFetch(`/api/cuisine/produits/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fournisseur, dlc_jours, type_date, allergenes, configured: 1 })
+  });
+
+  await loadProduits();
+  renderSetupPanel();
+
+  // If all done, close panel
+  if (produits.every(p => p.configured)) {
+    closeSetup();
+    showToastMsg('Tous les produits sont configurés !', 'success');
+  }
+}
+
+function openSetup() {
+  renderSetupPanel();
+  document.getElementById('setup-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeSetup() {
+  document.getElementById('setup-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// ── Bind events ───────────────────────────────────────────────────────────────
+function bindEvents() {
+  document.getElementById('btn-open-setup').addEventListener('click', openSetup);
+  document.getElementById('btn-close-setup').addEventListener('click', closeSetup);
+  document.getElementById('setup-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('setup-overlay')) closeSetup();
+  });
+  document.getElementById('btn-print').addEventListener('click', doPrint);
+  document.getElementById('search-produit').addEventListener('input', e => renderProductList(e.target.value));
+  document.getElementById('dlc-input')?.addEventListener('input', updateDlcDisplay);
+}
+
+function showToastMsg(msg, type = 'info') {
   if (typeof window.showToast === 'function') return window.showToast(msg, type);
   const t = document.createElement('div');
-  t.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9999;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 18px;font-size:.88rem;font-weight:600;color:var(--text);box-shadow:0 4px 20px rgba(0,0,0,.3);`;
+  t.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;background:var(--bg-card);border:1px solid var(--primary);border-radius:var(--radius);padding:12px 18px;font-size:.88rem;font-weight:700;color:var(--primary);box-shadow:0 4px 20px rgba(0,0,0,.3);';
   t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);

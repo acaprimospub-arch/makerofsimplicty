@@ -1630,7 +1630,11 @@ try {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nom TEXT NOT NULL,
       categorie TEXT DEFAULT 'autre',
+      fournisseur TEXT,
+      dlc_jours INTEGER,
+      type_date TEXT DEFAULT 'dlc',
       allergenes TEXT DEFAULT '[]',
+      configured INTEGER DEFAULT 0,
       notes TEXT,
       actif INTEGER DEFAULT 1,
       created_by INTEGER,
@@ -1656,19 +1660,64 @@ try {
   `);
 } catch(e) {}
 
+// Migrations colonnes cuisine_produits (DBs existantes)
+try { db.exec("ALTER TABLE cuisine_produits ADD COLUMN fournisseur TEXT"); } catch(e) {}
+try { db.exec("ALTER TABLE cuisine_produits ADD COLUMN dlc_jours INTEGER"); } catch(e) {}
+try { db.exec("ALTER TABLE cuisine_produits ADD COLUMN type_date TEXT DEFAULT 'dlc'"); } catch(e) {}
+try { db.exec("ALTER TABLE cuisine_produits ADD COLUMN configured INTEGER DEFAULT 0"); } catch(e) {}
+try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_cp_nom ON cuisine_produits(nom)"); } catch(e) {}
+
+// Seed produits depuis carte HACCP Avril 2026
+{
+  const _ins = db.prepare("INSERT OR IGNORE INTO cuisine_produits (nom, categorie, dlc_jours, type_date, allergenes, actif) VALUES (?, ?, ?, ?, ?, 1)");
+  const _haccp = [
+    ['Gaspacho du moment',        'Entrées',          3,  'dlc',  '["sulfites"]'],
+    ['Coleslaw cajun',            'Entrées',          3,  'dlc',  '["oeufs","lait","celeri","moutarde"]'],
+    ['Plat du jour',              'Plats',            1,  'dlc',  '[]'],
+    ['Steak de longe de thon',    'Plats',            2,  'dlc',  '["poisson","sulfites"]'],
+    ['Bavette de bœuf 180g',      'Plats',            3,  'dlc',  '["lait"]'],
+    ['Tartare de bœuf',           'Plats',            1,  'dlc',  '["oeufs","moutarde"]'],
+    ['Fish and Chips',            'Plats',            2,  'dlc',  '["gluten","oeufs","poisson","lait","moutarde"]'],
+    ['Beef Burger',               'Sandwichs',        1,  'dlc',  '["gluten","oeufs","lait","moutarde"]'],
+    ['Chicken Burger',            'Sandwichs',        1,  'dlc',  '["gluten","oeufs","lait","moutarde"]'],
+    ['Fish Burger',               'Sandwichs',        2,  'dlc',  '["gluten","oeufs","poisson","lait","moutarde"]'],
+    ['Grilled triple cheese',     'Sandwichs',        3,  'dlc',  '["gluten","lait","sulfites"]'],
+    ["L'italo",                   'Sandwichs',        2,  'dlc',  '["gluten","lait","fruits_coque"]'],
+    ['Croque truffé',             'Sandwichs',        3,  'dlc',  '["gluten","lait"]'],
+    ['Potatoes',                  'Accompagnements',  3,  'dlc',  '[]'],
+    ['Légumes du moment',         'Accompagnements',  3,  'dlc',  '[]'],
+    ['Sauce poivre',              'Sauces',           5,  'dlc',  '["lait","sulfites"]'],
+    ['Sauce bleu',                'Sauces',           5,  'dlc',  '["lait"]'],
+    ['Sauce tartare',             'Sauces',           3,  'dlc',  '["oeufs","moutarde"]'],
+    ['Sauce chimichurri',         'Sauces',           5,  'dlc',  '["sulfites"]'],
+    ['Cheddar suppl.',            'Accompagnements',  30, 'dluo', '["lait"]'],
+    ['Bacon suppl.',              'Accompagnements',  5,  'dlc',  '[]'],
+    ['Steak suppl.',              'Accompagnements',  3,  'dlc',  '[]'],
+    ['Madeleines à tremper',      'Desserts',         5,  'dlc',  '["gluten","oeufs","lait"]'],
+    ['Salade de fruits du moment','Desserts',         2,  'dlc',  '[]'],
+    ['Cookie',                    'Desserts',         3,  'dlc',  '["gluten","oeufs","lait","fruits_coque"]'],
+    ['Tarte du moment',           'Desserts',         3,  'dlc',  '["gluten","oeufs","lait"]'],
+    ['Café gourmand',             'Desserts',         3,  'dlc',  '["gluten","oeufs","lait"]'],
+    ['Gaufre nature',             'Desserts',         1,  'dlc',  '["gluten","oeufs","lait"]'],
+    ['Gaufre Nutella',            'Desserts',         1,  'dlc',  '["gluten","oeufs","soja","lait","fruits_coque"]'],
+    ['Coupe de glace',            'Desserts',         90, 'dluo', '["oeufs","lait"]'],
+  ];
+  for (const r of _haccp) _ins.run(...r);
+}
+
 function getCuisineProduits() {
-  return db.prepare("SELECT * FROM cuisine_produits WHERE actif = 1 ORDER BY categorie, nom").all();
+  return db.prepare("SELECT * FROM cuisine_produits WHERE actif = 1 ORDER BY fournisseur NULLS LAST, categorie, nom").all();
 }
 function getCuisineProduitById(id) {
   return db.prepare("SELECT * FROM cuisine_produits WHERE id = ?").get(id);
 }
-function createCuisineProduit({ nom, categorie, allergenes, notes, created_by }) {
+function createCuisineProduit({ nom, categorie, fournisseur, dlc_jours, type_date, allergenes, notes, created_by }) {
   return db.prepare(
-    "INSERT INTO cuisine_produits (nom, categorie, allergenes, notes, created_by) VALUES (?, ?, ?, ?, ?)"
-  ).run(nom, categorie || 'autre', JSON.stringify(allergenes || []), notes || null, created_by || null).lastInsertRowid;
+    "INSERT INTO cuisine_produits (nom, categorie, fournisseur, dlc_jours, type_date, allergenes, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+  ).run(nom, categorie || 'autre', fournisseur || null, dlc_jours || null, type_date || 'dlc', JSON.stringify(allergenes || []), notes || null, created_by || null).lastInsertRowid;
 }
 function updateCuisineProduit(id, data) {
-  const fields = ['nom', 'categorie', 'allergenes', 'notes', 'actif'];
+  const fields = ['nom', 'categorie', 'fournisseur', 'dlc_jours', 'type_date', 'allergenes', 'configured', 'notes', 'actif'];
   const updates = fields.filter(f => data[f] !== undefined).map(f => `${f} = ?`);
   const values = fields.filter(f => data[f] !== undefined).map(f =>
     f === 'allergenes' ? JSON.stringify(data[f]) : data[f]
@@ -1680,7 +1729,7 @@ function deleteCuisineProduit(id) {
   db.prepare("UPDATE cuisine_produits SET actif = 0 WHERE id = ?").run(id);
 }
 
-function logEtiquette({ type, produit_nom, categorie, date_fab, date_dlc, quantite, allergenes, notes, user_id, user_name }) {
+function logEtiquette({ type, produit_nom, categorie, fournisseur, date_fab, date_dlc, quantite, allergenes, notes, user_id, user_name }) {
   return db.prepare(
     "INSERT INTO cuisine_etiquettes_log (type, produit_nom, categorie, date_fab, date_dlc, quantite, allergenes, notes, user_id, user_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
   ).run(type, produit_nom, categorie || null, date_fab || null, date_dlc || null, quantite || 1, JSON.stringify(allergenes || []), notes || null, user_id || null, user_name || null).lastInsertRowid;
