@@ -192,6 +192,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   border-radius: var(--radius-xs);
 }
 .nav-logo:focus-visible { box-shadow: var(--focus-ring); }
+.nav-logo-desktop { display: flex; align-items: center; gap: 0; }
+.nav-logo-mobile { display: none; align-items: center; gap: 5px; font-size: 0.82rem; font-weight: 700; color: var(--text-muted); }
+.nav-page-title { display: none; }
 .nav-logo-img { height: 36px; width: auto; object-fit: contain; }
 .nav-logo-text {
   font-size: 1.15rem;
@@ -1263,7 +1266,25 @@ tbody tr:hover td { background: rgba(255,255,255,0.025); transition: background 
   }
   .bottom-nav { display: block; }
   .nav-links { display: none; }
-  .nav { padding: 0 14px; }
+  .nav { padding: 0 14px; position: relative; }
+  .nav-logo-desktop { display: none; }
+  .nav-logo-mobile { display: flex; }
+  .nav-page-title {
+    display: block;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text);
+    pointer-events: none;
+    white-space: nowrap;
+    max-width: 42vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .page-title { display: none; }
+  .page-header { margin-bottom: 10px; }
   .nav-user { font-size: 0.76rem; }
   .btn-logout { padding: 5px 10px; font-size: 0.76rem; min-height: 32px; }
   .task-item { padding: 14px; min-height: 56px; }

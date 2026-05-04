@@ -280,13 +280,21 @@ async function buildNav(activePage) {
       ].join('')
     : links.map(linkHTML).join('');
 
+  const currentLink = links.find(l => l.key === activePage);
+  const currentLabel = currentLink?.label || '';
+  const backArrow = `<svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd"/></svg>`;
+
   nav.setAttribute('aria-label', 'Navigation principale');
   nav.setAttribute('role', 'navigation');
   nav.innerHTML = `
     <a href="/menu.html" class="nav-logo" aria-label="MOS Pub Mercière — Retour au menu">
-      <img src="/images/logo.png" alt="MOS" class="nav-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
-      <span class="nav-logo-text" style="display:none;" aria-hidden="true">MOS</span>
+      <span class="nav-logo-desktop">
+        <img src="/images/logo.png" alt="MOS" class="nav-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+        <span class="nav-logo-text" style="display:none;" aria-hidden="true">MOS</span>
+      </span>
+      <span class="nav-logo-mobile" aria-hidden="true">${backArrow} Menu</span>
     </a>
+    ${currentLabel ? `<div class="nav-page-title" aria-hidden="true">${escapeHtml(currentLabel)}</div>` : ''}
     <div class="nav-links" role="list">
       ${navLinksHTML.replace(/<a /g, '<a role="listitem" ').replace(/role="listitem" /g, '')}
     </div>
