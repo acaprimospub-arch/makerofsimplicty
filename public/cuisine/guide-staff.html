@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guide Cuisine — Mos Pub Mercière</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:   #c9a84c;
+      --dark:   #0f1923;
+      --mid:    #1a2f3a;
+      --green:  #16a34a;
+      --orange: #ea580c;
+      --red:    #dc2626;
+      --blue:   #2563eb;
+      --text:   #1e293b;
+      --muted:  #64748b;
+      --border: #e2e8f0;
+      --bg:     #f8fafc;
+    }
+
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      color: var(--text);
+      background: #fff;
+      font-size: 11pt;
+      line-height: 1.5;
+    }
+
+    /* ── Page structure ── */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 14mm 16mm 14mm;
+      background: #fff;
+    }
+
+    /* ── Cover header ── */
+    .cover-header {
+      background: var(--dark);
+      color: #fff;
+      border-radius: 10px;
+      padding: 18px 24px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .cover-brand { font-size: 20pt; font-weight: 900; color: var(--gold); letter-spacing: -0.02em; }
+    .cover-sub { font-size: 9pt; color: #94a3b8; margin-top: 3px; }
+    .cover-badge {
+      background: var(--gold);
+      color: var(--dark);
+      font-weight: 800;
+      font-size: 9pt;
+      padding: 6px 14px;
+      border-radius: 20px;
+    }
+
+    /* ── Section titles ── */
+    .section {
+      margin-bottom: 22px;
+      break-inside: avoid;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--dark);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 8px 8px 0 0;
+      margin-bottom: 0;
+    }
+    .section-icon { font-size: 18pt; line-height: 1; }
+    .section-title { font-size: 13pt; font-weight: 800; }
+    .section-subtitle { font-size: 8.5pt; color: #94a3b8; margin-top: 1px; }
+
+    .section-body {
+      border: 1.5px solid var(--dark);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      padding: 14px 16px;
+    }
+
+    /* ── Steps ── */
+    .steps { display: flex; flex-direction: column; gap: 9px; }
+    .step {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--gold);
+      color: var(--dark);
+      font-weight: 900;
+      font-size: 10pt;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-content { flex: 1; }
+    .step-title { font-weight: 700; font-size: 10.5pt; }
+    .step-desc { font-size: 9.5pt; color: var(--muted); margin-top: 2px; line-height: 1.45; }
+
+    /* ── Info boxes ── */
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .info-box {
+      border-radius: 8px;
+      padding: 10px 12px;
+      break-inside: avoid;
+    }
+    .info-box.green  { background: #f0fdf4; border: 1.5px solid #86efac; }
+    .info-box.red    { background: #fef2f2; border: 1.5px solid #fca5a5; }
+    .info-box.orange { background: #fff7ed; border: 1.5px solid #fdba74; }
+    .info-box.blue   { background: #eff6ff; border: 1.5px solid #93c5fd; }
+    .info-box-title { font-weight: 800; font-size: 9pt; margin-bottom: 4px; }
+    .info-box.green  .info-box-title { color: var(--green); }
+    .info-box.red    .info-box-title { color: var(--red); }
+    .info-box.orange .info-box-title { color: var(--orange); }
+    .info-box.blue   .info-box-title { color: var(--blue); }
+    .info-box p { font-size: 9pt; color: var(--text); line-height: 1.5; }
+
+    /* ── Numpad illustration ── */
+    .numpad-illus {
+      display: inline-grid;
+      grid-template-columns: repeat(3, 36px);
+      gap: 4px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 8px;
+      margin: 8px 0;
+    }
+    .np-k {
+      width: 36px; height: 32px;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9pt; font-weight: 700; color: var(--text);
+    }
+    .np-k.gold { background: var(--gold); color: var(--dark); border-color: var(--gold); font-size: 8pt; }
+    .np-k.sign { color: #475569; }
+    .np-k.del  { color: var(--red); font-size: 8pt; }
+    .np-k.span2 { grid-column: span 2; width: 100%; }
+
+    /* ── Temperature table ── */
+    .temp-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9.5pt; }
+    .temp-table th { background: var(--mid); color: #fff; padding: 6px 10px; text-align: left; font-size: 8.5pt; }
+    .temp-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+    .temp-table tr:last-child td { border-bottom: none; }
+    .badge-ok     { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 10px; font-weight: 700; font-size: 8pt; }
+    .badge-warn   { background: #fef9c3; color: #854d0e; padding: 2px 8px; border-radius: 10px; font-weight: 700; font-size: 8pt; }
+    .badge-hors   { background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 10px; font-weight: 700; font-size: 8pt; }
+
+    /* ── Label preview ── */
+    .label-preview {
+      border: 2px solid #1e293b;
+      border-radius: 4px;
+      padding: 8px 10px;
+      width: 160px;
+      font-size: 7pt;
+      font-family: Arial, sans-serif;
+      background: #fff;
+      display: inline-block;
+      vertical-align: top;
+      margin-left: 16px;
+    }
+    .lp-brand { font-size: 5.5pt; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #555; }
+    .lp-sep { border-top: 1px solid #1e293b; margin: 3px 0; }
+    .lp-name { font-size: 9pt; font-weight: 900; margin-bottom: 4px; }
+    .lp-dates { display: flex; gap: 4px; margin-bottom: 4px; }
+    .lp-date-box { flex: 1; border: 1.5px solid #dc2626; border-radius: 2px; padding: 2px 4px; text-align: center; }
+    .lp-fab-box  { flex: 1; border: 1px solid #aaa; border-radius: 2px; padding: 2px 4px; text-align: center; }
+    .lp-d-label { font-size: 4pt; color: #dc2626; font-weight: 700; text-transform: uppercase; }
+    .lp-d-val   { font-size: 8pt; font-weight: 900; color: #dc2626; }
+    .lp-f-label { font-size: 4pt; color: #666; font-weight: 700; text-transform: uppercase; }
+    .lp-f-val   { font-size: 7pt; font-weight: 700; color: #333; }
+    .lp-footer  { display: flex; justify-content: space-between; font-size: 5pt; color: #888; margin-top: 3px; }
+    .lp-allergens { font-size: 5.5pt; color: #555; margin-bottom: 3px; }
+    .lp-type { display: inline-block; background: #dc2626; color: #fff; font-size: 4.5pt; font-weight: 800; padding: 1px 3px; border-radius: 2px; float: right; }
+
+    /* ── Quick ref card ── */
+    .quick-ref {
+      background: var(--dark);
+      color: #fff;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-top: 20px;
+      break-inside: avoid;
+    }
+    .quick-ref-title { font-size: 11pt; font-weight: 900; color: var(--gold); margin-bottom: 10px; }
+    .quick-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .qr-item { }
+    .qr-label { font-size: 8pt; color: #94a3b8; font-weight: 600; margin-bottom: 2px; }
+    .qr-val { font-size: 10pt; font-weight: 800; }
+    .qr-val.green  { color: #4ade80; }
+    .qr-val.orange { color: #fb923c; }
+    .qr-val.red    { color: #f87171; }
+
+    /* ── Divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+
+    /* ── Footer ── */
+    .doc-footer {
+      text-align: center;
+      font-size: 8pt;
+      color: var(--muted);
+      margin-top: 20px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Print ── */
+    @media print {
+      @page { size: A4; margin: 10mm 12mm; }
+      body { font-size: 10.5pt; }
+      .page { width: 100%; padding: 0; margin: 0; }
+      .no-print { display: none !important; }
+      .section { break-inside: avoid; }
+      .page-break { break-before: page; }
+    }
+
+    /* ── Screen only ── */
+    @media screen {
+      body { background: #e2e8f0; padding: 20px 0 40px; }
+      .page { box-shadow: 0 4px 40px rgba(0,0,0,.2); }
+      .print-btn {
+        position: fixed; bottom: 24px; right: 24px;
+        background: var(--gold); color: var(--dark);
+        border: none; border-radius: 12px;
+        padding: 14px 24px; font-size: 1rem; font-weight: 800;
+        cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,.3);
+        font-family: inherit;
+      }
+      .print-btn:hover { background: #e0be6a; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ══ COVER ══ -->
+  <div class="cover-header">
+    <div>
+      <div class="cover-brand">Mos Pub Mercière</div>
+      <div class="cover-sub">Guide d'utilisation — Outils cuisine</div>
+    </div>
+    <div class="cover-badge">Équipe cuisine 🍳</div>
+  </div>
+
+
+  <!-- ══ SECTION 1 : TEMPÉRATURES ══ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🌡️</span>
+      <div>
+        <div class="section-title">Relevés de températures</div>
+        <div class="section-subtitle">À faire 2 fois par jour — Midi et Soir</div>
+      </div>
+    </div>
+    <div class="section-body">
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Accéder à la page</div>
+            <div class="step-desc">Depuis le menu → <strong>Cuisine</strong> → <strong>Températures</strong>. Sur mobile, utiliser la barre en bas de l'écran.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Choisir le shift</div>
+            <div class="step-desc">Appuyer sur <strong>MIDI</strong> ou <strong>SOIR</strong> selon le service en cours. L'app sélectionne automatiquement le bon shift selon l'heure.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Saisir les températures</div>
+            <div class="step-desc">
+              Appuyer sur la carte du frigo ou congélateur voulu. Un pavé numérique s'ouvre.
+              <br><br>
+              <div style="display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+                <div>
+                  <div class="numpad-illus">
+                    <div class="np-k">7</div><div class="np-k">8</div><div class="np-k">9</div>
+                    <div class="np-k">4</div><div class="np-k">5</div><div class="np-k">6</div>
+                    <div class="np-k">1</div><div class="np-k">2</div><div class="np-k">3</div>
+                    <div class="np-k sign">±</div><div class="np-k">0</div><div class="np-k">.</div>
+                    <div class="np-k del">⌫</div><div class="np-k">00</div><div class="np-k del">C</div>
+                    <div class="np-k gold span2" style="width:auto;grid-column:span 3;">✓ Confirmer</div>
+                  </div>
+                </div>
+                <div style="font-size:9pt; color:#475569; max-width:180px;">
+                  <p style="margin-bottom:5px;"><strong>±</strong> — pour saisir une valeur négative (congélateurs). Ex : appuyer <strong>±</strong> puis <strong>2 1 . 6</strong> → <em>−21.6°C</em></p>
+                  <p><strong>⌫</strong> — effacer le dernier chiffre<br><strong>C</strong> — tout effacer</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Enregistrer</div>
+            <div class="step-desc">Une fois tous les frigos saisis, appuyer sur <strong>Enregistrer</strong> en bas de l'écran. Le relevé est sauvegardé définitivement.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <div class="step-title">Connexion faible ? Pas de panique.</div>
+            <div class="step-desc">Si le réseau est coupé, les relevés sont sauvegardés sur le téléphone et envoyés automatiquement dès que la connexion revient. L'icône <strong>📡 Hors ligne</strong> apparaît en haut.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tableau plages HACCP -->
+      <table class="temp-table" style="margin-top:14px;">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Plage correcte</th>
+            <th>Limite</th>
+            <th>Hors plage</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Frigos positifs</strong> <span style="font-size:8.5pt;color:#64748b;">(FRIGO MEP, PLANCHE, DESSERTS…)</span></td>
+            <td><span class="badge-ok">✅ 0°C → 4°C</span></td>
+            <td><span class="badge-warn">⚠️ 4°C → 8°C</span></td>
+            <td><span class="badge-hors">❌ &gt; 8°C ou &lt; 0°C</span></td>
+          </tr>
+          <tr>
+            <td><strong>Congélateurs négatifs</strong> <span style="font-size:8.5pt;color:#64748b;">(CONGEL STEACK, PJ, CUISINE…)</span></td>
+            <td><span class="badge-ok">✅ ≤ −18°C</span></td>
+            <td><span class="badge-warn">⚠️ −15°C → −18°C</span></td>
+            <td><span class="badge-hors">❌ &gt; −15°C</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="info-grid" style="margin-top:12px; grid-template-columns:1fr;">
+        <div class="info-box red">
+          <div class="info-box-title">❌ Si une température est hors plage</div>
+          <p>La carte passe en rouge. Signaler immédiatement à <strong>Pierre</strong>. Ne pas ignorer — c'est une obligation HACCP. L'alerte apparaît aussi sur le tableau de bord cuisine.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ══ SECTION 2 : ÉTIQUETTES ══ -->
+  <div class="section page-break">
+    <div class="section-header">
+      <span class="section-icon">🏷️</span>
+      <div>
+        <div class="section-title">Impression d'étiquettes</div>
+        <div class="section-subtitle">DLC, produits et préparations</div>
+      </div>
+    </div>
+    <div class="section-body">
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Accéder à la page</div>
+            <div class="step-desc">Menu → <strong>Cuisine</strong> → <strong>Étiquettes</strong>. Ou barre du bas → icône étiquette.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Choisir le produit</div>
+            <div class="step-desc">Les produits sont classés par <strong>fournisseur</strong> (PASSIONFROID, FRANCE FRAIS, etc.). Utiliser la barre de recherche en haut pour trouver rapidement. Cliquer sur le produit pour le sélectionner.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Choisir le nombre de copies</div>
+            <div class="step-desc">À droite, sélectionner <strong>×1 ×2 ×3 ×5</strong> ou <strong>×10</strong> selon le besoin. Par défaut : 1 étiquette.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Vérifier l'aperçu et imprimer</div>
+            <div class="step-desc">
+              L'étiquette s'affiche en aperçu à droite. Cliquer <strong>Imprimer l'étiquette</strong>. La boîte d'impression du navigateur s'ouvre — choisir l'imprimante <strong>SII SLP721RT</strong> et confirmer.
+              <div style="display:flex; align-items:flex-start; gap:0; margin-top:10px;">
+                <div>
+                  <div style="font-size:8.5pt; color:#475569; margin-bottom:6px;">L'étiquette imprimée ressemble à :</div>
+                  <div class="label-preview">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+                      <span class="lp-brand">Mos Pub Mercière</span>
+                      <span style="font-size:5pt; color:#333; font-weight:700;">PASSIONFROID</span>
+                      <span class="lp-type">DLC</span>
+                    </div>
+                    <div class="lp-sep"></div>
+                    <div class="lp-name">Bavette aloyau bœuf angus</div>
+                    <div class="lp-dates">
+                      <div class="lp-fab-box">
+                        <div class="lp-f-label">Fab.</div>
+                        <div class="lp-f-val">04/05/26</div>
+                      </div>
+                      <div class="lp-date-box">
+                        <div class="lp-d-label">DLC</div>
+                        <div class="lp-d-val">07/05/26</div>
+                      </div>
+                    </div>
+                    <div class="lp-allergens">Allergènes : Sulfites</div>
+                    <div class="lp-footer">
+                      <span>Par Pierre</span>
+                      <span>3 jours</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-grid" style="margin-top:14px;">
+        <div class="info-box blue">
+          <div class="info-box-title">ℹ️ Date de fabrication</div>
+          <p>La date de fabrication est toujours <strong>aujourd'hui</strong>, calculée automatiquement. Pas besoin de la saisir.</p>
+        </div>
+        <div class="info-box orange">
+          <div class="info-box-title">⚠️ Modifier la DLC</div>
+          <p>Seul <strong>Pierre</strong> (manager cuisine) peut modifier le nombre de jours DLC avant impression. Les autres membres voient uniquement la DLC configurée.</p>
+        </div>
+      </div>
+
+      <div class="info-box green" style="margin-top:10px;">
+        <div class="info-box-title">✅ Alerte DLC dans le log</div>
+        <p>Le journal des impressions du jour signale en <strong style="color:#dc2626;">rouge</strong> les produits dont la DLC expire aujourd'hui, et en <strong style="color:#ea580c;">orange</strong> ceux qui expirent demain. Vérifier ces produits en priorité.</p>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ══ SECTION 3 : NAVIGATION ══ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">📱</span>
+      <div>
+        <div class="section-title">Navigation dans l'app</div>
+        <div class="section-subtitle">Se repérer rapidement</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="info-grid">
+        <div>
+          <p style="font-size:9.5pt; margin-bottom:8px;"><strong>Sur téléphone (mobile)</strong></p>
+          <p style="font-size:9pt; color:#475569;">La barre en <strong>bas de l'écran</strong> permet de naviguer entre toutes les sections cuisine sans repasser par le menu :</p>
+          <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+            <div style="background:#0f1923; color:#c9a84c; border-radius:6px; padding:5px 10px; font-size:8.5pt; font-weight:700; text-align:center;">🏠<br><span style="font-size:7pt; color:#94a3b8;">Menu</span></div>
+            <div style="background:#0f1923; color:#c9a84c; border-radius:6px; padding:5px 10px; font-size:8.5pt; font-weight:700; text-align:center;">✅<br><span style="font-size:7pt; color:#94a3b8;">Tâches</span></div>
+            <div style="background:#0f1923; color:#c9a84c; border-radius:6px; padding:5px 10px; font-size:8.5pt; font-weight:700; text-align:center;">🌡️<br><span style="font-size:7pt; color:#94a3b8;">Temp.</span></div>
+            <div style="background:#0f1923; color:#c9a84c; border-radius:6px; padding:5px 10px; font-size:8.5pt; font-weight:700; text-align:center;">🏷️<br><span style="font-size:7pt; color:#94a3b8;">Étiq.</span></div>
+            <div style="background:#1a2f3a; color:#c9a84c; border-radius:6px; padding:5px 10px; font-size:8.5pt; font-weight:700; border: 1.5px solid #c9a84c; text-align:center;">📅<br><span style="font-size:7pt; color:#94a3b8;">Planning</span></div>
+          </div>
+          <p style="font-size:8.5pt; color:#64748b; margin-top:6px;">L'onglet actif est surligné en doré.</p>
+        </div>
+        <div>
+          <p style="font-size:9.5pt; margin-bottom:8px;"><strong>Sur ordinateur ou tablette</strong></p>
+          <p style="font-size:9pt; color:#475569;">La barre de navigation en <strong>haut</strong> affiche tous les liens. Cliquer sur le nom pour naviguer.</p>
+          <div style="background:#0f1923; border-radius:6px; padding:8px 12px; margin-top:8px; display:flex; gap:10px; align-items:center;">
+            <span style="color:#c9a84c; font-weight:900; font-size:9.5pt;">MOS</span>
+            <span style="color:#4ade80; font-size:8.5pt; font-weight:700; background:rgba(74,222,128,.1); padding:3px 8px; border-radius:4px;">Tâches</span>
+            <span style="color:#94a3b8; font-size:8.5pt;">Températures</span>
+            <span style="color:#94a3b8; font-size:8.5pt;">Étiquettes</span>
+            <span style="color:#94a3b8; font-size:8.5pt; margin-left:auto;">Pierre  Déco.</span>
+          </div>
+          <p style="font-size:8.5pt; color:#64748b; margin-top:6px;">Le logo MOS (en haut à gauche) ramène toujours au menu principal.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ QUICK REF CARD ══ -->
+  <div class="quick-ref">
+    <div class="quick-ref-title">📋 Mémo rapide</div>
+    <div class="quick-ref-grid">
+      <div>
+        <div class="qr-label">🌡️ Frigos positifs — OK</div>
+        <div class="qr-val green">0°C → 4°C</div>
+      </div>
+      <div>
+        <div class="qr-label">🧊 Congélateurs — OK</div>
+        <div class="qr-val green">≤ −18°C</div>
+      </div>
+      <div>
+        <div class="qr-label">⚠️ Zone limite (à surveiller)</div>
+        <div class="qr-val orange">Positif 4-8°C / Négatif −15 à −18°C</div>
+      </div>
+      <div>
+        <div class="qr-label">❌ Hors plage → alerter Pierre</div>
+        <div class="qr-val red">Positif &gt;8°C / Négatif &gt;−15°C</div>
+      </div>
+      <div>
+        <div class="qr-label">📅 Relevés températures</div>
+        <div class="qr-val" style="color:#fff; font-size:9.5pt;">2× par jour — Midi &amp; Soir</div>
+      </div>
+      <div>
+        <div class="qr-label">🏷️ DLC — modifiable uniquement par</div>
+        <div class="qr-val" style="color:#c9a84c;">Pierre (manager cuisine)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-footer">
+    Mos Pub Mercière — Guide cuisine — Mai 2026 · Imprimez ce document et affichez-le en cuisine
+  </div>
+
+</div>
+
+<!-- Bouton impression (écran seulement) -->
+<button class="print-btn no-print" onclick="window.print()">🖨️ Télécharger PDF</button>
+
+</body>
+</html>
