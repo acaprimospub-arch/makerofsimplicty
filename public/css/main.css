@@ -554,8 +554,8 @@ tbody tr:hover td { background: rgba(255,255,255,0.025); transition: background 
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--text-muted);
-  background: rgba(0,0,0,0.18);
+  color: var(--text);
+  background: rgba(0,0,0,0.28);
 }
 .task-list { list-style: none; }
 .task-item {
@@ -563,19 +563,19 @@ tbody tr:hover td { background: rgba(255,255,255,0.025); transition: background 
   align-items: center;
   gap: 13px;
   padding: 13px 14px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(255,255,255,0.06);
   cursor: pointer;
   transition: background 0.12s;
   user-select: none;
   min-height: 52px;
 }
-.task-item:hover { background: rgba(255,255,255,0.03); }
+.task-item:hover { background: rgba(255,255,255,0.05); }
 .task-item:focus-visible { box-shadow: inset var(--focus-ring); outline: none; }
-.task-item[aria-checked="true"] { opacity: 0.68; }
+.task-item[aria-checked="true"] { opacity: 0.55; }
 .task-checkbox {
   width: 22px;
   height: 22px;
-  border: 1.5px solid var(--border-strong);
+  border: 2px solid rgba(255,255,255,0.40);
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -591,7 +591,7 @@ tbody tr:hover td { background: rgba(255,255,255,0.025); transition: background 
 }
 .task-item[aria-checked="true"] .task-checkbox svg { display: block; }
 .task-content { flex: 1; min-width: 0; }
-.task-desc { font-size: 0.9rem; }
+.task-desc { font-size: 0.9rem; color: var(--text); }
 .task-item[aria-checked="true"] .task-desc { text-decoration: line-through; color: var(--text-muted); }
 .task-meta { font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
 
