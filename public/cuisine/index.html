@@ -167,6 +167,38 @@
     .off-toggle-label { display:flex; align-items:center; gap:12px; background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 16px; cursor:pointer; }
     .off-toggle-label input { width:18px; height:18px; cursor:pointer; accent-color:var(--danger); }
     .f2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+    /* ── Widget températures ── */
+    .temp-widget {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px 16px; margin-bottom: 14px; cursor: pointer; transition: border-color .15s;
+      text-decoration: none; display: block;
+    }
+    .temp-widget:hover { border-color: var(--primary); }
+    .temp-widget.has-alert { border-color: #7f1d1d; background: rgba(127,29,29,.08); }
+    .temp-widget-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .temp-widget-title { font-size: .78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; flex: 1; }
+    .temp-widget-cta { font-size: .75rem; font-weight: 700; color: var(--primary); }
+    .temp-shifts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .temp-shift-pill {
+      display: flex; align-items: center; gap: 7px;
+      padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-surface);
+    }
+    .temp-shift-pill.done   { border-color: #22543d; background: rgba(34,84,61,.15); }
+    .temp-shift-pill.miss   { border-color: #7f1d1d; background: rgba(127,29,29,.12); }
+    .temp-shift-pill.alert  { border-color: #92400e; background: rgba(146,64,14,.15); }
+    .tsp-icon { font-size: 1.1rem; }
+    .tsp-label { font-size: .78rem; font-weight: 700; color: var(--text); flex: 1; }
+    .tsp-status { font-size: .7rem; font-weight: 700; }
+    .tsp-status.done  { color: #4ade80; }
+    .tsp-status.miss  { color: #f87171; }
+    .tsp-status.alert { color: #fb923c; }
+    .temp-alert-strip {
+      margin-top: 8px; padding: 7px 10px; border-radius: 6px;
+      background: rgba(127,29,29,.15); border: 1px solid #7f1d1d;
+      font-size: .75rem; color: #f87171; font-weight: 600;
+    }
     .total-cell { background:var(--bg-surface); padding:6px 8px; text-align:center; vertical-align:middle !important; }
     .total-hours { font-size:.82rem; font-weight:800; color:var(--text); white-space:nowrap; }
     .total-supp  { display:inline-block; font-size:.65rem; font-weight:700; padding:1px 6px; border-radius:20px; background:rgba(76,175,106,.12); color:var(--success); border:1px solid rgba(76,175,106,.3); margin-top:3px; white-space:nowrap; }
@@ -234,6 +266,28 @@
           <button class="date-nav-btn" id="btnDashToday">Aujourd'hui</button>
           <button class="date-nav-btn" id="btnDashNext" aria-label="Jour suivant">Demain →</button>
         </div>
+
+        <!-- Widget températures -->
+        <a href="/cuisine/temperatures.html" class="temp-widget" id="tempWidget" aria-label="Relevés de températures">
+          <div class="temp-widget-header">
+            <span style="font-size:1rem">🌡️</span>
+            <span class="temp-widget-title">Relevés de températures</span>
+            <span class="temp-widget-cta">Accéder →</span>
+          </div>
+          <div class="temp-shifts" id="tempShifts">
+            <div class="temp-shift-pill miss">
+              <span class="tsp-icon">⏳</span>
+              <span class="tsp-label">Midi</span>
+              <span class="tsp-status miss">À faire</span>
+            </div>
+            <div class="temp-shift-pill miss">
+              <span class="tsp-icon">⏳</span>
+              <span class="tsp-label">Soir</span>
+              <span class="tsp-status miss">À faire</span>
+            </div>
+          </div>
+          <div class="temp-alert-strip" id="tempAlertStrip" style="display:none"></div>
+        </a>
 
         <section class="dash-card" aria-labelledby="dash-planning-title">
           <h2 class="dash-card-title" id="dash-planning-title">Planning du jour</h2>
@@ -670,16 +724,64 @@
       const date      = dashViewDateEl.value;
       const weekStart = getMonday(date);
       const weekEnd   = addDays(weekStart, 6);
-      const [completions, timeEvents, planning, weekEvents] = await Promise.all([
+      const [completions, timeEvents, planning, weekEvents, tempMidi, tempSoir] = await Promise.all([
         api.get(`/api/cuisine/completions?date=${date}`),
         api.get(`/api/cuisine/time-events?date=${date}`),
         api.get(`/api/cuisine/planning?weekStart=${weekStart}`),
         api.get(`/api/cuisine/time-events?from=${weekStart}&to=${weekEnd}`),
+        api.get(`/api/cuisine/temperatures/session?date=${date}&shift=midi`),
+        api.get(`/api/cuisine/temperatures/session?date=${date}&shift=soir`),
       ]);
       renderDashPlanning(planning, date, timeEvents);
       renderDashTaskProg(completions);
       renderDashTimeEvents(timeEvents);
       renderDashWeekSummary(planning?.users || [], weekEvents || []);
+      renderTempWidget(date, tempMidi || [], tempSoir || []);
+    }
+
+    function renderTempWidget(date, midi, soir) {
+      const today = new Date().toISOString().split('T')[0];
+      const isToday = date === today;
+      const mats = 13; // nombre total d'unités
+
+      function shiftState(rows) {
+        if (!rows.length) return 'miss';
+        const hors = rows.filter(r => r.statut === 'hors_plage').length;
+        if (hors) return 'alert';
+        return 'done';
+      }
+
+      const mState = shiftState(midi);
+      const sState = shiftState(soir);
+      const hasAlert = mState === 'alert' || sState === 'alert';
+
+      const stateIcon  = s => s === 'done' ? '✅' : s === 'alert' ? '⚠️' : '⏳';
+      const stateLabel = s => s === 'done' ? 'Fait' : s === 'alert' ? 'Alerte' : (isToday ? 'À faire' : 'Non fait');
+
+      document.getElementById('tempShifts').innerHTML = `
+        <div class="temp-shift-pill ${mState}">
+          <span class="tsp-icon">${stateIcon(mState)}</span>
+          <span class="tsp-label">Midi</span>
+          <span class="tsp-status ${mState}">${stateLabel(mState)}</span>
+        </div>
+        <div class="temp-shift-pill ${sState}">
+          <span class="tsp-icon">${stateIcon(sState)}</span>
+          <span class="tsp-label">Soir</span>
+          <span class="tsp-status ${sState}">${stateLabel(sState)}</span>
+        </div>
+      `;
+
+      const widget = document.getElementById('tempWidget');
+      widget.classList.toggle('has-alert', hasAlert);
+
+      const alertStrip = document.getElementById('tempAlertStrip');
+      const allHors = [...midi, ...soir].filter(r => r.statut === 'hors_plage');
+      if (allHors.length) {
+        alertStrip.style.display = '';
+        alertStrip.textContent = `❌ ${allHors.length} relevé(s) hors plage : ${allHors.map(r => r.materiel_nom).join(', ')}`;
+      } else {
+        alertStrip.style.display = 'none';
+      }
     }
 
     function renderDashPlanning(planning, date, timeEvts) {
