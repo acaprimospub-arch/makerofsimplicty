@@ -273,18 +273,13 @@
 <body>
   <nav id="nav"></nav>
 
-  <div class="page-header">
-    <span>🌡️</span>
-    <h1>Températures</h1>
-    <span class="offline-pill" id="offline-pill">📡 Hors ligne</span>
-    <span class="sync-pill" id="sync-pill">✅ Synchronisé</span>
-  </div>
-
   <div class="shift-bar">
     <span class="date-label" id="date-label"></span>
     <button class="shift-btn" id="btn-midi" onclick="selectShift('midi')">MIDI</button>
     <button class="shift-btn" id="btn-soir" onclick="selectShift('soir')">SOIR</button>
     <span id="session-state"></span>
+    <span class="offline-pill" id="offline-pill">📡 Hors ligne</span>
+    <span class="sync-pill" id="sync-pill">✅ Synchronisé</span>
   </div>
 
   <div id="main-content">

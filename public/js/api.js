@@ -297,17 +297,30 @@ async function buildNav(activePage) {
   `;
   document.getElementById('btn-logout')?.addEventListener('click', logout);
 
-  // ── Bottom nav (mobile) ──
+  // ── Bottom nav (mobile) — tab bar ──
   if (activePage !== 'menu') {
+    const menuIcon = `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 11h-1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-6H3a1 1 0 01-.707-1.707l7-7z" clip-rule="evenodd"/></svg>`;
+
+    // Limiter à 4 liens max pour laisser de la place au bouton Menu
+    const tabLinks = links.slice(0, 4);
+    const tabsHTML = tabLinks.map(l => {
+      const isActive = l.key === activePage;
+      return `<a href="${l.href}" class="bottom-tab${isActive ? ' active' : ''}" ${isActive ? 'aria-current="page"' : ''} aria-label="${escapeHtml(l.label)}">
+        ${navIcon(l.key)}
+        <span>${escapeHtml(l.label)}</span>
+      </a>`;
+    }).join('');
+
     const bottomNav = document.createElement('nav');
     bottomNav.className = 'bottom-nav';
     bottomNav.setAttribute('aria-label', 'Navigation rapide mobile');
     bottomNav.innerHTML = `
-      <div class="bottom-nav-back">
-        <a href="/menu.html" class="btn-back-menu">
-          <span class="btn-back-arrow" aria-hidden="true">←</span>
+      <div class="bottom-tabs">
+        <a href="/menu.html" class="bottom-tab tab-menu" aria-label="Retour au menu">
+          ${menuIcon}
           <span>Menu</span>
         </a>
+        ${tabsHTML}
       </div>
     `;
     document.body.appendChild(bottomNav);

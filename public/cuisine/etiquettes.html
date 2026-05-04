@@ -256,7 +256,7 @@
   </style>
 </head>
 <body>
-<nav class="nav" id="nav-bar"></nav>
+<nav class="nav" id="nav"></nav>
 
 <main class="container" style="padding-top: 80px; padding-bottom: 40px;">
 
@@ -418,6 +418,7 @@ async function init() {
   if (!me) { window.location.href = '/'; return; }
   canConfigure = me.role === 'admin' || (me.role === 'manager' && me.shift === 'cuisine');
 
+  await buildNav('cuisine-etiquettes');
   await loadProduits();
   bindEvents();
   loadLogToday();

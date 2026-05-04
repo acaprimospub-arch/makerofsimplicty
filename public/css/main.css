@@ -1097,6 +1097,47 @@ tbody tr:hover td { background: rgba(255,255,255,0.025); transition: background 
   padding-bottom: env(safe-area-inset-bottom);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
 }
+
+/* Tab bar */
+.bottom-tabs {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  padding: 0 4px;
+}
+.bottom-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 4px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.62rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s, background 0.15s;
+  min-width: 0;
+  position: relative;
+}
+.bottom-tab svg { width: 20px; height: 20px; flex-shrink: 0; }
+.bottom-tab span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.bottom-tab.active { color: var(--primary); }
+.bottom-tab.active::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 20%; right: 20%;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 0 0 2px 2px;
+}
+.bottom-tab:active { background: rgba(255,255,255,0.06); }
+.bottom-tab.tab-menu { color: var(--text-muted); flex: 0 0 52px; }
+.bottom-tab.tab-menu:active { color: var(--text); }
+
+/* Legacy — kept for any page still using it */
 .bottom-nav-back { display: flex; align-items: center; justify-content: center; height: 100%; }
 .btn-back-menu {
   display: flex;
