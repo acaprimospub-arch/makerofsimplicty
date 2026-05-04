@@ -2,220 +2,371 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Températures — Cuisine MOS</title>
   <link rel="stylesheet" href="/css/main.css">
   <style>
-    body { background: #0f1923; color: #e8dcc8; font-family: 'Segoe UI', sans-serif; margin: 0; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { background: #0f1923; color: #e8dcc8; font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
 
+    /* ── Header ── */
     .page-header {
-      background: linear-gradient(135deg, #1a2f3a 0%, #0f1923 100%);
-      border-bottom: 1px solid #2a3f4a;
-      padding: 20px 24px 16px;
-    }
-    .page-header h1 { margin: 0 0 4px; font-size: 1.4rem; color: #c9a84c; font-weight: 600; }
-    .page-header .sub { color: #7a9bb0; font-size: .85rem; }
-
-    .shift-bar {
+      background: #131f2a; border-bottom: 1px solid #2a3f4a;
+      padding: 14px 18px 12px;
       display: flex; align-items: center; gap: 12px;
-      padding: 14px 24px;
-      background: #131f2a;
-      border-bottom: 1px solid #2a3f4a;
     }
-    .shift-bar .date-label { color: #7a9bb0; font-size: .85rem; margin-right: auto; }
+    .page-header h1 { margin: 0; font-size: 1.15rem; color: #c9a84c; font-weight: 700; }
+    .offline-pill {
+      margin-left: auto; display: none; align-items: center; gap: 5px;
+      background: #2a1a0a; border: 1px solid #92400e; border-radius: 12px;
+      padding: 4px 10px; font-size: .72rem; color: #fb923c; font-weight: 700;
+    }
+    .offline-pill.show { display: flex; }
+    .sync-pill {
+      margin-left: auto; display: none; align-items: center; gap: 5px;
+      background: #1a3a2a; border: 1px solid #22543d; border-radius: 12px;
+      padding: 4px 10px; font-size: .72rem; color: #4ade80; font-weight: 700;
+    }
+    .sync-pill.show { display: flex; }
+
+    /* ── Shift bar ── */
+    .shift-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 18px; background: #0f1923; border-bottom: 1px solid #1a2f3a;
+    }
+    .date-label { font-size: .8rem; color: #4a6070; flex: 1; }
     .shift-btn {
-      padding: 8px 20px; border-radius: 20px; border: 2px solid #2a3f4a;
-      background: transparent; color: #8aa5b5; font-size: .9rem; font-weight: 600;
-      cursor: pointer; transition: all .2s;
+      padding: 9px 22px; border-radius: 20px; border: 2px solid #2a3f4a;
+      background: transparent; color: #5a7080; font-size: .88rem; font-weight: 700;
+      cursor: pointer; transition: all .15s; touch-action: manipulation;
     }
     .shift-btn.active { background: #c9a84c; border-color: #c9a84c; color: #0f1923; }
-    .shift-btn:hover:not(.active) { border-color: #c9a84c; color: #c9a84c; }
 
     .session-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 5px 12px; border-radius: 20px; font-size: .8rem; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 11px; border-radius: 20px; font-size: .75rem; font-weight: 700;
     }
     .session-badge.done    { background: #1a3a2a; color: #4ade80; border: 1px solid #22543d; }
     .session-badge.missing { background: #2a1a1a; color: #f87171; border: 1px solid #7f1d1d; }
+    .session-badge.partial { background: #2a1a0a; color: #fb923c; border: 1px solid #92400e; }
 
-    .content { padding: 20px 24px; max-width: 1100px; margin: 0 auto; }
-
-    .section-title {
-      font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
-      color: #7a9bb0; margin: 0 0 12px;
+    /* ── Section labels ── */
+    .section-label {
+      padding: 10px 18px 6px;
+      font-size: .68rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+      color: #4a6070; background: #0f1923;
       display: flex; align-items: center; gap: 8px;
     }
-    .section-title::after { content: ''; flex: 1; height: 1px; background: #2a3f4a; }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: #1a2f3a; }
 
-    .type-block { margin-bottom: 28px; }
-
-    .materiels-grid {
+    /* ── Fridge grid ── */
+    .fridge-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding: 10px 18px;
     }
+    @media (max-width: 380px) { .fridge-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; } }
 
-    .mat-card {
-      background: #1a2f3a; border: 1px solid #2a3f4a; border-radius: 10px;
-      padding: 14px 16px; transition: border-color .2s;
+    .fridge-btn {
+      background: #1a2f3a; border: 2px solid #2a3f4a; border-radius: 12px;
+      padding: 14px 10px; cursor: pointer; touch-action: manipulation;
+      transition: all .15s; position: relative; text-align: center;
+      -webkit-user-select: none; user-select: none;
+      min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
     }
-    .mat-card.ok      { border-color: #22543d; }
-    .mat-card.limite  { border-color: #92400e; }
-    .mat-card.hors    { border-color: #7f1d1d; }
+    .fridge-btn:active { transform: scale(.96); }
+    .fridge-btn.ok      { border-color: #22543d; background: #0f2518; }
+    .fridge-btn.limite  { border-color: #92400e; background: #1a1005; }
+    .fridge-btn.hors    { border-color: #7f1d1d; background: #1a0808; }
+    .fridge-btn.readonly { cursor: default; opacity: .85; }
+    .fridge-btn.readonly:active { transform: none; }
 
-    .mat-name { font-size: .85rem; font-weight: 700; color: #c9a84c; margin-bottom: 10px; line-height: 1.2; }
-
-    .temp-input-wrap { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
-    .temp-input {
-      width: 100%; padding: 8px 10px; border-radius: 8px;
-      border: 1.5px solid #2a3f4a; background: #0f1923;
-      color: #e8dcc8; font-size: 1.1rem; font-weight: 600;
-      text-align: center; transition: border-color .2s;
-      -moz-appearance: textfield;
+    .fridge-icon { font-size: 1.5rem; line-height: 1; }
+    .fridge-name { font-size: .72rem; font-weight: 700; color: #c9a84c; line-height: 1.2; }
+    .fridge-temp {
+      font-size: 1.3rem; font-weight: 800; line-height: 1;
+      color: #e8dcc8;
     }
-    .temp-input::-webkit-outer-spin-button,
-    .temp-input::-webkit-inner-spin-button { -webkit-appearance: none; }
-    .temp-input:focus { outline: none; border-color: #c9a84c; }
-    .temp-unit { color: #7a9bb0; font-size: .85rem; white-space: nowrap; }
-
-    .temp-status {
-      font-size: .75rem; font-weight: 700; text-align: center; padding: 3px 0; border-radius: 4px;
+    .fridge-temp.ok     { color: #4ade80; }
+    .fridge-temp.limite { color: #fb923c; }
+    .fridge-temp.hors   { color: #f87171; }
+    .fridge-temp.empty  { color: #2a4050; font-size: 1rem; }
+    .fridge-status {
+      font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
     }
-    .temp-status.ok     { background: #1a3a2a; color: #4ade80; }
-    .temp-status.limite { background: #2a1a0a; color: #fb923c; }
-    .temp-status.hors   { background: #2a1a1a; color: #f87171; }
-    .temp-status.empty  { color: #4a6070; background: transparent; }
+    .fridge-status.ok     { color: #4ade80; }
+    .fridge-status.limite { color: #fb923c; }
+    .fridge-status.hors   { color: #f87171; }
+    .fridge-status.empty  { color: #2a4050; }
+    .fridge-by { font-size: .6rem; color: #3a5060; margin-top: 2px; }
 
-    /* Read-only mode */
-    .mat-card.readonly .temp-input {
-      background: #0a1218; border-color: #1a2f3a; cursor: default; color: #c9a84c;
-    }
-    .mat-recorded { font-size: .72rem; color: #4a6070; margin-top: 6px; text-align: center; }
-
+    /* ── Save bar ── */
     .save-bar {
-      position: sticky; bottom: 0; background: #0f1923; border-top: 1px solid #2a3f4a;
-      padding: 14px 24px; display: flex; align-items: center; gap: 12px;
+      position: sticky; bottom: 0; z-index: 10;
+      background: #131f2a; border-top: 1px solid #2a3f4a;
+      padding: 12px 18px; display: flex; align-items: center; gap: 10px;
     }
-    .save-btn {
-      padding: 11px 28px; border-radius: 8px; border: none;
-      background: #c9a84c; color: #0f1923; font-size: .95rem; font-weight: 700;
-      cursor: pointer; transition: all .2s;
-    }
-    .save-btn:hover { background: #e0be6a; }
-    .save-btn:disabled { background: #3a4f5a; color: #5a7080; cursor: not-allowed; }
-    .save-info { font-size: .82rem; color: #4a6070; }
-    .save-alerts { display: flex; gap: 8px; flex-wrap: wrap; }
+    .progress-info { flex: 1; }
+    .progress-count { font-size: .78rem; color: #7a9bb0; }
+    .progress-alerts { display: flex; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
     .alert-chip {
-      font-size: .75rem; padding: 3px 10px; border-radius: 12px; font-weight: 600;
+      font-size: .68rem; padding: 2px 8px; border-radius: 10px; font-weight: 700;
     }
     .alert-chip.hors   { background: #2a1a1a; color: #f87171; border: 1px solid #7f1d1d; }
     .alert-chip.limite { background: #2a1a0a; color: #fb923c; border: 1px solid #92400e; }
-
-    /* History */
-    .history-section { margin-top: 32px; padding-bottom: 80px; }
-    .history-header {
-      display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+    .save-btn {
+      padding: 12px 24px; border-radius: 10px; border: none;
+      background: #c9a84c; color: #0f1923; font-size: .92rem; font-weight: 800;
+      cursor: pointer; transition: all .15s; touch-action: manipulation;
+      white-space: nowrap;
     }
+    .save-btn:active { transform: scale(.97); }
+    .save-btn:disabled { background: #2a3f4a; color: #4a6070; cursor: not-allowed; }
+    .save-btn.pending { background: #fb923c; }
+
+    /* ── Numpad Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+      display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+    .numpad-modal {
+      background: #1a2f3a; border-radius: 20px 20px 0 0;
+      width: 100%; max-width: 400px;
+      padding: 0 0 env(safe-area-inset-bottom);
+      transform: translateY(100%); transition: transform .25s cubic-bezier(.4,0,.2,1);
+    }
+    .modal-overlay.open .numpad-modal { transform: translateY(0); }
+
+    .numpad-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 18px 20px 14px; border-bottom: 1px solid #2a3f4a;
+    }
+    .numpad-mat-name { font-size: 1rem; font-weight: 700; color: #c9a84c; flex: 1; }
+    .numpad-range { font-size: .72rem; color: #4a6070; }
+    .numpad-close {
+      background: #2a3f4a; border: none; color: #7a9bb0; border-radius: 50%;
+      width: 32px; height: 32px; font-size: 1.1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; touch-action: manipulation;
+    }
+
+    .numpad-display {
+      padding: 16px 20px 10px;
+      text-align: center;
+    }
+    .numpad-value {
+      font-size: 3rem; font-weight: 800; color: #e8dcc8; letter-spacing: -.02em;
+      min-height: 60px; display: flex; align-items: center; justify-content: center;
+    }
+    .numpad-value.ok     { color: #4ade80; }
+    .numpad-value.limite { color: #fb923c; }
+    .numpad-value.hors   { color: #f87171; }
+    .numpad-value .unit  { font-size: 1.4rem; color: #4a6070; margin-left: 4px; }
+    .numpad-hint { font-size: .75rem; color: #4a6070; margin-top: 2px; }
+    .numpad-hint.ok     { color: #4ade80; }
+    .numpad-hint.limite { color: #fb923c; }
+    .numpad-hint.hors   { color: #f87171; }
+
+    .numpad-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 8px; padding: 12px 18px 14px;
+    }
+    .np-btn {
+      background: #0f1923; border: 1.5px solid #2a3f4a; border-radius: 12px;
+      color: #e8dcc8; font-size: 1.3rem; font-weight: 700;
+      padding: 18px 10px; cursor: pointer; touch-action: manipulation;
+      transition: all .1s; display: flex; align-items: center; justify-content: center;
+    }
+    .np-btn:active { background: #2a3f4a; transform: scale(.95); }
+    .np-btn.np-minus  { color: #7a9bb0; font-size: 1.5rem; }
+    .np-btn.np-del    { color: #f87171; font-size: 1.1rem; }
+    .np-btn.np-ok {
+      background: #c9a84c; border-color: #c9a84c; color: #0f1923; font-size: 1.1rem;
+      grid-column: span 3; padding: 16px;
+    }
+    .np-btn.np-ok:active { background: #e0be6a; }
+
+    /* ── History ── */
+    .history-section { padding: 0 18px 100px; }
+    .history-title {
+      font-size: .68rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+      color: #4a6070; padding: 16px 0 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .history-title::after { content: ''; flex: 1; height: 1px; background: #1a2f3a; }
     .export-btn {
-      margin-left: auto; padding: 7px 16px; border-radius: 8px;
-      background: transparent; border: 1.5px solid #2a3f4a; color: #7a9bb0;
-      font-size: .82rem; cursor: pointer; transition: all .2s;
+      margin-left: auto; padding: 5px 12px; border-radius: 8px;
+      background: transparent; border: 1.5px solid #2a3f4a; color: #5a7080;
+      font-size: .72rem; cursor: pointer; touch-action: manipulation;
     }
-    .export-btn:hover { border-color: #c9a84c; color: #c9a84c; }
 
-    .history-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
-    .history-table th {
-      text-align: left; padding: 8px 10px; border-bottom: 2px solid #2a3f4a;
-      color: #7a9bb0; font-weight: 600; font-size: .75rem; text-transform: uppercase; letter-spacing: .05em;
+    .hist-item {
+      background: #1a2f3a; border: 1px solid #2a3f4a; border-radius: 10px;
+      margin-bottom: 8px; overflow: hidden;
     }
-    .history-table td { padding: 7px 10px; border-bottom: 1px solid #1a2f3a; color: #c5d5e0; }
-    .history-table tr:last-child td { border-bottom: none; }
-
-    .stat-ok     { color: #4ade80; font-weight: 700; }
-    .stat-limite { color: #fb923c; font-weight: 700; }
-    .stat-hors   { color: #f87171; font-weight: 700; }
-
-    .tabs { display: flex; gap: 0; border-bottom: 2px solid #2a3f4a; margin-bottom: 20px; }
-    .tab-btn {
-      padding: 10px 20px; background: transparent; border: none; border-bottom: 2px solid transparent;
-      color: #7a9bb0; font-size: .88rem; font-weight: 600; cursor: pointer; margin-bottom: -2px;
-      transition: all .2s;
+    .hist-summary {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 14px; cursor: pointer; touch-action: manipulation;
     }
-    .tab-btn.active { color: #c9a84c; border-bottom-color: #c9a84c; }
-    .tab-btn:hover:not(.active) { color: #c5d5e0; }
-
-    .empty-state { text-align: center; padding: 40px; color: #4a6070; }
-
-    @media (max-width: 600px) {
-      .materiels-grid { grid-template-columns: repeat(2, 1fr); }
-      .content { padding: 16px; }
-      .save-bar { flex-direction: column; align-items: stretch; }
-      .history-table { font-size: .75rem; }
+    .hist-date  { font-weight: 700; color: #c9a84c; font-size: .85rem; }
+    .hist-shift { background: #2a3f4a; color: #7a9bb0; font-size: .7rem; padding: 2px 7px; border-radius: 10px; font-weight: 700; }
+    .hist-badge { margin-left: auto; font-size: .72rem; font-weight: 700; }
+    .hist-badge.ok     { color: #4ade80; }
+    .hist-badge.limite { color: #fb923c; }
+    .hist-badge.hors   { color: #f87171; }
+    .hist-chevron { color: #4a6070; font-size: .7rem; transition: transform .2s; }
+    .hist-item.open .hist-chevron { transform: rotate(90deg); }
+    .hist-body { display: none; padding: 0 14px 12px; }
+    .hist-item.open .hist-body { display: block; }
+    .hist-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 0; border-bottom: 1px solid #1a2a38; font-size: .78rem;
     }
+    .hist-row:last-child { border-bottom: none; }
+    .hist-mat  { flex: 1; color: #c5d5e0; font-weight: 600; }
+    .hist-temp { font-weight: 800; color: #c9a84c; min-width: 55px; text-align: right; }
+    .stat-ok     { color: #4ade80; }
+    .stat-limite { color: #fb923c; }
+    .stat-hors   { color: #f87171; }
+
+    .empty-state { text-align: center; padding: 30px 18px; color: #3a5060; font-size: .85rem; }
   </style>
 </head>
 <body>
   <nav id="nav"></nav>
 
   <div class="page-header">
-    <h1>🌡️ Relevés de températures</h1>
-    <div class="sub">Contrôle HACCP — frigos &amp; congélateurs cuisine</div>
+    <span>🌡️</span>
+    <h1>Températures</h1>
+    <span class="offline-pill" id="offline-pill">📡 Hors ligne</span>
+    <span class="sync-pill" id="sync-pill">✅ Synchronisé</span>
   </div>
 
   <div class="shift-bar">
     <span class="date-label" id="date-label"></span>
-    <button class="shift-btn" id="btn-midi" onclick="selectShift('midi')">Midi</button>
-    <button class="shift-btn" id="btn-soir" onclick="selectShift('soir')">Soir</button>
+    <button class="shift-btn" id="btn-midi" onclick="selectShift('midi')">MIDI</button>
+    <button class="shift-btn" id="btn-soir" onclick="selectShift('soir')">SOIR</button>
     <span id="session-state"></span>
   </div>
 
-  <div class="content" id="main-content">
-    <div class="positifs-block type-block">
-      <p class="section-title">Frigos positifs (0°C → 4°C)</p>
-      <div class="materiels-grid" id="grid-positif"></div>
-    </div>
-    <div class="negatifs-block type-block">
-      <p class="section-title">Congélateurs négatifs (≤ −18°C)</p>
-      <div class="materiels-grid" id="grid-negatif"></div>
-    </div>
+  <div id="main-content">
+    <div class="section-label">❄️ Frigos positifs &nbsp;(0°C → 4°C)</div>
+    <div class="fridge-grid" id="grid-positif"></div>
+
+    <div class="section-label">🧊 Congélateurs négatifs &nbsp;(≤ −18°C)</div>
+    <div class="fridge-grid" id="grid-negatif"></div>
   </div>
 
   <div class="save-bar" id="save-bar" style="display:none">
-    <div>
-      <div class="save-alerts" id="save-alerts"></div>
-      <div class="save-info" id="save-info"></div>
+    <div class="progress-info">
+      <div class="progress-count" id="progress-count"></div>
+      <div class="progress-alerts" id="progress-alerts"></div>
     </div>
-    <button class="save-btn" id="save-btn" onclick="saveReleves()">Enregistrer le relevé</button>
+    <button class="save-btn" id="save-btn" onclick="saveReleves()" disabled>Enregistrer</button>
   </div>
 
-  <div class="content history-section">
-    <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('today')" id="tab-today">Aujourd'hui</button>
-      <button class="tab-btn" onclick="switchTab('week')" id="tab-week">7 derniers jours</button>
+  <div class="history-section">
+    <div class="history-title">
+      7 derniers jours
+      <button class="export-btn" onclick="exportCSV()">⬇ CSV</button>
     </div>
-    <div id="tab-panel-today"></div>
-    <div id="tab-panel-week" style="display:none">
-      <div class="history-header">
-        <span class="section-title" style="margin:0">Historique</span>
-        <button class="export-btn" onclick="exportCSV()">⬇ Exporter CSV</button>
+    <div id="history-list"><div class="empty-state">Chargement…</div></div>
+  </div>
+
+  <!-- Numpad modal -->
+  <div class="modal-overlay" id="modal" onclick="closeModal(event)">
+    <div class="numpad-modal" onclick="event.stopPropagation()">
+      <div class="numpad-header">
+        <div>
+          <div class="numpad-mat-name" id="np-name"></div>
+          <div class="numpad-range" id="np-range"></div>
+        </div>
+        <button class="numpad-close" onclick="closeModal()">✕</button>
       </div>
-      <div id="history-list"></div>
+      <div class="numpad-display">
+        <div class="numpad-value" id="np-display"><span class="ph" style="color:#2a4050">—</span></div>
+        <div class="numpad-hint" id="np-hint"></div>
+      </div>
+      <div class="numpad-grid">
+        <button class="np-btn" onclick="npPress('7')">7</button>
+        <button class="np-btn" onclick="npPress('8')">8</button>
+        <button class="np-btn" onclick="npPress('9')">9</button>
+        <button class="np-btn" onclick="npPress('4')">4</button>
+        <button class="np-btn" onclick="npPress('5')">5</button>
+        <button class="np-btn" onclick="npPress('6')">6</button>
+        <button class="np-btn" onclick="npPress('1')">1</button>
+        <button class="np-btn" onclick="npPress('2')">2</button>
+        <button class="np-btn" onclick="npPress('3')">3</button>
+        <button class="np-btn np-minus" onclick="npToggleSign()">±</button>
+        <button class="np-btn" onclick="npPress('0')">0</button>
+        <button class="np-btn" onclick="npPress('.')">.</button>
+        <button class="np-btn np-del" onclick="npDelete()">⌫</button>
+        <button class="np-btn" onclick="npPress('0')">00</button>
+        <button class="np-btn np-del" onclick="npClear()">C</button>
+        <button class="np-btn np-ok" onclick="npConfirm()">✓ Confirmer</button>
+      </div>
     </div>
   </div>
 
   <script src="/js/api.js"></script>
   <script>
-    let me = null;
-    let materiels = [];
-    let currentShift = null;
+    const STORAGE_KEY = 'temp_pending_v1';
+    let me = null, materiels = [], currentShift = null, isReadonly = false;
     let currentSession = [];
-    let isReadonly = false;
+    let npCurrentId = null, npCurrentType = null, npStr = '';
+    const entries = {}; // { materiel_id: temperature }
     const today = new Date().toISOString().split('T')[0];
 
-    function todayLabel() {
-      return new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    // ── Offline detection ────────────────────────────────────────────────────────
+    function updateOnlineStatus() {
+      const offline = !navigator.onLine;
+      document.getElementById('offline-pill').classList.toggle('show', offline);
+    }
+    window.addEventListener('online',  () => { updateOnlineStatus(); syncPending(); });
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+
+    // ── Pending sync (localStorage) ──────────────────────────────────────────────
+    function savePending(data) {
+      const pending = getPending();
+      const key = `${data.date}|${data.shift}`;
+      pending[key] = data;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(pending));
+    }
+    function getPending() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; }
+    }
+    function removePending(date, shift) {
+      const p = getPending();
+      delete p[`${date}|${shift}`];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
     }
 
+    async function syncPending() {
+      const pending = getPending();
+      const keys = Object.keys(pending);
+      if (!keys.length) return;
+      let synced = 0;
+      for (const k of keys) {
+        const d = pending[k];
+        const r = await api.post('/api/cuisine/temperatures/releves', d);
+        if (r?.ok) { removePending(d.date, d.shift); synced++; }
+      }
+      if (synced) {
+        const pill = document.getElementById('sync-pill');
+        pill.textContent = `✅ ${synced} relevé(s) synchronisé(s)`;
+        pill.classList.add('show');
+        setTimeout(() => pill.classList.remove('show'), 3000);
+        await selectShift(currentShift);
+        loadHistory();
+      }
+    }
+
+    // ── Statut calculation ───────────────────────────────────────────────────────
     function calcStatut(type, temp) {
       if (isNaN(temp)) return 'empty';
       if (type === 'positif') {
@@ -228,193 +379,224 @@
         return 'hors';
       }
     }
-
     function statutLabel(s) {
-      return s === 'ok' ? '✅ OK' : s === 'limite' ? '⚠️ Limite' : s === 'hors' ? '❌ Hors plage' : '—';
+      return s === 'ok' ? '✅ OK' : s === 'limite' ? '⚠️ Limite' : s === 'hors' ? '❌ Hors plage' : '';
+    }
+    function rangeLabel(type) {
+      return type === 'positif' ? 'Plage : 0°C → 4°C' : 'Plage : ≤ −18°C';
     }
 
-    function renderGrid(readonly, sessionData) {
+    // ── Grid rendering ───────────────────────────────────────────────────────────
+    function renderGrids() {
       const sessionMap = {};
-      for (const r of sessionData) sessionMap[r.materiel_id] = r;
+      for (const r of currentSession) sessionMap[r.materiel_id] = r;
 
       for (const type of ['positif', 'negatif']) {
         const grid = document.getElementById(`grid-${type}`);
         grid.innerHTML = '';
         for (const m of materiels.filter(x => x.type === type)) {
           const rec = sessionMap[m.id];
-          const temp = rec ? rec.temperature : '';
-          const statut = rec ? (rec.statut === 'hors_plage' ? 'hors' : rec.statut) : 'empty';
+          const localTemp = entries[m.id];
+          const temp = localTemp !== undefined ? localTemp : (rec ? rec.temperature : null);
+          const statut = temp !== null ? calcStatut(m.type, temp) : 'empty';
 
-          const card = document.createElement('div');
-          card.className = `mat-card${statut !== 'empty' ? ' ' + statut : ''}${readonly ? ' readonly' : ''}`;
-          card.dataset.id   = m.id;
-          card.dataset.type = m.type;
+          const btn = document.createElement('button');
+          btn.className = `fridge-btn${isReadonly ? ' readonly' : ''}${statut !== 'empty' ? ' ' + statut : ''}`;
+          btn.dataset.id   = m.id;
+          btn.dataset.type = m.type;
+          btn.onclick = isReadonly ? null : () => openNumpad(m.id, m.nom, m.type, temp);
 
-          const recHtml = rec
-            ? `<div class="mat-recorded">Par ${rec.user_name || '—'} à ${rec.releve_at ? rec.releve_at.slice(11,16) : ''}</div>`
+          const icon = type === 'positif' ? '❄️' : '🧊';
+          const tempDisplay = temp !== null
+            ? `<div class="fridge-temp ${statut}">${temp}°C</div><div class="fridge-status ${statut}">${statutLabel(statut)}</div>`
+            : `<div class="fridge-temp empty">Tap</div><div class="fridge-status empty">à saisir</div>`;
+          const byHtml = rec && isReadonly
+            ? `<div class="fridge-by">${rec.user_name || ''} ${rec.releve_at ? rec.releve_at.slice(11,16) : ''}</div>`
             : '';
 
-          card.innerHTML = `
-            <div class="mat-name">${m.nom}</div>
-            <div class="temp-input-wrap">
-              <input
-                type="number" step="0.1" class="temp-input"
-                id="temp-${m.id}" value="${temp}"
-                ${readonly ? 'readonly' : ''}
-                oninput="onTempInput(${m.id}, '${m.type}', this)"
-                placeholder="—"
-              >
-              <span class="temp-unit">°C</span>
-            </div>
-            <div class="temp-status ${statut}" id="stat-${m.id}">${statutLabel(statut)}</div>
-            ${recHtml}
+          btn.innerHTML = `
+            <div class="fridge-icon">${icon}</div>
+            <div class="fridge-name">${m.nom}</div>
+            ${tempDisplay}
+            ${byHtml}
           `;
-          grid.appendChild(card);
+          grid.appendChild(btn);
         }
       }
     }
 
-    function onTempInput(id, type, input) {
-      const val = parseFloat(input.value);
-      const stat = calcStatut(type, val);
-      const statEl = document.getElementById(`stat-${id}`);
-      statEl.className = `temp-status ${stat}`;
-      statEl.textContent = isNaN(val) ? '—' : statutLabel(stat);
-
-      const card = input.closest('.mat-card');
-      card.className = `mat-card ${isNaN(val) ? '' : stat}`;
-
+    function updateCard(id, type, temp) {
+      const btn = document.querySelector(`.fridge-btn[data-id="${id}"]`);
+      if (!btn) return;
+      const statut = calcStatut(type, temp);
+      btn.className = `fridge-btn ${statut}`;
+      const icon = type === 'positif' ? '❄️' : '🧊';
+      const mat = materiels.find(m => m.id == id);
+      btn.innerHTML = `
+        <div class="fridge-icon">${icon}</div>
+        <div class="fridge-name">${mat.nom}</div>
+        <div class="fridge-temp ${statut}">${temp}°C</div>
+        <div class="fridge-status ${statut}">${statutLabel(statut)}</div>
+      `;
+      btn.onclick = () => openNumpad(id, mat.nom, type, temp);
       updateSaveBar();
     }
 
     function updateSaveBar() {
-      const inputs = document.querySelectorAll('.temp-input:not([readonly])');
-      const alerts = document.getElementById('save-alerts');
-      const info   = document.getElementById('save-info');
-      const btn    = document.getElementById('save-btn');
-
-      let hors = 0, limite = 0, filled = 0;
-      for (const inp of inputs) {
-        const val = parseFloat(inp.value);
-        if (isNaN(val)) continue;
-        filled++;
-        const card = inp.closest('.mat-card');
-        const type = card.dataset.type;
-        const s = calcStatut(type, val);
+      const total = materiels.length;
+      const filled = Object.keys(entries).length;
+      let hors = 0, limite = 0;
+      for (const [id, temp] of Object.entries(entries)) {
+        const mat = materiels.find(m => m.id == id);
+        if (!mat) continue;
+        const s = calcStatut(mat.type, temp);
         if (s === 'hors')   hors++;
         if (s === 'limite') limite++;
       }
-
-      alerts.innerHTML = '';
-      if (hors)   alerts.innerHTML += `<span class="alert-chip hors">❌ ${hors} hors plage</span>`;
-      if (limite) alerts.innerHTML += `<span class="alert-chip limite">⚠️ ${limite} en limite</span>`;
-      info.textContent = `${filled} / ${inputs.length} relevés saisis`;
+      document.getElementById('progress-count').textContent = `${filled} / ${total} relevés saisis`;
+      const al = document.getElementById('progress-alerts');
+      al.innerHTML = '';
+      if (hors)   al.innerHTML += `<span class="alert-chip hors">❌ ${hors} hors plage</span>`;
+      if (limite) al.innerHTML += `<span class="alert-chip limite">⚠️ ${limite} limite</span>`;
+      const btn = document.getElementById('save-btn');
       btn.disabled = filled === 0;
+      if (hors) { btn.textContent = '⚠️ Enregistrer'; btn.classList.add('pending'); }
+      else       { btn.textContent = 'Enregistrer';   btn.classList.remove('pending'); }
     }
 
+    // ── Numpad ───────────────────────────────────────────────────────────────────
+    function openNumpad(id, nom, type, currentTemp) {
+      npCurrentId   = id;
+      npCurrentType = type;
+      npStr = currentTemp !== null ? String(currentTemp) : '';
+      document.getElementById('np-name').textContent  = nom;
+      document.getElementById('np-range').textContent = rangeLabel(type);
+      document.getElementById('modal').classList.add('open');
+      updateNpDisplay();
+    }
+    function closeModal(e) {
+      if (e && e.target !== document.getElementById('modal')) return;
+      document.getElementById('modal').classList.remove('open');
+    }
+    function npPress(ch) {
+      if (ch === '.' && npStr.includes('.')) return;
+      if (ch === '.' && npStr === '')        { npStr = '0.'; updateNpDisplay(); return; }
+      if (npStr === '0' && ch !== '.')       { npStr = ch; updateNpDisplay(); return; }
+      if (npStr.replace('-','').length >= 6) return;
+      npStr += ch;
+      updateNpDisplay();
+    }
+    function npToggleSign() {
+      if (npStr.startsWith('-')) npStr = npStr.slice(1);
+      else if (npStr !== '')     npStr = '-' + npStr;
+      else                       npStr = '-';
+      updateNpDisplay();
+    }
+    function npDelete() {
+      npStr = npStr.slice(0, -1);
+      updateNpDisplay();
+    }
+    function npClear() {
+      npStr = '';
+      updateNpDisplay();
+    }
+    function updateNpDisplay() {
+      const disp = document.getElementById('np-display');
+      const hint = document.getElementById('np-hint');
+      const val  = parseFloat(npStr);
+      if (npStr === '' || npStr === '-') {
+        disp.innerHTML = `<span style="color:#2a4050">—</span>`;
+        disp.className = 'numpad-value';
+        hint.textContent = ''; hint.className = 'numpad-hint';
+        return;
+      }
+      const s = calcStatut(npCurrentType, val);
+      disp.innerHTML = `${npStr}<span class="unit">°C</span>`;
+      disp.className = `numpad-value ${s}`;
+      const labels = { ok: '✅ OK — dans la plage', limite: '⚠️ Limite — vérifier', hors: '❌ Hors plage HACCP', empty: '' };
+      hint.textContent = labels[s] || '';
+      hint.className = `numpad-hint ${s}`;
+    }
+    function npConfirm() {
+      const val = parseFloat(npStr);
+      if (isNaN(val) || npStr === '' || npStr === '-') {
+        closeModal(); return;
+      }
+      entries[npCurrentId] = val;
+      updateCard(npCurrentId, npCurrentType, val);
+      document.getElementById('modal').classList.remove('open');
+    }
+
+    // ── Save ─────────────────────────────────────────────────────────────────────
+    async function saveReleves() {
+      const releves = Object.entries(entries).map(([id, temperature]) => ({
+        materiel_id: parseInt(id), temperature
+      }));
+      if (!releves.length) return;
+
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true; btn.textContent = '…';
+
+      const payload = { date: today, shift: currentShift, releves };
+
+      if (!navigator.onLine) {
+        savePending(payload);
+        showToast('Pas de connexion — relevé sauvegardé localement 📡', 'warning');
+        btn.disabled = false; btn.textContent = 'Enregistrer';
+        return;
+      }
+
+      const r = await api.post('/api/cuisine/temperatures/releves', payload);
+      if (r?.ok) {
+        showToast(`Relevé ${currentShift} enregistré ✅`, 'success');
+        await selectShift(currentShift);
+        loadHistory();
+      } else if (!navigator.onLine) {
+        savePending(payload);
+        showToast('Sauvegardé localement — sera synchronisé dès la reconnexion.', 'warning');
+        btn.disabled = false; btn.textContent = 'Enregistrer';
+      } else {
+        showToast('Erreur lors de l\'enregistrement.', 'error');
+        btn.disabled = false; btn.textContent = 'Enregistrer';
+      }
+    }
+
+    // ── Shift selection ──────────────────────────────────────────────────────────
     async function selectShift(shift) {
       currentShift = shift;
+      Object.keys(entries).forEach(k => delete entries[k]);
       document.getElementById('btn-midi').classList.toggle('active', shift === 'midi');
       document.getElementById('btn-soir').classList.toggle('active', shift === 'soir');
 
       const session = await api.get(`/api/cuisine/temperatures/session?date=${today}&shift=${shift}`);
       currentSession = session || [];
-      isReadonly = currentSession.length > 0;
+      isReadonly = currentSession.length === materiels.length && materiels.length > 0;
 
       const stateEl = document.getElementById('session-state');
       if (isReadonly) {
         const who = currentSession[0]?.user_name || '';
-        stateEl.innerHTML = `<span class="session-badge done">✅ Relevé ${shift} enregistré${who ? ' par ' + who : ''}</span>`;
+        stateEl.innerHTML = `<span class="session-badge done">✅ ${shift} fait${who ? ' — ' + who : ''}</span>`;
         document.getElementById('save-bar').style.display = 'none';
+      } else if (currentSession.length > 0) {
+        stateEl.innerHTML = `<span class="session-badge partial">⏳ Partiel (${currentSession.length}/${materiels.length})</span>`;
+        document.getElementById('save-bar').style.display = 'flex';
       } else {
-        stateEl.innerHTML = `<span class="session-badge missing">⏳ Relevé ${shift} à saisir</span>`;
+        stateEl.innerHTML = `<span class="session-badge missing">⏳ À saisir</span>`;
         document.getElementById('save-bar').style.display = 'flex';
       }
 
-      renderGrid(isReadonly, currentSession);
+      renderGrids();
       if (!isReadonly) updateSaveBar();
-      renderTodaySummary();
     }
 
-    async function saveReleves() {
-      const inputs = document.querySelectorAll('.temp-input:not([readonly])');
-      const releves = [];
-      for (const inp of inputs) {
-        const val = parseFloat(inp.value);
-        if (isNaN(val)) continue;
-        const card = inp.closest('.mat-card');
-        releves.push({ materiel_id: parseInt(card.dataset.id), temperature: val });
-      }
-      if (!releves.length) { showToast('Aucune température saisie.', 'warning'); return; }
-
-      const btn = document.getElementById('save-btn');
-      btn.disabled = true; btn.textContent = 'Enregistrement…';
-
-      const r = await api.post('/api/cuisine/temperatures/releves', { date: today, shift: currentShift, releves });
-      if (r?.ok) {
-        showToast(`Relevé ${currentShift} enregistré ✅`, 'success');
-        await selectShift(currentShift);
-        loadHistory();
-      } else {
-        showToast('Erreur lors de l\'enregistrement.', 'error');
-        btn.disabled = false; btn.textContent = 'Enregistrer le relevé';
-      }
-    }
-
-    function renderTodaySummary() {
-      const el = document.getElementById('tab-panel-today');
-      const shifts = ['midi', 'soir'];
-      const current = currentSession;
-
-      if (!current.length) {
-        el.innerHTML = `<div class="empty-state">Aucun relevé enregistré pour le shift ${currentShift} aujourd'hui.</div>`;
-        return;
-      }
-
-      const hors   = current.filter(r => r.statut === 'hors_plage');
-      const limite = current.filter(r => r.statut === 'limite');
-      let html = '';
-
-      if (hors.length) {
-        html += `<div style="background:#2a1a1a;border:1px solid #7f1d1d;border-radius:8px;padding:12px 16px;margin-bottom:12px">
-          <strong style="color:#f87171">❌ ${hors.length} relevé(s) hors plage</strong><br>
-          <div style="margin-top:6px;font-size:.82rem;color:#fca5a5">${hors.map(r => `${r.materiel_nom} : ${r.temperature}°C`).join(' — ')}</div>
-        </div>`;
-      }
-      if (limite.length) {
-        html += `<div style="background:#2a1a0a;border:1px solid #92400e;border-radius:8px;padding:12px 16px;margin-bottom:12px">
-          <strong style="color:#fb923c">⚠️ ${limite.length} relevé(s) en limite</strong><br>
-          <div style="margin-top:6px;font-size:.82rem;color:#fdba74">${limite.map(r => `${r.materiel_nom} : ${r.temperature}°C`).join(' — ')}</div>
-        </div>`;
-      }
-
-      html += `<table class="history-table">
-        <thead><tr>
-          <th>Matériel</th><th>Type</th><th>Temp.</th><th>Statut</th><th>Par</th><th>Heure</th>
-        </tr></thead><tbody>`;
-      for (const r of current) {
-        const s = r.statut === 'hors_plage' ? 'hors' : r.statut;
-        html += `<tr>
-          <td style="font-weight:600">${r.materiel_nom}</td>
-          <td>${r.materiel_type === 'positif' ? '❄️ Positif' : '🧊 Négatif'}</td>
-          <td style="font-weight:700;color:#c9a84c">${r.temperature}°C</td>
-          <td class="stat-${s}">${statutLabel(s)}</td>
-          <td>${r.user_name || '—'}</td>
-          <td style="color:#4a6070">${r.releve_at ? r.releve_at.slice(11,16) : ''}</td>
-        </tr>`;
-      }
-      html += '</tbody></table>';
-      el.innerHTML = html;
-    }
-
+    // ── History ──────────────────────────────────────────────────────────────────
     async function loadHistory() {
       const from = new Date(); from.setDate(from.getDate() - 6);
       const fromStr = from.toISOString().split('T')[0];
       const rows = await api.get(`/api/cuisine/temperatures/history?from=${fromStr}&to=${today}&limit=500`);
       const el = document.getElementById('history-list');
-      if (!rows?.length) { el.innerHTML = '<div class="empty-state">Aucun historique sur les 7 derniers jours.</div>'; return; }
+      if (!rows?.length) { el.innerHTML = '<div class="empty-state">Aucun relevé sur les 7 derniers jours.</div>'; return; }
 
-      // Group by date + shift
       const groups = {};
       for (const r of rows) {
         const key = `${r.date}-${r.shift}`;
@@ -427,66 +609,60 @@
         const hors   = g.rows.filter(r => r.statut === 'hors_plage').length;
         const limite = g.rows.filter(r => r.statut === 'limite').length;
         const dateStr = new Date(g.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-        const badge = hors ? `<span style="color:#f87171;font-size:.75rem">❌ ${hors} hors plage</span>`
-                    : limite ? `<span style="color:#fb923c;font-size:.75rem">⚠️ ${limite} limite</span>`
-                    : `<span style="color:#4ade80;font-size:.75rem">✅ OK</span>`;
+        const badge = hors ? `<span class="hist-badge hors">❌ ${hors}</span>`
+                    : limite ? `<span class="hist-badge limite">⚠️ ${limite}</span>`
+                    : `<span class="hist-badge ok">✅</span>`;
+        const bodyRows = g.rows.map(r => {
+          const s = r.statut === 'hors_plage' ? 'hors' : r.statut;
+          return `<div class="hist-row">
+            <span class="hist-mat">${r.materiel_nom}</span>
+            <span class="hist-temp">${r.temperature}°C</span>
+            <span class="stat-${s}" style="font-size:.72rem;font-weight:700;min-width:70px;text-align:right">${statutLabel(s)}</span>
+          </div>`;
+        }).join('');
 
-        html += `<details style="margin-bottom:8px;background:#1a2f3a;border:1px solid #2a3f4a;border-radius:8px;overflow:hidden">
-          <summary style="padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none;user-select:none">
-            <span style="font-weight:700;color:#c9a84c">${dateStr}</span>
-            <span style="background:#2a3f4a;color:#7a9bb0;font-size:.75rem;padding:2px 8px;border-radius:10px;font-weight:600">${g.shift.toUpperCase()}</span>
+        html += `<div class="hist-item" onclick="this.classList.toggle('open')">
+          <div class="hist-summary">
+            <span class="hist-date">${dateStr}</span>
+            <span class="hist-shift">${g.shift.toUpperCase()}</span>
             ${badge}
-            <span style="margin-left:auto;color:#4a6070;font-size:.8rem">${g.rows[0]?.user_name || ''}</span>
-          </summary>
-          <div style="padding:0 16px 14px">
-            <table class="history-table">
-              <thead><tr><th>Matériel</th><th>Type</th><th>Temp.</th><th>Statut</th><th>Heure</th></tr></thead>
-              <tbody>
-                ${g.rows.map(r => {
-                  const s = r.statut === 'hors_plage' ? 'hors' : r.statut;
-                  return `<tr>
-                    <td style="font-weight:600">${r.materiel_nom}</td>
-                    <td>${r.materiel_type === 'positif' ? '❄️ Positif' : '🧊 Négatif'}</td>
-                    <td style="font-weight:700;color:#c9a84c">${r.temperature}°C</td>
-                    <td class="stat-${s}">${statutLabel(s)}</td>
-                    <td style="color:#4a6070">${r.releve_at ? r.releve_at.slice(11,16) : ''}</td>
-                  </tr>`;
-                }).join('')}
-              </tbody>
-            </table>
+            <span class="hist-chevron">▶</span>
           </div>
-        </details>`;
+          <div class="hist-body">${bodyRows}</div>
+        </div>`;
       }
       el.innerHTML = html;
     }
 
-    function switchTab(tab) {
-      document.getElementById('tab-today').classList.toggle('active', tab === 'today');
-      document.getElementById('tab-week').classList.toggle('active', tab === 'week');
-      document.getElementById('tab-panel-today').style.display = tab === 'today' ? '' : 'none';
-      document.getElementById('tab-panel-week').style.display  = tab === 'week'  ? '' : 'none';
-    }
-
     function exportCSV() {
       const from = new Date(); from.setDate(from.getDate() - 6);
-      const fromStr = from.toISOString().split('T')[0];
-      window.open(`/api/cuisine/temperatures/export?from=${fromStr}&to=${today}`, '_blank');
+      window.open(`/api/cuisine/temperatures/export?from=${from.toISOString().split('T')[0]}&to=${today}`, '_blank');
     }
 
+    // ── Keyboard for numpad ──────────────────────────────────────────────────────
+    document.addEventListener('keydown', e => {
+      if (!document.getElementById('modal').classList.contains('open')) return;
+      if (e.key >= '0' && e.key <= '9') npPress(e.key);
+      else if (e.key === '.' || e.key === ',') npPress('.');
+      else if (e.key === '-') npToggleSign();
+      else if (e.key === 'Backspace') npDelete();
+      else if (e.key === 'Enter') npConfirm();
+      else if (e.key === 'Escape') closeModal();
+    });
+
+    // ── Init ─────────────────────────────────────────────────────────────────────
     async function init() {
       me = await api.get('/api/auth/me');
       if (!me) return;
       await buildNav('cuisine-temperatures');
 
-      document.getElementById('date-label').textContent = todayLabel();
+      const d = new Date();
+      document.getElementById('date-label').textContent = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
       materiels = await api.get('/api/cuisine/temperatures/materiels') || [];
-
-      // Auto-select shift based on current hour
-      const hour = new Date().getHours();
-      await selectShift(hour < 17 ? 'midi' : 'soir');
-
+      await selectShift(d.getHours() < 17 ? 'midi' : 'soir');
       loadHistory();
+      syncPending();
     }
 
     init();
