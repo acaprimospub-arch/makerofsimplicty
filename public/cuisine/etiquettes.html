@@ -190,14 +190,42 @@
     .lb-by { font-size: 5px; color: #888; }
     .lb-days { font-size: 5px; color: #999; }
 
+    /* ── Quantité ── */
+    .qty-row { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+    .qty-label { font-size: .78rem; color: var(--text-muted); font-weight: 600; flex-shrink: 0; }
+    .qty-btns { display: flex; gap: 5px; flex: 1; }
+    .qty-btn {
+      flex: 1; padding: 8px 4px; border-radius: 8px; border: 1.5px solid var(--border);
+      background: transparent; color: var(--text-muted); font-weight: 800; font-size: .88rem;
+      cursor: pointer; transition: all .15s; text-align: center;
+    }
+    .qty-btn.active { background: rgba(212,162,74,.15); border-color: var(--primary); color: var(--primary); }
+
     /* ── Historique ── */
     .log-section { margin-top: 20px; }
     .log-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; margin-bottom: 6px;
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); }
+    .log-item.dlc-urgent { border-color: #c0392b; background: rgba(192,57,43,.07); }
+    .log-item.dlc-soon   { border-color: #e67e22; background: rgba(230,126,34,.06); }
     .log-nom { font-weight: 700; font-size: .88rem; flex: 1; }
     .log-fourn { font-size: .75rem; color: var(--primary); }
     .log-meta { font-size: .75rem; color: var(--text-muted); text-align: right; }
     .log-empty { text-align: center; padding: 20px; color: var(--text-muted); font-size: .85rem; }
+    .dlc-badge { font-size: .68rem; font-weight: 800; padding: 2px 7px; border-radius: 10px; }
+    .dlc-badge.urgent { background: rgba(192,57,43,.2); color: #e74c3c; border: 1px solid rgba(192,57,43,.4); }
+    .dlc-badge.soon   { background: rgba(230,126,34,.15); color: #e67e22; border: 1px solid rgba(230,126,34,.3); }
+
+    /* ── Stats semaine ── */
+    .stats-week { margin-top: 24px; }
+    .stats-week-title { font-size: .72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .stats-week-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .stat-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-nom { font-size: .82rem; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .stat-bar-wrap { width: 80px; height: 6px; background: var(--bg-surface); border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+    .stat-bar-fill { height: 100%; border-radius: 3px; background: var(--primary); transition: width .4s; }
+    .stat-count { font-size: .78rem; font-weight: 800; color: var(--primary); min-width: 24px; text-align: right; }
+    .stat-last { font-size: .68rem; color: var(--text-muted); min-width: 36px; text-align: right; }
 
     /* ── Empty state ── */
     .no-product { text-align: center; padding: 40px 20px; color: var(--text-muted); }
@@ -282,6 +310,18 @@
           <div style="font-size:.75rem; color:var(--text-muted); margin-top:4px;" id="dlc-date-display"></div>
         </div>
 
+        <!-- Quantité -->
+        <div class="qty-row">
+          <span class="qty-label">Copies :</span>
+          <div class="qty-btns" id="qty-btns">
+            <button class="qty-btn active" data-qty="1" onclick="setQty(1,this)">×1</button>
+            <button class="qty-btn" data-qty="2" onclick="setQty(2,this)">×2</button>
+            <button class="qty-btn" data-qty="3" onclick="setQty(3,this)">×3</button>
+            <button class="qty-btn" data-qty="5" onclick="setQty(5,this)">×5</button>
+            <button class="qty-btn" data-qty="10" onclick="setQty(10,this)">×10</button>
+          </div>
+        </div>
+
         <button class="btn-print" id="btn-print" disabled>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
           Imprimer l'étiquette
@@ -293,6 +333,12 @@
       <div class="log-section">
         <div style="font-size:.78rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px;">Impressions du jour</div>
         <div id="log-today"></div>
+      </div>
+
+      <!-- Stats semaine -->
+      <div class="stats-week">
+        <div class="stats-week-title">📊 Cette semaine</div>
+        <div id="stats-week-list"><div class="log-empty">Chargement…</div></div>
       </div>
     </div>
   </div>
@@ -375,6 +421,7 @@ async function init() {
   await loadProduits();
   bindEvents();
   loadLogToday();
+  loadStatsWeek();
 }
 
 async function loadProduits() {
@@ -477,6 +524,7 @@ function selectProduit(id) {
   renderPreview();
   document.getElementById('btn-print').disabled = false;
   document.getElementById('btn-print-sub').textContent = `${selectedProduit.nom} · ${selectedProduit.fournisseur || '—'}`;
+  updatePrintBtn();
 
   // Highlight selected
   document.querySelectorAll('.prod-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.id) === id));
@@ -537,12 +585,29 @@ function renderPreview() {
 }
 
 // ── Print ─────────────────────────────────────────────────────────────────────
+let printQty = 1;
+function setQty(n, btn) {
+  printQty = n;
+  document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updatePrintBtn();
+}
+function updatePrintBtn() {
+  const btn = document.getElementById('btn-print');
+  if (!btn.disabled) {
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Imprimer ${printQty > 1 ? printQty + ' étiquettes' : "l'étiquette"}`;
+  }
+}
+
 async function doPrint() {
   if (!selectedProduit) return;
   const n = currentDlcJours();
-  document.getElementById('label-print-area').innerHTML = buildLabelHTML(selectedProduit, n);
+  const labelHtml = buildLabelHTML(selectedProduit, n);
+  // Génère N copies séparées par page-break
+  document.getElementById('label-print-area').innerHTML =
+    Array.from({ length: printQty }, () => labelHtml).join('');
 
-  // Log
   const dlcDate = addDays(todayISO(), n);
   await apiFetch('/api/cuisine/etiquettes/log', {
     method: 'POST',
@@ -554,36 +619,90 @@ async function doPrint() {
       fournisseur: selectedProduit.fournisseur,
       date_fab: todayISO(),
       date_dlc: dlcDate,
-      quantite: 1,
+      quantite: printQty,
       allergenes: JSON.parse(selectedProduit.allergenes || '[]'),
     })
   }).catch(() => {});
 
   window.print();
   loadLogToday();
+  loadStatsWeek();
 }
 
 // ── Log du jour ───────────────────────────────────────────────────────────────
+function dlcUrgency(dateDlcStr) {
+  if (!dateDlcStr) return null;
+  const dlc  = new Date(dateDlcStr.split('T')[0] + 'T23:59:59');
+  const now  = new Date();
+  const diff = (dlc - now) / (1000 * 3600); // heures restantes
+  if (diff < 0)   return 'urgent';  // déjà expiré
+  if (diff < 24)  return 'urgent';  // expire aujourd'hui ou dans moins de 24h
+  if (diff < 48)  return 'soon';    // expire demain
+  return null;
+}
+
 async function loadLogToday() {
   const today = todayISO();
-  const logs = await apiFetch(`/api/cuisine/etiquettes/log?from=${today}&to=${today}&limit=20`).catch(() => []);
+  const logs = await apiFetch(`/api/cuisine/etiquettes/log?from=${today}&to=${today}&limit=50`).catch(() => []);
   const el = document.getElementById('log-today');
   if (!logs.length) {
     el.innerHTML = `<div class="log-empty">Aucune impression aujourd'hui.</div>`;
     return;
   }
   el.innerHTML = logs.map(l => {
-    const dlc = l.date_dlc ? fmtDate(l.date_dlc.split('T')[0]) : '';
-    const time = l.printed_at ? (l.printed_at.split(' ')[1] || '').slice(0, 5) : '';
-    return `<div class="log-item">
+    const dlc      = l.date_dlc ? fmtDate(l.date_dlc.split('T')[0]) : '';
+    const time     = l.printed_at ? (l.printed_at.split(' ')[1] || '').slice(0, 5) : '';
+    const urgency  = dlcUrgency(l.date_dlc);
+    const badge    = urgency === 'urgent'
+      ? `<span class="dlc-badge urgent">⚠️ DLC ${dlc}</span>`
+      : urgency === 'soon'
+      ? `<span class="dlc-badge soon">⏳ DLC ${dlc}</span>`
+      : dlc ? `<span style="font-size:.72rem; color:var(--text-muted);">DLC ${dlc}</span>` : '';
+    const qtyBadge = l.quantite > 1 ? `<span style="font-size:.7rem;color:var(--text-muted)">×${l.quantite}</span>` : '';
+    return `<div class="log-item${urgency ? ' dlc-' + urgency : ''}">
       <div style="flex:1; min-width:0;">
-        <div class="log-nom">${l.produit_nom}</div>
-        ${l.date_dlc ? `<div style="font-size:.75rem; color:#e74c3c;">DLC ${dlc}</div>` : ''}
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span class="log-nom">${l.produit_nom}</span>${qtyBadge}
+        </div>
+        <div style="margin-top:3px;">${badge}</div>
       </div>
       <div class="log-meta">
         <div>${l.user_name || '—'}</div>
         <div>${time}</div>
       </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Stats semaine ─────────────────────────────────────────────────────────────
+async function loadStatsWeek() {
+  const today = todayISO();
+  const from  = new Date(); from.setDate(from.getDate() - 6);
+  const fromStr = from.toISOString().split('T')[0];
+  const logs = await apiFetch(`/api/cuisine/etiquettes/log?from=${fromStr}&to=${today}&limit=500`).catch(() => []);
+  const el = document.getElementById('stats-week-list');
+  if (!logs.length) { el.innerHTML = `<div class="log-empty">Aucune impression cette semaine.</div>`; return; }
+
+  // Aggregate by product
+  const agg = {};
+  for (const l of logs) {
+    if (!agg[l.produit_nom]) agg[l.produit_nom] = { total: 0, last: l.printed_at };
+    agg[l.produit_nom].total += (l.quantite || 1);
+    if (l.printed_at > agg[l.produit_nom].last) agg[l.produit_nom].last = l.printed_at;
+  }
+  const sorted = Object.entries(agg).sort((a, b) => b[1].total - a[1].total);
+  const max = sorted[0]?.[1].total || 1;
+
+  el.innerHTML = sorted.map(([nom, d]) => {
+    const lastTime = d.last ? (d.last.split(' ')[1] || '').slice(0, 5) : '';
+    const lastDate = d.last ? d.last.split(' ')[0] : '';
+    const isToday  = lastDate === today;
+    const lastLabel = isToday ? lastTime : (lastDate ? fmtDate(lastDate) : '');
+    return `<div class="stat-row">
+      <span class="stat-nom" title="${nom}">${nom}</span>
+      <div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:${Math.round(d.total/max*100)}%"></div></div>
+      <span class="stat-count">${d.total}</span>
+      <span class="stat-last">${lastLabel}</span>
     </div>`;
   }).join('');
 }

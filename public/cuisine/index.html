@@ -199,6 +199,12 @@
       background: rgba(127,29,29,.15); border: 1px solid #7f1d1d;
       font-size: .75rem; color: #f87171; font-weight: 600;
     }
+    .dlc-alert-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: .82rem; }
+    .dlc-alert-row:last-child { border-bottom: none; }
+    .dlc-alert-nom { flex: 1; font-weight: 700; }
+    .dlc-alert-badge { font-size: .7rem; font-weight: 800; padding: 2px 8px; border-radius: 10px; }
+    .dlc-alert-badge.urgent { background: rgba(192,57,43,.2); color: #e74c3c; border: 1px solid rgba(192,57,43,.4); }
+    .dlc-alert-badge.soon   { background: rgba(230,126,34,.15); color: #e67e22; border: 1px solid rgba(230,126,34,.3); }
     .total-cell { background:var(--bg-surface); padding:6px 8px; text-align:center; vertical-align:middle !important; }
     .total-hours { font-size:.82rem; font-weight:800; color:var(--text); white-space:nowrap; }
     .total-supp  { display:inline-block; font-size:.65rem; font-weight:700; padding:1px 6px; border-radius:20px; background:rgba(76,175,106,.12); color:var(--success); border:1px solid rgba(76,175,106,.3); margin-top:3px; white-space:nowrap; }
@@ -287,6 +293,16 @@
             </div>
           </div>
           <div class="temp-alert-strip" id="tempAlertStrip" style="display:none"></div>
+        </a>
+
+        <!-- Widget alertes DLC étiquettes -->
+        <a href="/cuisine/etiquettes.html" class="temp-widget" id="dlcWidget" aria-label="Alertes DLC étiquettes" style="display:none">
+          <div class="temp-widget-header">
+            <span style="font-size:1rem">🏷️</span>
+            <span class="temp-widget-title">Alertes DLC étiquettes</span>
+            <span class="temp-widget-cta">Voir →</span>
+          </div>
+          <div id="dlcAlertList"></div>
         </a>
 
         <section class="dash-card" aria-labelledby="dash-planning-title">
@@ -724,19 +740,21 @@
       const date      = dashViewDateEl.value;
       const weekStart = getMonday(date);
       const weekEnd   = addDays(weekStart, 6);
-      const [completions, timeEvents, planning, weekEvents, tempMidi, tempSoir] = await Promise.all([
+      const [completions, timeEvents, planning, weekEvents, tempMidi, tempSoir, etiqLogs] = await Promise.all([
         api.get(`/api/cuisine/completions?date=${date}`),
         api.get(`/api/cuisine/time-events?date=${date}`),
         api.get(`/api/cuisine/planning?weekStart=${weekStart}`),
         api.get(`/api/cuisine/time-events?from=${weekStart}&to=${weekEnd}`),
         api.get(`/api/cuisine/temperatures/session?date=${date}&shift=midi`),
         api.get(`/api/cuisine/temperatures/session?date=${date}&shift=soir`),
+        api.get(`/api/cuisine/etiquettes/log?from=${date}&to=${date}&limit=100`),
       ]);
       renderDashPlanning(planning, date, timeEvents);
       renderDashTaskProg(completions);
       renderDashTimeEvents(timeEvents);
       renderDashWeekSummary(planning?.users || [], weekEvents || []);
       renderTempWidget(date, tempMidi || [], tempSoir || []);
+      renderDlcWidget(etiqLogs || []);
     }
 
     function renderTempWidget(date, midi, soir) {
@@ -782,6 +800,34 @@
       } else {
         alertStrip.style.display = 'none';
       }
+    }
+
+    function renderDlcWidget(logs) {
+      const widget = document.getElementById('dlcWidget');
+      const list   = document.getElementById('dlcAlertList');
+      if (!logs.length) { widget.style.display = 'none'; return; }
+
+      const now = new Date();
+      const alerts = logs.filter(l => {
+        if (!l.date_dlc) return false;
+        const dlc  = new Date(l.date_dlc.split('T')[0] + 'T23:59:59');
+        return (dlc - now) / 3600000 < 48;
+      });
+
+      if (!alerts.length) { widget.style.display = 'none'; return; }
+      widget.style.display = 'block';
+      widget.classList.add('has-alert');
+
+      list.innerHTML = alerts.map(l => {
+        const dlc  = new Date(l.date_dlc.split('T')[0] + 'T23:59:59');
+        const diff = (dlc - now) / 3600000;
+        const urgency = diff < 24 ? 'urgent' : 'soon';
+        const label   = urgency === 'urgent' ? '⚠️ Expire aujourd\'hui' : '⏳ Expire demain';
+        return `<div class="dlc-alert-row">
+          <span class="dlc-alert-nom">${l.produit_nom}</span>
+          <span class="dlc-alert-badge ${urgency}">${label}</span>
+        </div>`;
+      }).join('');
     }
 
     function renderDashPlanning(planning, date, timeEvts) {
