@@ -234,6 +234,40 @@
     .stat-hors   { color: #f87171; }
 
     .empty-state { text-align: center; padding: 30px 18px; color: #3a5060; font-size: .85rem; }
+
+    /* ── Export panel ── */
+    .export-panel {
+      background: #131f2a; border: 1px solid #2a3f4a; border-radius: 12px;
+      padding: 16px; margin-bottom: 16px;
+    }
+    .export-panel-title {
+      font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+      color: #4a6070; margin-bottom: 12px;
+    }
+    .export-row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+    .export-field { display: flex; flex-direction: column; gap: 4px; }
+    .export-field label { font-size: .72rem; color: #7a9bb0; font-weight: 600; }
+    .export-date {
+      padding: 9px 12px; border-radius: 8px; border: 1.5px solid #2a3f4a;
+      background: #0f1923; color: #e8dcc8; font-size: .85rem;
+      colorscheme: dark;
+    }
+    .shortcut-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .shortcut-btn {
+      padding: 6px 12px; border-radius: 8px; border: 1.5px solid #2a3f4a;
+      background: transparent; color: #7a9bb0; font-size: .75rem; font-weight: 600;
+      cursor: pointer; touch-action: manipulation; transition: all .15s;
+    }
+    .shortcut-btn:active, .shortcut-btn.sel { background: #1a3a4a; border-color: #c9a84c; color: #c9a84c; }
+    .dl-btns { display: flex; gap: 8px; margin-top: 10px; }
+    .dl-btn {
+      flex: 1; padding: 11px 10px; border-radius: 8px; border: none;
+      font-size: .85rem; font-weight: 700; cursor: pointer; touch-action: manipulation;
+      transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .dl-btn:active { transform: scale(.97); }
+    .dl-btn.excel { background: #1a6b3a; color: #fff; }
+    .dl-btn.csv   { background: #1a3a4a; color: #c9a84c; border: 1.5px solid #2a4f5a; }
   </style>
 </head>
 <body>
@@ -270,10 +304,39 @@
   </div>
 
   <div class="history-section">
-    <div class="history-title">
-      7 derniers jours
-      <button class="export-btn" onclick="exportCSV()">⬇ CSV</button>
+
+    <!-- Export panel -->
+    <div class="export-panel">
+      <div class="export-panel-title">📥 Exporter les relevés</div>
+      <div class="shortcut-btns">
+        <button class="shortcut-btn" onclick="setShortcut(7, this)">7 jours</button>
+        <button class="shortcut-btn" onclick="setShortcut(14, this)">14 jours</button>
+        <button class="shortcut-btn" onclick="setShortcut(30, this)">Ce mois</button>
+        <button class="shortcut-btn" onclick="setShortcut(90, this)">3 mois</button>
+        <button class="shortcut-btn" onclick="setShortcut(365, this)">1 an</button>
+      </div>
+      <div class="export-row">
+        <div class="export-field">
+          <label>Du</label>
+          <input type="date" class="export-date" id="exp-from" onchange="clearShortcuts()">
+        </div>
+        <div class="export-field">
+          <label>Au</label>
+          <input type="date" class="export-date" id="exp-to" onchange="clearShortcuts()">
+        </div>
+      </div>
+      <div class="dl-btns">
+        <button class="dl-btn excel" onclick="exportExcel()">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.553.894l-4 2A1 1 0 016 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd"/></svg>
+          Excel (.xlsx)
+        </button>
+        <button class="dl-btn csv" onclick="exportCSV()">
+          CSV
+        </button>
+      </div>
     </div>
+
+    <div class="history-title">Historique — 7 derniers jours</div>
     <div id="history-list"><div class="empty-state">Chargement…</div></div>
   </div>
 
@@ -634,9 +697,30 @@
       el.innerHTML = html;
     }
 
+    function getExportRange() {
+      const from = document.getElementById('exp-from').value;
+      const to   = document.getElementById('exp-to').value;
+      if (!from || !to) { showToast('Sélectionnez une période.', 'warning'); return null; }
+      return { from, to };
+    }
     function exportCSV() {
-      const from = new Date(); from.setDate(from.getDate() - 6);
-      window.open(`/api/cuisine/temperatures/export?from=${from.toISOString().split('T')[0]}&to=${today}`, '_blank');
+      const r = getExportRange(); if (!r) return;
+      window.open(`/api/cuisine/temperatures/export?from=${r.from}&to=${r.to}`, '_blank');
+    }
+    function exportExcel() {
+      const r = getExportRange(); if (!r) return;
+      window.open(`/api/cuisine/temperatures/export/excel?from=${r.from}&to=${r.to}`, '_blank');
+    }
+    function setShortcut(days, btn) {
+      const to   = new Date();
+      const from = new Date(); from.setDate(from.getDate() - (days - 1));
+      document.getElementById('exp-from').value = from.toISOString().split('T')[0];
+      document.getElementById('exp-to').value   = today;
+      document.querySelectorAll('.shortcut-btn').forEach(b => b.classList.remove('sel'));
+      btn.classList.add('sel');
+    }
+    function clearShortcuts() {
+      document.querySelectorAll('.shortcut-btn').forEach(b => b.classList.remove('sel'));
     }
 
     // ── Keyboard for numpad ──────────────────────────────────────────────────────
@@ -663,6 +747,12 @@
       await selectShift(d.getHours() < 17 ? 'midi' : 'soir');
       loadHistory();
       syncPending();
+
+      // Init export dates (7 jours par défaut)
+      const expFrom = new Date(); expFrom.setDate(expFrom.getDate() - 6);
+      document.getElementById('exp-from').value = expFrom.toISOString().split('T')[0];
+      document.getElementById('exp-to').value   = today;
+      document.querySelector('.shortcut-btn').classList.add('sel');
     }
 
     init();

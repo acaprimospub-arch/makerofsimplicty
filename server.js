@@ -609,6 +609,89 @@ app.get('/api/cuisine/temperatures/export', requireAuth, (req, res) => {
   res.send('﻿' + csv);
 });
 
+app.get('/api/cuisine/temperatures/export/excel', requireAuth, async (req, res) => {
+  const { from, to } = req.query;
+  if (!from || !to) return res.status(400).json({ error: 'from et to requis' });
+  const rows = db.getTempWeekReport(from, to);
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Mos Pub Mercière';
+  const ws = wb.addWorksheet('Températures', { views: [{ state: 'frozen', ySplit: 4 }] });
+
+  // Title rows
+  ws.mergeCells('A1:H1');
+  ws.getCell('A1').value = 'Mos Pub Mercière — Relevés de températures HACCP';
+  ws.getCell('A1').font = { bold: true, size: 14, color: { argb: 'FFC9A84C' } };
+  ws.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F1923' } };
+
+  ws.mergeCells('A2:H2');
+  const fmt = d => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  ws.getCell('A2').value = `Période : ${fmt(from)} → ${fmt(to)}`;
+  ws.getCell('A2').font = { size: 11, color: { argb: 'FF7A9BB0' } };
+  ws.getCell('A2').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F1923' } };
+
+  ws.addRow([]);
+
+  // Header row
+  const headerRow = ws.addRow(['Date', 'Shift', 'Matériel', 'Type', 'Temp. (°C)', 'Statut', 'Relevé par', 'Heure']);
+  headerRow.eachCell(cell => {
+    cell.font  = { bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A3A4A' } };
+    cell.alignment = { horizontal: 'center' };
+    cell.border = { bottom: { style: 'medium', color: { argb: 'FFC9A84C' } } };
+  });
+
+  // Column widths
+  ws.columns = [
+    { key: 'date',     width: 14 },
+    { key: 'shift',    width: 8  },
+    { key: 'mat',      width: 20 },
+    { key: 'type',     width: 16 },
+    { key: 'temp',     width: 12 },
+    { key: 'statut',   width: 14 },
+    { key: 'user',     width: 18 },
+    { key: 'heure',    width: 8  },
+  ];
+
+  // Data rows
+  for (const r of rows) {
+    const s = r.statut;
+    const bgColor = s === 'ok' ? 'FFD4EDDA' : s === 'limite' ? 'FFFFF3CD' : 'FFF8D7DA';
+    const txtColor = s === 'ok' ? 'FF155724' : s === 'limite' ? 'FF856404' : 'FF721C24';
+    const statutLabel = s === 'ok' ? '✅ OK' : s === 'limite' ? '⚠️ Limite' : '❌ Hors plage';
+
+    const row = ws.addRow([
+      r.date, r.shift.toUpperCase(),
+      r.materiel_nom,
+      r.materiel_type === 'positif' ? 'Froid Positif' : 'Froid Négatif',
+      r.temperature,
+      statutLabel,
+      r.user_name || '',
+      r.releve_at ? r.releve_at.slice(11, 16) : '',
+    ]);
+
+    row.getCell(5).font   = { bold: true, color: { argb: txtColor } };
+    row.getCell(5).fill   = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
+    row.getCell(6).font   = { bold: true, color: { argb: txtColor } };
+    row.getCell(6).fill   = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
+    row.eachCell(cell => { cell.border = { bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } } }; });
+  }
+
+  // Summary at bottom
+  ws.addRow([]);
+  const hors   = rows.filter(r => r.statut === 'hors_plage').length;
+  const limite = rows.filter(r => r.statut === 'limite').length;
+  const ok     = rows.filter(r => r.statut === 'ok').length;
+  const sumRow = ws.addRow([`Total : ${rows.length} relevés — ✅ ${ok} OK — ⚠️ ${limite} limite — ❌ ${hors} hors plage`]);
+  ws.mergeCells(`A${sumRow.number}:H${sumRow.number}`);
+  sumRow.getCell(1).font = { bold: true, italic: true, color: { argb: 'FF4A6070' } };
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="temperatures-${from}-${to}.xlsx"`);
+  await wb.xlsx.write(res);
+  res.end();
+});
+
 // ─── Tables (floor plan) ───────────────────────────────────────────────────────
 app.get('/api/tables', requireAuth, (req, res) => {
   res.json(db.getTables());
