@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guide Staff Salle — Mos Pub Mercière</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:   #c9a84c;
+      --dark:   #0f1923;
+      --mid:    #1a2f3a;
+      --green:  #16a34a;
+      --orange: #ea580c;
+      --red:    #dc2626;
+      --blue:   #2563eb;
+      --text:   #1e293b;
+      --muted:  #64748b;
+      --border: #e2e8f0;
+    }
+
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      color: var(--text);
+      background: #fff;
+      font-size: 10.5pt;
+      line-height: 1.5;
+    }
+
+    .page {
+      width: 210mm;
+      margin: 0 auto;
+      padding: 14mm 16mm;
+      background: #fff;
+    }
+
+    /* ── Cover ── */
+    .cover-header {
+      background: var(--dark);
+      color: #fff;
+      border-radius: 10px;
+      padding: 18px 24px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .cover-brand { font-size: 20pt; font-weight: 900; color: var(--gold); letter-spacing: -0.02em; }
+    .cover-sub { font-size: 9pt; color: #94a3b8; margin-top: 3px; }
+    .cover-badge { background: var(--gold); color: var(--dark); font-weight: 800; font-size: 9pt; padding: 6px 14px; border-radius: 20px; }
+
+    /* ── Section ── */
+    .section { margin-bottom: 20px; break-inside: avoid; }
+    .section-header {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--dark); color: #fff;
+      padding: 10px 16px; border-radius: 8px 8px 0 0;
+    }
+    .section-icon { font-size: 18pt; line-height: 1; }
+    .section-title { font-size: 13pt; font-weight: 800; }
+    .section-subtitle { font-size: 8.5pt; color: #94a3b8; margin-top: 1px; }
+    .section-body {
+      border: 1.5px solid var(--dark);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      padding: 14px 16px;
+    }
+
+    /* ── 2-col layout ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      gap: 16px;
+      align-items: start;
+    }
+    .two-col.wide-screen { grid-template-columns: 1fr 260px; }
+
+    /* ── Steps ── */
+    .steps { display: flex; flex-direction: column; gap: 9px; }
+    .step { display: flex; gap: 12px; align-items: flex-start; break-inside: avoid; }
+    .step-num {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--gold); color: var(--dark);
+      font-weight: 900; font-size: 10pt;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .step-content { flex: 1; }
+    .step-title { font-weight: 700; font-size: 10.5pt; }
+    .step-desc { font-size: 9.5pt; color: var(--muted); margin-top: 2px; line-height: 1.45; }
+
+    /* ── Screenshot ── */
+    .screenshot-wrap { position: relative; }
+    .screenshot {
+      width: 100%;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      display: block;
+      box-shadow: 0 2px 12px rgba(0,0,0,.12);
+    }
+    .screenshot[src=""],
+    .screenshot:not([src]) { display: none; }
+    .screenshot-placeholder {
+      background: #f8fafc;
+      border: 2px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 20px 12px;
+      text-align: center;
+      color: #94a3b8;
+      font-size: 8.5pt;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .screenshot-caption {
+      font-size: 8pt;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    /* ── Info boxes ── */
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .info-box { border-radius: 8px; padding: 10px 12px; break-inside: avoid; }
+    .info-box.green  { background: #f0fdf4; border: 1.5px solid #86efac; }
+    .info-box.red    { background: #fef2f2; border: 1.5px solid #fca5a5; }
+    .info-box.orange { background: #fff7ed; border: 1.5px solid #fdba74; }
+    .info-box.blue   { background: #eff6ff; border: 1.5px solid #93c5fd; }
+    .info-box-title { font-weight: 800; font-size: 9pt; margin-bottom: 4px; }
+    .info-box.green  .info-box-title { color: var(--green); }
+    .info-box.red    .info-box-title { color: var(--red); }
+    .info-box.orange .info-box-title { color: var(--orange); }
+    .info-box.blue   .info-box-title { color: var(--blue); }
+    .info-box p { font-size: 9pt; color: var(--text); line-height: 1.5; }
+    .info-box.full { grid-column: span 2; }
+
+    /* ── Status badges ── */
+    .status-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .status-item { display: flex; align-items: center; gap: 6px; font-size: 8.5pt; font-weight: 600; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .dot.libre   { background: #475569; border: 1.5px solid #64748b; }
+    .dot.placer  { background: #f59e0b; }
+    .dot.place   { background: #3b82f6; }
+    .dot.arrive  { background: #22c55e; }
+    .dot.retard  { background: #ef4444; }
+
+    /* ── Tile illustration ── */
+    .tile-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0; }
+    .tile { background: #0f1923; border-radius: 8px; padding: 10px 6px; text-align: center; }
+    .tile-icon { font-size: 16pt; margin-bottom: 4px; }
+    .tile-label { font-size: 7.5pt; font-weight: 700; color: #c9a84c; }
+
+    /* ── Quick ref ── */
+    .quick-ref {
+      background: var(--dark); color: #fff;
+      border-radius: 10px; padding: 14px 18px;
+      margin-top: 20px; break-inside: avoid;
+    }
+    .quick-ref-title { font-size: 11pt; font-weight: 900; color: var(--gold); margin-bottom: 10px; }
+    .quick-ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .qr-label { font-size: 8pt; color: #94a3b8; font-weight: 600; margin-bottom: 2px; }
+    .qr-val { font-size: 9.5pt; font-weight: 700; color: #fff; }
+    .qr-val.gold { color: var(--gold); }
+
+    /* ── Divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+    /* ── Footer ── */
+    .doc-footer { text-align: center; font-size: 8pt; color: var(--muted); margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+    /* ── Print ── */
+    @media print {
+      @page { size: A4; margin: 10mm 12mm; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      body { background: #fff !important; padding: 0 !important; font-size: 10pt; }
+      .page { width: 100%; padding: 0; margin: 0; box-shadow: none !important; }
+      .no-print { display: none !important; }
+      .section { break-inside: avoid; page-break-inside: avoid; }
+      .step { break-inside: avoid; }
+      .page-break { break-before: page; page-break-before: always; }
+      .cover-header { background: #0f1923 !important; }
+      .cover-brand { color: #c9a84c !important; }
+      .cover-badge { background: #c9a84c !important; color: #0f1923 !important; }
+      .section-header { background: #0f1923 !important; }
+      .step-num { background: #c9a84c !important; color: #0f1923 !important; }
+      .info-box.green  { background: #f0fdf4 !important; }
+      .info-box.red    { background: #fef2f2 !important; }
+      .info-box.orange { background: #fff7ed !important; }
+      .info-box.blue   { background: #eff6ff !important; }
+      .quick-ref { background: #0f1923 !important; }
+      .tile { background: #0f1923 !important; }
+      .screenshot-placeholder { display: none; }
+    }
+
+    /* ── Screen ── */
+    @media screen {
+      body { background: #e2e8f0; padding: 20px 0 40px; }
+      .page { box-shadow: 0 4px 40px rgba(0,0,0,.2); }
+      .print-btn {
+        position: fixed; bottom: 24px; right: 24px;
+        background: var(--gold); color: var(--dark);
+        border: none; border-radius: 12px;
+        padding: 14px 24px; font-size: 1rem; font-weight: 800;
+        cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,.3);
+        font-family: inherit;
+      }
+      .print-btn:hover { background: #e0be6a; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ══ COVER ══ -->
+  <div class="cover-header">
+    <div>
+      <div class="cover-brand">Mos Pub Mercière</div>
+      <div class="cover-sub">Guide d'utilisation — Équipe de salle</div>
+    </div>
+    <div class="cover-badge">Staff Salle 🍽️</div>
+  </div>
+
+
+  <!-- ══ 1. CONNEXION ══ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🔐</span>
+      <div>
+        <div class="section-title">Connexion à l'application</div>
+        <div class="section-subtitle">Accès sécurisé par code PIN personnel</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="two-col">
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Ouvrir l'application</div>
+              <div class="step-desc">Sur ton téléphone ou la tablette, ouvre le navigateur et accède à l'adresse du Mos. Ajoute-la en favori pour un accès rapide.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Saisir ton code PIN</div>
+              <div class="step-desc">Tape ton PIN à 4 chiffres sur le pavé numérique. Les 4 points en haut se remplissent au fur et à mesure.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Valider avec OK</div>
+              <div class="step-desc">Appuie sur <strong>OK</strong> (bouton doré). Si le PIN est incorrect, les points se réinitialisent automatiquement. Le bouton <strong>⌫</strong> efface le dernier chiffre.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Déconnexion</div>
+              <div class="step-desc">En haut à droite → bouton <strong>Déco.</strong> En fin de service, pense à te déconnecter si tu utilises un appareil partagé.</div>
+            </div>
+          </div>
+        </div>
+        <div class="screenshot-wrap">
+          <img src="/images/docs/salle/login.png" alt="Page de connexion" class="screenshot"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="screenshot-placeholder">📸<br>Page de connexion<br><span style="font-size:7pt">login.png</span></div>
+          <div class="screenshot-caption">Écran de connexion PIN</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ 2. MENU PRINCIPAL ══ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🏠</span>
+      <div>
+        <div class="section-title">Menu principal</div>
+        <div class="section-subtitle">Point de départ — accès à tous les outils</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="two-col">
+        <div>
+          <p style="font-size:9.5pt; margin-bottom:10px;">Après connexion, tu arrives sur le menu principal. Il affiche ton prénom, ton service (Midi ou Soir) et la date du jour.</p>
+          <div class="tile-grid">
+            <div class="tile"><div class="tile-icon">✅</div><div class="tile-label">Tâches</div></div>
+            <div class="tile"><div class="tile-icon">📋</div><div class="tile-label">Réservations</div></div>
+            <div class="tile"><div class="tile-icon">🗺️</div><div class="tile-label">Plan de salle</div></div>
+            <div class="tile"><div class="tile-icon">📅</div><div class="tile-label">Planning</div></div>
+          </div>
+          <p style="font-size:9pt; color:var(--muted); margin-top:10px;">Clique sur une tuile pour accéder à l'outil correspondant. La navigation en haut de l'écran (ou la barre du bas sur mobile) permet de changer de section sans repasser par le menu.</p>
+        </div>
+        <div class="screenshot-wrap">
+          <img src="/images/docs/salle/menu.png" alt="Menu principal" class="screenshot"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="screenshot-placeholder">📸<br>Menu principal<br><span style="font-size:7pt">menu.png</span></div>
+          <div class="screenshot-caption">Menu principal</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ 3. MES TÂCHES ══ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">✅</span>
+      <div>
+        <div class="section-title">Mes Tâches</div>
+        <div class="section-subtitle">Checklist MATIN et PASSATION — temps réel</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="two-col">
+        <div>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <div class="step-title">Choisir MATIN ou PASSATION</div>
+                <div class="step-desc">Les deux onglets en haut correspondent aux deux périodes. <strong>MATIN</strong> = ouverture + mise en place. <strong>PASSATION</strong> = tâches de passation entre les équipes.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <div class="step-title">Suivre la progression</div>
+                <div class="step-desc">La barre dorée et le pourcentage indiquent l'avancement global. Les stats en dessous montrent combien de tâches tu as cochées (<strong style="color:#c9a84c;">Moi</strong>), combien tes collègues ont faites (<strong style="color:#5b8dee;">Collègues</strong>) et combien restent à faire.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <div class="step-title">Cocher une tâche</div>
+                <div class="step-desc">Appuie sur la ligne de la tâche pour la cocher. Elle passe en barré et ton avatar apparaît dessus. Les collègues voient la mise à jour en temps réel.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <div class="step-title">Message de passation</div>
+                <div class="step-desc">En bas de la PASSATION : deux blocs de messages. <strong>Midi → Soir</strong> : l'équipe du midi écrit un message pour l'équipe du soir. <strong>Soir → Matin</strong> : idem. Appuie sur <strong>Écrire</strong> pour rédiger.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="screenshot-wrap" style="margin-bottom:10px;">
+            <img src="/images/docs/salle/taches.png" alt="Mes Tâches" class="screenshot"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <div class="screenshot-placeholder">📸<br>Mes Tâches<br><span style="font-size:7pt">taches.png</span></div>
+            <div class="screenshot-caption">Vue MATIN avec progression</div>
+          </div>
+          <div class="screenshot-wrap">
+            <img src="/images/docs/salle/taches-passation.png" alt="Passation" class="screenshot"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <div class="screenshot-placeholder">📸<br>Messages passation<br><span style="font-size:7pt">taches-passation.png</span></div>
+            <div class="screenshot-caption">Section messages de passation</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-grid" style="margin-top:12px;">
+        <div class="info-box blue">
+          <div class="info-box-title">ℹ️ Synchronisation en temps réel</div>
+          <p>Toutes les tâches cochées par un collègue apparaissent immédiatement sur ton écran. Pas besoin de recharger la page.</p>
+        </div>
+        <div class="info-box orange">
+          <div class="info-box-title">⚠️ Ne pas décocher les tâches des autres</div>
+          <p>Tu peux décocher uniquement tes propres tâches. Si une tâche a été cochée par erreur, signale-le au manager.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ 4. RÉSERVATIONS ══ -->
+  <div class="section page-break">
+    <div class="section-header">
+      <span class="section-icon">📋</span>
+      <div>
+        <div class="section-title">Réservations</div>
+        <div class="section-subtitle">Consulter et gérer les réservations du service</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="two-col wide-screen">
+        <div>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <div class="step-title">Naviguer par date</div>
+                <div class="step-desc">Utilise les flèches <strong>←</strong> / <strong>→</strong> pour changer de jour, ou le bouton <strong>Aujourd'hui</strong> pour revenir à la date du jour.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <div class="step-title">Lire les stats du service</div>
+                <div class="step-desc">Sous la navigation : nombre de résas, couverts totaux, combien sont <strong style="color:#f59e0b;">À placer</strong> (sans table assignée) et les <strong>Annulées</strong>.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <div class="step-title">Consulter une réservation</div>
+                <div class="step-desc">Clique sur une carte pour voir les détails : nom, téléphone, heure, nombre de couverts, table assignée, source (Joy.io ou manuelle), statut.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <div class="step-title">Nouvelle réservation</div>
+                <div class="step-desc">Bouton <strong>+ Nouvelle</strong> en haut à droite. Remplis le formulaire : nom, téléphone, heure, couverts, notes.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="screenshot-wrap">
+          <img src="/images/docs/salle/reservations.png" alt="Réservations" class="screenshot"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="screenshot-placeholder">📸<br>Réservations<br><span style="font-size:7pt">reservations.png</span></div>
+          <div class="screenshot-caption">Liste des réservations du jour</div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <p style="font-size:9pt; font-weight:700; margin-bottom:8px;">Statuts des réservations</p>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:9pt;">
+        <div style="display:flex; align-items:center; gap:8px;"><span style="background:#1e3a5f; color:#93c5fd; padding:2px 10px; border-radius:12px; font-size:8pt; font-weight:700;">Sans table</span> Aucune table assignée pour le moment</div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="background:#f59e0b22; color:#f59e0b; border:1.5px solid #f59e0b; padding:2px 10px; border-radius:12px; font-size:8pt; font-weight:700;">À placer</span> Client attendu, table à assigner</div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="background:#16a34a22; color:#16a34a; border:1.5px solid #16a34a; padding:2px 10px; border-radius:12px; font-size:8pt; font-weight:700;">Confirmée ✓</span> Réservation confirmée</div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="background:#dc262622; color:#dc2626; border:1.5px solid #dc2626; padding:2px 10px; border-radius:12px; font-size:8pt; font-weight:700;">Annulée</span> Ne pas préparer la table</div>
+      </div>
+
+      <div class="info-box blue" style="margin-top:12px;">
+        <div class="info-box-title">ℹ️ Badge Joy.io</div>
+        <p>Les réservations avec le badge <strong>Joy.io</strong> proviennent de la plateforme de réservation en ligne. Elles sont synchronisées automatiquement.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ 5. PLAN DE SALLE ══ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🗺️</span>
+      <div>
+        <div class="section-title">Plan de Salle</div>
+        <div class="section-subtitle">Visualiser et gérer le placement des clients</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="two-col wide-screen">
+        <div>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <div class="step-title">Choisir la zone</div>
+                <div class="step-desc">Onglets en haut : <strong>Salle Bas</strong> · <strong>Étage</strong> · <strong>Coin Canapé</strong> · <strong>Terrasse</strong>. Le nombre à côté indique la capacité totale de la zone.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <div class="step-title">Lire les couleurs des tables</div>
+                <div class="step-desc">
+                  <div class="status-row">
+                    <div class="status-item"><span class="dot libre"></span> Libre</div>
+                    <div class="status-item"><span class="dot placer"></span> À placer</div>
+                    <div class="status-item"><span class="dot place"></span> Placé</div>
+                    <div class="status-item"><span class="dot arrive"></span> Arrivé</div>
+                    <div class="status-item"><span class="dot retard"></span> En retard</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <div class="step-title">Assigner une table</div>
+                <div class="step-desc">Clique sur une table → sélectionne la réservation à y placer. La table passe en <strong style="color:#3b82f6;">Placé</strong>.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <div class="step-title">Marquer comme arrivé</div>
+                <div class="step-desc">Quand les clients arrivent → clique sur la table → <strong>Arrivé</strong>. La table passe en <strong style="color:#22c55e;">vert</strong>. L'alerte 15min disparaît automatiquement.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">5</div>
+              <div class="step-content">
+                <div class="step-title">Alerte no-show</div>
+                <div class="step-desc">Si un client n'est pas marqué <strong>Arrivé</strong> 15 min après son heure de réservation → <strong style="color:#ef4444;">alerte rouge + son</strong> sur tous les appareils.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="screenshot-wrap">
+          <img src="/images/docs/salle/plan-salle.png" alt="Plan de Salle" class="screenshot"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="screenshot-placeholder">📸<br>Plan de Salle<br><span style="font-size:7pt">plan-salle.png</span></div>
+          <div class="screenshot-caption">Plan de salle avec tables et statuts</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ 6. PLANNING ══ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">📅</span>
+      <div>
+        <div class="section-title">Mon Planning</div>
+        <div class="section-subtitle">Consulter son planning et faire une demande de congés</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="two-col wide-screen">
+        <div>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <div class="step-title">Naviguer par semaine</div>
+                <div class="step-desc">Utilise <strong>← Préc.</strong> et <strong>Suiv. →</strong> pour consulter les semaines passées et à venir. Le jour actuel est mis en surbrillance.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <div class="step-title">Lire son planning</div>
+                <div class="step-desc"><strong>P</strong> = Shift Prévu · <strong>S</strong> = Shift Supplémentaire · <strong>—</strong> = Repos. Les initiales indiquent le type de service (midi, soir…).</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <div class="step-title">Demande de congés</div>
+                <div class="step-desc">Bouton doré <strong>Demande de congés</strong> en haut de la page. Tu es redirigé vers le formulaire de demande.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="screenshot-wrap">
+          <img src="/images/docs/salle/planning.png" alt="Planning" class="screenshot"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="screenshot-placeholder">📸<br>Mon Planning<br><span style="font-size:7pt">planning.png</span></div>
+          <div class="screenshot-caption">Vue planning semaine</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ 7. CONGÉS ══ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">✈️</span>
+      <div>
+        <div class="section-title">Demande de congés</div>
+        <div class="section-subtitle">Envoyer une demande officielle avec signature</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="two-col">
+        <div>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <div class="step-title">Remplir le formulaire</div>
+                <div class="step-desc">Ton nom est pré-rempli automatiquement. Indique la <strong>date de début</strong> et la <strong>date de fin</strong> souhaitées. Le motif est facultatif.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <div class="step-title">Signer</div>
+                <div class="step-desc">Dessine ta signature dans la zone blanche avec ton doigt (mobile) ou la souris. Appuie sur <strong>Effacer</strong> pour recommencer si besoin.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <div class="step-title">Envoyer la demande</div>
+                <div class="step-desc">Clique sur <strong>Envoyer la demande</strong>. Elle apparaît immédiatement dans la section <strong>Mes demandes</strong> en bas de page avec le statut <em>En attente</em>.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <div class="step-title">Suivre le statut</div>
+                <div class="step-desc">La demande peut être <strong style="color:#16a34a;">Acceptée</strong>, <strong style="color:#dc2626;">Refusée</strong> ou rester <strong>En attente</strong> jusqu'à validation par le manager.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="screenshot-wrap">
+          <img src="/images/docs/salle/conges.png" alt="Demande de congés" class="screenshot"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="screenshot-placeholder">📸<br>Demande de congés<br><span style="font-size:7pt">conges.png</span></div>
+          <div class="screenshot-caption">Formulaire de demande de congés</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ QUICK REF ══ -->
+  <div class="quick-ref">
+    <div class="quick-ref-title">📋 Mémo rapide</div>
+    <div class="quick-ref-grid">
+      <div>
+        <div class="qr-label">🔐 Connexion</div>
+        <div class="qr-val">Code PIN à 4 chiffres → OK</div>
+      </div>
+      <div>
+        <div class="qr-label">✅ Tâches cochées</div>
+        <div class="qr-val">Visibles par tous en temps réel</div>
+      </div>
+      <div>
+        <div class="qr-label">🟠 À placer dans résas</div>
+        <div class="qr-val">Table pas encore assignée</div>
+      </div>
+      <div>
+        <div class="qr-label">🔴 Alerte no-show</div>
+        <div class="qr-val gold">+15 min sans marquage "Arrivé"</div>
+      </div>
+      <div>
+        <div class="qr-label">💬 Message passation</div>
+        <div class="qr-val">Onglet PASSATION → bas de page</div>
+      </div>
+      <div>
+        <div class="qr-label">✈️ Demande de congés</div>
+        <div class="qr-val">Planning → bouton doré</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="doc-footer">
+    Mos Pub Mercière — Guide Staff Salle — Mai 2026 · Pour toute question, contacter le manager
+  </div>
+
+</div>
+
+<button class="print-btn no-print" onclick="window.print()">🖨️ Télécharger PDF</button>
+
+</body>
+</html>
