@@ -60,6 +60,7 @@
     }
     .tp-badge.freq-m  { background: rgba(37,99,235,0.12); color: #60a5fa; }
     .tp-badge.freq-bm { background: rgba(147,51,234,0.12); color: #c084fc; }
+    .tp-badge.freq-bh { background: rgba(20,184,166,0.12); color: #2dd4bf; }
     .tp-badge.s-ok     { background: var(--success-bg); color: var(--success); }
     .tp-badge.s-warn   { background: rgba(240,180,41,0.12); color: var(--warning); }
     .tp-badge.s-overdue{ background: var(--danger-bg); color: var(--danger); }
@@ -174,7 +175,7 @@
       <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
         <div>
           <h1 style="font-size:1.35rem; font-weight:800;">Tâches Périodiques</h1>
-          <p style="font-size:0.85rem; color:var(--text-muted); margin-top:3px;">Tâches mensuelles et bi-mensuelles — suivi & historique</p>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-top:3px;">Hebdomadaires, bi-mensuelles, mensuelles — suivi & historique</p>
         </div>
       </div>
 
@@ -184,8 +185,9 @@
       <!-- Filtres fréquence -->
       <div class="filter-bar" id="filterBar">
         <button class="filter-chip active" data-freq="all">Toutes</button>
-        <button class="filter-chip" data-freq="mensuelle">🗓 Mensuelle</button>
-        <button class="filter-chip" data-freq="bi_mensuelle">📅 Bi-mensuelle</button>
+        <button class="filter-chip" data-freq="bi_hebdo">🔁 2× / semaine</button>
+        <button class="filter-chip" data-freq="bi_mensuelle">📅 2× / mois</button>
+        <button class="filter-chip" data-freq="mensuelle">🗓 1× / mois</button>
         <span class="filter-sep"></span>
         <button class="filter-chip active" data-status="all">Tous statuts</button>
         <button class="filter-chip" data-status="overdue">❌ En retard</button>
@@ -283,13 +285,18 @@
     }
 
     // ── Status logic ───────────────────────────────────────────────────────────
+    const FREQ_CONFIG = {
+      mensuelle:    { period: 30,  warning: 25,  label: '1× / mois',    badgeClass: 'freq-m'  },
+      bi_mensuelle: { period: 15,  warning: 12,  label: '2× / mois',    badgeClass: 'freq-bm' },
+      bi_hebdo:     { period: 3.5, warning: 2.5, label: '2× / semaine', badgeClass: 'freq-bh' },
+    };
+
     function getStatus(frequence, lastDone) {
       if (!lastDone) return 'never';
       const days = (Date.now() - new Date(lastDone)) / 86400000;
-      const period  = frequence === 'mensuelle' ? 30 : 15;
-      const warning = frequence === 'mensuelle' ? 25 : 12;
-      if (days <= warning) return 'ok';
-      if (days <= period)  return 'warn';
+      const cfg = FREQ_CONFIG[frequence] || FREQ_CONFIG.mensuelle;
+      if (days <= cfg.warning) return 'ok';
+      if (days <= cfg.period)  return 'warn';
       return 'overdue';
     }
 
@@ -352,8 +359,9 @@
     function renderCard(t) {
       const s = getStatus(t.frequence, t.last_done);
       const icon = { ok: '✅', warn: '⚠️', overdue: '❌', never: '🔵' }[s];
-      const freqLabel = t.frequence === 'mensuelle' ? '1× / mois' : '2× / mois';
-      const freqClass = t.frequence === 'mensuelle' ? 'freq-m' : 'freq-bm';
+      const cfg = FREQ_CONFIG[t.frequence] || FREQ_CONFIG.mensuelle;
+      const freqLabel = cfg.label;
+      const freqClass = cfg.badgeClass;
 
       let lastInfo = '';
       if (t.last_done) {

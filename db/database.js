@@ -1955,6 +1955,20 @@ function getTempWeekReport(from, to) {
 }
 
 // ─── Tâches périodiques ────────────────────────────────────────────────────────
+// Migration : supprimer la contrainte CHECK pour supporter bi_hebdo
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS _tp_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, nom TEXT NOT NULL, description TEXT,
+      categorie TEXT DEFAULT 'Général', frequence TEXT NOT NULL, actif INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now','localtime'))
+    );
+    INSERT OR IGNORE INTO _tp_new SELECT * FROM taches_periodiques;
+    DROP TABLE taches_periodiques;
+    ALTER TABLE _tp_new RENAME TO taches_periodiques;
+  `);
+} catch(e) {}
+
 try {
   db.exec(`
     CREATE TABLE IF NOT EXISTS taches_periodiques (
@@ -1962,7 +1976,7 @@ try {
       nom         TEXT NOT NULL,
       description TEXT,
       categorie   TEXT DEFAULT 'Général',
-      frequence   TEXT NOT NULL CHECK(frequence IN ('mensuelle','bi_mensuelle')),
+      frequence   TEXT NOT NULL,
       actif       INTEGER DEFAULT 1,
       created_at  TEXT DEFAULT (datetime('now','localtime'))
     );
@@ -1997,6 +2011,10 @@ try {
     [13, 'Nettoyage siphons et caniveaux',     'Démonter et nettoyer siphons de sol et caniveaux cuisine',                'Cuisine',    'bi_mensuelle'],
     [14, 'Vérification trousse de secours',    'Contrôler le contenu et les dates de la trousse de premiers secours',     'Sécurité',   'mensuelle'],
     [15, 'Nettoyage fond de frigos cuisine',   'Vider et nettoyer en profondeur les frigos de cuisine',                   'Cuisine',    'bi_mensuelle'],
+    [16, 'Nettoyer étagères en verre',         'Retirer et nettoyer toutes les étagères en verre (bar et salle)',          'Bar',        'mensuelle'],
+    [17, 'Nettoyer frigos complets',           'Nettoyage intérieur, extérieur et derrière tous les frigos',               'Bar',        'mensuelle'],
+    [18, 'Balayer sous les pintes',            'Balayer et nettoyer sous les présentoirs et zones de stockage des pintes', 'Bar',        'bi_mensuelle'],
+    [19, 'Préparer le thé glacé',              'Préparer le thé glacé pour le service du matin',                          'Bar',        'bi_hebdo'],
   ]) _insTP.run(id, nom, description, categorie, frequence);
 }
 
