@@ -72,6 +72,23 @@ const uploadPlanning = multer({
   fileFilter: (_req, file, cb) => cb(null, file.mimetype === 'application/pdf')
 });
 
+// ─── Multer (tâches périodiques — photos) ─────────────────────────────────────
+const TACHES_PHOTOS_DIR = path.join(__dirname, 'uploads', 'taches');
+if (!fs.existsSync(TACHES_PHOTOS_DIR)) fs.mkdirSync(TACHES_PHOTOS_DIR, { recursive: true });
+
+const _tachesStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, TACHES_PHOTOS_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, `tache-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+  }
+});
+const uploadTachePhoto = multer({
+  storage: _tachesStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => cb(null, /^image\//.test(file.mimetype))
+});
+
 // ─── Joy.io iCal Sync ──────────────────────────────────────────────────────────
 function fetchUrl(url, depth = 0) {
   if (depth > 5) return Promise.reject(new Error('Too many redirects'));
@@ -356,6 +373,35 @@ app.delete('/api/tasks/:id/complete', requireAuth, (req, res) => {
     date: today
   });
   res.json({ ok: true });
+});
+
+// ── Tâches périodiques ─────────────────────────────────────────────────────────
+app.use('/uploads/taches', requireAuth, express.static(TACHES_PHOTOS_DIR));
+
+app.get('/api/taches/periodiques', requireAuth, (_req, res) => {
+  res.json(db.getTachesPeriodiques());
+});
+
+app.post('/api/taches/periodiques/:id/complete', requireAuth, uploadTachePhoto.single('photo'), (req, res) => {
+  try {
+    const tache_id = parseInt(req.params.id);
+    const photo_url = req.file ? `/uploads/taches/${req.file.filename}` : null;
+    const result = db.completeTachePeriodique({
+      tache_id,
+      user_id:    req.session.userId,
+      user_name:  req.session.name,
+      commentaire: req.body.commentaire || null,
+      photo_url
+    });
+    io.emit('tache_periodique:done', { tache_id, completion_id: result.lastInsertRowid });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/taches/periodiques/:id/history', requireAuth, (req, res) => {
+  res.json(db.getTachePeriodiquesHistory(parseInt(req.params.id)));
 });
 
 // Admin task management

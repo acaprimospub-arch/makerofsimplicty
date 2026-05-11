@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tâches Périodiques — Mos Pub</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    /* ── Filtres ── */
+    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+    .filter-chip {
+      padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;
+      border: 1.5px solid var(--border); background: var(--bg-surface); color: var(--text-muted);
+      cursor: pointer; transition: all 0.15s; user-select: none;
+    }
+    .filter-chip.active { background: var(--primary-dim); border-color: var(--primary); color: var(--primary); }
+    .filter-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+
+    /* ── Catégorie header ── */
+    .cat-header {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--text-muted);
+      margin: 20px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border);
+    }
+    .cat-header:first-of-type { margin-top: 0; }
+
+    /* ── Task card ── */
+    .tp-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      transition: border-color 0.15s;
+    }
+    .tp-card.status-ok     { border-left: 3px solid var(--success); }
+    .tp-card.status-warn   { border-left: 3px solid var(--warning); }
+    .tp-card.status-overdue{ border-left: 3px solid var(--danger); }
+    .tp-card.status-never  { border-left: 3px solid var(--border-strong); }
+
+    .tp-icon {
+      width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+    }
+    .tp-icon.ok      { background: var(--success-bg); }
+    .tp-icon.warn    { background: rgba(240,180,41,0.12); }
+    .tp-icon.overdue { background: var(--danger-bg); }
+    .tp-icon.never   { background: var(--bg-surface); }
+
+    .tp-body { flex: 1; min-width: 0; }
+    .tp-name { font-size: 0.93rem; font-weight: 700; margin-bottom: 3px; }
+    .tp-desc { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 8px; line-height: 1.4; }
+
+    .tp-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .tp-badge {
+      font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 12px;
+    }
+    .tp-badge.freq-m  { background: rgba(37,99,235,0.12); color: #60a5fa; }
+    .tp-badge.freq-bm { background: rgba(147,51,234,0.12); color: #c084fc; }
+    .tp-badge.s-ok     { background: var(--success-bg); color: var(--success); }
+    .tp-badge.s-warn   { background: rgba(240,180,41,0.12); color: var(--warning); }
+    .tp-badge.s-overdue{ background: var(--danger-bg); color: var(--danger); }
+    .tp-badge.s-never  { background: var(--bg-surface); color: var(--text-muted); border: 1px solid var(--border); }
+
+    .tp-last { font-size: 0.79rem; color: var(--text-muted); }
+    .tp-last strong { color: var(--text); font-weight: 600; }
+
+    .tp-thumb {
+      width: 36px; height: 36px; border-radius: 6px; object-fit: cover;
+      cursor: pointer; border: 1.5px solid var(--border); flex-shrink: 0;
+    }
+
+    .tp-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .btn-done {
+      background: var(--primary); color: #000; border: none;
+      border-radius: var(--radius-sm); padding: 7px 16px;
+      font-size: 0.82rem; font-weight: 700; cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; gap: 6px; transition: background 0.15s;
+    }
+    .btn-done:hover { background: var(--primary-light); }
+    .btn-history {
+      background: var(--bg-surface); color: var(--text-muted); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 7px 14px;
+      font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; gap: 6px; transition: background 0.15s;
+    }
+    .btn-history:hover { background: var(--bg-hover); color: var(--text); }
+
+    /* ── Stat bar ── */
+    .stat-bar {
+      display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .stat-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 6px 14px;
+      font-size: 0.8rem; font-weight: 600;
+    }
+    .stat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Modal base ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.78);
+      z-index: 1000; display: flex; align-items: flex-end;
+      padding: 12px; animation: fadeIn 0.15s;
+    }
+    @keyframes fadeIn { from { opacity: 0; } }
+    .modal {
+      background: var(--bg-surface); border-radius: var(--radius) var(--radius) 0 0;
+      width: 100%; max-width: 540px; margin: 0 auto;
+      padding: 24px; max-height: 88dvh; overflow-y: auto;
+      animation: slideUp 0.25s var(--ease-out);
+    }
+    @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } }
+    .modal-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 16px; }
+    .modal-close {
+      float: right; background: none; border: none; font-size: 1.3rem;
+      color: var(--text-muted); cursor: pointer; line-height: 1;
+    }
+
+    /* ── Done modal ── */
+    .done-modal textarea {
+      width: 100%; background: var(--bg-card); border: 1.5px solid var(--border);
+      color: var(--text); border-radius: var(--radius-sm); padding: 10px 14px;
+      font-size: 0.9rem; font-family: inherit; resize: vertical; min-height: 80px;
+      margin-bottom: 12px;
+    }
+    .done-modal textarea:focus { border-color: var(--primary); outline: none; }
+
+    .photo-label {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg-card); border: 1.5px dashed var(--border);
+      border-radius: var(--radius-sm); padding: 12px 16px;
+      cursor: pointer; font-size: 0.85rem; color: var(--text-muted);
+      transition: border-color 0.15s; margin-bottom: 12px;
+    }
+    .photo-label:hover { border-color: var(--primary); color: var(--primary); }
+    .photo-preview {
+      width: 100%; max-height: 200px; object-fit: cover;
+      border-radius: var(--radius-sm); margin-bottom: 12px; display: none;
+    }
+    #donePhotoInput { display: none; }
+
+    /* ── History modal ── */
+    .history-item {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 8px;
+    }
+    .history-meta { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; gap: 4px; }
+    .history-who { font-weight: 700; font-size: 0.88rem; }
+    .history-when { font-size: 0.78rem; color: var(--text-muted); }
+    .history-comment { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+    .history-photo { width: 100%; max-height: 220px; object-fit: cover; border-radius: 6px; margin-top: 8px; cursor: pointer; }
+
+    /* ── Empty ── */
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+    .empty-state svg { width: 48px; height: 48px; opacity: 0.3; margin-bottom: 12px; }
+
+    @media (max-width: 768px) {
+      .tp-card { padding: 12px; gap: 10px; }
+      .stat-bar { gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav" id="nav"></nav>
+
+  <main class="page" id="main-content" style="padding-top: calc(var(--nav-height) + 20px);">
+    <div class="container-sm">
+
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
+        <div>
+          <h1 style="font-size:1.35rem; font-weight:800;">Tâches Périodiques</h1>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-top:3px;">Tâches mensuelles et bi-mensuelles — suivi & historique</p>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stat-bar" id="statBar"></div>
+
+      <!-- Filtres fréquence -->
+      <div class="filter-bar" id="filterBar">
+        <button class="filter-chip active" data-freq="all">Toutes</button>
+        <button class="filter-chip" data-freq="mensuelle">🗓 Mensuelle</button>
+        <button class="filter-chip" data-freq="bi_mensuelle">📅 Bi-mensuelle</button>
+        <span class="filter-sep"></span>
+        <button class="filter-chip active" data-status="all">Tous statuts</button>
+        <button class="filter-chip" data-status="overdue">❌ En retard</button>
+        <button class="filter-chip" data-status="warn">⚠️ Bientôt</button>
+        <button class="filter-chip" data-status="ok">✅ À jour</button>
+      </div>
+
+      <!-- Liste -->
+      <div id="taskList"></div>
+
+    </div>
+  </main>
+
+  <!-- ── Modal: marquer fait ── -->
+  <div class="modal-overlay" id="doneModal" style="display:none" onclick="if(event.target===this)closeDoneModal()">
+    <div class="modal done-modal">
+      <button class="modal-close" onclick="closeDoneModal()">×</button>
+      <div class="modal-title" id="doneModalTitle">Marquer comme fait</div>
+
+      <label style="font-size:0.8rem; font-weight:600; color:var(--text-muted); display:block; margin-bottom:6px;">COMMENTAIRE (facultatif)</label>
+      <textarea id="doneComment" placeholder="Ex : nettoyé avec produit X, RAS, à surveiller..."></textarea>
+
+      <label class="photo-label" for="donePhotoInput">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M1 8a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 018.07 3h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0016.07 6H17a2 2 0 012 2v7a2 2 0 01-2 2H3a2 2 0 01-2-2V8zm13.5 3a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM10 14a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+        <span id="photoLabelText">Ajouter une photo (optionnel)</span>
+      </label>
+      <input type="file" id="donePhotoInput" accept="image/*" capture="environment" onchange="previewPhoto(this)">
+      <img id="photoPreview" class="photo-preview" alt="Aperçu">
+
+      <button class="btn btn-primary" style="width:100%; margin-top:4px;" onclick="submitDone()" id="doneSubmitBtn">
+        ✓ Confirmer
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Modal: historique ── -->
+  <div class="modal-overlay" id="histModal" style="display:none" onclick="if(event.target===this)closeHistModal()">
+    <div class="modal">
+      <button class="modal-close" onclick="closeHistModal()">×</button>
+      <div class="modal-title" id="histModalTitle">Historique</div>
+      <div id="histList"></div>
+    </div>
+  </div>
+
+  <!-- ── Lightbox photo ── -->
+  <div id="lightbox" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.9); z-index:2000; cursor:pointer; align-items:center; justify-content:center;"
+    onclick="document.getElementById('lightbox').style.display='none'">
+    <img id="lightboxImg" style="max-width:95vw; max-height:92vh; border-radius:8px;" alt="">
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    // ── État global ────────────────────────────────────────────────────────────
+    let allTasks = [];
+    let activeFreq = 'all';
+    let activeStatus = 'all';
+    let currentDoneId = null;
+
+    // ── Init ───────────────────────────────────────────────────────────────────
+    (async () => {
+      await buildNav('taches-periodiques');
+      await load();
+
+      // Filtre fréquence
+      document.querySelectorAll('[data-freq]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-freq]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeFreq = btn.dataset.freq;
+          render();
+        });
+      });
+
+      // Filtre statut
+      document.querySelectorAll('[data-status]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-status]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeStatus = btn.dataset.status;
+          render();
+        });
+      });
+
+      // Socket.io refresh
+      if (window.io) {
+        const socket = io();
+        socket.on('tache_periodique:done', () => load());
+      }
+    })();
+
+    async function load() {
+      allTasks = await api.get('/api/taches/periodiques');
+      renderStats();
+      render();
+    }
+
+    // ── Status logic ───────────────────────────────────────────────────────────
+    function getStatus(frequence, lastDone) {
+      if (!lastDone) return 'never';
+      const days = (Date.now() - new Date(lastDone)) / 86400000;
+      const period  = frequence === 'mensuelle' ? 30 : 15;
+      const warning = frequence === 'mensuelle' ? 25 : 12;
+      if (days <= warning) return 'ok';
+      if (days <= period)  return 'warn';
+      return 'overdue';
+    }
+
+    function statusLabel(s) {
+      return { ok: '✅ À jour', warn: '⚠️ Bientôt', overdue: '❌ En retard', never: '🔵 Jamais fait' }[s] || s;
+    }
+
+    function daysSince(dt) {
+      if (!dt) return null;
+      const d = Math.floor((Date.now() - new Date(dt)) / 86400000);
+      if (d === 0) return "aujourd'hui";
+      if (d === 1) return 'hier';
+      return `il y a ${d} j`;
+    }
+
+    // ── Stats strip ────────────────────────────────────────────────────────────
+    function renderStats() {
+      const counts = { ok: 0, warn: 0, overdue: 0, never: 0 };
+      allTasks.forEach(t => counts[getStatus(t.frequence, t.last_done)]++);
+      document.getElementById('statBar').innerHTML = `
+        <div class="stat-pill"><span class="stat-dot" style="background:var(--success)"></span>${counts.ok} à jour</div>
+        <div class="stat-pill"><span class="stat-dot" style="background:var(--warning)"></span>${counts.warn} bientôt</div>
+        <div class="stat-pill"><span class="stat-dot" style="background:var(--danger)"></span>${counts.overdue} en retard</div>
+        <div class="stat-pill"><span class="stat-dot" style="background:var(--border-strong)"></span>${counts.never} jamais fait</div>
+      `;
+    }
+
+    // ── Render ─────────────────────────────────────────────────────────────────
+    function render() {
+      let tasks = allTasks;
+      if (activeFreq !== 'all') tasks = tasks.filter(t => t.frequence === activeFreq);
+      if (activeStatus !== 'all') tasks = tasks.filter(t => getStatus(t.frequence, t.last_done) === activeStatus);
+
+      const container = document.getElementById('taskList');
+      if (!tasks.length) {
+        container.innerHTML = `<div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+          <p>Aucune tâche pour ce filtre</p>
+        </div>`;
+        return;
+      }
+
+      // Grouper par catégorie
+      const cats = {};
+      tasks.forEach(t => {
+        if (!cats[t.categorie]) cats[t.categorie] = [];
+        cats[t.categorie].push(t);
+      });
+
+      let html = '';
+      for (const [cat, items] of Object.entries(cats)) {
+        html += `<div class="cat-header">${escapeHtml(cat)}</div>`;
+        items.forEach(t => { html += renderCard(t); });
+      }
+      container.innerHTML = html;
+    }
+
+    function renderCard(t) {
+      const s = getStatus(t.frequence, t.last_done);
+      const icon = { ok: '✅', warn: '⚠️', overdue: '❌', never: '🔵' }[s];
+      const freqLabel = t.frequence === 'mensuelle' ? '1× / mois' : '2× / mois';
+      const freqClass = t.frequence === 'mensuelle' ? 'freq-m' : 'freq-bm';
+
+      let lastInfo = '';
+      if (t.last_done) {
+        lastInfo = `Dernière fois : <strong>${daysSince(t.last_done)}</strong> par <strong>${escapeHtml(t.last_user)}</strong>`;
+        if (t.last_comment) lastInfo += ` — <em>${escapeHtml(t.last_comment.slice(0, 60))}${t.last_comment.length > 60 ? '…' : ''}</em>`;
+      } else {
+        lastInfo = 'Jamais réalisée';
+      }
+
+      const thumbHtml = t.last_photo
+        ? `<img src="${t.last_photo}" class="tp-thumb" alt="photo" onclick="lightbox('${t.last_photo}')" title="Voir la photo">`
+        : '';
+
+      return `
+        <div class="tp-card status-${s === 'never' ? 'never' : s}">
+          <div class="tp-icon ${s}"><span>${icon}</span></div>
+          <div class="tp-body">
+            <div class="tp-name">${escapeHtml(t.nom)}</div>
+            ${t.description ? `<div class="tp-desc">${escapeHtml(t.description)}</div>` : ''}
+            <div class="tp-meta">
+              <span class="tp-badge ${freqClass}">${freqLabel}</span>
+              <span class="tp-badge s-${s}">${statusLabel(s)}</span>
+            </div>
+            <div class="tp-last" style="margin-top:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span>${lastInfo}</span>
+              ${thumbHtml}
+            </div>
+            <div class="tp-actions">
+              <button class="btn-done" onclick="openDoneModal(${t.id}, '${escapeHtml(t.nom).replace(/'/g, "\\'")}')">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                Marquer fait
+              </button>
+              <button class="btn-history" onclick="openHistory(${t.id}, '${escapeHtml(t.nom).replace(/'/g, "\\'")}')">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+                Historique
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // ── Modal Marquer fait ─────────────────────────────────────────────────────
+    function openDoneModal(id, nom) {
+      currentDoneId = id;
+      document.getElementById('doneModalTitle').textContent = `Marquer fait : ${nom}`;
+      document.getElementById('doneComment').value = '';
+      document.getElementById('photoPreview').style.display = 'none';
+      document.getElementById('photoLabelText').textContent = 'Ajouter une photo (optionnel)';
+      document.getElementById('donePhotoInput').value = '';
+      document.getElementById('doneModal').style.display = 'flex';
+    }
+
+    function closeDoneModal() {
+      document.getElementById('doneModal').style.display = 'none';
+      currentDoneId = null;
+    }
+
+    function previewPhoto(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.getElementById('photoPreview');
+        img.src = e.target.result;
+        img.style.display = 'block';
+        document.getElementById('photoLabelText').textContent = file.name;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function submitDone() {
+      if (!currentDoneId) return;
+      const btn = document.getElementById('doneSubmitBtn');
+      btn.disabled = true; btn.textContent = 'Envoi…';
+
+      const form = new FormData();
+      form.append('commentaire', document.getElementById('doneComment').value.trim());
+      const photoFile = document.getElementById('donePhotoInput').files[0];
+      if (photoFile) form.append('photo', photoFile);
+
+      try {
+        const res = await fetch(`/api/taches/periodiques/${currentDoneId}/complete`, {
+          method: 'POST', body: form
+        });
+        if (!res.ok) throw new Error(await res.text());
+        closeDoneModal();
+        showToast('Tâche enregistrée ✓', 'success');
+        await load();
+      } catch (e) {
+        showToast('Erreur : ' + e.message, 'error');
+      } finally {
+        btn.disabled = false; btn.textContent = '✓ Confirmer';
+      }
+    }
+
+    // ── Modal Historique ───────────────────────────────────────────────────────
+    async function openHistory(id, nom) {
+      document.getElementById('histModalTitle').textContent = `Historique : ${nom}`;
+      document.getElementById('histList').innerHTML = '<p style="color:var(--text-muted); font-size:.85rem;">Chargement…</p>';
+      document.getElementById('histModal').style.display = 'flex';
+
+      const history = await api.get(`/api/taches/periodiques/${id}/history`);
+
+      if (!history.length) {
+        document.getElementById('histList').innerHTML = '<p style="color:var(--text-muted); text-align:center; padding:24px 0;">Aucun historique pour cette tâche.</p>';
+        return;
+      }
+
+      document.getElementById('histList').innerHTML = history.map(h => {
+        const dt = new Date(h.completed_at);
+        const dateStr = dt.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+        const timeStr = dt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        return `
+          <div class="history-item">
+            <div class="history-meta">
+              <span class="history-who">👤 ${escapeHtml(h.user_name)}</span>
+              <span class="history-when">${dateStr} à ${timeStr}</span>
+            </div>
+            ${h.commentaire ? `<div class="history-comment">💬 ${escapeHtml(h.commentaire)}</div>` : ''}
+            ${h.photo_url ? `<img src="${h.photo_url}" class="history-photo" alt="photo" onclick="lightbox('${h.photo_url}')">` : ''}
+          </div>`;
+      }).join('');
+    }
+
+    function closeHistModal() {
+      document.getElementById('histModal').style.display = 'none';
+    }
+
+    // ── Lightbox ───────────────────────────────────────────────────────────────
+    function lightbox(url) {
+      document.getElementById('lightboxImg').src = url;
+      document.getElementById('lightbox').style.display = 'flex';
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>

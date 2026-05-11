@@ -1954,6 +1954,84 @@ function getTempWeekReport(from, to) {
   `).all(from, to);
 }
 
+// ─── Tâches périodiques ────────────────────────────────────────────────────────
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS taches_periodiques (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      nom         TEXT NOT NULL,
+      description TEXT,
+      categorie   TEXT DEFAULT 'Général',
+      frequence   TEXT NOT NULL CHECK(frequence IN ('mensuelle','bi_mensuelle')),
+      actif       INTEGER DEFAULT 1,
+      created_at  TEXT DEFAULT (datetime('now','localtime'))
+    );
+    CREATE TABLE IF NOT EXISTS taches_periodiques_completions (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      tache_id     INTEGER NOT NULL,
+      user_id      INTEGER,
+      user_name    TEXT NOT NULL,
+      commentaire  TEXT,
+      photo_url    TEXT,
+      completed_at TEXT DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY(tache_id) REFERENCES taches_periodiques(id)
+    );
+  `);
+} catch(e) {}
+
+{
+  const _insTP = db.prepare("INSERT OR IGNORE INTO taches_periodiques (id, nom, description, categorie, frequence) VALUES (?, ?, ?, ?, ?)");
+  for (const [id, nom, description, categorie, frequence] of [
+    [1,  'Nettoyage filtres hotte',           'Démonter et nettoyer les filtres de la hotte cuisine',                    'Cuisine',   'mensuelle'],
+    [2,  'Nettoyage machine à glaçons',        'Détartrage et désinfection complète de la machine à glaçons',             'Bar',        'mensuelle'],
+    [3,  'Désinfection bacs à glaçons',        'Vider, nettoyer et désinfecter tous les bacs à glaçons',                  'Bar',        'bi_mensuelle'],
+    [4,  'Vérification extincteurs',           'Contrôler manomètre et date de validité de chaque extincteur',            'Sécurité',   'mensuelle'],
+    [5,  'Nettoyage joints frigos bar',        'Nettoyer et vérifier l\'état des joints des frigos du bar',               'Bar',        'bi_mensuelle'],
+    [6,  'Contrôle dates péremption bar',      'Vérifier dates des sirops, liqueurs et produits périmables bar',          'Bar',        'bi_mensuelle'],
+    [7,  'Dégraissage plancha',                'Dégraissage complet de la plancha et abords',                             'Cuisine',    'bi_mensuelle'],
+    [8,  'Nettoyage grilles four',             'Retirer et nettoyer toutes les grilles du four',                          'Cuisine',    'mensuelle'],
+    [9,  'Nettoyage cave / réserve',           'Nettoyer et réorganiser la cave et la réserve',                           'Général',    'mensuelle'],
+    [10, 'Nettoyage têtes de bière',           'Nettoyer les robinets et têtes de tirage, purger les lignes',             'Bar',        'bi_mensuelle'],
+    [11, 'Contrôle ampoules & éclairages',     'Vérifier et remplacer les ampoules défectueuses salle et cuisine',        'Général',    'mensuelle'],
+    [12, 'Nettoyage derrière les frigos',      'Aspirer et nettoyer derrière et dessous tous les appareils réfrigérés',   'Cuisine',    'mensuelle'],
+    [13, 'Nettoyage siphons et caniveaux',     'Démonter et nettoyer siphons de sol et caniveaux cuisine',                'Cuisine',    'bi_mensuelle'],
+    [14, 'Vérification trousse de secours',    'Contrôler le contenu et les dates de la trousse de premiers secours',     'Sécurité',   'mensuelle'],
+    [15, 'Nettoyage fond de frigos cuisine',   'Vider et nettoyer en profondeur les frigos de cuisine',                   'Cuisine',    'bi_mensuelle'],
+  ]) _insTP.run(id, nom, description, categorie, frequence);
+}
+
+function getTachesPeriodiques() {
+  return db.prepare(`
+    SELECT tp.*,
+      c.user_name    AS last_user,
+      c.completed_at AS last_done,
+      c.commentaire  AS last_comment,
+      c.photo_url    AS last_photo
+    FROM taches_periodiques tp
+    LEFT JOIN taches_periodiques_completions c ON c.id = (
+      SELECT id FROM taches_periodiques_completions
+      WHERE tache_id = tp.id ORDER BY completed_at DESC LIMIT 1
+    )
+    WHERE tp.actif = 1
+    ORDER BY tp.categorie, tp.nom
+  `).all();
+}
+
+function completeTachePeriodique({ tache_id, user_id, user_name, commentaire, photo_url }) {
+  return db.prepare(`
+    INSERT INTO taches_periodiques_completions (tache_id, user_id, user_name, commentaire, photo_url)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(tache_id, user_id || null, user_name, commentaire || null, photo_url || null);
+}
+
+function getTachePeriodiquesHistory(tache_id, limit = 20) {
+  return db.prepare(`
+    SELECT * FROM taches_periodiques_completions
+    WHERE tache_id = ?
+    ORDER BY completed_at DESC LIMIT ?
+  `).all(tache_id, limit);
+}
+
 module.exports = {
   getUserByPin, getUserById, getAllUsers, createUser, updateUser, deleteUser,
   getTasksWithCompletions, getTaskById, getAllTasks, completeTask, uncompleteTask, createTask, updateTask, deactivateTask,
@@ -1982,4 +2060,5 @@ module.exports = {
   getCuisineProduits, getCuisineProduitById, createCuisineProduit, updateCuisineProduit, deleteCuisineProduit,
   logEtiquette, getEtiquettesLog,
   getTempMateriels, getTempSession, getTempHistory, upsertTempReleve, getTempWeekReport,
+  getTachesPeriodiques, completeTachePeriodique, getTachePeriodiquesHistory,
 };
