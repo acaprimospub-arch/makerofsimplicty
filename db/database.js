@@ -184,6 +184,8 @@ try {
   `);
 } catch(e) {}
 
+try { db.exec(`ALTER TABLE salle_time_events ADD COLUMN type TEXT DEFAULT 'supp'`); } catch(e) {}
+
 try {
   db.exec(`
     CREATE TABLE IF NOT EXISTS salle_daily_snapshot (
@@ -1279,11 +1281,11 @@ function getSalleTimeEventsForWeek(weekStart) {
   `).all(weekStart, weekEnd);
 }
 
-function createSalleTimeEvent({ user_id, date, minutes, note, created_by }) {
+function createSalleTimeEvent({ user_id, date, minutes, note, created_by, type }) {
   const r = db.prepare(`
-    INSERT INTO salle_time_events (user_id, date, minutes, note, created_by)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(user_id, date, minutes, note || null, created_by || null);
+    INSERT INTO salle_time_events (user_id, date, minutes, note, created_by, type)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(user_id, date, minutes, note || null, created_by || null, type || 'supp');
   return r.lastInsertRowid;
 }
 
@@ -1406,6 +1408,10 @@ function getAllCongeRequests() {
   return db.prepare(
     'SELECT * FROM conge_requests ORDER BY requested_at DESC'
   ).all();
+}
+
+function getCongeRequestById(id) {
+  return db.prepare('SELECT * FROM conge_requests WHERE id = ?').get(id);
 }
 
 function updateCongeRequestStatus(id, status, reviewed_by) {
@@ -2069,7 +2075,7 @@ module.exports = {
   getCuisineCompletionsByDate,
   logTimeEvent, getTimeEventsByDate, getTimeEventsRange, deleteTimeEvent,
   addReservationAttachment, getReservationAttachments, getAttachmentById, deleteAttachment,
-  createCongeRequest, getCongeRequestsByUser, getAllCongeRequests, updateCongeRequestStatus,
+  createCongeRequest, getCongeRequestsByUser, getCongeRequestById, getAllCongeRequests, updateCongeRequestStatus,
   getInstagramAccounts, getInstagramAccountById, createInstagramAccount, updateInstagramAccount, deleteInstagramAccount,
   getInstagramPosts, getInstagramPostById, createInstagramPost, updateInstagramPost, deleteInstagramPost, getDueInstagramPosts,
   addInstagramMedia, getInstagramMedia, getInstagramMediaById, deleteInstagramMedia, reorderInstagramMedia,

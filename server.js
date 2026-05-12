@@ -301,6 +301,27 @@ app.use(session({
   }
 }));
 
+// ─── Helpers date (tout en UTC pour éviter les décalages de fuseau horaire) ────
+function _getMondayOf(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const dow = dt.getUTCDay(); // 0=dimanche
+  dt.setUTCDate(dt.getUTCDate() + (dow === 0 ? -6 : 1 - dow));
+  return dt.toISOString().split('T')[0];
+}
+function _dateRange(from, to) {
+  const dates = [];
+  const [fy, fm, fd] = from.split('-').map(Number);
+  const [ty, tm, td] = to.split('-').map(Number);
+  const cur = new Date(Date.UTC(fy, fm - 1, fd));
+  const end = new Date(Date.UTC(ty, tm - 1, td));
+  while (cur <= end) {
+    dates.push(cur.toISOString().split('T')[0]);
+    cur.setUTCDate(cur.getUTCDate() + 1);
+  }
+  return dates;
+}
+
 // ─── Middleware ────────────────────────────────────────────────────────────────
 function requireAuth(req, res, next) {
   if (req.session.userId) return next();
@@ -482,15 +503,15 @@ app.get('/api/salle/hours', requireAuth, (req, res) => {
   res.json({ ...planning, timeEvents, snapshots });
 });
 
-// Heures supp salle
+// Heures supp / retard salle
 app.post('/api/salle/time-events', requireAuth, (req, res) => {
-  const { user_id, date, minutes, note } = req.body;
+  const { user_id, date, minutes, note, type } = req.body;
   const targetId = parseInt(user_id);
-  // Staff can only add for themselves
   if (req.session.role === 'staff' && targetId !== req.session.userId) {
     return res.status(403).json({ error: 'Accès refusé' });
   }
-  const id = db.createSalleTimeEvent({ user_id: targetId, date, minutes: parseInt(minutes) || 0, note, created_by: req.session.userId });
+  const evType = ['retard', 'supp'].includes(type) ? type : 'supp';
+  const id = db.createSalleTimeEvent({ user_id: targetId, date, minutes: parseInt(minutes) || 0, note, created_by: req.session.userId, type: evType });
   io.emit('salle:hours:updated', { date });
   res.json({ ok: true, id });
 });
@@ -533,10 +554,12 @@ app.delete('/api/cuisine/planning', requireCuisineManager, (req, res) => {
 
 // ─── Cuisine — Retards & Heures supp ──────────────────────────────────────────
 app.post('/api/cuisine/time-events', requireAuth, (req, res) => {
-  const { type, minutes, note, date } = req.body;
+  const { type, minutes, note, date, user_id } = req.body;
   if (!['retard', 'supp'].includes(type)) return res.status(400).json({ error: 'Type invalide' });
+  const isChef = req.session.role === 'admin' || (req.session.role === 'manager' && req.session.shift === 'cuisine');
+  const targetId = (isChef && user_id) ? parseInt(user_id) : req.session.userId;
   const today = date || new Date().toISOString().split('T')[0];
-  const id = db.logTimeEvent({ user_id: req.session.userId, date: today, type, minutes: parseInt(minutes) || 0, note });
+  const id = db.logTimeEvent({ user_id: targetId, date: today, type, minutes: parseInt(minutes) || 0, note });
   const events = db.getTimeEventsByDate(today);
   io.emit('cuisine:time-events:updated', { date: today, events });
   res.json({ ok: true, id });
@@ -1363,7 +1386,36 @@ app.get('/api/admin/conge-requests', requireAdminOrManager, (req, res) => {
 app.put('/api/admin/conge-requests/:id', requireAdminOrManager, (req, res) => {
   const { status } = req.body;
   if (!['pending', 'approved', 'rejected'].includes(status)) return res.status(400).json({ error: 'Statut invalide' });
+
+  const conge = db.getCongeRequestById(req.params.id);
+  if (!conge) return res.status(404).json({ error: 'Demande introuvable' });
+
   db.updateCongeRequestStatus(req.params.id, status, req.session.name);
+
+  // Sync planning quand la demande est approuvée ou refusée
+  if (status === 'approved' || status === 'rejected') {
+    try {
+      const user = db.getUserById(conge.user_id);
+      if (user) {
+        const isCuisine = user.shift === 'cuisine';
+        const dates = _dateRange(conge.date_from, conge.date_to);
+        dates.forEach(dayDate => {
+          const weekStart = _getMondayOf(dayDate);
+          if (status === 'approved') {
+            const params = { user_id: conge.user_id, week_start: weekStart, day_date: dayDate, start_time: null, end_time: null, is_off: 1 };
+            if (isCuisine) db.upsertCuisinePlanning(params);
+            else db.upsertSallePlanning(params);
+          } else {
+            if (isCuisine) db.deleteCuisinePlanningShift(conge.user_id, dayDate);
+            else db.deleteSallePlanningShift(conge.user_id, dayDate);
+          }
+        });
+      }
+    } catch(e) {
+      console.error('[Congé] Erreur sync planning:', e.message);
+    }
+  }
+
   res.json({ ok: true });
 });
 

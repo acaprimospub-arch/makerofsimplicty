@@ -208,12 +208,14 @@ async function buildNav(activePage) {
     { href: '/admin/email.html',        label: 'Email',        key: 'email' },
     { href: '/resa/devis.html',         label: 'Devis',        key: 'resa-devis' },
     { href: '/staff/planning.html',     label: 'Planning',     key: 'planning' },
+    { href: '/staff/conges.html',       label: 'Congés',       key: 'conges' },
   ];
   const managerMidiLinks = [
     { href: '/admin/dashboard.html',    label: 'Dashboard',    key: 'dashboard' },
     { href: '/staff/taches.html',       label: 'Mes Tâches',   key: 'taches' },
     { href: '/staff/reservations.html', label: 'Réservations', key: 'reservations' },
     { href: '/staff/tables.html',       label: 'Plan de Salle',key: 'tables' },
+    { href: '/staff/conges.html',       label: 'Congés',       key: 'conges' },
   ];
   const managerSoirLinks = [
     { href: '/admin/dashboard.html',    label: 'Dashboard',    key: 'dashboard' },
@@ -221,6 +223,7 @@ async function buildNav(activePage) {
     { href: '/staff/reservations.html', label: 'Réservations', key: 'reservations' },
     { href: '/staff/tables.html',       label: 'Plan de Salle',key: 'tables' },
     { href: '/staff/planning.html',     label: 'Planning',     key: 'planning' },
+    { href: '/staff/conges.html',       label: 'Congés',       key: 'conges' },
   ];
   const staffMidiLinks = [
     { href: '/staff/taches.html',       label: 'Mes Tâches',   key: 'taches' },

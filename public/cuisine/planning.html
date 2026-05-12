@@ -40,6 +40,27 @@
     .btn-whatsapp:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .btn-whatsapp svg { width:20px; height:20px; fill:currentColor; flex-shrink:0; }
 
+    /* Ligne de l'utilisateur connecté */
+    .row-me .staff-cell { color:var(--primary); font-weight:800; }
+    .row-me .shift-cell.is-work { background:rgba(205,164,67,.2); border-color:rgba(205,164,67,.5); }
+    .row-me .shift-cell.is-empty { border-color:rgba(205,164,67,.25); }
+    .row-me .shift-cell.is-off  { opacity:.85; }
+
+    /* Badges retard / supp */
+    .dc-supp   { font-size:.62rem; font-weight:700; color:var(--success); background:var(--success-bg); border-radius:6px; padding:1px 4px; display:block; margin-top:2px; }
+    .dc-retard { font-size:.62rem; font-weight:700; color:var(--danger); background:rgba(232,84,84,.12); border-radius:6px; padding:1px 4px; display:block; margin-top:2px; }
+
+    /* Log drawer */
+    .drawer-section-title { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); margin-bottom:8px; margin-top:4px; }
+    .supp-item { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; background:var(--bg-surface); border-radius:8px; border:1px solid var(--border); font-size:.82rem; margin-bottom:6px; }
+    .supp-del  { background:none; border:none; color:var(--danger); cursor:pointer; font-size:.9rem; padding:2px 6px; }
+    .add-supp-row { display:flex; gap:8px; align-items:flex-end; }
+    .add-supp-row .form-input { flex:1; }
+    .type-toggle { display:flex; gap:6px; margin-bottom:10px; }
+    .type-btn { padding:5px 14px; border:1.5px solid var(--border); border-radius:20px; background:var(--bg-surface); color:var(--text-muted); font-size:.8rem; font-weight:600; cursor:pointer; transition:border-color .15s,color .15s,background .15s; }
+    .type-btn.active[data-type="supp"]   { border-color:var(--success); color:var(--success); background:var(--success-bg); }
+    .type-btn.active[data-type="retard"] { border-color:var(--danger);  color:var(--danger);  background:rgba(232,84,84,.1); }
+
     .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s; }
     .drawer-backdrop.open { opacity:1; pointer-events:auto; }
     .drawer { position:fixed; bottom:0; left:0; right:0; z-index:201; background:var(--bg-card); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.5); transform:translateY(102%); transition:transform .3s cubic-bezier(.32,.72,0,1); max-height:92dvh; display:flex; flex-direction:column; }
@@ -166,6 +187,21 @@
     </div>
   </div>
 
+  <!-- Log drawer (retard / heures sup) -->
+  <div class="drawer" id="logDrawer" role="dialog" aria-modal="true" aria-labelledby="logDrawerTitle">
+    <div class="drawer-handle" aria-hidden="true"></div>
+    <div class="drawer-head">
+      <h2 class="drawer-title" id="logDrawerTitle">Saisie</h2>
+      <button class="drawer-close" id="closeLogDrawer" aria-label="Fermer">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M10 2L2 10M2 2l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body" id="logDrawerBody"></div>
+    <div class="drawer-footer">
+      <button class="btn btn-secondary" id="closeLogDrawerFooter" style="flex:1;justify-content:center">Fermer</button>
+    </div>
+  </div>
+
   <!-- Modal confirmation -->
   <div class="modal-overlay hidden" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
     <div class="modal">
@@ -190,6 +226,7 @@
     let currentWeekStart = getMonday(new Date());
     let planningData = { users: [], shifts: [] };
     let isChef = false;
+    let myId = null;
     let capturedBlob = null;
 
     const DAYS = [
@@ -251,6 +288,8 @@
     document.getElementById('closePreviewDrawerFooter').addEventListener('click', closeAll);
     document.getElementById('closeShiftDrawer').addEventListener('click', closeAll);
     document.getElementById('cancelShiftDrawer').addEventListener('click', closeAll);
+    document.getElementById('closeLogDrawer').addEventListener('click', closeAll);
+    document.getElementById('closeLogDrawerFooter').addEventListener('click', closeAll);
 
     // ── Modal confirmation ───────────────────────────────────────────────────
     let _confirmCb = null;
@@ -273,6 +312,7 @@
     async function init() {
       const user = await api.get('/api/auth/me');
       if (!user) return;
+      myId = user.id;
       isChef = user.role === 'admin' || (user.role === 'manager' && user.shift === 'cuisine');
       if (!isChef) {
         document.getElementById('readonlyBadge').classList.remove('hidden');
@@ -287,9 +327,13 @@
     async function load() {
       document.getElementById('weekLabel').textContent = fmtWeekLabel(currentWeekStart);
       document.getElementById('weekSubtitle').textContent = `Semaine du ${formatDate(currentWeekStart)}`;
-      const data = await api.get(`/api/cuisine/planning?weekStart=${currentWeekStart}`);
+      const weekEnd = addDays(currentWeekStart, 6);
+      const [data, events] = await Promise.all([
+        api.get(`/api/cuisine/planning?weekStart=${currentWeekStart}`),
+        api.get(`/api/cuisine/time-events?from=${currentWeekStart}&to=${weekEnd}`),
+      ]);
       if (!data) return;
-      planningData = data;
+      planningData = { ...data, timeEvents: events || [] };
       render();
     }
 
@@ -307,11 +351,16 @@
       </tr>`;
 
       const tbody = document.getElementById('planningBody');
-      tbody.innerHTML = planningData.users.map(u => `
-        <tr>
+      tbody.innerHTML = planningData.users.map(u => {
+        const isOwnRow = u.id === myId;
+        return `
+        <tr${u.id === myId ? ' class="row-me"' : ''}>
           <th scope="row" class="staff-cell">${escapeHtml(u.name)}</th>
           ${dayDates.map(dd => {
             const shift   = planningData.shifts.find(s => s.user_id === u.id && s.day_date === dd);
+            const evs     = (planningData.timeEvents || []).filter(e => e.user_id === u.id && e.date === dd);
+            const suppMin  = evs.filter(e => (e.type||'supp') !== 'retard').reduce((a,e) => a+(e.minutes||0), 0);
+            const retardMin = evs.filter(e => e.type === 'retard').reduce((a,e) => a+(e.minutes||0), 0);
             const isToday = dd === todayStr;
             let cellHtml, cellClass, ariaLabel = '', interactive = '';
             if (!shift) {
@@ -329,20 +378,107 @@
               cellHtml = `<span class="sc-time" aria-hidden="true">${escapeHtml(s)}<br>${escapeHtml(e)}</span>`;
               ariaLabel = `${escapeHtml(u.name)}, ${escapeHtml(s)} à ${escapeHtml(e)}`;
             }
-            if (isChef) {
-              interactive = `role="button" tabindex="0" data-uid="${u.id}" data-date="${dd}" data-name="${escapeHtml(u.name)}" aria-label="Modifier : ${ariaLabel}"`;
+            const badges = (suppMin > 0 ? `<span class="dc-supp">+${fmtMins(suppMin)}</span>` : '')
+                         + (retardMin > 0 ? `<span class="dc-retard">−${fmtMins(retardMin)}</span>` : '');
+            if (isChef && !isOwnRow) {
+              interactive = `role="button" tabindex="0" data-uid="${u.id}" data-date="${dd}" data-name="${escapeHtml(u.name)}" data-action="shift" aria-label="Modifier : ${ariaLabel}"`;
+            } else if (isOwnRow) {
+              interactive = `role="button" tabindex="0" data-uid="${u.id}" data-date="${dd}" data-name="${escapeHtml(u.name)}" data-action="log" aria-label="Saisie : ${ariaLabel}"`;
+            } else if (isChef) {
+              interactive = `role="button" tabindex="0" data-uid="${u.id}" data-date="${dd}" data-name="${escapeHtml(u.name)}" data-action="log" aria-label="Saisie : ${ariaLabel}"`;
             }
-            return `<td class="${isToday?'today-col':''}"><div class="${cellClass}" ${interactive}>${cellHtml}</div></td>`;
+            return `<td class="${isToday?'today-col':''}"><div class="${cellClass}" ${interactive}>${cellHtml}${badges}</div></td>`;
           }).join('')}
-        </tr>
-      `).join('');
+        </tr>`;
+      }).join('');
 
-      if (isChef) {
-        tbody.querySelectorAll('[data-uid]').forEach(cell => {
-          cell.addEventListener('click', () => openShiftEditor(parseInt(cell.dataset.uid), cell.dataset.date, cell.dataset.name, cell));
-          cell.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openShiftEditor(parseInt(cell.dataset.uid), cell.dataset.date, cell.dataset.name, cell); } });
+      tbody.querySelectorAll('[data-uid]').forEach(cell => {
+        const handler = () => {
+          if (cell.dataset.action === 'shift') {
+            openShiftEditor(parseInt(cell.dataset.uid), cell.dataset.date, cell.dataset.name, cell);
+          } else {
+            openLogDrawer(parseInt(cell.dataset.uid), cell.dataset.date, cell.dataset.name, cell);
+          }
+        };
+        cell.addEventListener('click', handler);
+        cell.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); } });
+      });
+    }
+
+    // ── Log drawer (retard / heures sup) ─────────────────────────────────────
+    function fmtMins(m) { if (!m) return '—'; const h = Math.floor(m/60), mn = m%60; return h > 0 ? (mn > 0 ? `${h}h${String(mn).padStart(2,'0')}` : `${h}h`) : `${mn}min`; }
+
+    let _logCtx = null;
+
+    function openLogDrawer(userId, dayDate, userName, triggerEl = null) {
+      _logCtx = { userId, dayDate, userName };
+      const d = new Date(dayDate);
+      document.getElementById('logDrawerTitle').textContent = `${userName} — ${d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })}`;
+      _renderLogBody();
+      openDrawer('logDrawer', triggerEl);
+    }
+
+    function _renderLogBody() {
+      const { userId, dayDate } = _logCtx;
+      const evs = (planningData.timeEvents || []).filter(e => e.user_id === userId && e.date === dayDate);
+      const canDelete = userId === myId || isChef;
+      document.getElementById('logDrawerBody').innerHTML = `
+        <div class="frow">
+          <div>
+            <div class="drawer-section-title">Saisies du jour</div>
+            <div id="logEventsList">
+              ${evs.length ? evs.map(e => `
+                <div class="supp-item">
+                  <span>${e.type === 'retard' ? '⏱ Retard' : '⏰ Supp'} — ${fmtMins(e.minutes)}${e.note ? ` · ${escapeHtml(e.note)}` : ''}</span>
+                  ${canDelete ? `<button class="supp-del" data-eid="${e.id}" type="button" aria-label="Supprimer">✕</button>` : ''}
+                </div>`).join('') : '<div style="font-size:.8rem;color:var(--text-muted);padding:4px 0">Aucune saisie</div>'}
+            </div>
+          </div>
+          <div>
+            <div class="drawer-section-title">Ajouter</div>
+            <div class="type-toggle">
+              <button class="type-btn active" data-type="supp" type="button">Heures sup</button>
+              <button class="type-btn" data-type="retard" type="button">Retard</button>
+            </div>
+            <input type="hidden" id="logEventType" value="supp">
+            <div class="add-supp-row">
+              <div class="fgroup" style="flex:1"><label for="logMin">Minutes</label><input type="number" id="logMin" class="form-input" placeholder="ex: 30" min="1" max="480"></div>
+              <div class="fgroup" style="flex:1"><label for="logNote">Note</label><input type="text" id="logNote" class="form-input" placeholder="optionnel"></div>
+              <button class="btn btn-secondary" id="btnAddLog" type="button" style="flex-shrink:0;padding:9px 12px;align-self:flex-end">+</button>
+            </div>
+          </div>
+        </div>`;
+
+      document.querySelectorAll('.type-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById('logEventType').value = btn.dataset.type;
         });
-      }
+      });
+      document.querySelectorAll('.supp-del[data-eid]').forEach(btn => {
+        btn.addEventListener('click', () => deleteCuisineTimeEvent(parseInt(btn.dataset.eid)));
+      });
+      document.getElementById('btnAddLog').addEventListener('click', addCuisineTimeEvent);
+    }
+
+    async function addCuisineTimeEvent() {
+      const { userId, dayDate } = _logCtx;
+      const min = parseInt(document.getElementById('logMin').value) || 0;
+      if (!min) { showToast('Entrez un nombre de minutes', 'warning'); return; }
+      const note = document.getElementById('logNote').value.trim();
+      const type = document.getElementById('logEventType').value || 'supp';
+      const res = await api.post('/api/cuisine/time-events', { user_id: userId, date: dayDate, minutes: min, note, type });
+      if (res?.ok) { await load(); _renderLogBody(); showToast('Saisie enregistrée', 'success'); }
+      else showToast(res?.error || 'Erreur', 'error');
+    }
+
+    async function deleteCuisineTimeEvent(eventId) {
+      const r = await fetch(`/api/cuisine/time-events/${eventId}`, { method: 'DELETE' });
+      if (r.status === 401) { window.location.href = '/'; return; }
+      await load();
+      _renderLogBody();
+      showToast('Saisie supprimée', 'info');
     }
 
     // ── Shift editor ─────────────────────────────────────────────────────────
