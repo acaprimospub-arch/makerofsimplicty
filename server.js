@@ -1396,13 +1396,16 @@ app.put('/api/admin/conge-requests/:id', requireAdminOrManager, (req, res) => {
   if (status === 'approved' || status === 'rejected') {
     try {
       const user = db.getUserById(conge.user_id);
+      console.log(`[Congé] sync planning — status=${status} user_id=${conge.user_id} shift=${user?.shift} dates=${conge.date_from}→${conge.date_to}`);
       if (user) {
         const isCuisine = user.shift === 'cuisine';
         const dates = _dateRange(conge.date_from, conge.date_to);
+        console.log(`[Congé] dates à insérer:`, dates, `isCuisine=${isCuisine}`);
         dates.forEach(dayDate => {
           const weekStart = _getMondayOf(dayDate);
           if (status === 'approved') {
             const params = { user_id: conge.user_id, week_start: weekStart, day_date: dayDate, start_time: null, end_time: null, is_off: 1 };
+            console.log(`[Congé] upsert planning:`, params);
             if (isCuisine) db.upsertCuisinePlanning(params);
             else db.upsertSallePlanning(params);
           } else {
@@ -1410,9 +1413,12 @@ app.put('/api/admin/conge-requests/:id', requireAdminOrManager, (req, res) => {
             else db.deleteSallePlanningShift(conge.user_id, dayDate);
           }
         });
+        console.log(`[Congé] sync planning terminée`);
+      } else {
+        console.warn(`[Congé] user_id=${conge.user_id} introuvable en DB`);
       }
     } catch(e) {
-      console.error('[Congé] Erreur sync planning:', e.message);
+      console.error('[Congé] Erreur sync planning:', e.message, e.stack);
     }
   }
 

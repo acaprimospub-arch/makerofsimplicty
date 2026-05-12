@@ -101,7 +101,13 @@
           <h1 class="page-title">Planning Cuisine</h1>
           <p class="page-subtitle" id="weekSubtitle"></p>
         </div>
-        <button id="btnValidate" class="btn btn-primary hidden">Valider le planning</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <a href="/staff/planning.html" id="btnSalleLink" class="btn-cuisine-link hidden" style="text-decoration:none">
+            <svg viewBox="0 0 20 20" fill="currentColor" style="width:15px;height:15px"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+            Planning Salle
+          </a>
+          <button id="btnValidate" class="btn btn-primary hidden">Valider le planning</button>
+        </div>
       </header>
 
       <div role="group" aria-label="Navigation par semaine" class="week-nav">
@@ -319,6 +325,9 @@
       } else {
         document.getElementById('btnValidate').classList.remove('hidden');
         document.getElementById('btnValidate').addEventListener('click', e => openPreview(e.currentTarget));
+      }
+      if (user.role === 'admin' || user.role === 'manager') {
+        document.getElementById('btnSalleLink').classList.remove('hidden');
       }
       await load();
     }

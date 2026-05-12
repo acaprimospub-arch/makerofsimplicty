@@ -199,16 +199,17 @@ async function buildNav(activePage) {
   if (!nav) return;
 
   const adminLinks = [
-    { href: '/admin/dashboard.html',    label: 'Dashboard',    key: 'dashboard' },
-    { href: '/admin/manager.html',      label: 'Manager',      key: 'manager' },
-    { href: '/admin/equipe.html',       label: 'Équipe',       key: 'equipe' },
-    { href: '/staff/reservations.html', label: 'Réservations', key: 'reservations' },
-    { href: '/staff/tables.html',       label: 'Salle',        key: 'tables' },
-    { href: '/cuisine/index.html',      label: 'Cuisine',      key: 'cuisine' },
-    { href: '/admin/email.html',        label: 'Email',        key: 'email' },
-    { href: '/resa/devis.html',         label: 'Devis',        key: 'resa-devis' },
-    { href: '/staff/planning.html',     label: 'Planning',     key: 'planning' },
-    { href: '/staff/conges.html',       label: 'Congés',       key: 'conges' },
+    { href: '/admin/dashboard.html',    label: 'Dashboard',       key: 'dashboard' },
+    { href: '/admin/manager.html',      label: 'Manager',         key: 'manager' },
+    { href: '/admin/equipe.html',       label: 'Équipe',          key: 'equipe' },
+    { href: '/staff/reservations.html', label: 'Réservations',    key: 'reservations' },
+    { href: '/staff/tables.html',       label: 'Salle',           key: 'tables' },
+    { href: '/cuisine/index.html',      label: 'Cuisine',         key: 'cuisine' },
+    { href: '/admin/email.html',        label: 'Email',           key: 'email' },
+    { href: '/resa/devis.html',         label: 'Devis',           key: 'resa-devis' },
+    { href: '/staff/planning.html',     label: 'Planning Salle',  key: 'planning' },
+    { href: '/cuisine/planning.html',   label: 'Planning Cuisine',key: 'cuisine-planning' },
+    { href: '/staff/conges.html',       label: 'Congés',          key: 'conges' },
   ];
   const managerMidiLinks = [
     { href: '/admin/dashboard.html',    label: 'Dashboard',    key: 'dashboard' },
