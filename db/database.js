@@ -4,6 +4,12 @@ const path = require('path');
 const db = new DatabaseSync(path.join(__dirname, 'mos.db'));
 db.exec('PRAGMA journal_mode = WAL');
 
+function _addDays(dateStr, n) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + n));
+  return dt.toISOString().split('T')[0];
+}
+
 // ─── Schema ────────────────────────────────────────────────────────────────────
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -1224,9 +1230,9 @@ function upsertShiftMessage({ from_shift, date, message, author_id, author_name 
 
 // ─── Cuisine Planning ──────────────────────────────────────────────────────────
 function getCuisinePlanning(weekStart) {
-  // Get all cuisine users with their shifts for this week
   const users = db.prepare("SELECT id, name FROM users WHERE shift = 'cuisine' AND active = 1 ORDER BY sort_order ASC, name").all();
-  const shifts = db.prepare("SELECT * FROM cuisine_planning WHERE week_start = ?").all(weekStart);
+  const weekEnd = _addDays(weekStart, 6);
+  const shifts = db.prepare("SELECT * FROM cuisine_planning WHERE day_date BETWEEN ? AND ?").all(weekStart, weekEnd);
   return { users, shifts };
 }
 
@@ -1249,7 +1255,8 @@ function deleteCuisinePlanningShift(userId, dayDate) {
 // ─── Salle Planning ─────────────────────────────────────────────────────────────
 function getSallePlanning(weekStart) {
   const users = db.prepare("SELECT id, name, shift FROM users WHERE shift IN ('midi','soir') AND active = 1 ORDER BY shift ASC, sort_order ASC, name ASC").all();
-  const shifts = db.prepare("SELECT * FROM salle_planning WHERE week_start = ?").all(weekStart);
+  const weekEnd = _addDays(weekStart, 6);
+  const shifts = db.prepare("SELECT * FROM salle_planning WHERE day_date BETWEEN ? AND ?").all(weekStart, weekEnd);
   return { users, shifts };
 }
 
