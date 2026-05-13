@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Pointeuse — Mos Pub Mercière</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MOS">
+  <meta name="theme-color" content="#08141c">
+  <style>
+    .clock-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+      padding: 32px 20px 20px;
+    }
+    .clock-time {
+      font-size: 3.8rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: var(--primary);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .clock-date {
+      font-size: .95rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: -18px;
+    }
+
+    .status-banner {
+      width: 100%;
+      border-radius: var(--radius-sm);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-weight: 700;
+      font-size: .95rem;
+    }
+    .status-banner.idle    { background: var(--bg-surface); color: var(--text-muted); border: 1px solid var(--border); }
+    .status-banner.in      { background: var(--success-bg); color: var(--success); border: 1px solid rgba(72,199,142,.25); }
+    .status-banner.done    { background: rgba(205,164,67,.1); color: var(--primary); border: 1px solid rgba(205,164,67,.3); }
+    .status-dot {
+      width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+    }
+    .status-banner.idle .status-dot  { background: var(--text-muted); }
+    .status-banner.in   .status-dot  { background: var(--success); animation: pulse 1.5s infinite; }
+    .status-banner.done .status-dot  { background: var(--primary); }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: .5; transform: scale(1.2); }
+    }
+    .status-info { flex: 1; }
+    .status-label { font-size: .75rem; font-weight: 600; opacity: .7; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 2px; }
+    .status-value { font-size: 1.1rem; font-weight: 800; }
+
+    .btn-clock {
+      width: 100%;
+      padding: 18px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .btn-clock:active { transform: scale(.97); }
+    .btn-clock:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-clock.btn-in  { background: var(--success); color: #fff; }
+    .btn-clock.btn-out { background: var(--danger);  color: #fff; }
+
+    .history-section { width: 100%; }
+    .history-title {
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .history-list { display: flex; flex-direction: column; gap: 8px; }
+    .history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: .88rem;
+    }
+    .history-date { font-weight: 700; color: var(--text); }
+    .history-times { color: var(--text-muted); font-size: .82rem; }
+    .history-total { font-weight: 700; color: var(--primary); font-size: .88rem; }
+  </style>
+</head>
+<body>
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
+
+  <main class="page" id="main-content" tabindex="-1">
+    <div class="container-sm">
+
+      <header class="page-header" style="margin-bottom:24px">
+        <div>
+          <h1 class="page-title">Pointeuse</h1>
+          <p class="page-subtitle" id="userName">Chargement…</p>
+        </div>
+      </header>
+
+      <section class="card" style="margin-bottom:16px">
+        <div class="clock-wrap">
+
+          <!-- Horloge en temps réel -->
+          <div>
+            <div class="clock-time" id="liveClock">00:00:00</div>
+            <div class="clock-date" id="liveDate"></div>
+          </div>
+
+          <!-- Statut du jour -->
+          <div class="status-banner idle" id="statusBanner">
+            <div class="status-dot"></div>
+            <div class="status-info">
+              <div class="status-label">Statut</div>
+              <div class="status-value" id="statusValue">Non pointé</div>
+            </div>
+          </div>
+
+          <!-- Bouton Arrivée / Départ -->
+          <button class="btn-clock btn-in" id="btnClock" type="button">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+            Pointer l'arrivée
+          </button>
+
+        </div>
+      </section>
+
+      <!-- Historique des 14 derniers jours -->
+      <section class="card">
+        <div class="card-header" style="margin-bottom:14px">
+          <h2 class="card-title" style="font-size:13px">Historique (14 jours)</h2>
+        </div>
+        <div class="history-section">
+          <div class="history-list" id="historyList">
+            <div style="color:var(--text-muted);font-size:.85rem;padding:8px 0">Chargement…</div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <div id="toast-container"></div>
+  <script src="/js/api.js"></script>
+  <script>
+    'use strict';
+    buildNav('pointeuse');
+
+    let todayEntry = null;
+
+    // ── Horloge ────────────────────────────────────────────────────────────────
+    function tick() {
+      const now = new Date();
+      document.getElementById('liveClock').textContent =
+        now.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+      document.getElementById('liveDate').textContent =
+        now.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    }
+    tick();
+    setInterval(tick, 1000);
+
+    // ── Statut ────────────────────────────────────────────────────────────────
+    function renderStatus(entry) {
+      const banner = document.getElementById('statusBanner');
+      const val    = document.getElementById('statusValue');
+      const btn    = document.getElementById('btnClock');
+
+      if (!entry) {
+        banner.className = 'status-banner idle';
+        val.textContent  = 'Non pointé';
+        btn.className    = 'btn-clock btn-in';
+        btn.innerHTML    = `<svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg> Pointer l'arrivée`;
+        btn.disabled = false;
+      } else if (!entry.left_at) {
+        banner.className = 'status-banner in';
+        val.textContent  = `Arrivée à ${entry.arrived_at}`;
+        btn.className    = 'btn-clock btn-out';
+        btn.innerHTML    = `<svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"/></svg> Pointer le départ`;
+        btn.disabled = false;
+      } else {
+        banner.className = 'status-banner done';
+        val.textContent  = `${entry.arrived_at} → ${entry.left_at}`;
+        btn.className    = 'btn-clock btn-in';
+        btn.innerHTML    = `<svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg> Journée terminée`;
+        btn.disabled = true;
+      }
+    }
+
+    // ── Historique ────────────────────────────────────────────────────────────
+    function fmtDuration(arrived, left) {
+      if (!arrived || !left) return '—';
+      const [ah, am] = arrived.split(':').map(Number);
+      const [lh, lm] = left.split(':').map(Number);
+      let mins = (lh * 60 + lm) - (ah * 60 + am);
+      if (mins < 0) mins += 1440;
+      const h = Math.floor(mins / 60), m = mins % 60;
+      return h > 0 ? `${h}h${String(m).padStart(2,'0')}` : `${m}min`;
+    }
+
+    function renderHistory(list) {
+      const el = document.getElementById('historyList');
+      if (!list.length) {
+        el.innerHTML = '<div style="color:var(--text-muted);font-size:.85rem;padding:8px 0">Aucun pointage ces 14 derniers jours</div>';
+        return;
+      }
+      const fmtDate = d => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' });
+      el.innerHTML = list.map(p => `
+        <div class="history-item">
+          <div>
+            <div class="history-date">${escapeHtml(fmtDate(p.date))}</div>
+            <div class="history-times">${p.arrived_at || '—'} → ${p.left_at || '…'}</div>
+          </div>
+          <div class="history-total">${fmtDuration(p.arrived_at, p.left_at)}</div>
+        </div>
+      `).join('');
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    async function init() {
+      const user = await api.get('/api/auth/me');
+      if (!user) return;
+      document.getElementById('userName').textContent = user.name;
+
+      // Statut du jour
+      todayEntry = await api.get('/api/pointage/today');
+      renderStatus(todayEntry);
+
+      // Historique
+      const to   = new Date().toISOString().slice(0, 10);
+      const from = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+      const hist = await api.get(`/api/pointage/history?from=${from}&to=${to}`);
+      renderHistory(hist || []);
+    }
+
+    // ── Bouton pointer ────────────────────────────────────────────────────────
+    document.getElementById('btnClock').addEventListener('click', async () => {
+      const btn = document.getElementById('btnClock');
+      btn.disabled = true;
+
+      const isIn = !todayEntry || !!todayEntry.left_at;
+      const route = isIn && !todayEntry ? '/api/pointage/clock-in'
+                  : !todayEntry?.left_at ? '/api/pointage/clock-out'
+                  : null;
+      if (!route) return;
+
+      const res = await api.post(route, {});
+      if (res?.ok) {
+        todayEntry = res.entry;
+        renderStatus(todayEntry);
+        showToast(route.includes('clock-in') ? 'Arrivée enregistrée ✓' : 'Départ enregistré ✓', 'success');
+        // Rafraîchir historique
+        const to   = new Date().toISOString().slice(0, 10);
+        const from = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+        const hist = await api.get(`/api/pointage/history?from=${from}&to=${to}`);
+        renderHistory(hist || []);
+      } else {
+        showToast('Erreur lors du pointage', 'error');
+        btn.disabled = false;
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

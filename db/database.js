@@ -1399,6 +1399,50 @@ try {
   `);
 } catch(e) {}
 
+// ─── Pointages ────────────────────────────────────────────────────────────────
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS pointages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      arrived_at TEXT,
+      left_at TEXT,
+      note TEXT,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+} catch(e) {}
+
+function getPointageToday(user_id) {
+  const today = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
+  return db.prepare('SELECT * FROM pointages WHERE user_id = ? AND date = ?').get(user_id, today);
+}
+function clockIn(user_id) {
+  const now   = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' });
+  const today = now.slice(0, 10);
+  const time  = now.slice(11, 16);
+  const existing = db.prepare('SELECT id FROM pointages WHERE user_id = ? AND date = ?').get(user_id, today);
+  if (existing) return existing.id;
+  return db.prepare('INSERT INTO pointages (user_id, date, arrived_at) VALUES (?, ?, ?)').run(user_id, today, time).lastInsertRowid;
+}
+function clockOut(user_id) {
+  const now   = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' });
+  const today = now.slice(0, 10);
+  const time  = now.slice(11, 16);
+  db.prepare('UPDATE pointages SET left_at = ? WHERE user_id = ? AND date = ? AND left_at IS NULL').run(time, user_id, today);
+}
+function getPointagesForUser(user_id, from, to) {
+  return db.prepare('SELECT * FROM pointages WHERE user_id = ? AND date BETWEEN ? AND ? ORDER BY date DESC').all(user_id, from, to);
+}
+function getAllPointagesForDate(date) {
+  return db.prepare(`
+    SELECT p.*, u.name as user_name FROM pointages p
+    JOIN users u ON u.id = p.user_id
+    WHERE p.date = ? ORDER BY p.arrived_at ASC
+  `).all(date);
+}
+
 function createCongeRequest({ user_id, user_name, date_from, date_to, motif }) {
   return db.prepare(
     'INSERT INTO conge_requests (user_id, user_name, date_from, date_to, motif) VALUES (?, ?, ?, ?, ?)'
@@ -2101,4 +2145,5 @@ module.exports = {
   logEtiquette, getEtiquettesLog,
   getTempMateriels, getTempSession, getTempHistory, upsertTempReleve, getTempWeekReport,
   getTachesPeriodiques, completeTachePeriodique, getTachePeriodiquesHistory,
+  getPointageToday, clockIn, clockOut, getPointagesForUser, getAllPointagesForDate,
 };

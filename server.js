@@ -429,6 +429,36 @@ app.get('/api/taches/periodiques/:id/history', requireAuth, (req, res) => {
   res.json(db.getTachePeriodiquesHistory(parseInt(req.params.id)));
 });
 
+// ─── Pointeuse ────────────────────────────────────────────────────────────────
+app.get('/api/pointage/today', requireAuth, (req, res) => {
+  res.json(db.getPointageToday(req.session.userId) || null);
+});
+
+app.post('/api/pointage/clock-in', requireAuth, (req, res) => {
+  const id = db.clockIn(req.session.userId);
+  const entry = db.getPointageToday(req.session.userId);
+  io.emit('pointage:updated', { userId: req.session.userId });
+  res.json({ ok: true, entry });
+});
+
+app.post('/api/pointage/clock-out', requireAuth, (req, res) => {
+  db.clockOut(req.session.userId);
+  const entry = db.getPointageToday(req.session.userId);
+  io.emit('pointage:updated', { userId: req.session.userId });
+  res.json({ ok: true, entry });
+});
+
+app.get('/api/pointage/history', requireAuth, (req, res) => {
+  const from = req.query.from || new Date(Date.now() - 30*86400000).toISOString().slice(0,10);
+  const to   = req.query.to   || new Date().toLocaleString('sv-SE', { timeZone:'Europe/Paris' }).slice(0,10);
+  res.json(db.getPointagesForUser(req.session.userId, from, to));
+});
+
+app.get('/api/admin/pointages', requireAdminOrManager, (req, res) => {
+  const date = req.query.date || new Date().toLocaleString('sv-SE', { timeZone:'Europe/Paris' }).slice(0,10);
+  res.json(db.getAllPointagesForDate(date));
+});
+
 // Admin task management
 app.get('/api/admin/tasks', requireAdmin, (req, res) => {
   res.json(db.getAllTasks());

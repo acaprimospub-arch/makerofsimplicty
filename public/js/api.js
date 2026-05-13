@@ -243,8 +243,6 @@ async function buildNav(activePage) {
   const cuisineLinks = [
     { href: '/cuisine/taches.html',        label: 'Tâches',        key: 'cuisine-taches' },
     { href: '/cuisine/planning.html',      label: 'Planning',      key: 'cuisine-planning' },
-    { href: '/cuisine/etiquettes.html',    label: 'Étiquettes',    key: 'cuisine-etiquettes' },
-    { href: '/cuisine/temperatures.html',  label: 'Températures',  key: 'cuisine-temperatures' },
     { href: '/staff/conges.html',          label: 'Congés',        key: 'conges' },
   ];
   const marketingLinks = [
@@ -262,8 +260,12 @@ async function buildNav(activePage) {
     { href: '/resa/devis.html',      label: 'Devis',     key: 'resa-devis' },
     { href: '/staff/planning.html',  label: 'Planning',  key: 'planning' },
   ];
+  const pointeuseLinks = [
+    { href: '/staff/pointeuse.html', label: 'Pointeuse', key: 'pointeuse' },
+  ];
 
   const links = user.role === 'admin'                              ? adminLinks
+    : user.shift === 'pointeuse'                                   ? pointeuseLinks
     : user.shift === 'resa'                                        ? resaLinks
     : user.shift === 'marketing'                                   ? marketingLinks
     : user.shift === 'cuisine'                                     ? cuisineLinks
