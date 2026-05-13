@@ -302,6 +302,10 @@ app.use(session({
 }));
 
 // ─── Helpers date (tout en UTC pour éviter les décalages de fuseau horaire) ────
+function _addDays(dateStr, n) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().split('T')[0];
+}
 function _getMondayOf(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
@@ -497,9 +501,25 @@ app.delete('/api/salle/planning', requireAdminOrManager, (req, res) => {
 app.get('/api/salle/hours', requireAuth, (req, res) => {
   const weekStart = req.query.weekStart;
   if (!weekStart) return res.status(400).json({ error: 'weekStart requis' });
+  const weekEnd    = _addDays(weekStart, 6);
   const planning   = db.getSallePlanning(weekStart);
   const timeEvents = db.getSalleTimeEventsForWeek(weekStart);
   const snapshots  = db.getSalleSnapshot(weekStart);
+
+  // Injecter les congés approuvés directement depuis conge_requests
+  const conges = db.getAllCongeRequests().filter(c =>
+    c.status === 'approved' && c.date_from <= weekEnd && c.date_to >= weekStart
+  );
+  conges.forEach(conge => {
+    const from = conge.date_from > weekStart ? conge.date_from : weekStart;
+    const to   = conge.date_to   < weekEnd   ? conge.date_to   : weekEnd;
+    _dateRange(from, to).forEach(dayDate => {
+      if (!planning.shifts.find(s => s.user_id === conge.user_id && s.day_date === dayDate)) {
+        planning.shifts.push({ user_id: conge.user_id, week_start: weekStart, day_date: dayDate, start_time: null, end_time: null, is_off: 1 });
+      }
+    });
+  });
+
   res.json({ ...planning, timeEvents, snapshots });
 });
 
@@ -533,7 +553,25 @@ app.post('/api/salle/snapshot', requireAdminOrManager, (req, res) => {
 app.get('/api/cuisine/planning', requireAuth, (req, res) => {
   const weekStart = req.query.weekStart;
   if (!weekStart) return res.status(400).json({ error: 'weekStart requis' });
-  res.json(db.getCuisinePlanning(weekStart));
+  const weekEnd = _addDays(weekStart, 6);
+  const data = db.getCuisinePlanning(weekStart);
+
+  // Injecter les congés approuvés cuisine directement depuis conge_requests
+  const conges = db.getAllCongeRequests().filter(c =>
+    c.status === 'approved' && c.date_from <= weekEnd && c.date_to >= weekStart
+  );
+  conges.forEach(conge => {
+    if (!data.users.find(u => u.id === conge.user_id)) return; // pas un user cuisine
+    const from = conge.date_from > weekStart ? conge.date_from : weekStart;
+    const to   = conge.date_to   < weekEnd   ? conge.date_to   : weekEnd;
+    _dateRange(from, to).forEach(dayDate => {
+      if (!data.shifts.find(s => s.user_id === conge.user_id && s.day_date === dayDate)) {
+        data.shifts.push({ user_id: conge.user_id, week_start: weekStart, day_date: dayDate, start_time: null, end_time: null, is_off: 1 });
+      }
+    });
+  });
+
+  res.json(data);
 });
 
 app.put('/api/cuisine/planning', requireCuisineManager, (req, res) => {
