@@ -205,8 +205,7 @@ async function buildNav(activePage) {
     { href: '/staff/tables.html',       label: 'Salle',           key: 'tables' },
     { href: '/cuisine/index.html',      label: 'Cuisine',         key: 'cuisine' },
     { href: '/admin/admin.html',         label: 'Admin',           key: 'admin-tools' },
-    { href: '/staff/planning.html',     label: 'Planning Salle',  key: 'planning' },
-    { href: '/cuisine/planning.html',   label: 'Planning Cuisine',key: 'cuisine-planning' },
+    { href: '/staff/planning.html',     label: 'Planning',        key: 'planning' },
     { href: '/staff/conges.html',       label: 'Congés',          key: 'conges' },
   ];
   const managerMidiLinks = [
@@ -240,7 +239,7 @@ async function buildNav(activePage) {
   ];
   const cuisineLinks = [
     { href: '/cuisine/taches.html',        label: 'Tâches',        key: 'cuisine-taches' },
-    { href: '/cuisine/planning.html',      label: 'Planning',      key: 'cuisine-planning' },
+    { href: '/staff/planning.html',         label: 'Planning',      key: 'planning' },
     { href: '/staff/conges.html',          label: 'Congés',        key: 'conges' },
   ];
   const marketingLinks = [
