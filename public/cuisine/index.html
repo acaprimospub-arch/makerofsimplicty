@@ -273,38 +273,6 @@
           <button class="date-nav-btn" id="btnDashNext" aria-label="Jour suivant">Demain →</button>
         </div>
 
-        <!-- Widget températures -->
-        <a href="/cuisine/temperatures.html" class="temp-widget" id="tempWidget" aria-label="Relevés de températures">
-          <div class="temp-widget-header">
-            <span style="font-size:1rem">🌡️</span>
-            <span class="temp-widget-title">Relevés de températures</span>
-            <span class="temp-widget-cta">Accéder →</span>
-          </div>
-          <div class="temp-shifts" id="tempShifts">
-            <div class="temp-shift-pill miss">
-              <span class="tsp-icon">⏳</span>
-              <span class="tsp-label">Midi</span>
-              <span class="tsp-status miss">À faire</span>
-            </div>
-            <div class="temp-shift-pill miss">
-              <span class="tsp-icon">⏳</span>
-              <span class="tsp-label">Soir</span>
-              <span class="tsp-status miss">À faire</span>
-            </div>
-          </div>
-          <div class="temp-alert-strip" id="tempAlertStrip" style="display:none"></div>
-        </a>
-
-        <!-- Widget alertes DLC étiquettes -->
-        <a href="/cuisine/etiquettes.html" class="temp-widget" id="dlcWidget" aria-label="Alertes DLC étiquettes" style="display:none">
-          <div class="temp-widget-header">
-            <span style="font-size:1rem">🏷️</span>
-            <span class="temp-widget-title">Alertes DLC étiquettes</span>
-            <span class="temp-widget-cta">Voir →</span>
-          </div>
-          <div id="dlcAlertList"></div>
-        </a>
-
         <section class="dash-card" aria-labelledby="dash-planning-title">
           <h2 class="dash-card-title" id="dash-planning-title">Planning du jour</h2>
           <div id="dashPlanningToday" aria-live="polite" aria-atomic="true"></div>

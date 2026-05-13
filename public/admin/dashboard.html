@@ -167,20 +167,6 @@
         <div class="section-divider-line"></div>
       </div>
 
-      <!-- Planning PDF -->
-      <section class="card mb-6" aria-labelledby="planning-title">
-        <div class="card-header">
-          <h2 class="card-title" id="planning-title">Planning staff — Salle</h2>
-        </div>
-        <p id="current-planning-info" class="text-sm text-muted mb-4">Chargement…</p>
-        <label class="btn btn-secondary btn-sm" style="cursor:pointer;">
-          <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="14" height="14"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
-          Importer un PDF
-          <input type="file" accept=".pdf,application/pdf" id="planning-file-input" style="display:none" aria-label="Fichier PDF du planning">
-        </label>
-        <p id="planning-upload-status" aria-live="polite" class="text-sm mt-2"></p>
-      </section>
-
       <!-- KPI Salle -->
       <section aria-label="Indicateurs salle" class="mb-6">
         <div class="kpi-grid" id="kpi-grid">
@@ -358,11 +344,6 @@
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       if (e.key === 'ArrowLeft')  shiftDate(-1);
       if (e.key === 'ArrowRight') shiftDate(1);
-    });
-
-    // ── Upload planning PDF ──
-    document.getElementById('planning-file-input').addEventListener('change', function() {
-      uploadPlanningPDF(this);
     });
 
     async function loadAll() {
@@ -657,34 +638,6 @@
         </div>`;
     }
 
-    // ── Planning PDF ──
-    async function loadCurrentPlanning() {
-      const pdf = await api.get('/api/staff/planning-pdf');
-      const el = document.getElementById('current-planning-info');
-      if (!pdf) { el.textContent = 'Aucun planning importé.'; return; }
-      el.innerHTML = `Planning actuel\u00a0: <strong>${escapeHtml(pdf.original_name)}</strong><br>
-        Importé le ${escapeHtml((pdf.uploaded_at || '').slice(0, 16).replace('T', ' '))}`;
-    }
-
-    async function uploadPlanningPDF(input) {
-      const file = input.files[0];
-      if (!file) return;
-      const status = document.getElementById('planning-upload-status');
-      status.textContent = 'Envoi en cours…';
-      const fd = new FormData();
-      fd.append('file', file);
-      try {
-        const r = await fetch('/api/admin/planning-pdf', { method: 'POST', body: fd });
-        const data = await r.json();
-        if (!r.ok) { status.textContent = 'Erreur : ' + (data.error || 'inconnue'); return; }
-        status.textContent = 'Planning mis à jour.';
-        input.value = '';
-        loadCurrentPlanning();
-        setTimeout(() => { status.textContent = ''; }, 3000);
-      } catch {
-        status.textContent = 'Erreur réseau.';
-      }
-    }
 
     // ── Socket.io ──
     const socket = io();
@@ -700,7 +653,6 @@
 
     // ── Init ──
     loadAll();
-    loadCurrentPlanning();
     setInterval(() => loadAll(), 60000);
   </script>
 </body>

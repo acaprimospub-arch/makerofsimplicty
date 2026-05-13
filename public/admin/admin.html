@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Gestion Admin — Mos Pub Mercière</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MOS">
+  <meta name="theme-color" content="#08141c">
+  <style>
+    /* ── Email config ── */
+    .help-box {
+      background:rgba(230,184,74,.08); border:1px solid rgba(230,184,74,.3);
+      border-radius:10px; padding:14px 16px; font-size:.83rem; line-height:1.6;
+      margin-bottom:20px;
+    }
+    .help-box strong { color:var(--primary); }
+    .help-box ol { margin:8px 0 0 16px; padding:0; }
+    .help-box li { margin-bottom:4px; }
+    .help-box code { background:rgba(255,255,255,.1); padding:1px 6px; border-radius:4px; font-size:.8rem; }
+
+    /* ── Devis layout ── */
+    @media(min-width: 900px) {
+      .devis-layout { display:grid; grid-template-columns:1fr 320px; gap:16px; }
+    }
+    @media(max-width: 899px) {
+      .devis-layout { display:flex; flex-direction:column; gap:16px; }
+    }
+    .devis-recap { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+
+    /* ── Devis config ── */
+    .config-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .config-grid .full { grid-column:1/-1; }
+
+    /* ── Budget bar ── */
+    .budget-bar-wrap { margin-bottom:16px; padding:12px 14px; background:var(--bg-surface); border:1px solid var(--border); border-radius:10px; }
+    .budget-bar-header { display:flex; justify-content:space-between; font-size:12px; margin-bottom:8px; }
+    .budget-label { color:var(--text-muted); }
+    .budget-value { font-weight:700; }
+    .budget-value.over { color:var(--danger); }
+    .budget-value.ok   { color:var(--success); }
+    .budget-track { height:8px; background:var(--border); border-radius:4px; overflow:hidden; }
+    .budget-fill  { height:100%; border-radius:4px; background:var(--success); transition:width .3s ease,background .3s ease; }
+    .budget-fill.over { background:var(--danger); }
+    .budget-fill.warn { background:var(--orange); }
+
+    /* ── Menu tabs (devis) ── */
+    .menu-tabs { display:flex; gap:6px; margin-bottom:14px; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:4px; }
+    .menu-tab { flex:1; padding:7px 4px; border-radius:7px; border:none; background:none; color:var(--text-muted); font-size:13px; font-weight:600; cursor:pointer; }
+    .menu-tab[aria-selected="true"] { background:var(--primary); color:#000; }
+
+    /* ── Items menu ── */
+    .menu-section { display:none; }
+    .menu-section.active { display:block; }
+    .menu-item { display:flex; align-items:center; gap:12px; padding:10px 12px; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; margin-bottom:8px; transition:border-color .15s,background .15s; }
+    .menu-item.selected { border-color:var(--primary); background:rgba(230,184,74,.07); }
+    .menu-item-info { flex:1; min-width:0; }
+    .menu-item-name { font-size:13px; font-weight:700; margin-bottom:2px; }
+    .menu-item-desc { font-size:11px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .menu-item-price { font-size:13px; font-weight:700; color:var(--primary); min-width:54px; text-align:right; }
+    .qty-stepper { display:flex; align-items:center; gap:4px; flex-shrink:0; }
+    .qty-btn { width:28px; height:28px; border-radius:50%; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; }
+    .qty-val { width:28px; text-align:center; font-size:14px; font-weight:700; }
+    .suggest-btn { font-size:10px; padding:2px 6px; border-radius:10px; border:1px solid rgba(230,184,74,.4); background:rgba(230,184,74,.08); color:var(--primary); cursor:pointer; white-space:nowrap; flex-shrink:0; }
+    .btn-suggest-all { width:100%; padding:8px; border-radius:8px; border:1px dashed rgba(230,184,74,.5); background:rgba(230,184,74,.06); color:var(--primary); font-size:12px; cursor:pointer; margin-bottom:14px; }
+
+    /* ── Recap ── */
+    .recap-title { font-size:14px; font-weight:700; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+    .recap-item { display:flex; justify-content:space-between; align-items:baseline; font-size:13px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,.04); }
+    .recap-item-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:8px; }
+    .recap-item-qty   { color:var(--text-muted); font-size:11px; margin-right:4px; }
+    .recap-item-price { font-weight:600; color:var(--primary); flex-shrink:0; }
+    .recap-empty { color:var(--text-muted); font-size:12px; text-align:center; padding:16px 0; }
+    .recap-totals { margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
+    .recap-line { display:flex; justify-content:space-between; font-size:13px; padding:4px 0; color:var(--text-muted); }
+    .recap-line.ttc { font-size:16px; font-weight:700; color:var(--text); padding-top:8px; margin-top:4px; border-top:1px solid var(--border); }
+    .recap-line.perpers { font-size:11px; color:var(--text-muted); margin-top:4px; }
+    .tva-note { font-size:10px; color:var(--text-muted); margin-top:6px; text-align:center; }
+    .devis-actions { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
+
+    /* ── Print ── */
+    @media print {
+      nav, .tabs, #pane-email, .devis-main-col, .budget-bar-wrap, .devis-actions, .btn-suggest-all, .menu-tabs, .menu-section { display:none !important; }
+      .devis-layout { display:block !important; }
+      .devis-recap { border:none !important; padding:0 !important; width:100% !important; }
+      .recap-title::before { content:"Devis — Mos Pub Mercière\A"; white-space:pre; font-size:20px; }
+      body { background:white !important; color:black !important; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
+
+  <main class="page" id="main-content" tabindex="-1">
+    <div class="container-sm">
+
+      <header class="page-header" style="margin-bottom:20px;">
+        <h1 class="page-title">Gestion Admin</h1>
+      </header>
+
+      <!-- Onglets -->
+      <div role="tablist" aria-label="Sections" style="margin-bottom:20px;" class="tabs">
+        <button role="tab" class="tab active" id="tab-email" aria-selected="true"  aria-controls="pane-email">Email</button>
+        <button role="tab" class="tab"         id="tab-devis" aria-selected="false" aria-controls="pane-devis" tabindex="-1">Devis</button>
+      </div>
+
+      <!-- ═══ PANEL EMAIL ═══ -->
+      <div role="tabpanel" id="pane-email" aria-labelledby="tab-email">
+
+        <!-- Statut -->
+        <section class="card" style="margin-bottom:16px;" aria-labelledby="status-section-title">
+          <div class="card-header">
+            <h2 class="card-title" id="status-section-title">Statut</h2>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+            <div id="statusBadge" aria-live="polite" aria-atomic="true"></div>
+            <div style="font-size:.82rem;color:var(--text-muted);">
+              Dernier envoi : <span id="lastSent" style="color:var(--text)">—</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Config SMTP -->
+        <section class="card" style="margin-bottom:16px;" aria-labelledby="config-section-title">
+          <div class="card-header">
+            <h2 class="card-title" id="config-section-title">Configuration Gmail</h2>
+          </div>
+
+          <div class="help-box" role="note">
+            <strong>Comment obtenir le mot de passe d'application Gmail ?</strong>
+            <ol>
+              <li>Va sur <strong>myaccount.google.com</strong> → Sécurité</li>
+              <li>Active la <strong>validation en 2 étapes</strong> si ce n'est pas fait</li>
+              <li>Cherche <strong>"Mots de passe des applications"</strong></li>
+              <li>Crée un mot de passe pour <code>Mos Pub</code></li>
+              <li>Copie le code de 16 caractères généré → colle-le ci-dessous</li>
+            </ol>
+          </div>
+
+          <form id="configForm" novalidate>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <div class="form-group">
+                <label class="form-label" for="emailUser">Adresse Gmail (expéditeur) <span class="required" aria-hidden="true">*</span></label>
+                <input type="email" id="emailUser" placeholder="exemple@gmail.com" autocomplete="off" aria-required="true">
+                <div class="field-error" id="emailUser-error" role="alert" hidden></div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="emailPass">
+                  Mot de passe d'application
+                  <span style="font-weight:400;color:var(--text-muted)">(16 caractères)</span>
+                </label>
+                <input type="password" id="emailPass" placeholder="xxxx xxxx xxxx xxxx" autocomplete="new-password" aria-describedby="emailPass-hint">
+                <p id="emailPass-hint" class="field-hint">Laisse vide pour ne pas modifier le mot de passe existant.</p>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;margin-top:4px;">Enregistrer</button>
+          </form>
+        </section>
+
+        <!-- Test -->
+        <section class="card" style="margin-bottom:16px;" aria-labelledby="test-section-title">
+          <div class="card-header">
+            <h2 class="card-title" id="test-section-title">Test d'envoi</h2>
+          </div>
+          <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:16px;">
+            Envoie immédiatement le planning de la semaine en cours à <strong>pverdier.mospub@gmail.com</strong>.
+          </p>
+          <button class="btn btn-secondary" style="width:100%" id="btnTest">
+            Envoyer un email de test maintenant
+          </button>
+          <div id="test-result" aria-live="polite" aria-atomic="true" style="margin-top:10px;"></div>
+        </section>
+
+        <!-- Info auto -->
+        <section class="card" style="border-color:rgba(230,184,74,.3);background:rgba(230,184,74,.05);" aria-labelledby="auto-section-title">
+          <div class="card-header">
+            <h2 class="card-title" id="auto-section-title">Envoi automatique</h2>
+          </div>
+          <p style="font-size:.84rem;color:var(--text-muted);line-height:1.6;margin:0;">
+            Chaque <strong style="color:var(--text)">lundi matin entre 8h et 10h</strong>, le planning de la semaine en cours est envoyé automatiquement avec les horaires, totaux et signalements.
+          </p>
+        </section>
+
+      </div>
+
+      <!-- ═══ PANEL DEVIS ═══ -->
+      <div role="tabpanel" id="pane-devis" aria-labelledby="tab-devis" hidden>
+
+        <div class="devis-layout">
+
+          <!-- Colonne gauche : config + menu -->
+          <div class="devis-main-col">
+
+            <!-- Config client -->
+            <section class="card" style="margin-bottom:14px;" aria-labelledby="infoHeading">
+              <div class="card-header" style="margin-bottom:12px;">
+                <h2 class="card-title" id="infoHeading" style="font-size:13px;">Informations</h2>
+              </div>
+              <div class="config-grid">
+                <div class="form-group full">
+                  <label class="form-label" for="cfgClient">Client</label>
+                  <input type="text" id="cfgClient" placeholder="Nom du client" autocomplete="off">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="cfgDate">Date</label>
+                  <input type="date" id="cfgDate">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="cfgPax">Nb. de personnes</label>
+                  <input type="number" id="cfgPax" value="10" min="1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="cfgBudget">Budget / personne (€ TTC)</label>
+                  <input type="number" id="cfgBudget" value="25" min="0" step="0.5">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="cfgTva">TVA applicable</label>
+                  <select id="cfgTva">
+                    <option value="10" selected>10 % — Restauration</option>
+                    <option value="5.5">5,5 % — Vente à emporter</option>
+                    <option value="20">20 % — Boissons alcoolisées</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            <!-- Barre budget -->
+            <div class="budget-bar-wrap">
+              <div class="budget-bar-header">
+                <span class="budget-label">Budget total : <strong id="budgetTotal">—</strong></span>
+                <span class="budget-value" id="budgetStatus" aria-live="polite">0,00 € utilisés</span>
+              </div>
+              <div class="budget-track" role="progressbar" id="budgetTrack" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Budget utilisé">
+                <div class="budget-fill" id="budgetFill" style="width:0%"></div>
+              </div>
+            </div>
+
+            <button class="btn-suggest-all" id="btnSuggestAll">
+              <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              Suggérer les quantités automatiquement
+            </button>
+
+            <!-- Onglets menu -->
+            <div class="menu-tabs" role="tablist" aria-label="Catégories du menu">
+              <button class="menu-tab" id="tabTapas" role="tab" aria-selected="true" aria-controls="sec-tapas">Tapas</button>
+              <button class="menu-tab" id="tabBurgers" role="tab" aria-selected="false" aria-controls="sec-burgers">Burgers &amp; Cie</button>
+            </div>
+
+            <div class="menu-section active" id="sec-tapas" role="tabpanel" aria-labelledby="tabTapas"></div>
+            <div class="menu-section" id="sec-burgers" role="tabpanel" aria-labelledby="tabBurgers" hidden></div>
+
+          </div>
+
+          <!-- Colonne droite : récap -->
+          <aside class="devis-recap" aria-label="Récapitulatif du devis">
+            <h2 class="recap-title">Récapitulatif</h2>
+            <div id="recapItems" aria-live="polite"><p class="recap-empty">Aucun article sélectionné</p></div>
+
+            <div class="recap-totals" id="recapTotals" hidden>
+              <div class="recap-line"><span>Sous-total HT</span><span id="totalHT">—</span></div>
+              <div class="recap-line"><span id="tvaLabel">TVA 10 %</span><span id="totalTVA">—</span></div>
+              <div class="recap-line ttc"><span>Total TTC</span><span id="totalTTC">—</span></div>
+              <div class="recap-line perpers"><span>Par personne</span><span id="totalPerPers">—</span></div>
+              <p class="tva-note">Prix nets, service compris. TVA calculée sur la base des prix TTC.</p>
+            </div>
+
+            <div class="devis-actions">
+              <button class="btn btn-primary" id="btnPrint">
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                Imprimer / PDF
+              </button>
+              <button class="btn" id="btnReset" style="color:var(--danger);border-color:var(--danger)">
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                Réinitialiser
+              </button>
+            </div>
+          </aside>
+
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+  <script src="/js/api.js"></script>
+  <script>
+    'use strict';
+    buildNav('admin-tools');
+
+    // ── Tabs ──────────────────────────────────────────────────────────────────
+    const TABS = ['email', 'devis'];
+    let _devisInit = false;
+
+    function switchTab(tab) {
+      TABS.forEach(t => {
+        const btn   = document.getElementById(`tab-${t}`);
+        const panel = document.getElementById(`pane-${t}`);
+        const active = t === tab;
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        btn.setAttribute('tabindex', active ? '0' : '-1');
+        btn.classList.toggle('active', active);
+        panel.hidden = !active;
+      });
+      if (tab === 'email' && !_emailLoaded) { loadEmailStatus(); _emailLoaded = true; }
+      if (tab === 'devis' && !_devisInit)   { initDevis(); _devisInit = true; }
+    }
+    let _emailLoaded = false;
+
+    document.querySelectorAll('[role="tablist"] [role="tab"]').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.id.replace('tab-', '')));
+      btn.addEventListener('keydown', e => {
+        const idx = TABS.indexOf(btn.id.replace('tab-', ''));
+        let next = -1;
+        if (e.key === 'ArrowRight') next = (idx + 1) % TABS.length;
+        if (e.key === 'ArrowLeft')  next = (idx - 1 + TABS.length) % TABS.length;
+        if (e.key === 'Home') next = 0;
+        if (e.key === 'End')  next = TABS.length - 1;
+        if (next >= 0) { e.preventDefault(); switchTab(TABS[next]); document.getElementById(`tab-${TABS[next]}`).focus(); }
+      });
+    });
+
+    // ═══════════════════════════════════════════
+    // TAB EMAIL
+    // ═══════════════════════════════════════════
+
+    async function loadEmailStatus() {
+      const data = await api.get('/api/admin/email-config');
+      if (!data) return;
+      const badgeEl = document.getElementById('statusBadge');
+      if (data.configured) {
+        badgeEl.innerHTML = `<span class="badge badge-success" role="status">Gmail configuré</span>`;
+      } else {
+        badgeEl.innerHTML = `<span class="badge badge-warning" role="status">Non configuré</span>`;
+      }
+      if (data.user) document.getElementById('emailUser').value = data.user;
+      document.getElementById('lastSent').textContent = data.lastSent
+        ? new Date(data.lastSent + 'T00:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
+        : 'Jamais';
+    }
+
+    document.getElementById('configForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const userEl = document.getElementById('emailUser');
+      const user   = userEl.value.trim();
+      const errEl  = document.getElementById('emailUser-error');
+      if (!user) {
+        userEl.setAttribute('aria-invalid', 'true');
+        errEl.textContent = 'Adresse Gmail requise.';
+        errEl.hidden = false;
+        userEl.focus();
+        return;
+      }
+      userEl.setAttribute('aria-invalid', 'false');
+      errEl.hidden = true;
+      const pass = document.getElementById('emailPass').value.trim();
+      const res  = await api.put('/api/admin/email-config', { user, pass: pass || undefined });
+      if (res?.ok) {
+        showToast('Configuration enregistrée', 'success');
+        document.getElementById('emailPass').value = '';
+        await loadEmailStatus();
+      }
+    });
+
+    document.getElementById('btnTest').addEventListener('click', async function() {
+      const btn      = this;
+      const resultEl = document.getElementById('test-result');
+      btn.disabled   = true;
+      btn.textContent = 'Envoi en cours…';
+      resultEl.textContent = '';
+      const res = await api.post('/api/admin/email-test', {});
+      btn.disabled = false;
+      btn.textContent = 'Envoyer un email de test maintenant';
+      if (res?.ok) {
+        resultEl.innerHTML = `<span class="badge badge-success">Email envoyé à pverdier.mospub@gmail.com</span>`;
+        showToast('Email envoyé', 'success');
+        await loadEmailStatus();
+      } else {
+        resultEl.innerHTML = `<span class="badge badge-danger">Erreur : ${escapeHtml(res?.error || 'Vérifiez la configuration')}</span>`;
+        showToast('Erreur d\'envoi', 'error');
+      }
+    });
+
+    // ═══════════════════════════════════════════
+    // TAB DEVIS
+    // ═══════════════════════════════════════════
+
+    const MENU = {
+      tapas: [
+        { id:'t1', name:'Planche Mixte',          desc:'Mix de charcuteries et de fromages',                               price:22.50, suggestDiv:4 },
+        { id:'t2', name:'Tranche de Pâté Croûte', desc:'Jeunes pousses, pickles d\'oignons',                              price:10.00, suggestDiv:2 },
+        { id:'t3', name:'Terrine de Porc',         desc:'Jeunes pousses, pickles',                                         price: 6.50, suggestDiv:3 },
+        { id:'t4', name:'Pain à l\'Ail',           desc:'Pain ciabatta, beurre à l\'ail maison',                           price: 7.00, suggestDiv:3 },
+        { id:'t5', name:'Aiguillettes de Poulet',  desc:'Sauce creamy bbq',                                                price:10.00, suggestDiv:2 },
+        { id:'t6', name:'Burrata & Pain Grillé',   desc:'Burrata crémeuse, vierge d\'herbes, pain grillé',                 price:10.00, suggestDiv:3 },
+        { id:'t7', name:'Potatoes',                desc:'Pommes de terre grenaille maison',                                price: 6.50, suggestDiv:3 },
+        { id:'t8', name:'Potatoes Sauce Gruyère',  desc:'Pommes de terre grenaille, sauce gruyère maison',                price: 8.50, suggestDiv:3 },
+        { id:'t9', name:'Saucisson Sec',           desc:'',                                                                price: 8.00, suggestDiv:4 },
+      ],
+      burgers: [
+        { id:'b1', name:'Beef Burger',           desc:'Steak bœuf frais, bacon, cheddar, oignons frits, pickles, sauce MOS', price:17.00, suggestDiv:1 },
+        { id:'b2', name:'Chicken Burger',        desc:'Aiguillettes de poulet, cheddar, chou, carottes, mayo cajun',          price:15.50, suggestDiv:1 },
+        { id:'b3', name:'Fish Burger',           desc:'Filet de poisson en tempura, concombre, cheddar, sauce tartare',       price:16.00, suggestDiv:1 },
+        { id:'b4', name:'Grilled Triple Cheese', desc:'Pain Banneton, cheddar, emmental, brie, oignons déglassés',            price:14.00, suggestDiv:1 },
+        { id:'b5', name:'Berlinois',             desc:'Veau et poulet grillés façon kebab, salade, chou, sauce blanche',      price:15.50, suggestDiv:1 },
+        { id:'b6', name:'Croque Truffé',         desc:'Saint-Nectaire, jambon blanc, béchamel truffée',                      price:15.00, suggestDiv:1 },
+        { id:'b7', name:'Fish and Chips',        desc:'Cabillaud en tempura, citron, sauce tartare maison',                   price:16.50, suggestDiv:1 },
+      ]
+    };
+
+    const qtys = {};
+    [...MENU.tapas, ...MENU.burgers].forEach(i => qtys[i.id] = 0);
+
+    function initDevis() {
+      const params  = new URLSearchParams(location.search);
+      const resaName = params.get('name');
+      const resaPax  = parseInt(params.get('pax') || '0');
+      const resaDate = params.get('date');
+      if (resaName) document.getElementById('cfgClient').value = resaName;
+      if (resaPax)  document.getElementById('cfgPax').value = resaPax;
+      if (resaDate) document.getElementById('cfgDate').value = resaDate;
+      if (!document.getElementById('cfgDate').value) {
+        document.getElementById('cfgDate').value = new Date().toISOString().split('T')[0];
+      }
+
+      document.getElementById('tabTapas').addEventListener('click',   () => switchMenu('tapas'));
+      document.getElementById('tabBurgers').addEventListener('click', () => switchMenu('burgers'));
+
+      document.getElementById('cfgClient').addEventListener('input', updateRecap);
+      document.getElementById('cfgDate').addEventListener('input', updateRecap);
+      document.getElementById('cfgPax').addEventListener('input', updateAll);
+      document.getElementById('cfgBudget').addEventListener('input', updateAll);
+      document.getElementById('cfgTva').addEventListener('change', updateAll);
+      document.getElementById('btnSuggestAll').addEventListener('click', suggestAll);
+      document.getElementById('btnPrint').addEventListener('click', () => window.print());
+      document.getElementById('btnReset').addEventListener('click', () => {
+        if (!confirm('Réinitialiser toutes les quantités ?')) return;
+        Object.keys(qtys).forEach(k => qtys[k] = 0);
+        renderAll();
+        updateAll();
+      });
+
+      renderAll();
+      updateAll();
+    }
+
+    function switchMenu(key) {
+      ['tapas','burgers'].forEach(k => {
+        const tab = document.getElementById(k === 'tapas' ? 'tabTapas' : 'tabBurgers');
+        const sec = document.getElementById('sec-' + k);
+        tab.setAttribute('aria-selected', String(k === key));
+        sec.classList.toggle('active', k === key);
+        sec.hidden = k !== key;
+      });
+    }
+
+    function renderMenuSection(items, sectionId) {
+      const sec = document.getElementById(sectionId);
+      sec.innerHTML = '';
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = `menu-item ${qtys[item.id] > 0 ? 'selected' : ''}`;
+        div.id = `mi-${item.id}`;
+        div.innerHTML = `
+          <div class="menu-item-info">
+            <div class="menu-item-name">${escapeHtml(item.name)}</div>
+            ${item.desc ? `<div class="menu-item-desc">${escapeHtml(item.desc)}</div>` : ''}
+          </div>
+          <span class="menu-item-price">${item.price.toFixed(2).replace('.',',')} €</span>
+          <button class="suggest-btn" data-suggest="${item.id}">Auto</button>
+          <div class="qty-stepper" role="group" aria-label="Quantité">
+            <button class="qty-btn" data-minus="${item.id}">−</button>
+            <span class="qty-val" id="qv-${item.id}" aria-live="polite">${qtys[item.id]}</span>
+            <button class="qty-btn" data-plus="${item.id}">+</button>
+          </div>`;
+        div.querySelector('[data-suggest]').addEventListener('click', () => suggestOne(item.id));
+        div.querySelector('[data-minus]').addEventListener('click',   () => adjustQty(item.id, -1));
+        div.querySelector('[data-plus]').addEventListener('click',    () => adjustQty(item.id,  1));
+        sec.appendChild(div);
+      });
+    }
+
+    function renderAll() {
+      renderMenuSection(MENU.tapas,   'sec-tapas');
+      renderMenuSection(MENU.burgers, 'sec-burgers');
+    }
+
+    function adjustQty(id, delta) {
+      qtys[id] = Math.max(0, (qtys[id] || 0) + delta);
+      const valEl  = document.getElementById('qv-' + id);
+      const cardEl = document.getElementById('mi-' + id);
+      if (valEl)  valEl.textContent = qtys[id];
+      if (cardEl) cardEl.classList.toggle('selected', qtys[id] > 0);
+      updateAll();
+    }
+
+    function suggestOne(id) {
+      const item = [...MENU.tapas, ...MENU.burgers].find(i => i.id === id);
+      if (!item) return;
+      const pax = parseInt(document.getElementById('cfgPax').value) || 1;
+      qtys[id] = Math.ceil(pax / item.suggestDiv);
+      const valEl  = document.getElementById('qv-' + id);
+      const cardEl = document.getElementById('mi-' + id);
+      if (valEl)  valEl.textContent = qtys[id];
+      if (cardEl) cardEl.classList.toggle('selected', qtys[id] > 0);
+      updateAll();
+    }
+
+    function suggestAll() {
+      const pax    = parseInt(document.getElementById('cfgPax').value) || 1;
+      const budget = parseFloat(document.getElementById('cfgBudget').value) || 0;
+      const totalBudget = pax * budget;
+      Object.keys(qtys).forEach(k => qtys[k] = 0);
+      let running = 0;
+      [...MENU.tapas, ...MENU.burgers].forEach(item => {
+        const suggested = Math.ceil(pax / item.suggestDiv);
+        const cost = suggested * item.price;
+        if (totalBudget === 0 || running + cost <= totalBudget) {
+          qtys[item.id] = suggested;
+          running += cost;
+        }
+      });
+      renderAll();
+      updateAll();
+    }
+
+    function updateAll() { updateBudget(); updateRecap(); }
+
+    function updateBudget() {
+      const pax    = parseInt(document.getElementById('cfgPax').value) || 0;
+      const budget = parseFloat(document.getElementById('cfgBudget').value) || 0;
+      const total  = pax * budget;
+      const used   = calcTotalTTC();
+      const pct    = total > 0 ? Math.min((used / total) * 100, 100) : 0;
+      const remaining = total - used;
+      document.getElementById('budgetTotal').textContent = total > 0 ? fmt(total) + ' €' : '—';
+      const statusEl = document.getElementById('budgetStatus');
+      const fillEl   = document.getElementById('budgetFill');
+      const trackEl  = document.getElementById('budgetTrack');
+      statusEl.textContent = fmt(used) + ' € utilisés' + (total > 0 ? (remaining >= 0 ? ` · ${fmt(remaining)} € restants` : ` · ${fmt(-remaining)} € dépassés`) : '');
+      statusEl.className = 'budget-value ' + (total > 0 && used > total ? 'over' : 'ok');
+      fillEl.style.width  = pct + '%';
+      fillEl.className    = 'budget-fill' + (pct >= 100 ? ' over' : pct >= 85 ? ' warn' : '');
+      trackEl.setAttribute('aria-valuenow', Math.round(pct));
+    }
+
+    function calcTotalTTC() {
+      return [...MENU.tapas, ...MENU.burgers].reduce((s, i) => s + (qtys[i.id] || 0) * i.price, 0);
+    }
+
+    function updateRecap() {
+      const tvaRate  = parseFloat(document.getElementById('cfgTva').value) / 100;
+      const pax      = parseInt(document.getElementById('cfgPax').value) || 1;
+      const allItems = [...MENU.tapas, ...MENU.burgers];
+      const selected = allItems.filter(i => (qtys[i.id] || 0) > 0);
+      const recapEl  = document.getElementById('recapItems');
+      const totalsEl = document.getElementById('recapTotals');
+      if (!selected.length) {
+        recapEl.innerHTML = '<p class="recap-empty">Aucun article sélectionné</p>';
+        totalsEl.hidden = true;
+        return;
+      }
+      recapEl.innerHTML = selected.map(i => `
+        <div class="recap-item">
+          <span class="recap-item-name">${escapeHtml(i.name)}</span>
+          <span class="recap-item-qty">×${qtys[i.id]}</span>
+          <span class="recap-item-price">${fmt(qtys[i.id] * i.price)} €</span>
+        </div>`).join('');
+      const ttc = calcTotalTTC();
+      const ht  = ttc / (1 + tvaRate);
+      const tva = ttc - ht;
+      document.getElementById('totalHT').textContent  = fmt(ht)  + ' €';
+      document.getElementById('totalTVA').textContent = fmt(tva) + ' €';
+      document.getElementById('totalTTC').textContent = fmt(ttc) + ' €';
+      document.getElementById('totalPerPers').textContent = fmt(ttc / pax) + ' € / pers.';
+      document.getElementById('tvaLabel').textContent = `TVA ${document.getElementById('cfgTva').value} %`;
+      totalsEl.hidden = false;
+    }
+
+    function fmt(n) { return n.toFixed(2).replace('.', ','); }
+
+    // ── Init ──
+    const startTab = new URLSearchParams(location.search).get('tab') || 'email';
+    loadEmailStatus();
+    if (startTab === 'devis') switchTab('devis');
+  </script>
+</body>
+</html>

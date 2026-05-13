@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Équipe — Mos Pub Mercière</title>
+  <title>Gestion Staff — Mos Pub Mercière</title>
   <link rel="stylesheet" href="/css/main.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
@@ -36,6 +36,70 @@
     .staff-group-body { border-top: 1px solid var(--border); }
     .staff-group-body .table-wrap { border-radius: 0; }
     .staff-group-body table { border-radius: 0; }
+
+    /* ── Tâches ── */
+    .cat-toggle {
+      width:100%; display:flex; align-items:center; justify-content:space-between;
+      background:var(--bg-surface); border:1px solid var(--border);
+      border-radius:var(--radius-sm); padding:10px 14px;
+      cursor:pointer; font-size:.88rem; font-weight:700;
+      color:var(--text); transition:background .12s;
+    }
+    .cat-toggle:hover { background:var(--bg-hover); }
+    .cat-toggle-right { display:flex; align-items:center; gap:8px; color:var(--text-muted); font-weight:400; font-size:.78rem; }
+    .cat-arrow { font-size:.75rem; transition:transform .2s; display:inline-block; }
+    .cat-arrow.open { transform:rotate(90deg); }
+    .cat-body { overflow:hidden; transition:max-height .25s ease; max-height:0; }
+    .cat-body.open { max-height:2000px; }
+    .cat-body-inner { padding:4px 0 8px; }
+    .task-row {
+      display:flex; align-items:center; gap:10px;
+      padding:10px 0; border-bottom:1px solid var(--border); font-size:.88rem;
+    }
+    .task-row:last-child { border-bottom:none; padding-bottom:0; }
+    .task-row:first-child { padding-top:0; }
+    .task-desc { flex:1; min-width:0; }
+
+    /* ── Résas ── */
+    .date-nav { display:flex; align-items:center; gap:8px; }
+    .date-nav button {
+      background:var(--bg-card); border:1px solid var(--border);
+      color:var(--text); border-radius:8px; width:34px; height:34px; min-height:34px;
+      cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center;
+    }
+    .date-nav button:hover { background:var(--bg-hover); }
+    .date-nav input[type="date"] {
+      background:var(--bg-card); border:1px solid var(--border);
+      color:var(--text); border-radius:8px; padding:5px 10px; font-size:0.85rem;
+    }
+    .resa-unassigned {
+      display:flex; align-items:center; gap:12px;
+      padding:12px 0; border-bottom:1px solid var(--border);
+    }
+    .resa-unassigned:last-child { border-bottom:none; padding-bottom:0; }
+    .resa-unassigned:first-child { padding-top:0; }
+    .resa-time { font-weight:800; font-size:1.1rem; min-width:52px; }
+    .resa-info { flex:1; min-width:0; }
+    .resa-name { font-weight:700; font-size:.9rem; }
+    .resa-meta { font-size:.78rem; color:var(--text-muted); margin-top:2px; }
+    .kpi-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+    @media (max-width:480px) { .kpi-row { grid-template-columns:repeat(2,1fr); } }
+    .kpi-box {
+      background:var(--bg-surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:12px 14px; text-align:center;
+    }
+    .kpi-val { font-size:1.5rem; font-weight:800; line-height:1; }
+    .kpi-lbl { font-size:.72rem; color:var(--text-muted); margin-top:4px; }
+
+    /* ── Retards ── */
+    .staff-event-row {
+      display:flex; flex-direction:column; gap:6px;
+      padding:12px 0; border-bottom:1px solid var(--border);
+    }
+    .staff-event-row:last-child { border-bottom:none; padding-bottom:0; }
+    .staff-event-row:first-child { padding-top:0; }
+    .staff-event-header { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .staff-event-name { font-weight:700; font-size:.95rem; flex:1; min-width:0; }
   </style>
 </head>
 <body>
@@ -43,41 +107,106 @@
 
   <main class="page" id="main-content" tabindex="-1">
     <div class="container-sm">
-      <div class="page-header">
+
+      <header class="page-header">
         <div>
-          <h1 class="page-title">Gestion de l'équipe</h1>
-          <p class="page-subtitle">Créez et gérez les codes PIN de votre staff</p>
+          <h1 class="page-title">Gestion Staff</h1>
         </div>
-        <div class="page-actions">
-          <div class="flex items-center gap-3">
-            <label for="staff-search" class="sr-only">Filtrer l'équipe</label>
-            <input
-              type="search"
-              id="staff-search"
-              placeholder="Rechercher un membre…"
-              aria-label="Filtrer les membres de l'équipe"
-              style="width:220px;"
-            >
-          </div>
-          <button class="btn btn-primary" id="btn-add" type="button">
-            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="16" height="16"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
-            Ajouter un membre
-          </button>
-        </div>
+      </header>
+
+      <!-- Onglets -->
+      <div role="tablist" aria-label="Sections" style="margin-bottom:20px;" class="tabs">
+        <button role="tab" class="tab active" id="tab-equipe" aria-selected="true"  aria-controls="pane-equipe">Équipe</button>
+        <button role="tab" class="tab"         id="tab-taches" aria-selected="false" aria-controls="pane-taches" tabindex="-1">Tâches</button>
+        <button role="tab" class="tab"         id="tab-resas"  aria-selected="false" aria-controls="pane-resas"  tabindex="-1">Résas</button>
       </div>
 
-      <div id="staff-list">
-        <div class="empty-state">
-          <div class="empty-state-icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><circle cx="24" cy="16" r="8"/><path d="M8 40c0-8.837 7.163-16 16-16s16 7.163 16 16"/></svg>
-          </div>
-          <p class="empty-state-text">Chargement…</p>
+      <!-- ═══ PANEL ÉQUIPE ═══ -->
+      <div role="tabpanel" id="pane-equipe" aria-labelledby="tab-equipe">
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+          <label for="staff-search" class="sr-only">Filtrer l'équipe</label>
+          <input type="search" id="staff-search" placeholder="Rechercher un membre…"
+            aria-label="Filtrer les membres de l'équipe" style="flex:1;min-width:160px;">
+          <button class="btn btn-primary" id="btn-add" type="button">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="16" height="16">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+            </svg>
+            Ajouter
+          </button>
         </div>
+
+        <div id="staff-list">
+          <div class="empty-state">
+            <div class="empty-state-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"><circle cx="24" cy="16" r="8"/><path d="M8 40c0-8.837 7.163-16 16-16s16 7.163 16 16"/></svg>
+            </div>
+            <p class="empty-state-text">Chargement…</p>
+          </div>
+        </div>
+
+        <section class="card" style="margin-top:16px;">
+          <div class="card-header">
+            <h2 class="card-title" style="font-size:13px">Retards &amp; heures supp — 7 jours</h2>
+          </div>
+          <div id="staffEvents"></div>
+        </section>
+
       </div>
+
+      <!-- ═══ PANEL TÂCHES ═══ -->
+      <div role="tabpanel" id="pane-taches" aria-labelledby="tab-taches" hidden>
+
+        <section class="card" style="margin-bottom:16px;">
+          <div class="card-header">
+            <h2 class="card-title">Salle — aujourd'hui</h2>
+            <button class="btn btn-primary btn-sm" id="btn-add-salle">+ Ajouter</button>
+          </div>
+          <div id="taskListSalle"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">Cuisine — aujourd'hui</h2>
+            <button class="btn btn-primary btn-sm" id="btn-add-cuisine">+ Ajouter</button>
+          </div>
+          <div id="taskListCuisine"></div>
+        </section>
+
+      </div>
+
+      <!-- ═══ PANEL RÉSAS ═══ -->
+      <div role="tabpanel" id="pane-resas" aria-labelledby="tab-resas" hidden>
+
+        <section class="card" style="margin-bottom:16px;">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Résas sans table</h2>
+              <div class="card-subtitle" id="resaDateLabel"></div>
+            </div>
+            <div role="group" aria-label="Navigation par date" class="date-nav">
+              <button id="btn-prev-date" aria-label="Jour précédent">‹</button>
+              <label for="resaDateInput" class="sr-only">Date</label>
+              <input type="date" id="resaDateInput">
+              <button id="btn-next-date" aria-label="Jour suivant">›</button>
+            </div>
+          </div>
+          <div id="unassignedList"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">Stats — 7 derniers jours</h2>
+          </div>
+          <div id="resaStats"></div>
+        </section>
+
+      </div>
+
     </div>
   </main>
 
-  <!-- ══ Modal Ajouter / Modifier ══ -->
+  <!-- ══ Modal Ajouter / Modifier membre ══ -->
   <div class="modal-overlay hidden" id="add-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal">
       <div class="modal-header">
@@ -86,62 +215,30 @@
           <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
         </button>
       </div>
-
       <form id="staff-form" novalidate>
         <input type="hidden" id="staff-id">
         <div class="flex flex-col gap-4">
-
           <div class="form-group">
-            <label class="form-label" for="staff-name">
-              Prénom / Nom <span class="required" aria-hidden="true">*</span>
-            </label>
-            <input
-              type="text"
-              id="staff-name"
-              placeholder="Ex : Julie Martin"
-              required
-              aria-required="true"
-              autocomplete="name"
-            >
+            <label class="form-label" for="staff-name">Prénom / Nom <span class="required" aria-hidden="true">*</span></label>
+            <input type="text" id="staff-name" placeholder="Ex : Julie Martin" required aria-required="true" autocomplete="name">
             <p class="field-error hidden" id="err-name" role="alert">
               <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M6 1a5 5 0 100 10A5 5 0 006 1zm.5 7h-1v-1h1v1zm0-2h-1V4h1v2z"/></svg>
               Ce champ est requis.
             </p>
           </div>
-
           <div class="form-row form-row-2">
             <div class="form-group">
-              <label class="form-label" for="staff-pin">
-                Code PIN <span class="required" aria-hidden="true">*</span>
-                <span class="text-xs text-subtle">(4–6 chiffres)</span>
-              </label>
-              <input
-                type="text"
-                id="staff-pin"
-                placeholder="Ex : 1234"
-                maxlength="6"
-                pattern="[0-9]{4,6}"
-                required
-                aria-required="true"
-                inputmode="numeric"
-                autocomplete="off"
-                aria-describedby="pin-hint err-pin"
-              >
-              <!-- Jauge de force -->
-              <div class="pin-strength" aria-hidden="true">
-                <div class="pin-strength-fill" id="pin-strength-fill" style="width:0;"></div>
-              </div>
+              <label class="form-label" for="staff-pin">Code PIN <span class="required" aria-hidden="true">*</span> <span class="text-xs text-subtle">(4–6 chiffres)</span></label>
+              <input type="text" id="staff-pin" placeholder="Ex : 1234" maxlength="6" pattern="[0-9]{4,6}" required aria-required="true" inputmode="numeric" autocomplete="off" aria-describedby="pin-hint err-pin">
+              <div class="pin-strength" aria-hidden="true"><div class="pin-strength-fill" id="pin-strength-fill" style="width:0;"></div></div>
               <p class="field-hint" id="pin-hint">4 à 6 chiffres uniquement.</p>
               <p class="field-error hidden" id="err-pin" role="alert">
                 <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M6 1a5 5 0 100 10A5 5 0 006 1zm.5 7h-1v-1h1v1zm0-2h-1V4h1v2z"/></svg>
                 PIN invalide (4–6 chiffres requis).
               </p>
             </div>
-
             <div class="form-group">
-              <label class="form-label" for="staff-poste">
-                Poste <span class="required" aria-hidden="true">*</span>
-              </label>
+              <label class="form-label" for="staff-poste">Poste <span class="required" aria-hidden="true">*</span></label>
               <select id="staff-poste" required aria-required="true">
                 <option value="staff_midi">Staff Midi</option>
                 <option value="staff_soir">Staff Soir</option>
@@ -154,27 +251,15 @@
               </select>
             </div>
           </div>
-
           <div class="form-group">
-            <label class="form-label" for="staff-email">
-              Email
-              <span class="text-xs text-subtle">(optionnel — pour recevoir le planning)</span>
-            </label>
-            <input
-              type="email"
-              id="staff-email"
-              placeholder="prenom.nom@email.com"
-              autocomplete="email"
-            >
+            <label class="form-label" for="staff-email">Email <span class="text-xs text-subtle">(optionnel — pour recevoir le planning)</span></label>
+            <input type="email" id="staff-email" placeholder="prenom.nom@email.com" autocomplete="email">
           </div>
-
         </div>
-
         <p class="field-error hidden mt-3" id="err-form" role="alert">
           <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M6 1a5 5 0 100 10A5 5 0 006 1zm.5 7h-1v-1h1v1zm0-2h-1V4h1v2z"/></svg>
           <span id="err-form-msg"></span>
         </p>
-
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="modal-cancel-btn">Annuler</button>
           <button type="submit" class="btn btn-primary" id="modal-save-btn">Enregistrer</button>
@@ -183,7 +268,49 @@
     </div>
   </div>
 
-  <!-- ══ Modal Confirmer la suppression ══ -->
+  <!-- ══ Modal créer tâche ══ -->
+  <div class="modal-overlay hidden" id="taskModal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="task-modal-title">Nouvelle tâche</h2>
+        <button class="modal-close" id="task-modal-close" aria-label="Fermer">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <form id="taskForm" novalidate>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="form-group">
+            <label class="form-label" for="taskDesc">Description <span class="required" aria-hidden="true">*</span></label>
+            <input type="text" id="taskDesc" placeholder="Ex: Nettoyer les frigos" required aria-required="true" autocomplete="off">
+            <div class="field-error" id="taskDesc-error" role="alert" hidden></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="taskCategory">Catégorie</label>
+            <select id="taskCategory">
+              <option value="matin">Matin</option>
+              <option value="passation">Passation</option>
+              <option value="soir">Soir</option>
+              <option value="nettoyage">Nettoyage</option>
+            </select>
+          </div>
+          <input type="hidden" id="taskDomain" value="salle">
+          <div id="taskDomainLabel" class="badge badge-info" style="width:fit-content;" aria-live="polite"></div>
+          <div class="form-group">
+            <label class="form-label" for="taskSection">Section <span style="color:var(--text-muted);font-weight:400;">(optionnel)</span></label>
+            <input type="text" id="taskSection" placeholder="Ex: Bar, Caisse..." autocomplete="off">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="task-cancel-btn">Annuler</button>
+          <button type="submit" class="btn btn-primary">Créer la tâche</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══ Modal confirmer suppression ══ -->
   <div class="modal-overlay hidden" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
     <div class="modal modal-sm">
       <div class="modal-header">
@@ -193,8 +320,7 @@
         </button>
       </div>
       <p style="color:var(--text-muted);font-size:0.9rem;line-height:1.5;">
-        Voulez-vous désactiver <strong id="delete-staff-name"></strong> ?
-        Cette personne ne pourra plus se connecter.
+        Voulez-vous désactiver <strong id="delete-staff-name"></strong> ? Cette personne ne pourra plus se connecter.
       </p>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" id="delete-cancel-btn">Annuler</button>
@@ -209,22 +335,76 @@
     'use strict';
     buildNav('equipe');
 
+    // ── State ──
     let allStaff = [];
     let deleteId = null;
 
-    // ── Chargement ──
-    async function loadStaff() {
-      const staff = await api.get('/api/admin/staff');
-      if (!staff) return;
-      allStaff = staff;
-      renderStaff(allStaff);
+    // ── Helpers communs ──
+    function todayStr() { return new Date().toISOString().split('T')[0]; }
+    function weekRange() {
+      const to   = todayStr();
+      const from = new Date();
+      from.setDate(from.getDate() - 6);
+      return { from: from.toISOString().split('T')[0], to };
+    }
+    function fmtDate(str) {
+      return new Date(str + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+    }
+    function posteLabel(s) {
+      if (s.role === 'admin')                         return { label: 'Admin',          cls: 'badge-primary' };
+      if (s.role === 'manager' && s.shift === 'midi') return { label: 'Manager Midi',   cls: 'badge-warning' };
+      if (s.role === 'manager' && s.shift === 'soir') return { label: 'Manager Soir',   cls: 'badge-warning' };
+      if (s.shift === 'midi')      return { label: 'Staff Midi',     cls: 'badge-info'    };
+      if (s.shift === 'soir')      return { label: 'Staff Soir',     cls: 'badge-muted'   };
+      if (s.shift === 'cuisine')   return { label: 'Staff Cuisine',  cls: 'badge-purple'  };
+      if (s.shift === 'marketing') return { label: 'Marketing',      cls: 'badge-success' };
+      if (s.shift === 'resa')      return { label: 'Réservations',   cls: 'badge-info'    };
+      return { label: s.shift || s.role, cls: 'badge-muted' };
     }
 
+    // ── Tabs ──
+    const TABS = ['equipe', 'taches', 'resas'];
+    function switchTab(tab) {
+      TABS.forEach(t => {
+        const btn   = document.getElementById(`tab-${t}`);
+        const panel = document.getElementById(`pane-${t}`);
+        const active = t === tab;
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        btn.setAttribute('tabindex', active ? '0' : '-1');
+        btn.classList.toggle('active', active);
+        panel.hidden = !active;
+      });
+      if (tab === 'taches' && !_tachesLoaded) { loadTaches(); _tachesLoaded = true; }
+      if (tab === 'resas'  && !_resasLoaded)  { loadResas();  _resasLoaded  = true; }
+    }
+    let _tachesLoaded = false, _resasLoaded = false;
+
+    document.querySelectorAll('[role="tablist"] [role="tab"]').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.id.replace('tab-', '')));
+      btn.addEventListener('keydown', e => {
+        const idx = TABS.indexOf(btn.id.replace('tab-', ''));
+        let next = -1;
+        if (e.key === 'ArrowRight') next = (idx + 1) % TABS.length;
+        if (e.key === 'ArrowLeft')  next = (idx - 1 + TABS.length) % TABS.length;
+        if (e.key === 'Home')       next = 0;
+        if (e.key === 'End')        next = TABS.length - 1;
+        if (next >= 0) {
+          e.preventDefault();
+          switchTab(TABS[next]);
+          document.getElementById(`tab-${TABS[next]}`).focus();
+        }
+      });
+    });
+
+    // ═══════════════════════════════════════════
+    // TAB ÉQUIPE
+    // ═══════════════════════════════════════════
+
     const GROUPS = [
-      { key: 'midi',      label: 'Staff Midi',    color: 'var(--primary)',  test: s => s.shift === 'midi' },
-      { key: 'soir',      label: 'Staff Soir',    color: '#9b59b6',         test: s => s.shift === 'soir' },
-      { key: 'cuisine',   label: 'Staff Cuisine', color: '#e67e22',         test: s => s.shift === 'cuisine' },
-      { key: 'autres',    label: 'Autres',        color: 'var(--text-muted)', test: s => !['midi','soir','cuisine'].includes(s.shift) },
+      { key: 'midi',    label: 'Staff Midi',    color: 'var(--primary)',    test: s => s.shift === 'midi' },
+      { key: 'soir',    label: 'Staff Soir',    color: '#9b59b6',           test: s => s.shift === 'soir' },
+      { key: 'cuisine', label: 'Staff Cuisine', color: '#e67e22',           test: s => s.shift === 'cuisine' },
+      { key: 'autres',  label: 'Autres',        color: 'var(--text-muted)', test: s => !['midi','soir','cuisine'].includes(s.shift) },
     ];
 
     function staffTableHTML(list) {
@@ -273,8 +453,7 @@
             <div class="empty-state-icon" aria-hidden="true">
               <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48"><circle cx="24" cy="16" r="8"/><path d="M8 40c0-8.837 7.163-16 16-16s16 7.163 16 16"/></svg>
             </div>
-            <p class="empty-state-title">Aucun membre</p>
-            <p class="empty-state-text">Commencez par ajouter un membre à l'équipe.</p>
+            <p class="empty-state-text">Aucun membre trouvé.</p>
           </div>`;
         return;
       }
@@ -283,7 +462,6 @@
 
       container.innerHTML = GROUPS.map(g => {
         const list = staff.filter(g.test);
-        // Ouvrir par défaut si le groupe a des membres
         const open = list.length > 0 ? 'open' : '';
         return `
           <details class="staff-group" ${open} data-group="${g.key}">
@@ -299,7 +477,6 @@
           </details>`;
       }).join('');
 
-      // Délégation d'événements
       container.querySelectorAll('.edit-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const id = parseInt(btn.dataset.id, 10);
@@ -314,30 +491,60 @@
       });
     }
 
-    // ── Libellés de poste ──
-    function posteLabel(s) {
-      if (s.role === 'admin') return { label: 'Admin', cls: 'badge-primary' };
-      if (s.role === 'manager' && s.shift === 'midi')   return { label: 'Manager Midi', cls: 'badge-warning' };
-      if (s.role === 'manager' && s.shift === 'soir')   return { label: 'Manager Soir', cls: 'badge-warning' };
-      if (s.shift === 'midi')      return { label: 'Staff Midi',     cls: 'badge-info' };
-      if (s.shift === 'soir')      return { label: 'Staff Soir',     cls: 'badge-muted' };
-      if (s.shift === 'cuisine')   return { label: 'Staff Cuisine',  cls: 'badge-purple' };
-      if (s.shift === 'marketing') return { label: 'Marketing',      cls: 'badge-success' };
-      if (s.shift === 'resa')      return { label: 'Réservations',   cls: 'badge-info' };
-      return { label: s.shift || s.role, cls: 'badge-muted' };
+    async function loadStaff() {
+      const { from, to } = weekRange();
+      const [staff, timeEvents] = await Promise.all([
+        api.get('/api/admin/staff'),
+        api.get(`/api/cuisine/time-events?from=${from}&to=${to}`)
+      ]);
+      if (!staff) return;
+      allStaff = staff;
+      renderStaff(allStaff);
+
+      // Retards & heures supp
+      const evByUser = {};
+      (timeEvents || []).forEach(e => {
+        if (!evByUser[e.user_name]) evByUser[e.user_name] = { retards:0, retardMin:0, supps:0, suppMin:0 };
+        if (e.type === 'retard') { evByUser[e.user_name].retards++; evByUser[e.user_name].retardMin += e.minutes; }
+        else                     { evByUser[e.user_name].supps++;   evByUser[e.user_name].suppMin   += e.minutes; }
+      });
+
+      const evEl = document.getElementById('staffEvents');
+      const activeStaff = staff.filter(s => s.active && s.role !== 'admin');
+      if (!activeStaff.length) {
+        evEl.innerHTML = `<div class="empty-state"><div class="empty-state-text">Aucun membre actif.</div></div>`;
+        return;
+      }
+      evEl.innerHTML = `<ul role="list" style="list-style:none;margin:0;padding:0;">` +
+        activeStaff.map(s => {
+          const ev = evByUser[s.name] || {};
+          const p  = posteLabel(s);
+          return `
+            <li class="staff-event-row">
+              <div class="staff-event-header">
+                <span class="staff-event-name">${escapeHtml(s.name)}</span>
+                <span class="badge ${p.cls}">${escapeHtml(p.label)}</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;">
+                ${ev.retards
+                  ? `<span class="badge badge-danger">${ev.retards} retard${ev.retards>1?'s':''} — ${ev.retardMin} min</span>`
+                  : `<span class="badge badge-muted">0 retard</span>`}
+                ${ev.supps ? `<span class="badge badge-info">${ev.supps} h. supp — ${ev.suppMin} min</span>` : ''}
+              </div>
+            </li>`;
+        }).join('') + `</ul>`;
     }
 
-    // ── Recherche en temps réel ──
+    // ── Recherche ──
     document.getElementById('staff-search').addEventListener('input', function() {
       const q = this.value.toLowerCase();
       const filtered = allStaff.filter(s =>
-        s.name.toLowerCase().includes(q) ||
-        (s.email || '').toLowerCase().includes(q)
+        s.name.toLowerCase().includes(q) || (s.email || '').toLowerCase().includes(q)
       );
       renderStaff(filtered);
     });
 
-    // ── Ouvrir modal Ajouter ──
+    // ── Modal ajouter ──
     function openAdd() {
       document.getElementById('modal-title').textContent = 'Ajouter un membre';
       document.getElementById('staff-id').value = '';
@@ -348,7 +555,7 @@
     }
     document.getElementById('btn-add').addEventListener('click', openAdd);
 
-    // ── Ouvrir modal Modifier ──
+    // ── Modal modifier ──
     function editStaff(s, triggerBtn) {
       document.getElementById('modal-title').textContent = 'Modifier un membre';
       document.getElementById('staff-id').value = s.id;
@@ -367,7 +574,6 @@
     document.getElementById('modal-close-btn').addEventListener('click', () => hideModal('add-modal'));
     document.getElementById('modal-cancel-btn').addEventListener('click', () => hideModal('add-modal'));
     document.getElementById('add-modal').addEventListener('click', e => { if (e.target.id === 'add-modal') hideModal('add-modal'); });
-
     document.getElementById('delete-modal-close').addEventListener('click', () => hideModal('delete-modal'));
     document.getElementById('delete-cancel-btn').addEventListener('click', () => hideModal('delete-modal'));
     document.getElementById('delete-modal').addEventListener('click', e => { if (e.target.id === 'delete-modal') hideModal('delete-modal'); });
@@ -388,29 +594,23 @@
       updatePinStrength(this.value);
     });
 
-    // ── Validation ──
+    // ── Validation form ──
     function clearFormErrors() {
-      ['err-name', 'err-pin', 'err-form'].forEach(id => {
-        document.getElementById(id).classList.add('hidden');
-      });
+      ['err-name', 'err-pin', 'err-form'].forEach(id => document.getElementById(id).classList.add('hidden'));
       document.getElementById('staff-name').removeAttribute('aria-invalid');
       document.getElementById('staff-pin').removeAttribute('aria-invalid');
     }
-
     function showFieldError(fieldId, errId) {
-      const field = document.getElementById(fieldId);
-      field.setAttribute('aria-invalid', 'true');
+      document.getElementById(fieldId).setAttribute('aria-invalid', 'true');
       document.getElementById(errId).classList.remove('hidden');
     }
 
-    // ── Enregistrer ──
     document.getElementById('staff-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       clearFormErrors();
       let valid = true;
       const nameVal = document.getElementById('staff-name').value.trim();
       const pinVal  = document.getElementById('staff-pin').value.trim();
-
       if (!nameVal) { showFieldError('staff-name', 'err-name'); valid = false; }
       if (!pinVal || !/^\d{4,6}$/.test(pinVal)) { showFieldError('staff-pin', 'err-pin'); valid = false; }
       if (!valid) return;
@@ -420,25 +620,12 @@
       const parts = poste.split('_');
       const role  = parts[0];
       const shift = parts.slice(1).join('_');
-
-      const body = {
-        name:  nameVal,
-        pin:   pinVal,
-        role,
-        shift,
-        email: document.getElementById('staff-email').value.trim() || null,
-      };
+      const body  = { name: nameVal, pin: pinVal, role, shift, email: document.getElementById('staff-email').value.trim() || null };
 
       const saveBtn = document.getElementById('modal-save-btn');
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Enregistrement…';
-
-      const result = id
-        ? await api.put(`/api/admin/staff/${id}`, body)
-        : await api.post('/api/admin/staff', body);
-
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'Enregistrer';
+      saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement…';
+      const result = id ? await api.put(`/api/admin/staff/${id}`, body) : await api.post('/api/admin/staff', body);
+      saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer';
 
       if (result?.error) {
         document.getElementById('err-form-msg').textContent = result.error;
@@ -451,23 +638,19 @@
       loadStaff();
     });
 
-    // ── Demander suppression ──
+    // ── Suppression ──
     function askDelete(id, name, triggerBtn) {
       deleteId = id;
       document.getElementById('delete-staff-name').textContent = name;
       showModal('delete-modal', triggerBtn);
-      // Focus sur le bouton Annuler (action par défaut sûre)
       setTimeout(() => document.getElementById('delete-cancel-btn').focus(), 50);
     }
-
     document.getElementById('delete-confirm-btn').addEventListener('click', async () => {
       if (!deleteId) return;
       const btn = document.getElementById('delete-confirm-btn');
-      btn.disabled = true;
-      btn.textContent = 'Suppression…';
+      btn.disabled = true; btn.textContent = 'Suppression…';
       const result = await api.delete(`/api/admin/staff/${deleteId}`);
-      btn.disabled = false;
-      btn.textContent = 'Supprimer';
+      btn.disabled = false; btn.textContent = 'Supprimer';
       if (result?.error) { showToast(result.error, 'error'); return; }
       hideModal('delete-modal');
       showToast('Membre supprimé', 'info');
@@ -475,6 +658,176 @@
       loadStaff();
     });
 
+    // ═══════════════════════════════════════════
+    // TAB TÂCHES
+    // ═══════════════════════════════════════════
+
+    const CAT_LABEL = { matin:'Matin', passation:'Passation', soir:'Soir', nettoyage:'Nettoyage' };
+    const CAT_ORDER = ['matin', 'passation', 'soir', 'nettoyage'];
+
+    function toggleCat(id) {
+      const body  = document.getElementById(id);
+      const btn   = document.querySelector(`[aria-controls="${id}"]`);
+      const open  = body.classList.toggle('open');
+      const arrow = btn && btn.querySelector('.cat-arrow');
+      if (arrow) arrow.classList.toggle('open', open);
+      if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    function renderDomainTasks(tasks, listEl) {
+      const grouped = {};
+      tasks.forEach(t => {
+        if (!grouped[t.category]) grouped[t.category] = [];
+        grouped[t.category].push(t);
+      });
+      const cats = CAT_ORDER.filter(c => grouped[c]);
+      if (!cats.length) {
+        listEl.innerHTML = `<div class="empty-state"><div class="empty-state-text">Aucune tâche.</div></div>`;
+        return;
+      }
+      listEl.innerHTML = cats.map(c => {
+        const count = grouped[c].length;
+        const id    = `cat-${listEl.id}-${c}`;
+        return `
+          <div style="margin-bottom:6px;">
+            <button class="cat-toggle" aria-expanded="false" aria-controls="${id}">
+              <span>${escapeHtml(CAT_LABEL[c] || c)}</span>
+              <span class="cat-toggle-right">
+                <span>${count} tâche${count > 1 ? 's' : ''}</span>
+                <span class="cat-arrow" aria-hidden="true">›</span>
+              </span>
+            </button>
+            <div class="cat-body" id="${id}" role="region" aria-label="${escapeHtml(CAT_LABEL[c] || c)}">
+              <div class="cat-body-inner">
+                ${grouped[c].map(t => `
+                  <div class="task-row">
+                    <div class="task-desc">${escapeHtml(t.description)}</div>
+                    ${t.section ? `<span class="badge badge-muted">${escapeHtml(t.section)}</span>` : ''}
+                  </div>`).join('')}
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+      listEl.querySelectorAll('.cat-toggle').forEach(btn => {
+        btn.addEventListener('click', () => toggleCat(btn.getAttribute('aria-controls')));
+      });
+    }
+
+    async function loadTaches() {
+      const tasks = await api.get('/api/admin/tasks');
+      if (!tasks) return;
+      renderDomainTasks(tasks.filter(t => t.domain !== 'cuisine'), document.getElementById('taskListSalle'));
+      renderDomainTasks(tasks.filter(t => t.domain === 'cuisine'), document.getElementById('taskListCuisine'));
+    }
+
+    let _taskModalTrigger = null;
+    function openTaskModal(domain, triggerEl) {
+      _taskModalTrigger = triggerEl || null;
+      document.getElementById('taskForm').reset();
+      document.getElementById('taskDesc').setAttribute('aria-invalid', 'false');
+      document.getElementById('taskDesc-error').hidden = true;
+      document.getElementById('taskDomain').value = domain;
+      const lbl = document.getElementById('taskDomainLabel');
+      if (domain === 'cuisine') { lbl.textContent = 'Cuisine'; lbl.className = 'badge badge-warning'; }
+      else                      { lbl.textContent = 'Salle';   lbl.className = 'badge badge-info'; }
+      showModal('taskModal', triggerEl);
+    }
+
+    document.getElementById('btn-add-salle').addEventListener('click', function() { openTaskModal('salle', this); });
+    document.getElementById('btn-add-cuisine').addEventListener('click', function() { openTaskModal('cuisine', this); });
+    document.getElementById('task-modal-close').addEventListener('click', () => hideModal('taskModal'));
+    document.getElementById('task-cancel-btn').addEventListener('click', () => hideModal('taskModal'));
+    document.getElementById('taskModal').addEventListener('click', e => { if (e.target.id === 'taskModal') hideModal('taskModal'); });
+
+    document.getElementById('taskForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const descEl = document.getElementById('taskDesc');
+      const desc   = descEl.value.trim();
+      if (!desc) {
+        descEl.setAttribute('aria-invalid', 'true');
+        const errEl = document.getElementById('taskDesc-error');
+        errEl.textContent = 'La description est obligatoire.';
+        errEl.hidden = false;
+        descEl.focus();
+        return;
+      }
+      descEl.setAttribute('aria-invalid', 'false');
+      document.getElementById('taskDesc-error').hidden = true;
+      const body = {
+        description: desc,
+        category:    document.getElementById('taskCategory').value,
+        domain:      document.getElementById('taskDomain').value,
+        section:     document.getElementById('taskSection').value.trim() || null,
+      };
+      const res = await api.post('/api/admin/tasks', body);
+      if (!res) return;
+      hideModal('taskModal');
+      document.getElementById('taskForm').reset();
+      showToast('Tâche créée', 'success');
+      loadTaches();
+    });
+
+    // ═══════════════════════════════════════════
+    // TAB RÉSAS
+    // ═══════════════════════════════════════════
+
+    document.getElementById('btn-prev-date').addEventListener('click', () => shiftResaDate(-1));
+    document.getElementById('btn-next-date').addEventListener('click', () => shiftResaDate(1));
+    document.getElementById('resaDateInput').addEventListener('change', loadResas);
+
+    function shiftResaDate(n) {
+      const inp = document.getElementById('resaDateInput');
+      const d   = new Date(inp.value + 'T12:00:00');
+      d.setDate(d.getDate() + n);
+      inp.value = d.toISOString().split('T')[0];
+      loadResas();
+    }
+
+    async function loadResas() {
+      const date = document.getElementById('resaDateInput').value;
+      document.getElementById('resaDateLabel').textContent = fmtDate(date);
+      const { from, to } = weekRange();
+      const [dash, stats] = await Promise.all([
+        api.get(`/api/admin/dashboard?date=${date}`),
+        api.get(`/api/admin/reservation-stats?from=${from}&to=${to}`)
+      ]);
+
+      const unassigned = (dash?.reservations || []).filter(r => {
+        if (r.status === 'cancelled' || r.status === 'no_show') return false;
+        const ids = (() => { try { return JSON.parse(r.table_ids || '[]'); } catch(e) { return []; } })();
+        return ids.length === 0 && !r.table_id;
+      });
+
+      const listEl = document.getElementById('unassignedList');
+      if (!unassigned.length) {
+        listEl.innerHTML = `<div class="badge badge-success" style="font-size:.85rem;padding:8px 14px;">Toutes les résas ont une table assignée</div>`;
+      } else {
+        listEl.innerHTML = `<ul role="list" style="list-style:none;margin:0;padding:0;">` +
+          unassigned.map(r => `
+            <li class="resa-unassigned">
+              <time class="resa-time" datetime="${escapeHtml(r.time)}">${escapeHtml(r.time)}</time>
+              <div class="resa-info">
+                <div class="resa-name">${escapeHtml(r.customer_name)}</div>
+                <div class="resa-meta">${r.party_size} pers.${r.space ? ` · ${escapeHtml(r.space)}` : ''}${r.phone ? ` · ${escapeHtml(r.phone)}` : ''}</div>
+              </div>
+              <span class="badge badge-warning">Sans table</span>
+            </li>`).join('') + `</ul>`;
+      }
+
+      const ov = (stats && stats.overview) || {};
+      document.getElementById('resaStats').innerHTML = `
+        <div class="kpi-row" role="list" aria-label="Indicateurs 7 derniers jours">
+          <article class="kpi-box" role="listitem"><div class="kpi-val">${ov.total || 0}</div><div class="kpi-lbl">Réservations</div></article>
+          <article class="kpi-box" role="listitem"><div class="kpi-val">${ov.total_pax || 0}</div><div class="kpi-lbl">Couverts</div></article>
+          <article class="kpi-box" role="listitem"><div class="kpi-val">${ov.avg_pax || 0}</div><div class="kpi-lbl">Moy. / table</div></article>
+          <article class="kpi-box" role="listitem"><div class="kpi-val" style="color:var(--success);">${ov.nb_arrived || 0}</div><div class="kpi-lbl">Arrivées</div></article>
+          <article class="kpi-box" role="listitem"><div class="kpi-val" style="color:var(--danger);">${ov.nb_no_show || 0}</div><div class="kpi-lbl">No-shows</div></article>
+          <article class="kpi-box" role="listitem"><div class="kpi-val">${ov.total ? Math.round((ov.nb_arrived||0)/ov.total*100) : 0}%</div><div class="kpi-lbl">Taux arrivée</div></article>
+        </div>`;
+    }
+
+    // ── Init ──
+    document.getElementById('resaDateInput').value = todayStr();
     loadStaff();
   </script>
 </body>
