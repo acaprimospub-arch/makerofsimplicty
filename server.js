@@ -1053,154 +1053,32 @@ function _fmtH(mins) {
 async function generatePlanningExcel(weekStart) {
   const weekEnd = _addDays(weekStart, 6);
   const { users, shifts } = db.getCuisinePlanning(weekStart);
-  const events = db.getTimeEventsRange(weekStart, weekEnd);
-  const dayDates = Array.from({length:7}, (_,i) => _addDays(weekStart, i));
+  const conges = db.getAllCongeRequests().filter(c =>
+    c.status === 'approved' && c.date_from <= weekEnd && c.date_to >= weekStart
+  );
+  conges.forEach(conge => {
+    if (!users.find(u => u.id === conge.user_id)) return;
+    const from = conge.date_from > weekStart ? conge.date_from : weekStart;
+    const to   = conge.date_to   < weekEnd   ? conge.date_to   : weekEnd;
+    _dateRange(from, to).forEach(dayDate => {
+      if (!shifts.find(s => s.user_id === conge.user_id && s.day_date === dayDate))
+        shifts.push({ user_id: conge.user_id, day_date: dayDate, is_off: 1, is_conge: 1 });
+    });
+  });
 
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Mos Pub Mercière';
-
-  // ── Sheet 1 : Planning ──────────────────────────────────────────────────────
-  const ws = wb.addWorksheet('Planning');
-
-  const C = {
-    DARK:   'FF1A3A4A', GOLD:  'FFCDA443', GOLD_L: 'FFF9F1DC',
-    GREEN_L:'FFE8F5E9', RED_L: 'FFFCE8E8', GREY_L: 'FFF5F5F5',
-    WHITE:  'FFFFFFFF', TEXT_M:'FF888888', GREEN_D:'FF2E7D32', RED_D:'FFD32F2F',
-  };
-
-  const border = (color='FFD0D0D0') => (['top','bottom','left','right'].reduce((o,s)=>({...o,[s]:{style:'thin',color:{argb:color}}}),{}));
-
-  // Titre
-  ws.mergeCells('A1:J1');
-  const s = new Date(weekStart), e = new Date(weekEnd);
-  const fmt = d => `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
-  ws.getCell('A1').value = `Planning Cuisine — Semaine du ${fmt(s)} au ${fmt(e)}`;
-  ws.getCell('A1').font  = { bold:true, size:13, color:{argb:C.DARK} };
-  ws.getCell('A1').fill  = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFFF8E7'} };
-  ws.getCell('A1').alignment = { horizontal:'center', vertical:'middle' };
-  ws.getRow(1).height = 32;
-  ws.getRow(2).height = 6;
-
-  // En-têtes (ligne 3)
-  const hdr = ws.getRow(3);
-  hdr.height = 42;
-  const hdrVals = ['Nom', ...dayDates.map((dd,i) => {
-    const d = new Date(dd);
-    return `${DAYS_LABEL[i]}\n${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
-  }), 'Total\nHeures', 'H. Supp'];
-  hdrVals.forEach((v,i) => {
-    const c = hdr.getCell(i+1);
-    c.value = v;
-    c.font  = { bold:true, color:{argb:C.WHITE}, size:10 };
-    c.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.DARK} };
-    c.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
-    c.border = border(C.GOLD);
+  const ws = wb.addWorksheet('CUISINE');
+  // Cuisine = cyan (soir-like schedule)
+  const usersWithShift = users.map(u => ({ ...u, shift: 'soir' }));
+  await _buildPlanningSheet(ws, {
+    users: usersWithShift,
+    shifts,
+    timeEvents: [],
+    weekStart,
+    sheetTitle: 'MERCIERE — Planning CUISINE',
   });
-  hdr.getCell(1).alignment = { horizontal:'left', vertical:'middle', wrapText:true };
-
-  // Données
-  users.forEach((u, idx) => {
-    const row = ws.getRow(4 + idx);
-    row.height = 26;
-
-    // Nom
-    const nc = row.getCell(1);
-    nc.value = u.name;
-    nc.font  = { bold:true, size:10 };
-    nc.fill  = { type:'pattern', pattern:'solid', fgColor:{argb: idx%2===0 ? C.WHITE : 'FFF8F8F8'} };
-    nc.alignment = { vertical:'middle' };
-    nc.border = border();
-
-    // Jours
-    let totalMins = 0;
-    dayDates.forEach((dd, i) => {
-      const cell  = row.getCell(i+2);
-      const shift = shifts.find(s => s.user_id===u.id && s.day_date===dd);
-      if (!shift) {
-        cell.value = '—';
-        cell.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.GREY_L} };
-        cell.font  = { color:{argb:C.TEXT_M}, size:10 };
-      } else if (shift.is_off) {
-        cell.value = 'Repos';
-        cell.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.RED_L} };
-        cell.font  = { bold:true, color:{argb:C.RED_D}, size:10 };
-      } else {
-        const st = shift.start_time?.slice(0,5)||'?', en = shift.end_time?.slice(0,5)||'?';
-        cell.value = `${st} → ${en}`;
-        cell.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.GREEN_L} };
-        cell.font  = { bold:true, color:{argb:C.GREEN_D}, size:10 };
-        totalMins += _minsBetween(shift.start_time, shift.end_time);
-      }
-      cell.alignment = { horizontal:'center', vertical:'middle' };
-      cell.border = border();
-    });
-
-    // Total heures
-    const tc = row.getCell(9);
-    tc.value = _fmtH(totalMins);
-    tc.font  = { bold:true, color:{argb:C.DARK}, size:11 };
-    tc.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.GOLD_L} };
-    tc.alignment = { horizontal:'center', vertical:'middle' };
-    tc.border = border(C.GOLD);
-
-    // Heures supp
-    const suppMins = events.filter(ev=>ev.user_id===u.id&&ev.type==='supp').reduce((s,ev)=>s+(ev.minutes||0),0);
-    const sc = row.getCell(10);
-    if (suppMins > 0) {
-      sc.value = `+${_fmtH(suppMins)}`;
-      sc.font  = { bold:true, color:{argb:C.GREEN_D}, size:10 };
-      sc.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.GREEN_L} };
-    } else {
-      sc.value = '—';
-      sc.font  = { color:{argb:C.TEXT_M}, size:10 };
-    }
-    sc.alignment = { horizontal:'center', vertical:'middle' };
-    sc.border = border();
-  });
-
-  // Largeurs colonnes
-  ws.getColumn(1).width = 16;
-  for (let i=2; i<=8; i++) ws.getColumn(i).width = 13;
-  ws.getColumn(9).width  = 12;
-  ws.getColumn(10).width = 10;
-
-  // ── Sheet 2 : Signalements ──────────────────────────────────────────────────
-  const ws2 = wb.addWorksheet('Signalements');
-  ws2.getRow(1).height = 28;
-  const hdr2 = ['Nom', 'Date', 'Type', 'Durée', 'Note'];
-  hdr2.forEach((v,i) => {
-    const c = ws2.getRow(1).getCell(i+1);
-    c.value = v; c.font = { bold:true, color:{argb:C.WHITE} };
-    c.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.DARK} };
-    c.alignment = { horizontal:'center', vertical:'middle' };
-    c.border = border(C.GOLD);
-  });
-  ws2.getColumn(1).width = 16; ws2.getColumn(2).width = 12; ws2.getColumn(3).width = 14;
-  ws2.getColumn(4).width = 10; ws2.getColumn(5).width = 30;
-
-  if (events.length === 0) {
-    ws2.getRow(2).getCell(1).value = 'Aucun signalement cette semaine';
-    ws2.getRow(2).getCell(1).font = { italic:true, color:{argb:C.TEXT_M} };
-  } else {
-    events.forEach((ev, i) => {
-      const row = ws2.getRow(i+2);
-      row.height = 22;
-      const typeLabel = ev.type === 'retard' ? '⏰ Retard' : '➕ H. Supp';
-      const bg = ev.type === 'retard' ? C.RED_L : C.GREEN_L;
-      const fg = ev.type === 'retard' ? C.RED_D  : C.GREEN_D;
-      [ev.user_name, ev.date, typeLabel, `${ev.minutes} min`, ev.note||''].forEach((v,j)=>{
-        const c = row.getCell(j+1);
-        c.value = v;
-        c.font  = { size:10, color: j===2 ? {argb:fg} : {argb:C.DARK} };
-        c.fill  = { type:'pattern', pattern:'solid', fgColor:{argb: j===2 ? bg : (i%2===0?C.WHITE:'FFF8F8F8')} };
-        c.alignment = { vertical:'middle', horizontal: j>=2 ? 'center' : 'left' };
-        c.border = border();
-      });
-    });
-  }
-
-  const buf = await wb.xlsx.writeBuffer();
-  return buf;
+  return wb.xlsx.writeBuffer();
 }
 
 function createMailTransporter() {
@@ -1260,6 +1138,204 @@ setInterval(async () => {
 }, 15 * 60 * 1000);
 
 // ─── Excel Planning Salle ─────────────────────────────────────────────────────
+// Helpers Excel
+function _timeToFrac(timeStr) {
+  if (!timeStr) return null;
+  const [h, m] = timeStr.split(':').map(Number);
+  return (h * 60 + m) / 1440;
+}
+function _dateSerial(dateStr) {
+  const [y, mo, d] = dateStr.split('-').map(Number);
+  return Math.floor(new Date(Date.UTC(y, mo - 1, d)).getTime() / 86400000) + 25569;
+}
+function _planningBorder() {
+  const s = { style: 'thin', color: { argb: 'FFD0D0D0' } };
+  return { top: s, bottom: s, left: s, right: s };
+}
+
+// Génère l'Excel dans le format exact du fichier "Planning MOS Merciere 2026"
+// col A=Nom, B/C=Lun, D/E=Mar, F/G=Mer, H/I=Jeu, J/K=Ven, L/M=Sam, N/O=Dim, P=Total
+async function _buildPlanningSheet(ws, { users, shifts, timeEvents, weekStart, sheetTitle }) {
+  const dayDates = Array.from({ length: 7 }, (_, i) => _addDays(weekStart, i));
+  const DAY_COLS = [2, 4, 6, 8, 10, 12, 14]; // colonnes B,D,F,H,J,L,N (1-based)
+
+  const YELLOW   = 'FFFFFF00'; // midi
+  const CYAN     = 'FF00B0F0'; // soir / cuisine
+  const DARK_BG  = 'FF1A3A4A';
+  const WHITE    = 'FFFFFFFF';
+  const GREY     = 'FFF2F2F2';
+  const ORANGE_L = 'FFFFF3E0';
+  const RED_L    = 'FFFCE8E8';
+  const ORANGE_D = 'FFE65100';
+  const RED_D    = 'FFD32F2F';
+
+  const bold8  = (color='FF000000') => ({ bold:true,  size:8, color:{ argb:color } });
+  const reg8   = (color='FF000000') => ({ bold:false, size:8, color:{ argb:color } });
+  const center = { horizontal:'center', vertical:'middle' };
+  const brd    = _planningBorder;
+
+  // ── Row 1 : Titre ────────────────────────────────────────────────────────────
+  ws.mergeCells('A1:P1');
+  const r1 = ws.getRow(1);
+  r1.height = 18;
+  const c1 = r1.getCell(1);
+  c1.value = sheetTitle;
+  c1.font  = { bold:true, size:10, color:{ argb:WHITE } };
+  c1.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:DARK_BG } };
+  c1.alignment = { horizontal:'center', vertical:'middle' };
+
+  // ── Row 2 : semaine ──────────────────────────────────────────────────────────
+  ws.mergeCells('B2:P2');
+  const r2 = ws.getRow(2);
+  r2.height = 14;
+  const c2 = r2.getCell(2);
+  const weekNum = String(Math.ceil((new Date(_addDays(weekStart, 3)) - new Date(new Date(_addDays(weekStart, 3)).getFullYear(), 0, 1)) / 604800000) + 1).padStart(2, '0');
+  c2.value = `SEMAINE ${weekNum}`;
+  c2.font  = bold8(WHITE);
+  c2.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:DARK_BG } };
+  c2.alignment = center;
+
+  // ── Row 3 : en-têtes jours (fusionnés 2 colonnes chacun) ────────────────────
+  ws.mergeCells('A3:A4'); // nom
+  const r3 = ws.getRow(3);
+  r3.height = 14;
+  const dayNames = ['LUNDI ', 'MARDI ', 'MERCREDI ', 'JEUDI ', 'VENDREDI ', 'SAMEDI ', 'DIMANCHE '];
+  DAY_COLS.forEach((startCol, i) => {
+    ws.mergeCells(3, startCol, 3, startCol + 1);
+    const c = r3.getCell(startCol);
+    c.value = dayNames[i];
+    c.font  = bold8(WHITE);
+    c.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:DARK_BG } };
+    c.alignment = center;
+    c.border = brd();
+  });
+  ws.mergeCells('P3:P4');
+  const cTotal3 = r3.getCell(16); // P
+  cTotal3.value = 'TOTAL';
+  cTotal3.font  = bold8(WHITE);
+  cTotal3.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:DARK_BG } };
+  cTotal3.alignment = center;
+  cTotal3.border = brd();
+
+  // ── Row 4 : dates (fusionnées 2 colonnes) ────────────────────────────────────
+  const r4 = ws.getRow(4);
+  r4.height = 14;
+  DAY_COLS.forEach((startCol, i) => {
+    ws.mergeCells(4, startCol, 4, startCol + 1);
+    const c = r4.getCell(startCol);
+    c.value = _dateSerial(dayDates[i]);
+    c.numFmt = 'dd/mm/yyyy';
+    c.font  = bold8(WHITE);
+    c.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:DARK_BG } };
+    c.alignment = center;
+    c.border = brd();
+  });
+
+  // ── Row 5 : Evènement ────────────────────────────────────────────────────────
+  const r5 = ws.getRow(5);
+  r5.height = 14;
+  ws.mergeCells('A5:P5');
+  const c5 = r5.getCell(1);
+  c5.value = 'Evènement';
+  c5.font  = bold8(DARK_BG);
+  c5.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFFFF8DC' } };
+  c5.alignment = { horizontal:'left', vertical:'middle' };
+  c5.border = brd();
+
+  // ── Lignes employés ──────────────────────────────────────────────────────────
+  let rowIdx = 6;
+  users.forEach((u, uIdx) => {
+    // Couleur selon shift
+    const isSoir    = u.shift === 'soir';
+    const timeFill  = isSoir ? CYAN : YELLOW;
+
+    const row = ws.getRow(rowIdx++);
+    row.height = 20;
+    const bg = uIdx % 2 === 0 ? WHITE : GREY;
+
+    // Col A : Nom
+    const na = row.getCell(1);
+    na.value = u.name;
+    na.font  = bold8(DARK_BG);
+    na.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:bg } };
+    na.alignment = { horizontal:'left', vertical:'middle' };
+    na.border = brd();
+
+    let totalFrac = 0;
+
+    DAY_COLS.forEach((startCol, i) => {
+      const dd    = dayDates[i];
+      const shift = shifts.find(s => s.user_id === u.id && s.day_date === dd);
+
+      const cS = row.getCell(startCol);      // start
+      const cE = row.getCell(startCol + 1);  // end
+
+      if (shift?.is_conge) {
+        // Congé → fusionner + texte "CONGE"
+        ws.mergeCells(rowIdx - 1, startCol, rowIdx - 1, startCol + 1);
+        cS.value = 'CONGE';
+        cS.font  = { bold:true, size:8, color:{ argb:ORANGE_D } };
+        cS.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:ORANGE_L } };
+        cS.alignment = center;
+        cS.border = brd();
+      } else if (shift?.is_off) {
+        // Repos → fusionner + "R"
+        ws.mergeCells(rowIdx - 1, startCol, rowIdx - 1, startCol + 1);
+        cS.value = 'R';
+        cS.font  = { bold:true, size:8, color:{ argb:RED_D } };
+        cS.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:RED_L } };
+        cS.alignment = center;
+        cS.border = brd();
+      } else if (shift?.start_time) {
+        let startFrac = _timeToFrac(shift.start_time);
+        let endFrac   = _timeToFrac(shift.end_time);
+        // Heures après minuit (ex. fin 01:30 quand début 17:00)
+        if (endFrac !== null && endFrac < startFrac) endFrac += 1;
+        if (startFrac !== null) totalFrac += (endFrac || 0) - startFrac;
+
+        cS.value  = startFrac;
+        cS.numFmt = 'h:mm;@';
+        cS.font   = bold8(DARK_BG);
+        cS.fill   = { type:'pattern', pattern:'solid', fgColor:{ argb:timeFill } };
+        cS.alignment = center;
+        cS.border = brd();
+
+        cE.value  = endFrac;
+        cE.numFmt = 'h:mm;@';
+        cE.font   = reg8(DARK_BG);
+        cE.fill   = { type:'pattern', pattern:'solid', fgColor:{ argb:timeFill } };
+        cE.alignment = center;
+        cE.border = brd();
+      } else {
+        // Vide
+        [cS, cE].forEach(c => {
+          c.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:bg } };
+          c.border = brd();
+        });
+      }
+    });
+
+    // Col P : Total heures
+    const cP = row.getCell(16);
+    if (totalFrac > 0) {
+      cP.value  = totalFrac;
+      cP.numFmt = '[h]:mm';
+      cP.font   = bold8(DARK_BG);
+    } else {
+      cP.value = '';
+      cP.font  = reg8();
+    }
+    cP.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:bg } };
+    cP.alignment = center;
+    cP.border = brd();
+  });
+
+  // ── Largeurs colonnes ────────────────────────────────────────────────────────
+  ws.getColumn(1).width  = 14; // A = Nom
+  for (let c = 2; c <= 15; c++) ws.getColumn(c).width = 6.5; // B-O = paires start/end
+  ws.getColumn(16).width = 9; // P = Total
+}
+
 async function generateSallePlanningExcel(weekStart) {
   const weekEnd  = _addDays(weekStart, 6);
   const planning = db.getSallePlanning(weekStart);
@@ -1267,139 +1343,31 @@ async function generateSallePlanningExcel(weekStart) {
   const conges   = db.getAllCongeRequests().filter(c =>
     c.status === 'approved' && c.date_from <= weekEnd && c.date_to >= weekStart
   );
-  // Injecter congés comme pour l'API
   conges.forEach(conge => {
     const from = conge.date_from > weekStart ? conge.date_from : weekStart;
     const to   = conge.date_to   < weekEnd   ? conge.date_to   : weekEnd;
     _dateRange(from, to).forEach(dayDate => {
-      if (!planning.shifts.find(s => s.user_id === conge.user_id && s.day_date === dayDate)) {
+      if (!planning.shifts.find(s => s.user_id === conge.user_id && s.day_date === dayDate))
         planning.shifts.push({ user_id: conge.user_id, day_date: dayDate, is_off: 1, is_conge: 1 });
-      }
     });
   });
-
-  const { users, shifts } = planning;
-  const dayDates = Array.from({ length: 7 }, (_, i) => _addDays(weekStart, i));
 
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Mos Pub Mercière';
-  const ws  = wb.addWorksheet('Planning Salle');
 
-  const C = {
-    DARK:'FF1A3A4A', GOLD:'FFCDA443', WHITE:'FFFFFFFF', TEXT_M:'FF888888',
-    GREEN_L:'FFE8F5E9', RED_L:'FFFCE8E8', GREY_L:'FFF5F5F5',
-    GREEN_D:'FF2E7D32', RED_D:'FFD32F2F', ORANGE_L:'FFFFF3E0', ORANGE_D:'FFE65100',
-  };
-  const border = (color='FFD0D0D0') => (['top','bottom','left','right'].reduce((o,s)=>({...o,[s]:{style:'thin',color:{argb:color}}}),{}));
-  const fmt = d => { const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; };
-
-  // Titre
-  const colCount = 1 + 7 + 2; // Nom + 7 jours + Total + Supp/Retard
-  ws.mergeCells(1, 1, 1, colCount);
-  ws.getCell('A1').value = `Planning Salle — Semaine du ${fmt(weekStart)} au ${fmt(weekEnd)}`;
-  ws.getCell('A1').font  = { bold:true, size:13, color:{argb:C.DARK} };
-  ws.getCell('A1').fill  = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFFF8E7'} };
-  ws.getCell('A1').alignment = { horizontal:'center', vertical:'middle' };
-  ws.getRow(1).height = 32;
-  ws.getRow(2).height = 6;
-
-  // En-têtes
-  const hdr = ws.getRow(3);
-  hdr.height = 42;
-  const hdrVals = ['Nom', ...dayDates.map((dd, i) => {
-    const [y, m, d] = dd.split('-');
-    return `${DAYS_LABEL[i]}\n${d}/${m}`;
-  }), 'Total\nHeures', 'Supp / Retard'];
-  hdrVals.forEach((v, i) => {
-    const c = hdr.getCell(i + 1);
-    c.value = v;
-    c.font  = { bold:true, color:{argb:C.WHITE}, size:10 };
-    c.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.DARK} };
-    c.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
-    c.border = border(C.GOLD);
-  });
-  hdr.getCell(1).alignment = { horizontal:'left', vertical:'middle', wrapText:true };
-
-  // Données
-  // Séparer midi / soir avec ligne de groupe
-  const midiUsers = users.filter(u => u.shift === 'midi');
-  const soirUsers = users.filter(u => u.shift === 'soir');
-
-  let rowIdx = 4;
-  [{ label:'MIDI', list: midiUsers }, { label:'SOIR', list: soirUsers }].forEach(({ label, list }) => {
-    if (!list.length) return;
-    // Ligne groupe
-    const gr = ws.getRow(rowIdx++);
-    gr.height = 20;
-    ws.mergeCells(rowIdx - 1, 1, rowIdx - 1, colCount);
-    const gc = gr.getCell(1);
-    gc.value = label;
-    gc.font  = { bold:true, size:9, color:{argb:C.GOLD} };
-    gc.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.DARK} };
-    gc.alignment = { horizontal:'left', vertical:'middle', indent:1 };
-
-    list.forEach((u, idx) => {
-      const row = ws.getRow(rowIdx++);
-      row.height = 26;
-      const nc = row.getCell(1);
-      nc.value = u.name;
-      nc.font  = { bold:true, size:10 };
-      nc.fill  = { type:'pattern', pattern:'solid', fgColor:{argb: idx%2===0 ? C.WHITE : 'FFF8F8F8'} };
-      nc.alignment = { vertical:'middle' };
-      nc.border = border();
-
-      let totalMins = 0;
-      dayDates.forEach((dd, i) => {
-        const cell  = row.getCell(i + 2);
-        const shift = shifts.find(s => s.user_id === u.id && s.day_date === dd);
-        if (!shift) {
-          cell.value = '—'; cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:C.GREY_L} };
-          cell.font = { color:{argb:C.TEXT_M}, size:10 };
-        } else if (shift.is_conge) {
-          cell.value = 'Congé'; cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:C.ORANGE_L} };
-          cell.font = { bold:true, color:{argb:C.ORANGE_D}, size:10 };
-        } else if (shift.is_off) {
-          cell.value = 'Repos'; cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:C.RED_L} };
-          cell.font = { bold:true, color:{argb:C.RED_D}, size:10 };
-        } else {
-          const st = shift.start_time?.slice(0,5)||'?', en = shift.end_time?.slice(0,5)||'?';
-          cell.value = `${st} → ${en}`;
-          cell.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.GREEN_L} };
-          cell.font  = { bold:true, color:{argb:C.GREEN_D}, size:10 };
-          totalMins += _minsBetween(shift.start_time, shift.end_time);
-        }
-        cell.alignment = { horizontal:'center', vertical:'middle' };
-        cell.border = border();
-      });
-
-      // Total heures
-      const tc = row.getCell(9);
-      tc.value = totalMins > 0 ? _fmtH(totalMins) : '—';
-      tc.font  = { bold: totalMins > 0, size:10, color:{argb: totalMins > 0 ? C.DARK : C.TEXT_M} };
-      tc.fill  = { type:'pattern', pattern:'solid', fgColor:{argb: idx%2===0 ? C.WHITE : 'FFF8F8F8'} };
-      tc.alignment = { horizontal:'center', vertical:'middle' };
-      tc.border = border();
-
-      // Supp / Retard (salle_time_events)
-      const userEvs = events.filter(e => e.user_id === u.id);
-      const suppMins   = userEvs.filter(e => e.type !== 'retard').reduce((a, e) => a + (e.minutes||0), 0);
-      const retardMins = userEvs.filter(e => e.type === 'retard').reduce((a, e) => a + (e.minutes||0), 0);
-      const sc = row.getCell(10);
-      const parts = [];
-      if (suppMins > 0)   parts.push(`+${_fmtH(suppMins)}`);
-      if (retardMins > 0) parts.push(`−${_fmtH(retardMins)}`);
-      sc.value = parts.join(' / ') || '—';
-      sc.font  = { bold: parts.length > 0, size:10, color:{argb: retardMins > 0 ? C.RED_D : suppMins > 0 ? C.GREEN_D : C.TEXT_M} };
-      sc.fill  = { type:'pattern', pattern:'solid', fgColor:{argb: idx%2===0 ? C.WHITE : 'FFF8F8F8'} };
-      sc.alignment = { horizontal:'center', vertical:'middle' };
-      sc.border = border();
+  // Une feuille par équipe pour coller au format original
+  for (const { label, shift } of [{ label:'MIDI', shift:'midi' }, { label:'SOIR', shift:'soir' }]) {
+    const users = planning.users.filter(u => u.shift === shift);
+    if (!users.length) continue;
+    const ws = wb.addWorksheet(label);
+    await _buildPlanningSheet(ws, {
+      users,
+      shifts: planning.shifts,
+      timeEvents: events,
+      weekStart,
+      sheetTitle: `MERCIERE — Planning ${label}`,
     });
-  });
-
-  ws.getColumn(1).width = 16;
-  for (let i = 2; i <= 8; i++) ws.getColumn(i).width = 13;
-  ws.getColumn(9).width  = 12;
-  ws.getColumn(10).width = 14;
+  }
 
   return wb.xlsx.writeBuffer();
 }
