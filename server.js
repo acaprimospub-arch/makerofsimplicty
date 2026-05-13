@@ -1259,6 +1259,233 @@ setInterval(async () => {
   await sendWeeklyPlanningEmail(monday);
 }, 15 * 60 * 1000);
 
+// ─── Excel Planning Salle ─────────────────────────────────────────────────────
+async function generateSallePlanningExcel(weekStart) {
+  const weekEnd  = _addDays(weekStart, 6);
+  const planning = db.getSallePlanning(weekStart);
+  const events   = db.getSalleTimeEventsForWeek(weekStart);
+  const conges   = db.getAllCongeRequests().filter(c =>
+    c.status === 'approved' && c.date_from <= weekEnd && c.date_to >= weekStart
+  );
+  // Injecter congés comme pour l'API
+  conges.forEach(conge => {
+    const from = conge.date_from > weekStart ? conge.date_from : weekStart;
+    const to   = conge.date_to   < weekEnd   ? conge.date_to   : weekEnd;
+    _dateRange(from, to).forEach(dayDate => {
+      if (!planning.shifts.find(s => s.user_id === conge.user_id && s.day_date === dayDate)) {
+        planning.shifts.push({ user_id: conge.user_id, day_date: dayDate, is_off: 1, is_conge: 1 });
+      }
+    });
+  });
+
+  const { users, shifts } = planning;
+  const dayDates = Array.from({ length: 7 }, (_, i) => _addDays(weekStart, i));
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Mos Pub Mercière';
+  const ws  = wb.addWorksheet('Planning Salle');
+
+  const C = {
+    DARK:'FF1A3A4A', GOLD:'FFCDA443', WHITE:'FFFFFFFF', TEXT_M:'FF888888',
+    GREEN_L:'FFE8F5E9', RED_L:'FFFCE8E8', GREY_L:'FFF5F5F5',
+    GREEN_D:'FF2E7D32', RED_D:'FFD32F2F', ORANGE_L:'FFFFF3E0', ORANGE_D:'FFE65100',
+  };
+  const border = (color='FFD0D0D0') => (['top','bottom','left','right'].reduce((o,s)=>({...o,[s]:{style:'thin',color:{argb:color}}}),{}));
+  const fmt = d => { const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; };
+
+  // Titre
+  const colCount = 1 + 7 + 2; // Nom + 7 jours + Total + Supp/Retard
+  ws.mergeCells(1, 1, 1, colCount);
+  ws.getCell('A1').value = `Planning Salle — Semaine du ${fmt(weekStart)} au ${fmt(weekEnd)}`;
+  ws.getCell('A1').font  = { bold:true, size:13, color:{argb:C.DARK} };
+  ws.getCell('A1').fill  = { type:'pattern', pattern:'solid', fgColor:{argb:'FFFFF8E7'} };
+  ws.getCell('A1').alignment = { horizontal:'center', vertical:'middle' };
+  ws.getRow(1).height = 32;
+  ws.getRow(2).height = 6;
+
+  // En-têtes
+  const hdr = ws.getRow(3);
+  hdr.height = 42;
+  const hdrVals = ['Nom', ...dayDates.map((dd, i) => {
+    const [y, m, d] = dd.split('-');
+    return `${DAYS_LABEL[i]}\n${d}/${m}`;
+  }), 'Total\nHeures', 'Supp / Retard'];
+  hdrVals.forEach((v, i) => {
+    const c = hdr.getCell(i + 1);
+    c.value = v;
+    c.font  = { bold:true, color:{argb:C.WHITE}, size:10 };
+    c.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.DARK} };
+    c.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+    c.border = border(C.GOLD);
+  });
+  hdr.getCell(1).alignment = { horizontal:'left', vertical:'middle', wrapText:true };
+
+  // Données
+  // Séparer midi / soir avec ligne de groupe
+  const midiUsers = users.filter(u => u.shift === 'midi');
+  const soirUsers = users.filter(u => u.shift === 'soir');
+
+  let rowIdx = 4;
+  [{ label:'MIDI', list: midiUsers }, { label:'SOIR', list: soirUsers }].forEach(({ label, list }) => {
+    if (!list.length) return;
+    // Ligne groupe
+    const gr = ws.getRow(rowIdx++);
+    gr.height = 20;
+    ws.mergeCells(rowIdx - 1, 1, rowIdx - 1, colCount);
+    const gc = gr.getCell(1);
+    gc.value = label;
+    gc.font  = { bold:true, size:9, color:{argb:C.GOLD} };
+    gc.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.DARK} };
+    gc.alignment = { horizontal:'left', vertical:'middle', indent:1 };
+
+    list.forEach((u, idx) => {
+      const row = ws.getRow(rowIdx++);
+      row.height = 26;
+      const nc = row.getCell(1);
+      nc.value = u.name;
+      nc.font  = { bold:true, size:10 };
+      nc.fill  = { type:'pattern', pattern:'solid', fgColor:{argb: idx%2===0 ? C.WHITE : 'FFF8F8F8'} };
+      nc.alignment = { vertical:'middle' };
+      nc.border = border();
+
+      let totalMins = 0;
+      dayDates.forEach((dd, i) => {
+        const cell  = row.getCell(i + 2);
+        const shift = shifts.find(s => s.user_id === u.id && s.day_date === dd);
+        if (!shift) {
+          cell.value = '—'; cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:C.GREY_L} };
+          cell.font = { color:{argb:C.TEXT_M}, size:10 };
+        } else if (shift.is_conge) {
+          cell.value = 'Congé'; cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:C.ORANGE_L} };
+          cell.font = { bold:true, color:{argb:C.ORANGE_D}, size:10 };
+        } else if (shift.is_off) {
+          cell.value = 'Repos'; cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:C.RED_L} };
+          cell.font = { bold:true, color:{argb:C.RED_D}, size:10 };
+        } else {
+          const st = shift.start_time?.slice(0,5)||'?', en = shift.end_time?.slice(0,5)||'?';
+          cell.value = `${st} → ${en}`;
+          cell.fill  = { type:'pattern', pattern:'solid', fgColor:{argb:C.GREEN_L} };
+          cell.font  = { bold:true, color:{argb:C.GREEN_D}, size:10 };
+          totalMins += _minsBetween(shift.start_time, shift.end_time);
+        }
+        cell.alignment = { horizontal:'center', vertical:'middle' };
+        cell.border = border();
+      });
+
+      // Total heures
+      const tc = row.getCell(9);
+      tc.value = totalMins > 0 ? _fmtH(totalMins) : '—';
+      tc.font  = { bold: totalMins > 0, size:10, color:{argb: totalMins > 0 ? C.DARK : C.TEXT_M} };
+      tc.fill  = { type:'pattern', pattern:'solid', fgColor:{argb: idx%2===0 ? C.WHITE : 'FFF8F8F8'} };
+      tc.alignment = { horizontal:'center', vertical:'middle' };
+      tc.border = border();
+
+      // Supp / Retard (salle_time_events)
+      const userEvs = events.filter(e => e.user_id === u.id);
+      const suppMins   = userEvs.filter(e => e.type !== 'retard').reduce((a, e) => a + (e.minutes||0), 0);
+      const retardMins = userEvs.filter(e => e.type === 'retard').reduce((a, e) => a + (e.minutes||0), 0);
+      const sc = row.getCell(10);
+      const parts = [];
+      if (suppMins > 0)   parts.push(`+${_fmtH(suppMins)}`);
+      if (retardMins > 0) parts.push(`−${_fmtH(retardMins)}`);
+      sc.value = parts.join(' / ') || '—';
+      sc.font  = { bold: parts.length > 0, size:10, color:{argb: retardMins > 0 ? C.RED_D : suppMins > 0 ? C.GREEN_D : C.TEXT_M} };
+      sc.fill  = { type:'pattern', pattern:'solid', fgColor:{argb: idx%2===0 ? C.WHITE : 'FFF8F8F8'} };
+      sc.alignment = { horizontal:'center', vertical:'middle' };
+      sc.border = border();
+    });
+  });
+
+  ws.getColumn(1).width = 16;
+  for (let i = 2; i <= 8; i++) ws.getColumn(i).width = 13;
+  ws.getColumn(9).width  = 12;
+  ws.getColumn(10).width = 14;
+
+  return wb.xlsx.writeBuffer();
+}
+
+// Endpoints valider planning (envoi Excel + retourne fichier)
+app.post('/api/salle/planning/validate', requireAdminOrManager, async (req, res) => {
+  const { weekStart } = req.body;
+  if (!weekStart) return res.status(400).json({ error: 'weekStart requis' });
+  try {
+    const buf = await generateSallePlanningExcel(weekStart);
+    const [y, m, d] = weekStart.split('-');
+    const weekEnd = _addDays(weekStart, 6);
+    const weekLabel = `${d}/${m}/${y.slice(2)} → ${_addDays(weekStart,6).split('-').reverse().join('/')}`;
+    // Email à Paul en arrière-plan
+    setImmediate(async () => {
+      const transporter = createMailTransporter();
+      if (!transporter) return;
+      try {
+        const sender = db.getSetting('email_smtp_user');
+        await transporter.sendMail({
+          from: `"Mos Pub Mercière" <${sender}>`,
+          to:   PAUL_EMAIL,
+          subject: `📅 Planning Salle — Semaine du ${weekStart}`,
+          html: `<div style="font-family:Arial,sans-serif;max-width:500px">
+            <h2 style="color:#1a3a4a">📅 Planning Salle validé</h2>
+            <p>Le planning salle de la semaine du <strong>${weekStart}</strong> au <strong>${weekEnd}</strong> a été validé par <strong>${req.session.name}</strong>.</p>
+            <p style="color:#888;font-size:12px">Planning en pièce jointe.</p>
+            <p style="color:#aaa;font-size:11px;margin-top:20px">— Mos Pub Mercière</p>
+          </div>`,
+          attachments: [{
+            filename: `Planning-Salle-${weekStart}.xlsx`,
+            content:  buf,
+            contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          }],
+        });
+        console.log(`[Planning Salle] ✅ Excel envoyé à Paul pour semaine ${weekStart}`);
+      } catch(e) { console.error('[Planning Salle] ❌ Email:', e.message); }
+    });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="Planning-Salle-${weekStart}.xlsx"`);
+    res.send(buf);
+  } catch(e) {
+    console.error('[Planning Salle] ❌ Export:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/cuisine/planning/validate', requireCuisineManager, async (req, res) => {
+  const { weekStart } = req.body;
+  if (!weekStart) return res.status(400).json({ error: 'weekStart requis' });
+  try {
+    const buf = await generatePlanningExcel(weekStart);
+    const weekEnd = _addDays(weekStart, 6);
+    setImmediate(async () => {
+      const transporter = createMailTransporter();
+      if (!transporter) return;
+      try {
+        const sender = db.getSetting('email_smtp_user');
+        await transporter.sendMail({
+          from: `"Mos Pub Mercière" <${sender}>`,
+          to:   PAUL_EMAIL,
+          subject: `📅 Planning Cuisine — Semaine du ${weekStart}`,
+          html: `<div style="font-family:Arial,sans-serif;max-width:500px">
+            <h2 style="color:#1a3a4a">📅 Planning Cuisine validé</h2>
+            <p>Le planning cuisine de la semaine du <strong>${weekStart}</strong> au <strong>${weekEnd}</strong> a été validé par <strong>${req.session.name}</strong>.</p>
+            <p style="color:#888;font-size:12px">Planning en pièce jointe.</p>
+            <p style="color:#aaa;font-size:11px;margin-top:20px">— Mos Pub Mercière</p>
+          </div>`,
+          attachments: [{
+            filename: `Planning-Cuisine-${weekStart}.xlsx`,
+            content:  buf,
+            contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          }],
+        });
+        console.log(`[Planning Cuisine] ✅ Excel envoyé à Paul pour semaine ${weekStart}`);
+      } catch(e) { console.error('[Planning Cuisine] ❌ Email:', e.message); }
+    });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="Planning-Cuisine-${weekStart}.xlsx"`);
+    res.send(buf);
+  } catch(e) {
+    console.error('[Planning Cuisine] ❌ Export:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Routes admin email config
 app.get('/api/admin/email-config', requireAdmin, (req, res) => {
   const user = db.getSetting('email_smtp_user') || '';

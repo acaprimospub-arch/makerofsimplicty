@@ -324,7 +324,32 @@
         document.getElementById('readonlyBadge').classList.remove('hidden');
       } else {
         document.getElementById('btnValidate').classList.remove('hidden');
-        document.getElementById('btnValidate').addEventListener('click', e => openPreview(e.currentTarget));
+        document.getElementById('btnValidate').addEventListener('click', async e => {
+          const btn = e.currentTarget;
+          btn.disabled = true; btn.textContent = 'Export…';
+          try {
+            const resp = await fetch('/api/cuisine/planning/validate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ weekStart: currentWeekStart }),
+            });
+            if (resp.ok) {
+              const blob = await resp.blob();
+              const url  = URL.createObjectURL(blob);
+              const a    = document.createElement('a');
+              a.href = url; a.download = `Planning-Cuisine-${currentWeekStart}.xlsx`; a.click();
+              URL.revokeObjectURL(url);
+              showToast('Excel envoyé à Paul et téléchargé ✓', 'success');
+            } else {
+              showToast('Erreur export Excel', 'error');
+            }
+          } catch(err) {
+            showToast('Erreur : ' + err.message, 'error');
+          } finally {
+            btn.disabled = false; btn.textContent = 'Valider le planning';
+          }
+          openPreview(btn);
+        });
       }
       if (user.role === 'admin' || user.role === 'manager') {
         document.getElementById('btnSalleLink').classList.remove('hidden');

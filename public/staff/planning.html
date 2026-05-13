@@ -134,6 +134,10 @@
             <svg viewBox="0 0 20 20" fill="currentColor" style="width:15px;height:15px"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
             Cuisine
           </a>
+          <button class="btn btn-primary" id="btnValidateSalle" type="button" style="font-size:.85rem;padding:9px 14px">
+            <svg viewBox="0 0 20 20" fill="currentColor" style="width:15px;height:15px;flex-shrink:0"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+            Valider
+          </button>
           </div>
         </header>
 
@@ -564,6 +568,54 @@
         loadStaffWeek();
       }
     })();
+
+    // ── Valider planning salle ────────────────────────────────────────────────
+    document.getElementById('btnValidateSalle').addEventListener('click', async () => {
+      const btn = document.getElementById('btnValidateSalle');
+      btn.disabled = true; btn.textContent = 'Export…';
+      try {
+        // Télécharger l'Excel + envoyer email à Paul
+        const resp = await fetch('/api/salle/planning/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ weekStart: adminWeek }),
+        });
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const url  = URL.createObjectURL(blob);
+          const a    = document.createElement('a');
+          a.href = url; a.download = `Planning-Salle-${adminWeek}.xlsx`; a.click();
+          URL.revokeObjectURL(url);
+          showToast('Excel envoyé à Paul et téléchargé ✓', 'success');
+        } else {
+          showToast('Erreur export Excel', 'error');
+        }
+        // Screenshot du tableau pour WhatsApp
+        await screenshotPlanning('adminTable', `Planning-Salle-${adminWeek}.png`);
+      } catch(e) {
+        showToast('Erreur : ' + escapeHtml(e.message), 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg viewBox="0 0 20 20" fill="currentColor" style="width:15px;height:15px;flex-shrink:0"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg> Valider';
+      }
+    });
+
+    async function screenshotPlanning(tableId, filename) {
+      if (typeof html2canvas === 'undefined') return;
+      const table = document.getElementById(tableId);
+      if (!table) return;
+      try {
+        const canvas = await html2canvas(table, { backgroundColor: '#0d1f2d', scale: 2, useCORS: true });
+        canvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          const a   = document.createElement('a');
+          a.href = url; a.download = filename; a.click();
+          URL.revokeObjectURL(url);
+          showToast('Capture téléchargée pour WhatsApp ✓', 'success');
+        }, 'image/png');
+      } catch(e) { console.warn('Screenshot échoué:', e.message); }
+    }
   </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
 </body>
 </html>
