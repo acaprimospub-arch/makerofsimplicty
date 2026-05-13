@@ -231,12 +231,14 @@ async function buildNav(activePage) {
     { href: '/staff/reservations.html', label: 'Réservations', key: 'reservations' },
     { href: '/staff/tables.html',       label: 'Plan de Salle',key: 'tables' },
     { href: '/staff/planning.html',     label: 'Planning',     key: 'planning' },
+    { href: '/staff/conges.html',       label: 'Congés',       key: 'conges' },
   ];
   const staffSoirLinks = [
     { href: '/staff/taches.html',       label: 'Mes Tâches',   key: 'taches' },
     { href: '/staff/reservations.html', label: 'Réservations', key: 'reservations' },
     { href: '/staff/tables.html',       label: 'Plan de Salle',key: 'tables' },
     { href: '/staff/planning.html',     label: 'Planning',     key: 'planning' },
+    { href: '/staff/conges.html',       label: 'Congés',       key: 'conges' },
   ];
   const cuisineLinks = [
     { href: '/cuisine/taches.html',        label: 'Tâches',        key: 'cuisine-taches' },

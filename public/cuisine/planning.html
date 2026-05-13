@@ -376,6 +376,10 @@
               cellClass = 'shift-cell is-empty';
               cellHtml = isChef ? `<span class="sc-empty" aria-hidden="true">+</span>` : '';
               ariaLabel = `${escapeHtml(u.name)}, non planifié`;
+            } else if (shift.is_conge) {
+              cellClass = 'shift-cell is-off';
+              cellHtml = `<span class="sc-off">Congé</span>`;
+              ariaLabel = `${escapeHtml(u.name)}, congé`;
             } else if (shift.is_off) {
               cellClass = 'shift-cell is-off';
               cellHtml = `<span class="sc-off">Repos</span>`;

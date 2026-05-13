@@ -515,7 +515,7 @@ app.get('/api/salle/hours', requireAuth, (req, res) => {
     const to   = conge.date_to   < weekEnd   ? conge.date_to   : weekEnd;
     _dateRange(from, to).forEach(dayDate => {
       if (!planning.shifts.find(s => s.user_id === conge.user_id && s.day_date === dayDate)) {
-        planning.shifts.push({ user_id: conge.user_id, week_start: weekStart, day_date: dayDate, start_time: null, end_time: null, is_off: 1 });
+        planning.shifts.push({ user_id: conge.user_id, week_start: weekStart, day_date: dayDate, start_time: null, end_time: null, is_off: 1, is_conge: 1 });
       }
     });
   });
@@ -566,7 +566,7 @@ app.get('/api/cuisine/planning', requireAuth, (req, res) => {
     const to   = conge.date_to   < weekEnd   ? conge.date_to   : weekEnd;
     _dateRange(from, to).forEach(dayDate => {
       if (!data.shifts.find(s => s.user_id === conge.user_id && s.day_date === dayDate)) {
-        data.shifts.push({ user_id: conge.user_id, week_start: weekStart, day_date: dayDate, start_time: null, end_time: null, is_off: 1 });
+        data.shifts.push({ user_id: conge.user_id, week_start: weekStart, day_date: dayDate, start_time: null, end_time: null, is_off: 1, is_conge: 1 });
       }
     });
   });

@@ -266,7 +266,10 @@
 
           let inner = '', cls = 'is-empty';
 
-          if (plan?.is_off) {
+          if (plan?.is_conge) {
+            cls = 'is-off';
+            inner = `<span class="dc-off">Congé</span>`;
+          } else if (plan?.is_off) {
             cls = 'is-off';
             inner = `<span class="dc-off">Repos</span>`;
           } else {
@@ -357,7 +360,7 @@
         content = `
           <div>
             <div class="drawer-section-title">Heures prévues</div>
-            ${plan?.is_off ? '<div class="dc-off" style="padding:8px 0">Repos</div>' :
+            ${plan?.is_conge ? '<div class="dc-off" style="padding:8px 0">Congé</div>' : plan?.is_off ? '<div class="dc-off" style="padding:8px 0">Repos</div>' :
               plan?.start_time ? `<div class="info-row"><span class="lbl">Créneau</span><span class="val">${plan.start_time.slice(0,5)} → ${plan.end_time?.slice(0,5)||'?'}</span></div>` :
               '<div style="font-size:.8rem;color:var(--text-muted);padding:4px 0">Non planifié</div>'}
           </div>
