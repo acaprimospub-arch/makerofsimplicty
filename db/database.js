@@ -1417,6 +1417,15 @@ function getAllCongeRequests() {
   ).all();
 }
 
+function getCongeRequestsByShift(shift) {
+  return db.prepare(`
+    SELECT cr.* FROM conge_requests cr
+    JOIN users u ON u.id = cr.user_id
+    WHERE u.shift = ?
+    ORDER BY cr.requested_at DESC
+  `).all(shift);
+}
+
 function getCongeRequestById(id) {
   return db.prepare('SELECT * FROM conge_requests WHERE id = ?').get(id);
 }
@@ -2082,7 +2091,7 @@ module.exports = {
   getCuisineCompletionsByDate,
   logTimeEvent, getTimeEventsByDate, getTimeEventsRange, deleteTimeEvent,
   addReservationAttachment, getReservationAttachments, getAttachmentById, deleteAttachment,
-  createCongeRequest, getCongeRequestsByUser, getCongeRequestById, getAllCongeRequests, updateCongeRequestStatus,
+  createCongeRequest, getCongeRequestsByUser, getCongeRequestById, getAllCongeRequests, getCongeRequestsByShift, updateCongeRequestStatus,
   getInstagramAccounts, getInstagramAccountById, createInstagramAccount, updateInstagramAccount, deleteInstagramAccount,
   getInstagramPosts, getInstagramPostById, createInstagramPost, updateInstagramPost, deleteInstagramPost, getDueInstagramPosts,
   addInstagramMedia, getInstagramMedia, getInstagramMediaById, deleteInstagramMedia, reorderInstagramMedia,

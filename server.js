@@ -1413,12 +1413,15 @@ app.post('/api/staff/conge-request', requireAuth, async (req, res) => {
   }
 });
 
+const PAUL_EMAIL = 'pverdier.mospub@gmail.com';
+
 app.get('/api/staff/conge-requests', requireAuth, (req, res) => {
-  res.json(db.getCongeRequestsByUser(req.session.user.id));
+  res.json(db.getCongeRequestsByUser(req.session.userId));
 });
 
 app.get('/api/admin/conge-requests', requireAdminOrManager, (req, res) => {
-  res.json(db.getAllCongeRequests());
+  if (req.session.role === 'admin') return res.json(db.getAllCongeRequests());
+  res.json(db.getCongeRequestsByShift(req.session.shift));
 });
 
 app.put('/api/admin/conge-requests/:id', requireAdminOrManager, (req, res) => {
@@ -1427,6 +1430,14 @@ app.put('/api/admin/conge-requests/:id', requireAdminOrManager, (req, res) => {
 
   const conge = db.getCongeRequestById(req.params.id);
   if (!conge) return res.status(404).json({ error: 'Demande introuvable' });
+
+  // Un manager ne peut approuver que les demandes de son équipe
+  if (req.session.role !== 'admin') {
+    const targetUser = db.getUserById(conge.user_id);
+    if (!targetUser || targetUser.shift !== req.session.shift) {
+      return res.status(403).json({ error: 'Vous ne pouvez approuver que les congés de votre équipe' });
+    }
+  }
 
   db.updateCongeRequestStatus(req.params.id, status, req.session.name);
 
@@ -1458,6 +1469,34 @@ app.put('/api/admin/conge-requests/:id', requireAdminOrManager, (req, res) => {
     } catch(e) {
       console.error('[Congé] Erreur sync planning:', e.message, e.stack);
     }
+  }
+
+  // Email à Paul quand un congé est approuvé
+  if (status === 'approved') {
+    setImmediate(async () => {
+      const transporter = createMailTransporter();
+      if (!transporter) return;
+      const fmtShort = d => new Date(d).toLocaleDateString('fr-FR');
+      const approvedBy = req.session.name;
+      try {
+        const sender = db.getSetting('email_smtp_user');
+        await transporter.sendMail({
+          from: `"Mos Pub Mercière" <${sender}>`,
+          to: PAUL_EMAIL,
+          subject: `✅ Congé approuvé — ${conge.user_name}`,
+          html: `<div style="font-family:Arial,sans-serif;max-width:500px;padding:20px">
+            <h2 style="color:#1a3a4a">✅ Congé approuvé</h2>
+            <p>Le congé de <strong>${conge.user_name}</strong> a été validé par <strong>${approvedBy}</strong>.</p>
+            <p>📅 Du <strong>${fmtShort(conge.date_from)}</strong> au <strong>${fmtShort(conge.date_to)}</strong></p>
+            ${conge.motif ? `<p>Motif : ${conge.motif}</p>` : ''}
+            <p style="color:#aaa;font-size:11px;margin-top:20px">— Mos Pub Mercière</p>
+          </div>`,
+        });
+        console.log(`[Congé] ✅ Email approbation envoyé à Paul pour ${conge.user_name}`);
+      } catch(err) {
+        console.error('[Congé] ❌ Email approbation:', err.message);
+      }
+    });
   }
 
   res.json({ ok: true });
