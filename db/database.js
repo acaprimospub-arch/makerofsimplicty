@@ -281,20 +281,26 @@ try {
 
 // Migration: regrouper sous Carte + Tapas si ancienne structure granulaire détectée
 try {
-  const oldCats = db.prepare("SELECT id FROM recipe_categories WHERE name IN ('Entrées','Plats','Burgers & Cie','Desserts')").all();
-  if (oldCats.length > 0) {
-    const oldIds = oldCats.map(r => r.id).join(',');
-    // S'assurer que Carte (id=1) et Tapas (id=2) existent
-    db.prepare("INSERT OR IGNORE INTO recipe_categories (id, name, color, sort_order) VALUES (1,'Carte','#D4AF37',1)").run();
-    db.prepare("INSERT OR IGNORE INTO recipe_categories (id, name, color, sort_order) VALUES (2,'Tapas','#4CAF6A',2)").run();
-    // Recettes brasserie → Carte
-    db.exec(`UPDATE recipes SET category_id = 1 WHERE category_id IN (${oldIds})`);
-    // Ancienne catégorie Tapas (id=4) → nouvelle Tapas (id=2)
-    db.exec("UPDATE recipes SET category_id = 2 WHERE category_id = 4");
-    // Supprimer les anciennes catégories granulaires
-    db.exec(`DELETE FROM recipe_categories WHERE name IN ('Entrées','Plats','Burgers & Cie','Desserts')`);
-    db.exec("DELETE FROM recipe_categories WHERE id = 4 AND name = 'Tapas'");
+  // Créer "Carte" si elle n'existe pas encore
+  if (!db.prepare("SELECT id FROM recipe_categories WHERE name = 'Carte'").get()) {
+    const carteId = db.prepare("INSERT INTO recipe_categories (name, color, sort_order) VALUES ('Carte','#D4AF37',1)").run().lastInsertRowid;
+    // Récupérer les IDs des catégories brasserie à fusionner
+    const oldCats = db.prepare("SELECT id FROM recipe_categories WHERE name IN ('Entrées','Plats','Burgers & Cie','Desserts')").all();
+    if (oldCats.length) {
+      const ids = oldCats.map(r => r.id).join(',');
+      db.exec(`UPDATE recipes SET category_id = ${carteId} WHERE category_id IN (${ids})`);
+      db.exec(`DELETE FROM recipe_categories WHERE id IN (${ids})`);
+    }
   }
+  // S'assurer que "Tapas" existe avec sort_order=2 (renommer l'ancienne si besoin)
+  const tapas = db.prepare("SELECT id FROM recipe_categories WHERE name = 'Tapas'").get();
+  if (tapas) {
+    db.prepare("UPDATE recipe_categories SET sort_order = 2 WHERE id = ?").run(tapas.id);
+  } else {
+    db.prepare("INSERT OR IGNORE INTO recipe_categories (name, color, sort_order) VALUES ('Tapas','#4CAF6A',2)").run();
+  }
+  // S'assurer que Carte est bien en sort_order=1
+  db.prepare("UPDATE recipe_categories SET sort_order = 1 WHERE name = 'Carte'").run();
 } catch(e) {}
 
 {
