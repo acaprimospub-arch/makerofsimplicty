@@ -270,6 +270,28 @@ try {
   `);
 } catch(e) {}
 
+// ─── Nettoyage catégories recettes (fixe les DBs avec doublons/mauvaises catégories) ──
+try {
+  const correct5 = db.prepare("SELECT COUNT(*) as c FROM recipe_categories WHERE name IN ('Entrées','Plats','Burgers & Cie','Tapas','Desserts')").get().c;
+  const total = db.prepare("SELECT COUNT(*) as c FROM recipe_categories").get().c;
+  if (correct5 < 5 || total !== 5) {
+    // Remet à plat : supprime tout et recrée les 5 bonnes catégories
+    db.exec("DELETE FROM recipe_categories");
+    const _ci = db.prepare("INSERT INTO recipe_categories (name, color, sort_order) VALUES (?, ?, ?)");
+    const entr = _ci.run('Entrées',       '#5b8dee', 1).lastInsertRowid;
+    const plat = _ci.run('Plats',         '#D4AF37', 2).lastInsertRowid;
+    const burg = _ci.run('Burgers & Cie', '#e0935b', 3).lastInsertRowid;
+    const tapa = _ci.run('Tapas',         '#4CAF6A', 4).lastInsertRowid;
+    const dess = _ci.run('Desserts',      '#b45be0', 5).lastInsertRowid;
+    // Réassigne les recettes par leurs IDs connus
+    db.prepare("UPDATE recipes SET category_id = ? WHERE id IN (1,2,3)").run(entr);
+    db.prepare("UPDATE recipes SET category_id = ? WHERE id IN (4,5,6,7,8,9)").run(plat);
+    db.prepare("UPDATE recipes SET category_id = ? WHERE id IN (10,11,12,13,14,15)").run(burg);
+    db.prepare("UPDATE recipes SET category_id = ? WHERE id IN (16,17,18,19,20,21,22,23,24,25)").run(tapa);
+    db.prepare("UPDATE recipes SET category_id = ? WHERE id IN (26,27,28,29,30,31,32)").run(dess);
+  }
+} catch(e) {}
+
 // ─── Seed recettes (carte Mai 2026) ───────────────────────────────────────────
 {
   const _catIns = db.prepare("INSERT OR IGNORE INTO recipe_categories (id, name, color, sort_order) VALUES (?, ?, ?, ?)");
