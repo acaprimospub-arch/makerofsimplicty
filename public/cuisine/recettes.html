@@ -249,7 +249,7 @@
 
     // ── Init ───────────────────────────────────────────────────────────────────
     async function init() {
-      ME = await apiFetch('/api/auth/me');
+      ME = await api.get('/api/auth/me');
       buildNav('recettes');
       isChef = ME.role === 'admin' || (ME.role === 'manager' && ME.shift === 'cuisine');
 
@@ -267,7 +267,7 @@
 
     // ── Data ───────────────────────────────────────────────────────────────────
     async function loadCategories() {
-      categories = await apiFetch('/api/recettes/categories');
+      categories = await api.get('/api/recettes/categories');
       renderCatFilter();
       renderCatSelect();
       renderCatManager();
@@ -275,7 +275,7 @@
 
     async function loadRecipes() {
       const url = activeCatId ? `/api/recettes?category_id=${activeCatId}` : '/api/recettes';
-      recipes = await apiFetch(url);
+      recipes = await api.get(url);
       renderGrid();
     }
 
@@ -356,7 +356,7 @@
 
     // ── Detail drawer ──────────────────────────────────────────────────────────
     async function openDetail(id) {
-      const r = await apiFetch(`/api/recettes/${id}`);
+      const r = await api.get(`/api/recettes/${id}`);
       editingRecipeId = id;
 
       document.getElementById('detailDrawerTitle').textContent = r.name;
@@ -426,7 +426,7 @@
 
     async function confirmDeleteRecipe(id) {
       if (!confirm('Supprimer cette recette ?')) return;
-      await apiFetch(`/api/recettes/${id}`, { method: 'DELETE' });
+      await api.delete(`/api/recettes/${id}`);
       closeAll();
       showToast('Recette supprimée');
       await loadRecipes();
@@ -443,7 +443,7 @@
       renderCatSelect();
 
       if (recipeId) {
-        const r = await apiFetch(`/api/recettes/${recipeId}`);
+        const r = await api.get(`/api/recettes/${recipeId}`);
         document.getElementById('fName').value = r.name || '';
         document.getElementById('fCategory').value = r.category_id || '';
         document.getElementById('fDescription').value = r.description || '';
@@ -526,9 +526,9 @@
 
         let recipeId = editingRecipeId;
         if (recipeId) {
-          await apiFetch(`/api/recettes/${recipeId}`, { method: 'PUT', body: JSON.stringify(data) });
+          await api.put(`/api/recettes/${recipeId}`, data);
         } else {
-          const res = await apiFetch('/api/recettes', { method: 'POST', body: JSON.stringify(data) });
+          const res = await api.post('/api/recettes', data);
           recipeId = res.id;
         }
 
@@ -585,17 +585,14 @@
     async function addCategory() {
       const name = document.getElementById('newCatName').value.trim();
       if (!name) return;
-      await apiFetch('/api/recettes/categories', {
-        method: 'POST',
-        body: JSON.stringify({ name, color: selectedColor })
-      });
+      await api.post('/api/recettes/categories', { name, color: selectedColor });
       document.getElementById('newCatName').value = '';
       await loadCategories();
     }
 
     async function deleteCategoryConfirm(id, name) {
       if (!confirm(`Supprimer la catégorie "${name}" ?\nLes recettes garderont leur contenu mais perdront leur catégorie.`)) return;
-      await apiFetch(`/api/recettes/categories/${id}`, { method: 'DELETE' });
+      await api.delete(`/api/recettes/categories/${id}`);
       if (activeCatId === id) activeCatId = null;
       await loadCategories();
       await loadRecipes();
