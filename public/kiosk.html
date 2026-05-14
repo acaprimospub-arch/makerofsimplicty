@@ -600,14 +600,22 @@ async function startCamera(clockData) {
   screen.classList.add('active');
 
   try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('Caméra non disponible (HTTP ?)');
+    }
     camStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
       audio: false
     });
     document.getElementById('camFeed').srcObject = camStream;
   } catch(e) {
-    stopCamera();
-    finishClock(clockData);
+    console.warn('[Caméra]', e.name, e.message);
+    document.getElementById('camCount').textContent = '📷';
+    document.getElementById('camCount').style.fontSize = '3rem';
+    document.querySelector('.camera-hint').textContent = e.name === 'NotAllowedError'
+      ? 'Permission caméra refusée'
+      : (e.message || 'Caméra indisponible');
+    setTimeout(() => { stopCamera(); finishClock(clockData); }, 2000);
     return;
   }
 
