@@ -1503,18 +1503,37 @@ try {
 
 // ─── Pointages ────────────────────────────────────────────────────────────────
 try {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS pointages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      date TEXT NOT NULL,
-      arrived_at TEXT,
-      left_at TEXT,
-      note TEXT,
-      FOREIGN KEY (user_id) REFERENCES users(id)
-    )
-  `);
-} catch(e) {}
+  // Migration : ancien schéma (type/timestamp) → nouveau (date/arrived_at/left_at)
+  const _ptCols = db.prepare("PRAGMA table_info(pointages)").all().map(c => c.name);
+  if (!_ptCols.includes('date')) {
+    db.exec('ALTER TABLE pointages RENAME TO pointages_legacy');
+    db.exec(`
+      CREATE TABLE pointages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        arrived_at TEXT,
+        left_at TEXT,
+        note TEXT,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `);
+  }
+} catch(e) {
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS pointages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        arrived_at TEXT,
+        left_at TEXT,
+        note TEXT,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `);
+  } catch(e2) {}
+}
 
 function getPointageToday(user_id) {
   const today = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
@@ -1543,6 +1562,17 @@ function getAllPointagesForDate(date) {
     JOIN users u ON u.id = p.user_id
     WHERE p.date = ? ORDER BY p.arrived_at ASC
   `).all(date);
+}
+function getKioskStaffList() {
+  const today = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
+  return db.prepare(`
+    SELECT u.id, u.name, u.shift,
+           p.arrived_at, p.left_at
+    FROM users u
+    LEFT JOIN pointages p ON p.user_id = u.id AND p.date = ?
+    WHERE u.active = 1
+    ORDER BY u.name ASC
+  `).all(today);
 }
 
 function createCongeRequest({ user_id, user_name, date_from, date_to, motif }) {
@@ -2297,7 +2327,7 @@ module.exports = {
   logEtiquette, getEtiquettesLog,
   getTempMateriels, getTempSession, getTempHistory, upsertTempReleve, getTempWeekReport,
   getTachesPeriodiques, completeTachePeriodique, getTachePeriodiquesHistory,
-  getPointageToday, clockIn, clockOut, getPointagesForUser, getAllPointagesForDate,
+  getPointageToday, clockIn, clockOut, getPointagesForUser, getAllPointagesForDate, getKioskStaffList,
   getRecipeCategories, createRecipeCategory, updateRecipeCategory, deleteRecipeCategory,
   getAllRecipes, getRecipeById, createRecipe, updateRecipe, deleteRecipe,
 };

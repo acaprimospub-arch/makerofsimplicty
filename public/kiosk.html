@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Pointeuse — Mos Pub</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#08141c">
+  <style>
+    :root {
+      --bg: #08141c;
+      --bg-card: #0f1f2a;
+      --bg-surface: #152332;
+      --border: rgba(255,255,255,.08);
+      --primary: #D4AF37;
+      --text: #e8f0f5;
+      --text-muted: rgba(232,240,245,.5);
+      --success: #48c78e;
+      --danger: #f14668;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ── Écran principal ── */
+    #screen-main {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding:
+        env(safe-area-inset-top, 0)
+        env(safe-area-inset-right, 0)
+        env(safe-area-inset-bottom, 0)
+        env(safe-area-inset-left, 0);
+    }
+
+    .kiosk-header {
+      text-align: center;
+      padding: 28px 20px 16px;
+      flex-shrink: 0;
+    }
+    .kiosk-logo {
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--primary);
+      opacity: .6;
+      margin-bottom: 10px;
+    }
+    .kiosk-time {
+      font-size: clamp(2.8rem, 8vw, 5rem);
+      font-weight: 800;
+      color: var(--primary);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 2px;
+      line-height: 1;
+    }
+    .kiosk-date {
+      font-size: clamp(.85rem, 2.2vw, 1.1rem);
+      color: var(--text-muted);
+      margin-top: 8px;
+      font-weight: 500;
+    }
+    .kiosk-hint {
+      font-size: .78rem;
+      color: var(--text-muted);
+      margin-top: 10px;
+      opacity: .6;
+    }
+
+    /* Grille staff */
+    .staff-grid {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 16px 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
+      align-content: start;
+    }
+    @media (min-width: 600px) {
+      .staff-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+    }
+
+    .staff-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 10px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: transform .1s, border-color .15s, background .15s;
+    }
+    .staff-card:active { transform: scale(.95); }
+    .staff-card.status-in   { border-color: rgba(72,199,142,.4);  background: rgba(72,199,142,.07); }
+    .staff-card.status-done { border-color: rgba(205,164,67,.3);  background: rgba(205,164,67,.05); opacity: .6; }
+
+    .staff-avatar {
+      width: 54px; height: 54px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #fff;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .avatar-dot {
+      position: absolute;
+      bottom: 1px; right: 1px;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 2.5px solid var(--bg-card);
+    }
+    .status-idle .avatar-dot  { background: var(--text-muted); }
+    .status-in   .avatar-dot  { background: var(--success); }
+    .status-done .avatar-dot  { background: var(--primary); }
+
+    .staff-name {
+      font-size: .88rem;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .staff-badge {
+      font-size: .68rem;
+      font-weight: 700;
+      text-align: center;
+      color: var(--text-muted);
+    }
+    .status-in   .staff-badge { color: var(--success); }
+    .status-done .staff-badge { color: var(--primary); }
+
+    /* ── Overlay PIN ── */
+    #screen-pin {
+      position: fixed; inset: 0;
+      background: rgba(8,20,28,.97);
+      display: flex; flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 20px env(safe-area-inset-bottom, 24px);
+      z-index: 100;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+    }
+    #screen-pin.active { opacity: 1; pointer-events: auto; }
+
+    .pin-header {
+      width: 100%; max-width: 320px;
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 28px;
+    }
+    .pin-back {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      color: var(--text-muted);
+    }
+    .pin-avatar {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.05rem; font-weight: 800; color: #fff;
+      flex-shrink: 0;
+    }
+    .pin-user-name { font-size: 1.2rem; font-weight: 800; }
+    .pin-action-hint { font-size: .8rem; color: var(--text-muted); margin-top: 3px; }
+
+    .pin-dots {
+      display: flex; gap: 16px;
+      margin-bottom: 28px;
+    }
+    .pin-dot {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: 2.5px solid rgba(255,255,255,.2);
+      transition: background .1s, border-color .1s, transform .1s;
+    }
+    .pin-dot.filled { background: var(--primary); border-color: var(--primary); transform: scale(1.1); }
+    .pin-dot.error  { background: var(--danger);  border-color: var(--danger); }
+
+    .pin-pad {
+      width: 100%; max-width: 280px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .pin-key {
+      aspect-ratio: 1;
+      border-radius: 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      font-size: clamp(1.4rem, 5vw, 1.8rem);
+      font-weight: 700;
+      color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: transform .08s, background .1s;
+    }
+    .pin-key:active, .pin-key.pressed { transform: scale(.91); background: rgba(255,255,255,.05); }
+    .pin-key.key-empty { background: transparent; border: none; pointer-events: none; }
+    .pin-key.key-del { font-size: 1.2rem; color: var(--text-muted); }
+
+    .pin-error {
+      margin-top: 16px;
+      color: var(--danger);
+      font-size: .88rem;
+      font-weight: 600;
+      min-height: 20px;
+      text-align: center;
+    }
+
+    /* ── Écran confirmation ── */
+    #screen-confirm {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px;
+      z-index: 200;
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s;
+      background: rgba(8,20,28,.97);
+    }
+    #screen-confirm.active { opacity: 1; pointer-events: auto; }
+
+    .confirm-icon {
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.8rem;
+      margin-bottom: 8px;
+    }
+    .confirm-icon.in   { background: rgba(72,199,142,.15); }
+    .confirm-icon.out  { background: rgba(241,70,104,.12); }
+    .confirm-icon.done { background: rgba(205,164,67,.12); }
+
+    .confirm-name { font-size: 1.6rem; font-weight: 800; }
+    .confirm-msg  { font-size: 1rem; color: var(--text-muted); }
+    .confirm-time { font-size: 2.2rem; font-weight: 800; color: var(--primary); margin-top: 4px; }
+    .confirm-back { margin-top: 20px; font-size: .78rem; color: var(--text-muted); opacity: .6; }
+
+    @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.35 } }
+    .pulsing { animation: pulse 1.5s infinite; }
+  </style>
+</head>
+<body>
+
+<!-- ── Écran principal ── -->
+<div id="screen-main">
+  <div class="kiosk-header">
+    <div class="kiosk-logo">Mos Pub · Pointeuse</div>
+    <div class="kiosk-time" id="clock">00:00:00</div>
+    <div class="kiosk-date" id="clockDate"></div>
+    <div class="kiosk-hint">Appuyez sur votre nom pour pointer</div>
+  </div>
+  <div class="staff-grid" id="staffGrid">
+    <div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:40px 0;font-size:.9rem">Chargement…</div>
+  </div>
+</div>
+
+<!-- ── Overlay PIN ── -->
+<div id="screen-pin">
+  <div class="pin-header">
+    <div class="pin-back" id="pinBack">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/>
+      </svg>
+    </div>
+    <div class="pin-avatar" id="pinAvatar"></div>
+    <div>
+      <div class="pin-user-name" id="pinName"></div>
+      <div class="pin-action-hint" id="pinHint"></div>
+    </div>
+  </div>
+
+  <div class="pin-dots">
+    <div class="pin-dot" id="d0"></div>
+    <div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div>
+    <div class="pin-dot" id="d3"></div>
+  </div>
+
+  <div class="pin-pad">
+    <div class="pin-key" data-key="1">1</div>
+    <div class="pin-key" data-key="2">2</div>
+    <div class="pin-key" data-key="3">3</div>
+    <div class="pin-key" data-key="4">4</div>
+    <div class="pin-key" data-key="5">5</div>
+    <div class="pin-key" data-key="6">6</div>
+    <div class="pin-key" data-key="7">7</div>
+    <div class="pin-key" data-key="8">8</div>
+    <div class="pin-key" data-key="9">9</div>
+    <div class="pin-key key-empty"></div>
+    <div class="pin-key" data-key="0">0</div>
+    <div class="pin-key key-del" data-key="del">⌫</div>
+  </div>
+
+  <div class="pin-error" id="pinError"></div>
+</div>
+
+<!-- ── Écran confirmation ── -->
+<div id="screen-confirm">
+  <div class="confirm-icon" id="confirmIcon"></div>
+  <div class="confirm-name" id="confirmName"></div>
+  <div class="confirm-msg"  id="confirmMsg"></div>
+  <div class="confirm-time" id="confirmTime"></div>
+  <div class="confirm-back pulsing" id="confirmBack"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+'use strict';
+
+// ── Horloge ───────────────────────────────────────────────────────────────────
+function tick() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  document.getElementById('clockDate').textContent =
+    now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+tick();
+setInterval(tick, 1000);
+
+// ── Avatars ───────────────────────────────────────────────────────────────────
+const COLORS = ['#5b8dee','#D4AF37','#e0935b','#4CAF6A','#b45be0','#e05b5b','#5be0d4','#e05bb4','#8dee5b','#ee9a5b'];
+const avatarColor = id => COLORS[id % COLORS.length];
+const initials = name => name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// ── Données staff ─────────────────────────────────────────────────────────────
+let staffList = [];
+
+function statusOf(s) {
+  if (!s.arrived_at) return 'idle';
+  if (!s.left_at)    return 'in';
+  return 'done';
+}
+
+function badgeOf(s) {
+  if (!s.arrived_at) return 'Non pointé';
+  if (!s.left_at)    return `En service · ${s.arrived_at}`;
+  return `${s.arrived_at} — ${s.left_at}`;
+}
+
+function renderStaff() {
+  const grid = document.getElementById('staffGrid');
+  if (!staffList.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:40px 0">Aucun staff trouvé</div>';
+    return;
+  }
+  grid.innerHTML = staffList.map(s => {
+    const st    = statusOf(s);
+    const color = avatarColor(s.id);
+    return `
+      <div class="staff-card status-${st}" data-id="${s.id}">
+        <div class="staff-avatar" style="background:${color}">
+          ${initials(s.name)}
+          <div class="avatar-dot"></div>
+        </div>
+        <div class="staff-name">${esc(s.name)}</div>
+        <div class="staff-badge">${badgeOf(s)}</div>
+      </div>`;
+  }).join('');
+
+  document.querySelectorAll('.staff-card').forEach(card => {
+    card.addEventListener('click', () => openPin(parseInt(card.dataset.id)));
+  });
+}
+
+async function loadStaff() {
+  try {
+    const r = await fetch('/api/kiosk/staff');
+    staffList = await r.json();
+    renderStaff();
+  } catch (e) { console.error(e); }
+}
+
+// ── PIN ───────────────────────────────────────────────────────────────────────
+let currentUserId = null;
+let pinValue = '';
+
+function openPin(id) {
+  const s = staffList.find(x => x.id === id);
+  if (!s) return;
+
+  // Journée terminée : confirmation directe, pas de PIN
+  if (s.arrived_at && s.left_at) {
+    showConfirm('done', s.name, 'Journée déjà terminée', `${s.arrived_at} — ${s.left_at}`);
+    return;
+  }
+
+  currentUserId = id;
+  pinValue = '';
+
+  const color = avatarColor(id);
+  document.getElementById('pinAvatar').style.background = color;
+  document.getElementById('pinAvatar').textContent = initials(s.name);
+  document.getElementById('pinName').textContent = s.name;
+  document.getElementById('pinHint').textContent = s.arrived_at ? 'Pointer le départ' : "Pointer l'arrivée";
+  document.getElementById('pinError').textContent = '';
+  updateDots();
+
+  document.getElementById('screen-pin').classList.add('active');
+}
+
+function closePin() {
+  document.getElementById('screen-pin').classList.remove('active');
+  currentUserId = null;
+  pinValue = '';
+}
+
+function updateDots() {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById(`d${i}`);
+    d.classList.toggle('filled', i < pinValue.length);
+    d.classList.remove('error');
+  }
+}
+
+function shakeError(msg) {
+  document.getElementById('pinError').textContent = msg || 'PIN incorrect';
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById(`d${i}`);
+    d.classList.remove('filled');
+    d.classList.add('error');
+  }
+  pinValue = '';
+  setTimeout(() => {
+    for (let i = 0; i < 4; i++) document.getElementById(`d${i}`).classList.remove('error');
+    updateDots();
+  }, 700);
+}
+
+async function submitPin() {
+  const pin    = pinValue;
+  const userId = currentUserId;
+  pinValue = '';
+  updateDots();
+
+  try {
+    const r    = await fetch('/api/kiosk/clock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, pin })
+    });
+    const data = await r.json();
+
+    if (!data.ok) {
+      if (data.error === 'done') {
+        closePin();
+        const s = staffList.find(x => x.id === userId);
+        showConfirm('done', s?.name || '', 'Journée déjà terminée', '');
+      } else {
+        shakeError('PIN incorrect');
+      }
+      return;
+    }
+
+    closePin();
+    const time = data.action === 'in' ? data.entry.arrived_at : data.entry.left_at;
+    const msg  = data.action === 'in' ? 'Bonne journée !' : 'À bientôt !';
+    showConfirm(data.action, data.user.name, msg, time);
+    await loadStaff();
+
+  } catch (e) {
+    shakeError('Erreur réseau');
+  }
+}
+
+// Clavier PIN (touch)
+document.querySelectorAll('.pin-key[data-key]').forEach(key => {
+  key.addEventListener('click', () => {
+    const k = key.dataset.key;
+    key.classList.add('pressed');
+    setTimeout(() => key.classList.remove('pressed'), 100);
+
+    if (k === 'del') {
+      pinValue = pinValue.slice(0, -1);
+      document.getElementById('pinError').textContent = '';
+      updateDots();
+    } else if (pinValue.length < 4) {
+      pinValue += k;
+      updateDots();
+      if (pinValue.length === 4) submitPin();
+    }
+  });
+});
+
+document.getElementById('pinBack').addEventListener('click', closePin);
+
+// Clavier physique
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('screen-pin').classList.contains('active')) return;
+  if (e.key >= '0' && e.key <= '9' && pinValue.length < 4) {
+    pinValue += e.key; updateDots();
+    if (pinValue.length === 4) submitPin();
+  } else if (e.key === 'Backspace') {
+    pinValue = pinValue.slice(0, -1); updateDots();
+  } else if (e.key === 'Escape') {
+    closePin();
+  }
+});
+
+// ── Confirmation ──────────────────────────────────────────────────────────────
+let confirmTimer = null;
+
+function showConfirm(type, name, msg, time) {
+  const screen = document.getElementById('screen-confirm');
+  const icon   = document.getElementById('confirmIcon');
+
+  icon.className   = `confirm-icon ${type}`;
+  icon.textContent = type === 'in' ? '✓' : type === 'out' ? '✓' : '✓';
+  // Emoji par type
+  icon.textContent = type === 'in' ? '👋' : type === 'out' ? '👍' : '✓';
+
+  document.getElementById('confirmName').textContent = name;
+  document.getElementById('confirmMsg').textContent  = msg;
+  document.getElementById('confirmTime').textContent = time || '';
+
+  let secs = 3;
+  document.getElementById('confirmBack').textContent = `Retour dans ${secs}s…`;
+  screen.classList.add('active');
+
+  if (confirmTimer) clearInterval(confirmTimer);
+  confirmTimer = setInterval(() => {
+    secs--;
+    document.getElementById('confirmBack').textContent = `Retour dans ${secs}s…`;
+    if (secs <= 0) {
+      clearInterval(confirmTimer);
+      screen.classList.remove('active');
+    }
+  }, 1000);
+}
+
+// ── Socket.io ─────────────────────────────────────────────────────────────────
+const socket = io();
+socket.on('pointage:updated', () => loadStaff());
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadStaff();
+setInterval(loadStaff, 60000);
+</script>
+</body>
+</html>

@@ -475,6 +475,34 @@ app.get('/api/admin/pointages', requireAdminOrManager, (req, res) => {
   res.json(db.getAllPointagesForDate(date));
 });
 
+// ─── Kiosque multi-user (tablette pointeuse sans session) ─────────────────────
+app.get('/api/kiosk/staff', (req, res) => {
+  res.json(db.getKioskStaffList());
+});
+
+app.post('/api/kiosk/clock', (req, res) => {
+  const { userId, pin } = req.body;
+  if (!pin || !userId) return res.status(400).json({ ok: false, error: 'Données manquantes' });
+  const user = db.getUserByPin(pin);
+  if (!user || !user.active || user.id !== parseInt(userId)) {
+    return res.json({ ok: false, error: 'PIN incorrect' });
+  }
+  const today = db.getPointageToday(user.id);
+  let action;
+  if (!today) {
+    db.clockIn(user.id);
+    action = 'in';
+  } else if (!today.left_at) {
+    db.clockOut(user.id);
+    action = 'out';
+  } else {
+    return res.json({ ok: false, error: 'done' });
+  }
+  const entry = db.getPointageToday(user.id);
+  io.emit('pointage:updated', { userId: user.id });
+  res.json({ ok: true, user: { id: user.id, name: user.name }, action, entry });
+});
+
 // Admin task management
 app.get('/api/admin/tasks', requireAdmin, (req, res) => {
   res.json(db.getAllTasks());
