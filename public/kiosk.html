@@ -262,6 +262,20 @@
     @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.35 } }
     .pulsing { animation: pulse 1.5s infinite; }
 
+    #conn-indicator {
+      position: fixed; bottom: 14px; right: 16px;
+      display: flex; align-items: center; gap: 6px;
+      font-size: .7rem; color: var(--text-muted); opacity: .5;
+      z-index: 10; transition: opacity .3s;
+      user-select: none;
+    }
+    #conn-indicator.offline { opacity: 1; color: var(--danger); }
+    .conn-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--success);
+    }
+    #conn-indicator.offline .conn-dot { background: var(--danger); animation: pulse 1s infinite; }
+
     /* ── Écran caméra ── */
     #screen-camera {
       position: fixed; inset: 0;
@@ -379,6 +393,8 @@
   <div class="confirm-time" id="confirmTime"></div>
   <div class="confirm-back pulsing" id="confirmBack"></div>
 </div>
+
+<div id="conn-indicator"><div class="conn-dot"></div><span id="conn-label">En ligne</span></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -668,8 +684,18 @@ function showConfirm(type, name, msg, time) {
 }
 
 // ── Socket.io ─────────────────────────────────────────────────────────────────
-const socket = io();
+const socket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionAttempts: Infinity });
 socket.on('pointage:updated', () => loadStaff());
+socket.on('connect',    () => {
+  const el = document.getElementById('conn-indicator');
+  el.classList.remove('offline');
+  document.getElementById('conn-label').textContent = 'En ligne';
+});
+socket.on('disconnect', () => {
+  const el = document.getElementById('conn-indicator');
+  el.classList.add('offline');
+  document.getElementById('conn-label').textContent = 'Hors ligne';
+});
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 loadStaff();

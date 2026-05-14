@@ -1,5 +1,7 @@
 const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
+const bcrypt = require('bcryptjs');
+const BCRYPT_ROUNDS = 8;
 
 const db = new DatabaseSync(path.join(__dirname, 'mos.db'));
 db.exec('PRAGMA journal_mode = WAL');
@@ -395,6 +397,12 @@ const _insertUser = db.prepare('INSERT OR IGNORE INTO users (name, pin, role, sh
 for (const u of _seedUsers) _insertUser.run(u.name, u.pin, u.role, u.shift);
 // Désactiver les anciens comptes test génériques
 db.prepare("UPDATE users SET active = 0 WHERE pin IN ('0000','1234','11111')").run();
+
+// Migration : hasher les PINs en clair (détection : hash bcrypt commence par '$2b$')
+const _unhashedUsers = db.prepare("SELECT id, pin FROM users WHERE pin NOT LIKE '$2b$%'").all();
+for (const u of _unhashedUsers) {
+  db.prepare('UPDATE users SET pin = ? WHERE id = ?').run(bcrypt.hashSync(u.pin, BCRYPT_ROUNDS), u.id);
+}
 
 // ─── Seed tasks ────────────────────────────────────────────────────────────────
 if (db.prepare('SELECT COUNT(*) as c FROM tasks').get().c === 0) {
@@ -799,21 +807,45 @@ if (db.prepare('SELECT COUNT(*) as c FROM floor_tables').get().c === 0) {
 
 // ─── Users ─────────────────────────────────────────────────────────────────────
 function getUserByPin(pin) {
-  return db.prepare('SELECT * FROM users WHERE pin = ? AND active = 1').get(pin);
+  const users = db.prepare('SELECT * FROM users WHERE active = 1').all();
+  for (const u of users) {
+    if (bcrypt.compareSync(pin, u.pin)) return u;
+  }
+  return null;
+}
+function verifyUserPin(userId, pin) {
+  const user = db.prepare('SELECT * FROM users WHERE id = ? AND active = 1').get(userId);
+  if (!user) return null;
+  if (!bcrypt.compareSync(pin, user.pin)) return null;
+  return user;
+}
+function isPinTaken(pin, excludeId = null) {
+  const users = db.prepare('SELECT id, pin FROM users').all();
+  for (const u of users) {
+    if (excludeId && u.id === parseInt(excludeId)) continue;
+    if (bcrypt.compareSync(pin, u.pin)) return true;
+  }
+  return false;
 }
 function getUserById(id) {
-  return db.prepare('SELECT id, name, pin, role, shift, email, active, created_at FROM users WHERE id = ?').get(id);
+  return db.prepare('SELECT id, name, role, shift, email, active, created_at FROM users WHERE id = ?').get(id);
 }
 function getAllUsers() {
-  return db.prepare('SELECT id, name, pin, role, shift, email, active, created_at FROM users ORDER BY role DESC, name').all();
+  return db.prepare('SELECT id, name, role, shift, email, active, created_at FROM users ORDER BY role DESC, name').all();
 }
 function createUser({ name, pin, role, shift, email }) {
-  return db.prepare('INSERT INTO users (name, pin, role, shift, email) VALUES (?, ?, ?, ?, ?)').run(name, pin, role || 'staff', shift || null, email || null).lastInsertRowid;
+  const hashedPin = bcrypt.hashSync(pin, BCRYPT_ROUNDS);
+  return db.prepare('INSERT INTO users (name, pin, role, shift, email) VALUES (?, ?, ?, ?, ?)').run(name, hashedPin, role || 'staff', shift || null, email || null).lastInsertRowid;
 }
 function updateUser(id, data) {
-  const fields = ['name', 'pin', 'role', 'shift', 'active', 'email'];
-  const updates = fields.filter(f => data[f] !== undefined).map(f => `${f} = ?`);
-  const values = fields.filter(f => data[f] !== undefined).map(f => data[f]);
+  const updates = [];
+  const values  = [];
+  if (data.name   !== undefined)               { updates.push('name = ?');   values.push(data.name); }
+  if (data.pin    !== undefined && data.pin !== '') { updates.push('pin = ?'); values.push(bcrypt.hashSync(data.pin, BCRYPT_ROUNDS)); }
+  if (data.role   !== undefined)               { updates.push('role = ?');   values.push(data.role); }
+  if (data.shift  !== undefined)               { updates.push('shift = ?');  values.push(data.shift); }
+  if (data.active !== undefined)               { updates.push('active = ?'); values.push(data.active); }
+  if (data.email  !== undefined)               { updates.push('email = ?');  values.push(data.email); }
   if (!updates.length) return;
   db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values, id);
 }
@@ -1575,6 +1607,12 @@ function savePointagePhoto(userId, date, action, filename) {
   db.prepare(`UPDATE pointages SET ${col} = ? WHERE user_id = ? AND date = ?`).run(filename, userId, date);
 }
 
+function resetPointageDay(userId, date) {
+  const record = db.prepare('SELECT arrived_photo, left_photo FROM pointages WHERE user_id = ? AND date = ?').get(userId, date);
+  db.prepare('DELETE FROM pointages WHERE user_id = ? AND date = ?').run(userId, date);
+  return record || null;
+}
+
 function getKioskStaffList() {
   const today = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
   return db.prepare(`
@@ -2311,7 +2349,7 @@ function deleteRecipe(id) {
 }
 
 module.exports = {
-  getUserByPin, getUserById, getAllUsers, createUser, updateUser, deleteUser,
+  getUserByPin, verifyUserPin, isPinTaken, getUserById, getAllUsers, createUser, updateUser, deleteUser,
   getTasksWithCompletions, getTaskById, getAllTasks, completeTask, uncompleteTask, createTask, updateTask, deactivateTask,
   getTables, getTableById, createTable, updateTable, deleteTable,
   getReservationsByDate, getReservationById, createReservation, updateReservation, deleteReservation,
@@ -2339,7 +2377,7 @@ module.exports = {
   logEtiquette, getEtiquettesLog,
   getTempMateriels, getTempSession, getTempHistory, upsertTempReleve, getTempWeekReport,
   getTachesPeriodiques, completeTachePeriodique, getTachePeriodiquesHistory,
-  getPointageToday, clockIn, clockOut, getPointagesForUser, getAllPointagesForDate, savePointagePhoto, getKioskStaffList,
+  getPointageToday, clockIn, clockOut, getPointagesForUser, getAllPointagesForDate, savePointagePhoto, resetPointageDay, getKioskStaffList,
   getRecipeCategories, createRecipeCategory, updateRecipeCategory, deleteRecipeCategory,
   getAllRecipes, getRecipeById, createRecipe, updateRecipe, deleteRecipe,
 };

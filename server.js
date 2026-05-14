@@ -10,6 +10,7 @@ const nodemailer = require('nodemailer');
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 const multer = require('multer');
+const crypto = require('crypto');
 const db = require('./db/database');
 
 // ─── Multer (pièces jointes réservations) ──────────────────────────────────────
@@ -364,11 +365,41 @@ function requireCuisineManager(req, res, next) {
   res.status(403).json({ error: 'Accès refusé' });
 }
 
+// ─── Rate limiter PIN (mémoire — reset après 15min) ───────────────────────────
+const _pinAttempts = new Map(); // key: string → { count, lockedUntil }
+const PIN_MAX       = 5;
+const PIN_LOCKOUT   = 15 * 60 * 1000;
+
+function _checkPinLimit(key) {
+  const now  = Date.now();
+  const e    = _pinAttempts.get(key);
+  if (!e) return { ok: true };
+  if (e.lockedUntil && now < e.lockedUntil) {
+    return { ok: false, mins: Math.ceil((e.lockedUntil - now) / 60000) };
+  }
+  return { ok: true };
+}
+function _recordPinFail(key) {
+  const e = _pinAttempts.get(key) || { count: 0 };
+  e.count++;
+  if (e.count >= PIN_MAX) { e.lockedUntil = Date.now() + PIN_LOCKOUT; e.count = 0; }
+  _pinAttempts.set(key, e);
+}
+function _clearPinLimit(key) { _pinAttempts.delete(key); }
+
 // ─── Auth ──────────────────────────────────────────────────────────────────────
 app.post('/api/auth/login', (req, res) => {
+  const ip  = req.ip || 'unknown';
+  const lim = _checkPinLimit(`login:${ip}`);
+  if (!lim.ok) return res.status(429).json({ error: `Trop de tentatives. Réessaie dans ${lim.mins} min.` });
+
   const { pin } = req.body;
   const user = db.getUserByPin(pin);
-  if (!user || !user.active) return res.status(401).json({ error: 'Code PIN incorrect' });
+  if (!user || !user.active) {
+    _recordPinFail(`login:${ip}`);
+    return res.status(401).json({ error: 'Code PIN incorrect' });
+  }
+  _clearPinLimit(`login:${ip}`);
   req.session.userId = user.id;
   req.session.role = user.role;
   req.session.shift = user.shift;
@@ -480,6 +511,16 @@ app.get('/api/admin/pointages', requireAdminOrManager, (req, res) => {
   res.json(db.getAllPointagesForDate(date));
 });
 
+app.post('/api/admin/pointages/:userId/reset-day', requireAdmin, (req, res) => {
+  const userId = parseInt(req.params.userId);
+  const date   = req.body.date || new Date().toLocaleString('sv-SE', { timeZone:'Europe/Paris' }).slice(0,10);
+  const record = db.resetPointageDay(userId, date);
+  if (record?.arrived_photo) try { fs.unlinkSync(path.join(POINTAGES_DIR, record.arrived_photo)); } catch(e) {}
+  if (record?.left_photo)    try { fs.unlinkSync(path.join(POINTAGES_DIR, record.left_photo));    } catch(e) {}
+  io.emit('pointage:updated', { userId });
+  res.json({ ok: true });
+});
+
 // ─── Kiosque multi-user (tablette pointeuse sans session) ─────────────────────
 app.get('/api/kiosk/staff', (req, res) => {
   res.json(db.getKioskStaffList());
@@ -488,21 +529,22 @@ app.get('/api/kiosk/staff', (req, res) => {
 app.post('/api/kiosk/clock', (req, res) => {
   const { userId, pin } = req.body;
   if (!pin || !userId) return res.status(400).json({ ok: false, error: 'Données manquantes' });
-  const user = db.getUserByPin(pin);
-  if (!user || !user.active || user.id !== parseInt(userId)) {
+
+  const uid = parseInt(userId);
+  const lim = _checkPinLimit(`kiosk:${uid}`);
+  if (!lim.ok) return res.status(429).json({ ok: false, error: `Trop de tentatives. Réessaie dans ${lim.mins} min.` });
+
+  const user = db.verifyUserPin(uid, pin);
+  if (!user) {
+    _recordPinFail(`kiosk:${uid}`);
     return res.json({ ok: false, error: 'PIN incorrect' });
   }
+  _clearPinLimit(`kiosk:${uid}`);
   const today = db.getPointageToday(user.id);
   let action;
-  if (!today) {
-    db.clockIn(user.id);
-    action = 'in';
-  } else if (!today.left_at) {
-    db.clockOut(user.id);
-    action = 'out';
-  } else {
-    return res.json({ ok: false, error: 'done' });
-  }
+  if (!today) { db.clockIn(user.id); action = 'in'; }
+  else if (!today.left_at) { db.clockOut(user.id); action = 'out'; }
+  else { return res.json({ ok: false, error: 'done' }); }
   const entry = db.getPointageToday(user.id);
   io.emit('pointage:updated', { userId: user.id });
   res.json({ ok: true, user: { id: user.id, name: user.name }, action, entry, pointageId: entry.id });
@@ -519,7 +561,8 @@ app.post('/api/kiosk/clock/photo', (req, res) => {
     const base64 = photo.replace(/^data:image\/\w+;base64,/, '');
     const buf    = Buffer.from(base64, 'base64');
     const today  = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
-    const fname  = `${uid}_${today}_${action}.jpg`;
+    const token  = crypto.randomBytes(8).toString('hex');
+    const fname  = `${uid}_${today}_${action}_${token}.jpg`;
     fs.writeFileSync(path.join(POINTAGES_DIR, fname), buf);
     db.savePointagePhoto(uid, today, action, fname);
     res.json({ ok: true });
@@ -1071,18 +1114,17 @@ app.get('/api/admin/staff', requireAdmin, (req, res) => {
 
 app.post('/api/admin/staff', requireAdmin, (req, res) => {
   const { pin } = req.body;
-  if (db.getUserByPin(pin)) return res.status(400).json({ error: 'Ce PIN est déjà utilisé' });
+  if (!pin || !/^\d{4,6}$/.test(pin)) return res.status(400).json({ error: 'PIN invalide (4 à 6 chiffres)' });
+  if (db.isPinTaken(pin)) return res.status(400).json({ error: 'Ce PIN est déjà utilisé' });
   const id = db.createUser(req.body);
   res.json(db.getUserById(id));
 });
 
 app.put('/api/admin/staff/:id', requireAdmin, (req, res) => {
   const { pin } = req.body;
-  if (pin) {
-    const existing = db.getUserByPin(pin);
-    if (existing && existing.id !== parseInt(req.params.id)) {
-      return res.status(400).json({ error: 'Ce PIN est déjà utilisé' });
-    }
+  if (pin && pin !== '') {
+    if (!/^\d{4,6}$/.test(pin)) return res.status(400).json({ error: 'PIN invalide (4 à 6 chiffres)' });
+    if (db.isPinTaken(pin, req.params.id)) return res.status(400).json({ error: 'Ce PIN est déjà utilisé' });
   }
   db.updateUser(req.params.id, req.body);
   res.json(db.getUserById(req.params.id));

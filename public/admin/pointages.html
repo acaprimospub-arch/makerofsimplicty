@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pointages — Admin</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .date-bar {
+      display: flex; align-items: center; gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .date-bar input[type="date"] {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: .95rem;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    .date-nav-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background .15s;
+    }
+    .date-nav-btn:hover { background: var(--bg-surface); color: var(--text); }
+
+    .summary-bar {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .summary-chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: .85rem;
+      color: var(--text-muted);
+    }
+    .summary-chip strong { color: var(--text); }
+
+    .pointages-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .9rem;
+    }
+    .pointages-table th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .pointages-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+      vertical-align: middle;
+    }
+    .pointages-table tr:last-child td { border-bottom: none; }
+    .pointages-table tr:hover td { background: rgba(255,255,255,.02); }
+
+    .staff-cell { display: flex; align-items: center; gap: 10px; }
+    .staff-avatar-sm {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 800; color: #fff;
+      flex-shrink: 0;
+    }
+
+    .time-chip {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text);
+    }
+    .time-chip.absent { color: var(--text-muted); font-weight: 400; font-size: .85rem; }
+    .duration-chip {
+      background: rgba(212,175,55,.12);
+      color: var(--primary);
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: .8rem;
+      font-weight: 700;
+    }
+    .duration-chip.partial { background: rgba(72,199,142,.1); color: var(--success); }
+
+    .photo-thumb {
+      width: 44px; height: 44px;
+      border-radius: 8px;
+      object-fit: cover;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      transition: transform .1s, border-color .15s;
+    }
+    .photo-thumb:hover { transform: scale(1.08); border-color: var(--primary); }
+    .photo-placeholder {
+      width: 44px; height: 44px;
+      border-radius: 8px;
+      background: var(--bg-surface);
+      border: 1.5px dashed rgba(255,255,255,.1);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted);
+      font-size: .65rem;
+      text-align: center;
+    }
+
+    .btn-reset {
+      background: none;
+      border: 1px solid rgba(241,70,104,.3);
+      border-radius: 8px;
+      color: var(--danger);
+      font-size: .78rem;
+      padding: 5px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s;
+    }
+    .btn-reset:hover { background: rgba(241,70,104,.08); }
+
+    /* Lightbox photo */
+    #photo-lightbox {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.92);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+    }
+    #photo-lightbox.active { opacity: 1; pointer-events: auto; }
+    #photo-lightbox img {
+      max-width: 92vw; max-height: 90vh;
+      border-radius: 12px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.8);
+    }
+    #lightbox-close {
+      position: absolute; top: 20px; right: 24px;
+      font-size: 2rem; color: rgba(255,255,255,.6);
+      cursor: pointer; background: none; border: none;
+      line-height: 1;
+    }
+    #lightbox-close:hover { color: #fff; }
+    #lightbox-caption {
+      position: absolute; bottom: 24px;
+      font-size: .9rem; color: rgba(255,255,255,.5);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      font-size: .95rem;
+    }
+    .export-btn {
+      margin-left: auto;
+    }
+  </style>
+</head>
+<body>
+<div id="app-root">
+  <div class="loading-screen"><div class="spinner"></div></div>
+</div>
+
+<div id="photo-lightbox">
+  <button id="lightbox-close" aria-label="Fermer">×</button>
+  <img id="lightbox-img" src="" alt="Photo de pointage">
+  <div id="lightbox-caption"></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+'use strict';
+
+const COLORS = ['#5b8dee','#D4AF37','#e0935b','#4CAF6A','#b45be0','#e05b5b','#5be0d4','#e05bb4','#8dee5b','#ee9a5b'];
+const avatarColor = id => COLORS[id % COLORS.length];
+const initials    = name => name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+const esc         = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function todayStr() {
+  return new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
+}
+
+function calcDuration(arrived, left) {
+  if (!arrived || !left) return null;
+  const [ah, am] = arrived.split(':').map(Number);
+  const [lh, lm] = left.split(':').map(Number);
+  const total = (lh * 60 + lm) - (ah * 60 + am);
+  if (total <= 0) return null;
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return h > 0 ? `${h}h${m.toString().padStart(2, '0')}` : `${m}min`;
+}
+
+function exportCsv(date, rows) {
+  const lines = [['Nom', 'Arrivée', 'Départ', 'Durée'].join(';')];
+  rows.forEach(r => {
+    lines.push([
+      r.user_name,
+      r.arrived_at || '—',
+      r.left_at    || '—',
+      calcDuration(r.arrived_at, r.left_at) || '—'
+    ].join(';'));
+  });
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `pointages_${date}.csv`;
+  a.click();
+}
+
+let currentDate = todayStr();
+let currentRows = [];
+
+async function loadPointages(date) {
+  const rows = await api.get(`/api/admin/pointages?date=${date}`);
+  currentRows = Array.isArray(rows) ? rows : [];
+  render(date, currentRows);
+}
+
+function render(date, rows) {
+  const present  = rows.filter(r => r.arrived_at).length;
+  const complete  = rows.filter(r => r.arrived_at && r.left_at).length;
+
+  document.getElementById('summary-present').textContent  = present;
+  document.getElementById('summary-complete').textContent = complete;
+  document.getElementById('summary-total').textContent    = rows.length;
+
+  const tbody = document.getElementById('tbody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">Aucun pointage pour cette date.</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const color    = avatarColor(r.user_id);
+    const dur      = calcDuration(r.arrived_at, r.left_at);
+    const inPhoto  = r.arrived_photo ? `<img class="photo-thumb" src="/uploads/pointages/${esc(r.arrived_photo)}" data-name="${esc(r.user_name)}" data-label="Arrivée ${r.arrived_at || ''}" alt="Photo arrivée">` : `<div class="photo-placeholder">Pas de<br>photo</div>`;
+    const outPhoto = r.left_photo    ? `<img class="photo-thumb" src="/uploads/pointages/${esc(r.left_photo)}" data-name="${esc(r.user_name)}" data-label="Départ ${r.left_at || ''}" alt="Photo départ">` : `<div class="photo-placeholder">Pas de<br>photo</div>`;
+    return `
+      <tr data-uid="${r.user_id}">
+        <td>
+          <div class="staff-cell">
+            <div class="staff-avatar-sm" style="background:${color}">${initials(r.user_name)}</div>
+            <strong>${esc(r.user_name)}</strong>
+          </div>
+        </td>
+        <td>${r.arrived_at ? `<span class="time-chip">${r.arrived_at}</span>` : `<span class="time-chip absent">—</span>`}</td>
+        <td>${r.left_at    ? `<span class="time-chip">${r.left_at}</span>`    : `<span class="time-chip absent">${r.arrived_at ? 'En service' : '—'}</span>`}</td>
+        <td>${dur ? `<span class="duration-chip${r.left_at ? '' : ' partial'}">${dur}</span>` : '—'}</td>
+        <td><div style="display:flex;gap:6px;align-items:center">${inPhoto}${outPhoto}</div></td>
+        <td><button class="btn-reset" data-uid="${r.user_id}" data-name="${esc(r.user_name)}">Réinitialiser</button></td>
+      </tr>`;
+  }).join('');
+
+  // Photo lightbox
+  tbody.querySelectorAll('.photo-thumb').forEach(img => {
+    img.addEventListener('click', () => openLightbox(img.src, img.dataset.name, img.dataset.label));
+  });
+
+  // Reset buttons
+  tbody.querySelectorAll('.btn-reset').forEach(btn => {
+    btn.addEventListener('click', () => resetDay(parseInt(btn.dataset.uid), btn.dataset.name));
+  });
+}
+
+async function resetDay(userId, name) {
+  if (!confirm(`Réinitialiser la journée de ${name} pour le ${currentDate} ?\nCela supprimera les pointages et les photos.`)) return;
+  await api.post(`/api/admin/pointages/${userId}/reset-day`, { date: currentDate });
+  showToast(`Journée de ${name} réinitialisée`, 'info');
+  await loadPointages(currentDate);
+}
+
+function openLightbox(src, name, label) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox-caption').textContent = `${name} — ${label}`;
+  document.getElementById('photo-lightbox').classList.add('active');
+}
+document.getElementById('lightbox-close').addEventListener('click', () => {
+  document.getElementById('photo-lightbox').classList.remove('active');
+});
+document.getElementById('photo-lightbox').addEventListener('click', e => {
+  if (e.target.id === 'photo-lightbox') document.getElementById('photo-lightbox').classList.remove('active');
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('photo-lightbox').classList.remove('active');
+});
+
+// ── Navigation ─────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  const user = await requireAuth(['admin', 'manager']);
+  renderLayout(user, 'Pointages', `
+    <div class="date-bar">
+      <button class="date-nav-btn" id="btn-prev">‹</button>
+      <input type="date" id="date-picker" value="${currentDate}">
+      <button class="date-nav-btn" id="btn-next">›</button>
+      <button class="btn btn-secondary btn-sm export-btn" id="btn-export">Exporter CSV</button>
+    </div>
+    <div class="summary-bar">
+      <div class="summary-chip">Présents : <strong id="summary-present">—</strong></div>
+      <div class="summary-chip">Journées complètes : <strong id="summary-complete">—</strong></div>
+      <div class="summary-chip">Total staff : <strong id="summary-total">—</strong></div>
+    </div>
+    <div class="card" style="overflow:auto">
+      <table class="pointages-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Arrivée</th>
+            <th>Départ</th>
+            <th>Durée</th>
+            <th>Photos</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="6"><div class="empty-state">Chargement…</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  `);
+
+  document.getElementById('date-picker').addEventListener('change', e => {
+    currentDate = e.target.value;
+    loadPointages(currentDate);
+  });
+  document.getElementById('btn-prev').addEventListener('click', () => {
+    const d = new Date(currentDate + 'T00:00:00');
+    d.setDate(d.getDate() - 1);
+    currentDate = d.toISOString().slice(0, 10);
+    document.getElementById('date-picker').value = currentDate;
+    loadPointages(currentDate);
+  });
+  document.getElementById('btn-next').addEventListener('click', () => {
+    const d = new Date(currentDate + 'T00:00:00');
+    d.setDate(d.getDate() + 1);
+    currentDate = d.toISOString().slice(0, 10);
+    document.getElementById('date-picker').value = currentDate;
+    loadPointages(currentDate);
+  });
+  document.getElementById('btn-export').addEventListener('click', () => {
+    exportCsv(currentDate, currentRows);
+  });
+
+  await loadPointages(currentDate);
+});
+</script>
+</body>
+</html>

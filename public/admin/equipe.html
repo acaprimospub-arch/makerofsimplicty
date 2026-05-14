@@ -228,10 +228,10 @@
           </div>
           <div class="form-row form-row-2">
             <div class="form-group">
-              <label class="form-label" for="staff-pin">Code PIN <span class="required" aria-hidden="true">*</span> <span class="text-xs text-subtle">(4–6 chiffres)</span></label>
-              <input type="text" id="staff-pin" placeholder="Ex : 1234" maxlength="6" pattern="[0-9]{4,6}" required aria-required="true" inputmode="numeric" autocomplete="off" aria-describedby="pin-hint err-pin">
+              <label class="form-label" for="staff-pin">Code PIN <span class="required" id="pin-required-star" aria-hidden="true">*</span> <span class="text-xs text-subtle">(4–6 chiffres)</span></label>
+              <input type="text" id="staff-pin" placeholder="Ex : 1234" maxlength="6" pattern="[0-9]{4,6}" inputmode="numeric" autocomplete="off" aria-describedby="pin-hint err-pin">
               <div class="pin-strength" aria-hidden="true"><div class="pin-strength-fill" id="pin-strength-fill" style="width:0;"></div></div>
-              <p class="field-hint" id="pin-hint">4 à 6 chiffres uniquement.</p>
+              <p class="field-hint" id="pin-hint">4 à 6 chiffres uniquement. <span id="pin-edit-hint" style="display:none;color:var(--text-muted)">Laisser vide pour ne pas modifier.</span></p>
               <p class="field-error hidden" id="err-pin" role="alert">
                 <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M6 1a5 5 0 100 10A5 5 0 006 1zm.5 7h-1v-1h1v1zm0-2h-1V4h1v2z"/></svg>
                 PIN invalide (4–6 chiffres requis).
@@ -427,7 +427,7 @@
                 return `
                   <tr data-id="${s.id}">
                     <td><strong>${escapeHtml(s.name)}</strong></td>
-                    <td><code style="font-family:monospace;font-size:1rem;letter-spacing:3px;color:var(--primary)">${escapeHtml(s.pin)}</code></td>
+                    <td><code style="font-family:monospace;font-size:1rem;letter-spacing:3px;color:var(--primary)">••••</code></td>
                     <td><span class="badge ${p.cls}">${escapeHtml(p.label)}</span></td>
                     <td><span class="badge ${s.active ? 'badge-success' : 'badge-danger'}">${s.active ? 'Actif' : 'Inactif'}</span></td>
                     <td>
@@ -549,6 +549,8 @@
       document.getElementById('modal-title').textContent = 'Ajouter un membre';
       document.getElementById('staff-id').value = '';
       document.getElementById('staff-form').reset();
+      document.getElementById('pin-required-star').style.display = '';
+      document.getElementById('pin-edit-hint').style.display = 'none';
       clearFormErrors();
       updatePinStrength('');
       showModal('add-modal', document.getElementById('btn-add'));
@@ -560,13 +562,15 @@
       document.getElementById('modal-title').textContent = 'Modifier un membre';
       document.getElementById('staff-id').value = s.id;
       document.getElementById('staff-name').value = s.name;
-      document.getElementById('staff-pin').value = s.pin;
+      document.getElementById('staff-pin').value = '';
       const poste = (s.role === 'manager' ? 'manager' : 'staff') + '_' + (s.shift || 'midi');
       const select = document.getElementById('staff-poste');
       if ([...select.options].some(o => o.value === poste)) select.value = poste;
       document.getElementById('staff-email').value = s.email || '';
+      document.getElementById('pin-required-star').style.display = 'none';
+      document.getElementById('pin-edit-hint').style.display = 'inline';
       clearFormErrors();
-      updatePinStrength(s.pin);
+      updatePinStrength('');
       showModal('add-modal', triggerBtn);
     }
 
@@ -612,7 +616,9 @@
       const nameVal = document.getElementById('staff-name').value.trim();
       const pinVal  = document.getElementById('staff-pin').value.trim();
       if (!nameVal) { showFieldError('staff-name', 'err-name'); valid = false; }
-      if (!pinVal || !/^\d{4,6}$/.test(pinVal)) { showFieldError('staff-pin', 'err-pin'); valid = false; }
+      const isEdit = !!document.getElementById('staff-id').value;
+      if (!isEdit && (!pinVal || !/^\d{4,6}$/.test(pinVal))) { showFieldError('staff-pin', 'err-pin'); valid = false; }
+      if (isEdit && pinVal && !/^\d{4,6}$/.test(pinVal)) { showFieldError('staff-pin', 'err-pin'); valid = false; }
       if (!valid) return;
 
       const id    = document.getElementById('staff-id').value;
