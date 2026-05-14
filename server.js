@@ -89,6 +89,22 @@ const uploadTachePhoto = multer({
   fileFilter: (_req, file, cb) => cb(null, /^image\//.test(file.mimetype))
 });
 
+// ─── Multer (photos recettes cuisine) ─────────────────────────────────────────
+const RECETTES_DIR = path.join(__dirname, 'uploads', 'recettes');
+if (!fs.existsSync(RECETTES_DIR)) fs.mkdirSync(RECETTES_DIR, { recursive: true });
+const _recettesStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, RECETTES_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, `recette-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+  }
+});
+const uploadRecettePhoto = multer({
+  storage: _recettesStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => cb(null, /^image\//.test(file.mimetype))
+});
+
 // ─── Joy.io iCal Sync ──────────────────────────────────────────────────────────
 function fetchUrl(url, depth = 0) {
   if (depth > 5) return Promise.reject(new Error('Too many redirects'));
@@ -680,6 +696,51 @@ app.post('/api/cuisine/etiquettes/log', requireAuth, (req, res) => {
 app.get('/api/cuisine/etiquettes/log', requireAuth, (req, res) => {
   const { from, to, limit } = req.query;
   res.json(db.getEtiquettesLog({ from, to, limit: limit ? parseInt(limit) : 200 }));
+});
+
+// ─── Recettes cuisine ──────────────────────────────────────────────────────────
+app.use('/uploads/recettes', requireAuth, express.static(RECETTES_DIR));
+
+app.get('/api/recettes/categories', requireAuth, (_req, res) => res.json(db.getRecipeCategories()));
+app.post('/api/recettes/categories', requireCuisineManager, (req, res) => {
+  const result = db.createRecipeCategory(req.body);
+  res.json({ id: result.lastInsertRowid, name: req.body.name, color: req.body.color || '#D4AF37', sort_order: 99 });
+});
+app.put('/api/recettes/categories/:id', requireCuisineManager, (req, res) => {
+  db.updateRecipeCategory(Number(req.params.id), req.body);
+  res.json({ ok: true });
+});
+app.delete('/api/recettes/categories/:id', requireCuisineManager, (req, res) => {
+  db.deleteRecipeCategory(Number(req.params.id));
+  res.json({ ok: true });
+});
+
+app.get('/api/recettes', requireAuth, (req, res) => {
+  const cat = req.query.category_id ? Number(req.query.category_id) : null;
+  res.json(db.getAllRecipes(cat));
+});
+app.get('/api/recettes/:id', requireAuth, (req, res) => {
+  const r = db.getRecipeById(Number(req.params.id));
+  if (!r) return res.status(404).json({ error: 'Not found' });
+  res.json(r);
+});
+app.post('/api/recettes', requireAuth, (req, res) => {
+  const result = db.createRecipe(req.body);
+  res.json({ id: result.lastInsertRowid });
+});
+app.put('/api/recettes/:id', requireAuth, (req, res) => {
+  db.updateRecipe(Number(req.params.id), req.body);
+  res.json({ ok: true });
+});
+app.delete('/api/recettes/:id', requireCuisineManager, (req, res) => {
+  db.deleteRecipe(Number(req.params.id));
+  res.json({ ok: true });
+});
+app.post('/api/recettes/:id/photo', requireAuth, uploadRecettePhoto.single('photo'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file' });
+  const url = `/uploads/recettes/${req.file.filename}`;
+  db.updateRecipe(Number(req.params.id), { photo_path: url });
+  res.json({ url });
 });
 
 // ─── Températures cuisine ─────────────────────────────────────────────────────

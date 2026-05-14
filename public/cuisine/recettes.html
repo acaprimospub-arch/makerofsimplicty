@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Fiches Recettes — Mos Pub Mercière</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MOS">
+  <meta name="theme-color" content="#08141c">
+  <style>
+    /* ── Category pills ──────────────────────────────────────────────────────── */
+    .cat-scroll { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+    .cat-scroll::-webkit-scrollbar { display:none; }
+    .cat-pill { flex-shrink:0; padding:6px 16px; border-radius:20px; border:1.5px solid var(--border); background:var(--bg-card); color:var(--text-muted); font-size:.82rem; font-weight:600; cursor:pointer; transition:border-color .15s,color .15s,background .12s; white-space:nowrap; }
+    .cat-pill:hover { border-color:var(--primary); color:var(--primary); }
+    .cat-pill.active { background:var(--primary); border-color:var(--primary); color:#000; }
+
+    /* ── Recipe grid ─────────────────────────────────────────────────────────── */
+    .recipe-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:12px; margin-top:16px; }
+    @media (min-width:640px) { .recipe-grid { grid-template-columns:repeat(3, 1fr); gap:16px; } }
+
+    .recipe-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; cursor:pointer; transition:border-color .15s,transform .12s; display:flex; flex-direction:column; }
+    .recipe-card:hover { border-color:var(--primary); transform:translateY(-1px); }
+    .recipe-card:active { transform:scale(.98); }
+
+    .recipe-photo { width:100%; aspect-ratio:4/3; object-fit:cover; display:block; background:var(--bg-surface); }
+    .recipe-photo-placeholder { width:100%; aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; font-size:2.4rem; background:linear-gradient(135deg, var(--bg-surface) 0%, rgba(212,175,55,.12) 100%); }
+
+    .recipe-card-body { padding:10px 12px 12px; flex:1; display:flex; flex-direction:column; gap:6px; }
+    .recipe-card-name { font-size:.9rem; font-weight:700; color:var(--text); line-height:1.3; }
+    .recipe-card-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .cat-badge { font-size:.68rem; font-weight:700; padding:2px 8px; border-radius:20px; white-space:nowrap; }
+    .prep-time { font-size:.72rem; color:var(--text-muted); display:flex; align-items:center; gap:3px; }
+
+    /* ── Empty state ─────────────────────────────────────────────────────────── */
+    .empty-state { text-align:center; padding:60px 20px; color:var(--text-muted); }
+    .empty-state-icon { font-size:3rem; margin-bottom:12px; opacity:.5; }
+    .empty-state p { font-size:.9rem; }
+
+    /* ── FAB ─────────────────────────────────────────────────────────────────── */
+    .fab { position:fixed; bottom:calc(80px + env(safe-area-inset-bottom)); right:20px; width:56px; height:56px; border-radius:50%; background:var(--primary); color:#000; border:none; cursor:pointer; font-size:1.6rem; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 20px rgba(212,175,55,.4); transition:transform .15s,box-shadow .15s; z-index:50; }
+    .fab:hover { transform:scale(1.06); box-shadow:0 6px 28px rgba(212,175,55,.55); }
+    .fab:active { transform:scale(.95); }
+    @media (min-width:641px) { .fab { bottom:24px; } }
+
+    /* ── Drawers ─────────────────────────────────────────────────────────────── */
+    .drawer-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:200; opacity:0; pointer-events:none; transition:opacity .25s; }
+    .drawer-backdrop.open { opacity:1; pointer-events:auto; }
+    .drawer { position:fixed; bottom:0; left:0; right:0; z-index:201; background:var(--bg-card); border-radius:20px 20px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.5); transform:translateY(102%); transition:transform .3s cubic-bezier(.32,.72,0,1); max-height:92dvh; display:flex; flex-direction:column; }
+    .drawer.open { transform:translateY(0); }
+    @media (min-width:641px) {
+      .drawer { bottom:auto; top:50%; left:50%; right:auto; transform:translate(-50%,-40%); opacity:0; pointer-events:none; border-radius:var(--radius); width:100%; max-width:520px; transition:transform .25s ease,opacity .25s ease; }
+      .drawer.open { transform:translate(-50%,-50%); opacity:1; pointer-events:auto; }
+    }
+    .drawer-handle { width:40px; height:4px; background:rgba(255,255,255,.15); border-radius:2px; margin:10px auto 0; flex-shrink:0; }
+    @media (min-width:641px) { .drawer-handle { display:none; } }
+    .drawer-head { display:flex; align-items:center; justify-content:space-between; padding:14px 20px 12px; flex-shrink:0; border-bottom:1px solid var(--border); }
+    .drawer-title { font-size:1rem; font-weight:700; }
+    .drawer-close { width:30px; height:30px; border-radius:50%; background:var(--bg-surface); color:var(--text-muted); display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; }
+    .drawer-body { overflow-y:auto; padding:0; flex:1; }
+    .drawer-footer { display:flex; gap:8px; padding:10px 20px calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border); flex-shrink:0; }
+    .drawer-footer .btn { flex:1; justify-content:center; min-height:46px; }
+
+    /* ── Detail drawer specific ──────────────────────────────────────────────── */
+    .detail-photo { width:100%; aspect-ratio:16/9; object-fit:cover; display:block; }
+    .detail-photo-placeholder { width:100%; aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; font-size:4rem; background:linear-gradient(135deg, var(--bg-surface) 0%, rgba(212,175,55,.12) 100%); }
+    .detail-content { padding:20px; }
+    .detail-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:12px; }
+    .detail-name { font-size:1.25rem; font-weight:800; line-height:1.3; }
+    .detail-badges { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+    .detail-desc { font-size:.9rem; color:var(--text-muted); margin-bottom:16px; line-height:1.5; font-style:italic; }
+    .detail-section-title { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin-bottom:10px; margin-top:20px; }
+    .steps-list { display:flex; flex-direction:column; gap:10px; }
+    .step-item { display:flex; gap:12px; }
+    .step-num { width:26px; height:26px; border-radius:50%; background:rgba(212,175,55,.15); border:1.5px solid rgba(212,175,55,.4); color:var(--primary); font-size:.8rem; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+    .step-text { font-size:.9rem; line-height:1.55; color:var(--text); padding-top:3px; }
+    .allergens-box { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 14px; font-size:.85rem; color:var(--text-muted); }
+    .allergens-box strong { color:var(--text); }
+
+    /* ── Form drawer ─────────────────────────────────────────────────────────── */
+    .form-body { padding:16px 20px; display:flex; flex-direction:column; gap:14px; }
+    .fgroup { display:flex; flex-direction:column; gap:6px; }
+    .fgroup label { font-size:.82rem; font-weight:600; color:var(--text-muted); }
+    .fgroup input, .fgroup select, .fgroup textarea { background:var(--bg-surface); border:1.5px solid var(--border); border-radius:var(--radius-sm); color:var(--text); padding:10px 14px; font-size:.9rem; font-family:inherit; width:100%; box-sizing:border-box; transition:border-color .15s; }
+    .fgroup input:focus, .fgroup select:focus, .fgroup textarea:focus { outline:none; border-color:var(--primary); }
+    .fgroup textarea { resize:vertical; min-height:120px; line-height:1.5; }
+
+    .photo-upload-zone { border:2px dashed var(--border); border-radius:var(--radius); padding:20px; text-align:center; cursor:pointer; transition:border-color .15s,background .12s; background:var(--bg-surface); position:relative; }
+    .photo-upload-zone:hover { border-color:var(--primary); background:rgba(212,175,55,.04); }
+    .photo-upload-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+    .photo-upload-icon { font-size:2rem; margin-bottom:6px; opacity:.6; }
+    .photo-upload-label { font-size:.82rem; color:var(--text-muted); }
+    .photo-preview-wrap { position:relative; }
+    .photo-preview-img { width:100%; max-height:180px; object-fit:cover; border-radius:var(--radius-sm); display:block; }
+    .photo-preview-remove { position:absolute; top:6px; right:6px; width:28px; height:28px; border-radius:50%; background:rgba(0,0,0,.7); border:none; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:.9rem; }
+
+    /* ── Category manager ────────────────────────────────────────────────────── */
+    .cat-manager-list { display:flex; flex-direction:column; gap:8px; padding:16px 20px; }
+    .cat-manager-item { display:flex; align-items:center; gap:10px; background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 14px; }
+    .cat-color-dot { width:14px; height:14px; border-radius:50%; flex-shrink:0; }
+    .cat-manager-name { flex:1; font-size:.9rem; font-weight:600; }
+    .cat-manager-actions { display:flex; gap:6px; }
+    .btn-icon-sm { width:30px; height:30px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--bg-card); color:var(--text-muted); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:.85rem; }
+    .btn-icon-sm:hover { border-color:var(--danger); color:var(--danger); }
+    .cat-add-row { display:flex; gap:8px; padding:0 20px 16px; }
+    .cat-add-row input { flex:1; background:var(--bg-surface); border:1.5px solid var(--border); border-radius:var(--radius-sm); color:var(--text); padding:9px 12px; font-size:.9rem; font-family:inherit; }
+    .cat-add-row input:focus { outline:none; border-color:var(--primary); }
+    .color-picker-row { display:flex; gap:8px; flex-wrap:wrap; }
+    .color-swatch { width:28px; height:28px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:transform .12s; }
+    .color-swatch:hover, .color-swatch.selected { border-color:#fff; transform:scale(1.15); }
+  </style>
+</head>
+<body>
+  <nav class="nav" id="nav" role="navigation" aria-label="Navigation principale"></nav>
+
+  <main class="page" id="main-content" tabindex="-1">
+    <div class="container-sm">
+      <header class="page-header" style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <h1 class="page-title">Fiches Recettes</h1>
+          <p class="page-subtitle" id="recipeCount">Chargement…</p>
+        </div>
+        <button id="btnManageCats" class="btn btn-secondary" style="display:none;gap:6px;">
+          <svg viewBox="0 0 20 20" fill="currentColor" style="width:16px;height:16px"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+          Catégories
+        </button>
+      </header>
+
+      <!-- Category filter -->
+      <div class="cat-scroll" id="catFilter" role="group" aria-label="Filtrer par catégorie"></div>
+
+      <!-- Recipe grid -->
+      <div class="recipe-grid" id="recipeGrid"></div>
+
+      <div id="emptyState" class="empty-state" style="display:none;">
+        <div class="empty-state-icon">📋</div>
+        <p>Aucune recette dans cette catégorie.<br>Appuyez sur + pour en ajouter une.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- FAB add -->
+  <button class="fab" id="fabAdd" style="display:none;" aria-label="Ajouter une recette" title="Ajouter une recette">+</button>
+
+  <!-- ── Backdrop ── -->
+  <div class="drawer-backdrop" id="backdrop" onclick="closeAll()"></div>
+
+  <!-- ── Detail Drawer ── -->
+  <div class="drawer" id="detailDrawer" role="dialog" aria-label="Détail recette">
+    <div class="drawer-handle"></div>
+    <div class="drawer-head">
+      <span class="drawer-title" id="detailDrawerTitle">Recette</span>
+      <button class="drawer-close" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="drawer-body" id="detailBody"></div>
+    <div class="drawer-footer" id="detailFooter"></div>
+  </div>
+
+  <!-- ── Form Drawer ── -->
+  <div class="drawer" id="formDrawer" role="dialog" aria-label="Formulaire recette">
+    <div class="drawer-handle"></div>
+    <div class="drawer-head">
+      <span class="drawer-title" id="formDrawerTitle">Nouvelle recette</span>
+      <button class="drawer-close" onclick="closeForm()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="form-body">
+        <input type="hidden" id="fId">
+        <div class="fgroup">
+          <label for="fName">Nom de la recette *</label>
+          <input type="text" id="fName" placeholder="Ex : Burger maison, Sauce béarnaise…" autocomplete="off">
+        </div>
+        <div class="fgroup">
+          <label for="fCategory">Catégorie</label>
+          <select id="fCategory">
+            <option value="">— Sans catégorie —</option>
+          </select>
+        </div>
+        <div class="fgroup">
+          <label for="fDescription">Description courte</label>
+          <input type="text" id="fDescription" placeholder="Résumé en une phrase…" autocomplete="off">
+        </div>
+        <div class="fgroup">
+          <label for="fInstructions">Étapes de préparation</label>
+          <textarea id="fInstructions" placeholder="Une étape par ligne :&#10;Faire revenir les oignons…&#10;Ajouter le beurre…&#10;Laisser mijoter 10 min…"></textarea>
+        </div>
+        <div class="fgroup">
+          <label for="fAllergens">Allergènes</label>
+          <input type="text" id="fAllergens" placeholder="Ex : gluten, lactose, œufs…" autocomplete="off">
+        </div>
+        <div class="fgroup">
+          <label for="fPrepTime">Temps de préparation (minutes)</label>
+          <input type="number" id="fPrepTime" placeholder="Ex : 30" min="1" max="999">
+        </div>
+        <div class="fgroup">
+          <label>Photo</label>
+          <div id="photoUploadArea">
+            <div class="photo-upload-zone" id="photoZone">
+              <input type="file" id="fPhoto" accept="image/*">
+              <div class="photo-upload-icon">📷</div>
+              <div class="photo-upload-label">Appuyer pour ajouter une photo</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-secondary" onclick="closeForm()">Annuler</button>
+      <button class="btn btn-primary" id="btnSaveRecipe" onclick="saveRecipe()">Enregistrer</button>
+    </div>
+  </div>
+
+  <!-- ── Category Manager Drawer ── -->
+  <div class="drawer" id="catDrawer" role="dialog" aria-label="Gestion des catégories">
+    <div class="drawer-handle"></div>
+    <div class="drawer-head">
+      <span class="drawer-title">Catégories</span>
+      <button class="drawer-close" onclick="closeCatDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="cat-manager-list" id="catManagerList"></div>
+      <div class="cat-add-row">
+        <input type="text" id="newCatName" placeholder="Nouvelle catégorie…" maxlength="40" onkeydown="if(event.key==='Enter')addCategory()">
+        <button class="btn btn-primary" style="white-space:nowrap;padding:0 16px;" onclick="addCategory()">Ajouter</button>
+      </div>
+      <div style="padding:0 20px 8px;">
+        <div class="color-picker-row" id="catColorPicker"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    // ── State ──────────────────────────────────────────────────────────────────
+    let ME = null;
+    let categories = [];
+    let recipes = [];
+    let activeCatId = null; // null = toutes
+    let editingRecipeId = null;
+    let selectedColor = '#D4AF37';
+    let photoFileForUpload = null;
+    let isChef = false;
+
+    const CAT_COLORS = ['#D4AF37','#4CAF6A','#5b8dee','#e05b5b','#e0935b','#b45be0','#5be0d4','#e0e05b'];
+
+    // ── Init ───────────────────────────────────────────────────────────────────
+    async function init() {
+      ME = await apiFetch('/api/auth/me');
+      buildNav('recettes');
+      isChef = ME.role === 'admin' || (ME.role === 'manager' && ME.shift === 'cuisine');
+
+      if (isChef) {
+        document.getElementById('btnManageCats').style.display = 'flex';
+        document.getElementById('fabAdd').style.display = 'flex';
+      }
+      document.getElementById('btnManageCats').addEventListener('click', openCatDrawer);
+      document.getElementById('fabAdd').addEventListener('click', () => openForm(null));
+
+      buildColorPicker();
+      await loadCategories();
+      await loadRecipes();
+    }
+
+    // ── Data ───────────────────────────────────────────────────────────────────
+    async function loadCategories() {
+      categories = await apiFetch('/api/recettes/categories');
+      renderCatFilter();
+      renderCatSelect();
+      renderCatManager();
+    }
+
+    async function loadRecipes() {
+      const url = activeCatId ? `/api/recettes?category_id=${activeCatId}` : '/api/recettes';
+      recipes = await apiFetch(url);
+      renderGrid();
+    }
+
+    // ── Render: category filter ────────────────────────────────────────────────
+    function renderCatFilter() {
+      const bar = document.getElementById('catFilter');
+      bar.innerHTML = '';
+      const all = document.createElement('button');
+      all.className = 'cat-pill' + (activeCatId === null ? ' active' : '');
+      all.textContent = 'Toutes';
+      all.onclick = () => { activeCatId = null; updateCatFilter(); loadRecipes(); };
+      bar.appendChild(all);
+
+      categories.forEach(c => {
+        const p = document.createElement('button');
+        p.className = 'cat-pill' + (activeCatId === c.id ? ' active' : '');
+        p.textContent = c.name;
+        if (activeCatId === c.id) p.style.background = c.color, p.style.borderColor = c.color, p.style.color = '#000';
+        p.onclick = () => { activeCatId = c.id; updateCatFilter(); loadRecipes(); };
+        bar.appendChild(p);
+      });
+    }
+
+    function updateCatFilter() {
+      document.querySelectorAll('.cat-pill').forEach((p, i) => {
+        const isAll = i === 0;
+        const cat = isAll ? null : categories[i - 1];
+        const active = isAll ? activeCatId === null : cat && activeCatId === cat.id;
+        p.className = 'cat-pill' + (active ? ' active' : '');
+        if (active && cat) { p.style.background = cat.color; p.style.borderColor = cat.color; p.style.color = '#000'; }
+        else { p.style.background = ''; p.style.borderColor = ''; p.style.color = ''; }
+      });
+    }
+
+    // ── Render: recipe grid ────────────────────────────────────────────────────
+    function renderGrid() {
+      const grid = document.getElementById('recipeGrid');
+      const empty = document.getElementById('emptyState');
+      const count = document.getElementById('recipeCount');
+
+      if (!recipes.length) {
+        grid.innerHTML = '';
+        empty.style.display = 'block';
+        count.textContent = 'Aucune recette';
+        return;
+      }
+
+      empty.style.display = 'none';
+      count.textContent = `${recipes.length} recette${recipes.length > 1 ? 's' : ''}`;
+
+      grid.innerHTML = recipes.map(r => {
+        const badgeColor = r.category_color || '#D4AF37';
+        const badgeBg = hexToRgba(badgeColor, .15);
+        const badgeBorder = hexToRgba(badgeColor, .35);
+        const badgeStyle = `background:${badgeBg};color:${badgeColor};border:1px solid ${badgeBorder};`;
+
+        const photoHtml = r.photo_path
+          ? `<img class="recipe-photo" src="${r.photo_path}" alt="${escHtml(r.name)}" loading="lazy">`
+          : `<div class="recipe-photo-placeholder">${getCategoryEmoji(r.category_name)}</div>`;
+
+        const catBadge = r.category_name
+          ? `<span class="cat-badge" style="${badgeStyle}">${escHtml(r.category_name)}</span>`
+          : '';
+
+        const prepTime = r.prep_time
+          ? `<span class="prep-time"><svg viewBox="0 0 20 20" fill="currentColor" style="width:12px;height:12px"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>${r.prep_time} min</span>`
+          : '';
+
+        return `<div class="recipe-card" onclick="openDetail(${r.id})">
+          ${photoHtml}
+          <div class="recipe-card-body">
+            <div class="recipe-card-name">${escHtml(r.name)}</div>
+            <div class="recipe-card-meta">${catBadge}${prepTime}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // ── Detail drawer ──────────────────────────────────────────────────────────
+    async function openDetail(id) {
+      const r = await apiFetch(`/api/recettes/${id}`);
+      editingRecipeId = id;
+
+      document.getElementById('detailDrawerTitle').textContent = r.name;
+
+      const badgeColor = r.category_color || '#D4AF37';
+      const badgeBg = hexToRgba(badgeColor, .15);
+      const badgeBorder = hexToRgba(badgeColor, .35);
+
+      const photoHtml = r.photo_path
+        ? `<img class="detail-photo" src="${r.photo_path}" alt="${escHtml(r.name)}">`
+        : `<div class="detail-photo-placeholder">${getCategoryEmoji(r.category_name)}</div>`;
+
+      const catBadge = r.category_name
+        ? `<span class="cat-badge" style="background:${badgeBg};color:${badgeColor};border:1px solid ${badgeBorder};">${escHtml(r.category_name)}</span>`
+        : '';
+
+      const prepBadge = r.prep_time
+        ? `<span class="cat-badge" style="background:var(--bg-surface);color:var(--text-muted);border:1px solid var(--border);">⏱ ${r.prep_time} min</span>`
+        : '';
+
+      const descHtml = r.description
+        ? `<p class="detail-desc">${escHtml(r.description)}</p>`
+        : '';
+
+      const stepsHtml = r.instructions
+        ? `<div class="detail-section-title">Préparation</div>
+           <div class="steps-list">${
+             r.instructions.split('\n').filter(s => s.trim()).map((s, i) =>
+               `<div class="step-item"><div class="step-num">${i+1}</div><div class="step-text">${escHtml(s.trim())}</div></div>`
+             ).join('')
+           }</div>`
+        : '';
+
+      const allergensHtml = r.allergens
+        ? `<div class="detail-section-title" style="margin-top:16px;">Allergènes</div>
+           <div class="allergens-box"><strong>⚠️</strong> ${escHtml(r.allergens)}</div>`
+        : '';
+
+      document.getElementById('detailBody').innerHTML = `
+        ${photoHtml}
+        <div class="detail-content">
+          <div class="detail-name">${escHtml(r.name)}</div>
+          <div class="detail-badges" style="margin-top:8px;">${catBadge}${prepBadge}</div>
+          ${descHtml}
+          ${stepsHtml}
+          ${allergensHtml}
+        </div>
+      `;
+
+      const footer = document.getElementById('detailFooter');
+      if (isChef) {
+        footer.innerHTML = `
+          <button class="btn btn-secondary" onclick="confirmDeleteRecipe(${r.id})" style="color:var(--danger);border-color:var(--danger);">Supprimer</button>
+          <button class="btn btn-primary" onclick="openFormFromDetail(${r.id})">Modifier</button>
+        `;
+      } else {
+        footer.innerHTML = '';
+      }
+
+      openDrawer('detailDrawer');
+    }
+
+    function openFormFromDetail(id) {
+      closeDetail();
+      setTimeout(() => openForm(id), 320);
+    }
+
+    async function confirmDeleteRecipe(id) {
+      if (!confirm('Supprimer cette recette ?')) return;
+      await apiFetch(`/api/recettes/${id}`, { method: 'DELETE' });
+      closeAll();
+      showToast('Recette supprimée');
+      await loadRecipes();
+    }
+
+    // ── Form drawer ────────────────────────────────────────────────────────────
+    async function openForm(recipeId) {
+      editingRecipeId = recipeId;
+      photoFileForUpload = null;
+
+      document.getElementById('formDrawerTitle').textContent = recipeId ? 'Modifier la recette' : 'Nouvelle recette';
+      document.getElementById('fId').value = recipeId || '';
+
+      renderCatSelect();
+
+      if (recipeId) {
+        const r = await apiFetch(`/api/recettes/${recipeId}`);
+        document.getElementById('fName').value = r.name || '';
+        document.getElementById('fCategory').value = r.category_id || '';
+        document.getElementById('fDescription').value = r.description || '';
+        document.getElementById('fInstructions').value = r.instructions || '';
+        document.getElementById('fAllergens').value = r.allergens || '';
+        document.getElementById('fPrepTime').value = r.prep_time || '';
+        // Show existing photo
+        if (r.photo_path) {
+          showPhotoPreview(r.photo_path);
+        } else {
+          resetPhotoZone();
+        }
+      } else {
+        document.getElementById('fName').value = '';
+        document.getElementById('fCategory').value = '';
+        document.getElementById('fDescription').value = '';
+        document.getElementById('fInstructions').value = '';
+        document.getElementById('fAllergens').value = '';
+        document.getElementById('fPrepTime').value = '';
+        resetPhotoZone();
+      }
+
+      openDrawer('formDrawer');
+      setTimeout(() => document.getElementById('fName').focus(), 350);
+    }
+
+    function resetPhotoZone() {
+      document.getElementById('photoUploadArea').innerHTML = `
+        <div class="photo-upload-zone" id="photoZone">
+          <input type="file" id="fPhoto" accept="image/*" onchange="handlePhotoSelect(this)">
+          <div class="photo-upload-icon">📷</div>
+          <div class="photo-upload-label">Appuyer pour ajouter une photo</div>
+        </div>`;
+    }
+
+    function showPhotoPreview(src) {
+      document.getElementById('photoUploadArea').innerHTML = `
+        <div class="photo-preview-wrap">
+          <img class="photo-preview-img" src="${src}" alt="Photo">
+          <button class="photo-preview-remove" onclick="removePhoto()" title="Supprimer la photo">✕</button>
+        </div>
+        <div style="margin-top:8px;">
+          <div class="photo-upload-zone" id="photoZone" style="padding:10px;">
+            <input type="file" id="fPhoto" accept="image/*" onchange="handlePhotoSelect(this)">
+            <div class="photo-upload-label" style="font-size:.75rem;">Changer la photo</div>
+          </div>
+        </div>`;
+    }
+
+    function handlePhotoSelect(input) {
+      const file = input.files[0];
+      if (!file) return;
+      photoFileForUpload = file;
+      const url = URL.createObjectURL(file);
+      showPhotoPreview(url);
+    }
+
+    function removePhoto() {
+      photoFileForUpload = null;
+      resetPhotoZone();
+    }
+
+    async function saveRecipe() {
+      const name = document.getElementById('fName').value.trim();
+      if (!name) { showToast('Le nom est obligatoire', 'error'); return; }
+
+      const btn = document.getElementById('btnSaveRecipe');
+      btn.disabled = true;
+      btn.textContent = 'Enregistrement…';
+
+      try {
+        const data = {
+          name,
+          category_id: document.getElementById('fCategory').value ? Number(document.getElementById('fCategory').value) : null,
+          description: document.getElementById('fDescription').value.trim() || null,
+          instructions: document.getElementById('fInstructions').value.trim() || null,
+          allergens: document.getElementById('fAllergens').value.trim() || null,
+          prep_time: document.getElementById('fPrepTime').value ? Number(document.getElementById('fPrepTime').value) : null,
+        };
+
+        let recipeId = editingRecipeId;
+        if (recipeId) {
+          await apiFetch(`/api/recettes/${recipeId}`, { method: 'PUT', body: JSON.stringify(data) });
+        } else {
+          const res = await apiFetch('/api/recettes', { method: 'POST', body: JSON.stringify(data) });
+          recipeId = res.id;
+        }
+
+        if (photoFileForUpload) {
+          const fd = new FormData();
+          fd.append('photo', photoFileForUpload);
+          await fetch(`/api/recettes/${recipeId}/photo`, { method: 'POST', body: fd });
+        }
+
+        closeForm();
+        showToast(editingRecipeId ? 'Recette mise à jour' : 'Recette créée');
+        await loadRecipes();
+      } catch(e) {
+        showToast('Erreur lors de la sauvegarde', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Enregistrer';
+      }
+    }
+
+    // ── Category manager drawer ────────────────────────────────────────────────
+    function openCatDrawer() {
+      renderCatManager();
+      openDrawer('catDrawer');
+    }
+
+    function renderCatManager() {
+      const list = document.getElementById('catManagerList');
+      if (!list) return;
+      if (!categories.length) {
+        list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:0 0 8px;">Aucune catégorie. Créez-en une ci-dessous.</p>';
+        return;
+      }
+      list.innerHTML = categories.map(c => `
+        <div class="cat-manager-item">
+          <div class="cat-color-dot" style="background:${c.color};"></div>
+          <span class="cat-manager-name">${escHtml(c.name)}</span>
+          <div class="cat-manager-actions">
+            <button class="btn-icon-sm" onclick="deleteCategoryConfirm(${c.id},'${escHtml(c.name)}')" title="Supprimer">🗑</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderCatSelect() {
+      const sel = document.getElementById('fCategory');
+      if (!sel) return;
+      const current = sel.value;
+      sel.innerHTML = '<option value="">— Sans catégorie —</option>' +
+        categories.map(c => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
+      if (current) sel.value = current;
+    }
+
+    async function addCategory() {
+      const name = document.getElementById('newCatName').value.trim();
+      if (!name) return;
+      await apiFetch('/api/recettes/categories', {
+        method: 'POST',
+        body: JSON.stringify({ name, color: selectedColor })
+      });
+      document.getElementById('newCatName').value = '';
+      await loadCategories();
+    }
+
+    async function deleteCategoryConfirm(id, name) {
+      if (!confirm(`Supprimer la catégorie "${name}" ?\nLes recettes garderont leur contenu mais perdront leur catégorie.`)) return;
+      await apiFetch(`/api/recettes/categories/${id}`, { method: 'DELETE' });
+      if (activeCatId === id) activeCatId = null;
+      await loadCategories();
+      await loadRecipes();
+    }
+
+    // ── Color picker ───────────────────────────────────────────────────────────
+    function buildColorPicker() {
+      const row = document.getElementById('catColorPicker');
+      row.innerHTML = CAT_COLORS.map(c => `
+        <div class="color-swatch${c === selectedColor ? ' selected' : ''}" style="background:${c};" onclick="selectColor('${c}', this)" title="${c}"></div>
+      `).join('');
+    }
+
+    function selectColor(color, el) {
+      selectedColor = color;
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    // ── Drawer helpers ─────────────────────────────────────────────────────────
+    function openDrawer(id) {
+      document.getElementById('backdrop').classList.add('open');
+      document.getElementById(id).classList.add('open');
+    }
+    function closeDetail() {
+      document.getElementById('detailDrawer').classList.remove('open');
+      document.getElementById('backdrop').classList.remove('open');
+    }
+    function closeForm() {
+      document.getElementById('formDrawer').classList.remove('open');
+      document.getElementById('backdrop').classList.remove('open');
+      photoFileForUpload = null;
+    }
+    function closeCatDrawer() {
+      document.getElementById('catDrawer').classList.remove('open');
+      document.getElementById('backdrop').classList.remove('open');
+    }
+    function closeAll() {
+      ['detailDrawer','formDrawer','catDrawer'].forEach(id => document.getElementById(id).classList.remove('open'));
+      document.getElementById('backdrop').classList.remove('open');
+    }
+
+    // ── Utils ──────────────────────────────────────────────────────────────────
+    function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function hexToRgba(hex, alpha) {
+      const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+
+    function getCategoryEmoji(catName) {
+      if (!catName) return '🍽️';
+      const n = catName.toLowerCase();
+      if (n.includes('entrée') || n.includes('starter')) return '🥗';
+      if (n.includes('plat') || n.includes('main')) return '🍖';
+      if (n.includes('dessert')) return '🍮';
+      if (n.includes('sauce')) return '🥣';
+      if (n.includes('cocktail') || n.includes('boisson') || n.includes('drink')) return '🍹';
+      if (n.includes('pizza')) return '🍕';
+      if (n.includes('burger')) return '🍔';
+      if (n.includes('pasta') || n.includes('pâtes')) return '🍝';
+      if (n.includes('soupe')) return '🍲';
+      return '🍽️';
+    }
+
+    init();
+  </script>
+</body>
+</html>

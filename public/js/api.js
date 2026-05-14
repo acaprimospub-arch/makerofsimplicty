@@ -169,6 +169,7 @@ const NAV_ICONS = {
   email:                 `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>`,
   joy:                   `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM6.293 5.293a1 1 0 011.414 0L9 6.586V5a1 1 0 112 0v1.586l1.293-1.293a1 1 0 011.414 1.414L12.414 8H14a1 1 0 110 2h-1.586l1.293 1.293a1 1 0 01-1.414 1.414L11 11.414V13a1 1 0 11-2 0v-1.586l-1.293 1.293a1 1 0 01-1.414-1.414L7.586 10H6a1 1 0 110-2h1.586L6.293 6.707a1 1 0 010-1.414z"/></svg>`,
   'marketing-dashboard': `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>`,
+  recettes:              `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/></svg>`,
   'cuisine-taches':      `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>`,
   'cuisine-planning':    `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>`,
   'cuisine-etiquettes':  `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>`,
@@ -243,7 +244,8 @@ async function buildNav(activePage) {
   ];
   const cuisineLinks = [
     { href: '/cuisine/taches.html',        label: 'Tâches',        key: 'cuisine-taches' },
-    { href: '/staff/planning.html',         label: 'Planning',      key: 'planning' },
+    { href: '/cuisine/recettes.html',      label: 'Recettes',      key: 'recettes' },
+    { href: '/staff/planning.html',        label: 'Planning',      key: 'planning' },
     { href: '/staff/conges.html',          label: 'Congés',        key: 'conges' },
   ];
   const marketingLinks = [

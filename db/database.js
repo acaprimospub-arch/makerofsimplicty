@@ -243,6 +243,33 @@ try {
   `);
 } catch(e) {}
 
+// ─── Recettes cuisine ──────────────────────────────────────────────────────────
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS recipe_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      color TEXT DEFAULT '#D4AF37',
+      sort_order INTEGER DEFAULT 99,
+      created_at TEXT DEFAULT (datetime('now', 'localtime'))
+    );
+    CREATE TABLE IF NOT EXISTS recipes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      category_id INTEGER,
+      name TEXT NOT NULL,
+      description TEXT,
+      instructions TEXT,
+      photo_path TEXT,
+      allergens TEXT,
+      prep_time INTEGER,
+      active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      updated_at TEXT DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (category_id) REFERENCES recipe_categories(id)
+    )
+  `);
+} catch(e) {}
+
 // ─── Nettoyage doublons Joy au démarrage ───────────────────────────────────────
 // Supprime les résas Joy en double (garde celle avec table assignée ou la plus récente)
 db.exec(`
@@ -2116,6 +2143,56 @@ function getTachePeriodiquesHistory(tache_id, limit = 20) {
   `).all(tache_id, limit);
 }
 
+// ─── Recettes ──────────────────────────────────────────────────────────────────
+function getRecipeCategories() {
+  return db.prepare('SELECT * FROM recipe_categories ORDER BY sort_order, name').all();
+}
+function createRecipeCategory({ name, color }) {
+  return db.prepare('INSERT INTO recipe_categories (name, color) VALUES (?, ?)').run(name, color || '#D4AF37');
+}
+function updateRecipeCategory(id, data) {
+  const sets = [], vals = [];
+  if (data.name !== undefined) { sets.push('name = ?'); vals.push(data.name); }
+  if (data.color !== undefined) { sets.push('color = ?'); vals.push(data.color); }
+  if (data.sort_order !== undefined) { sets.push('sort_order = ?'); vals.push(data.sort_order); }
+  if (!sets.length) return;
+  vals.push(id);
+  return db.prepare(`UPDATE recipe_categories SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+}
+function deleteRecipeCategory(id) {
+  db.prepare('UPDATE recipes SET category_id = NULL WHERE category_id = ?').run(id);
+  return db.prepare('DELETE FROM recipe_categories WHERE id = ?').run(id);
+}
+function getAllRecipes(category_id) {
+  const base = `SELECT r.*, rc.name as category_name, rc.color as category_color
+    FROM recipes r LEFT JOIN recipe_categories rc ON r.category_id = rc.id
+    WHERE r.active = 1`;
+  if (category_id) return db.prepare(`${base} AND r.category_id = ? ORDER BY r.name`).all(category_id);
+  return db.prepare(`${base} ORDER BY rc.sort_order, rc.name, r.name`).all();
+}
+function getRecipeById(id) {
+  return db.prepare(`SELECT r.*, rc.name as category_name, rc.color as category_color
+    FROM recipes r LEFT JOIN recipe_categories rc ON r.category_id = rc.id WHERE r.id = ?`).get(id);
+}
+function createRecipe({ category_id, name, description, instructions, allergens, prep_time }) {
+  return db.prepare(
+    'INSERT INTO recipes (category_id, name, description, instructions, allergens, prep_time) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(category_id || null, name, description || null, instructions || null, allergens || null, prep_time || null);
+}
+function updateRecipe(id, data) {
+  const sets = [], vals = [];
+  for (const f of ['category_id', 'name', 'description', 'instructions', 'allergens', 'prep_time', 'photo_path']) {
+    if (data[f] !== undefined) { sets.push(`${f} = ?`); vals.push(data[f]); }
+  }
+  if (!sets.length) return;
+  sets.push("updated_at = datetime('now', 'localtime')");
+  vals.push(id);
+  return db.prepare(`UPDATE recipes SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+}
+function deleteRecipe(id) {
+  return db.prepare('UPDATE recipes SET active = 0 WHERE id = ?').run(id);
+}
+
 module.exports = {
   getUserByPin, getUserById, getAllUsers, createUser, updateUser, deleteUser,
   getTasksWithCompletions, getTaskById, getAllTasks, completeTask, uncompleteTask, createTask, updateTask, deactivateTask,
@@ -2146,4 +2223,6 @@ module.exports = {
   getTempMateriels, getTempSession, getTempHistory, upsertTempReleve, getTempWeekReport,
   getTachesPeriodiques, completeTachePeriodique, getTachePeriodiquesHistory,
   getPointageToday, clockIn, clockOut, getPointagesForUser, getAllPointagesForDate,
+  getRecipeCategories, createRecipeCategory, updateRecipeCategory, deleteRecipeCategory,
+  getAllRecipes, getRecipeById, createRecipe, updateRecipe, deleteRecipe,
 };
