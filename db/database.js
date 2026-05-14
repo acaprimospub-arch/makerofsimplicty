@@ -270,145 +270,79 @@ try {
   `);
 } catch(e) {}
 
-// ─── Nettoyage catégories recettes (fixe les DBs avec doublons/mauvaises catégories) ──
-try {
-  const correct5 = db.prepare("SELECT COUNT(*) as c FROM recipe_categories WHERE name IN ('Entrées','Plats','Burgers & Cie','Tapas','Desserts')").get().c;
-  const total = db.prepare("SELECT COUNT(*) as c FROM recipe_categories").get().c;
-  if (correct5 < 5 || total !== 5) {
-    // Remet à plat : supprime tout et recrée les 5 bonnes catégories
-    db.exec("DELETE FROM recipe_categories");
-    const _ci = db.prepare("INSERT INTO recipe_categories (name, color, sort_order) VALUES (?, ?, ?)");
-    const entr = _ci.run('Entrées',       '#5b8dee', 1).lastInsertRowid;
-    const plat = _ci.run('Plats',         '#D4AF37', 2).lastInsertRowid;
-    const burg = _ci.run('Burgers & Cie', '#e0935b', 3).lastInsertRowid;
-    const tapa = _ci.run('Tapas',         '#4CAF6A', 4).lastInsertRowid;
-    const dess = _ci.run('Desserts',      '#b45be0', 5).lastInsertRowid;
-    // Réassigne les recettes par leurs IDs connus
-    db.prepare("UPDATE recipes SET category_id = ? WHERE id IN (1,2,3)").run(entr);
-    db.prepare("UPDATE recipes SET category_id = ? WHERE id IN (4,5,6,7,8,9)").run(plat);
-    db.prepare("UPDATE recipes SET category_id = ? WHERE id IN (10,11,12,13,14,15)").run(burg);
-    db.prepare("UPDATE recipes SET category_id = ? WHERE id IN (16,17,18,19,20,21,22,23,24,25)").run(tapa);
-    db.prepare("UPDATE recipes SET category_id = ? WHERE id IN (26,27,28,29,30,31,32)").run(dess);
-  }
-} catch(e) {}
+// ─── Seed recettes v3 — supprime tout et réimporte proprement (une seule fois) ──
+if (!db.prepare("SELECT value FROM settings WHERE key = 'recipes_v3'").get()) {
+  db.exec("DELETE FROM recipes");
+  db.exec("DELETE FROM recipe_categories");
 
-// ─── Seed recettes (carte Mai 2026) ───────────────────────────────────────────
-{
-  const _catIns = db.prepare("INSERT OR IGNORE INTO recipe_categories (id, name, color, sort_order) VALUES (?, ?, ?, ?)");
-  for (const [id, name, color, order] of [
-    [1, 'Entrées',      '#5b8dee', 1],
-    [2, 'Plats',        '#D4AF37', 2],
-    [3, 'Burgers & Cie','#e0935b', 3],
-    [4, 'Tapas',        '#4CAF6A', 4],
-    [5, 'Desserts',     '#b45be0', 5],
-  ]) _catIns.run(id, name, color, order);
-}
+  const _ci = db.prepare("INSERT INTO recipe_categories (name, color, sort_order) VALUES (?, ?, ?)");
+  const entr = _ci.run('Entrées',       '#5b8dee', 1).lastInsertRowid;
+  const plat = _ci.run('Plats',         '#D4AF37', 2).lastInsertRowid;
+  const burg = _ci.run('Burgers & Cie', '#e0935b', 3).lastInsertRowid;
+  const tapa = _ci.run('Tapas',         '#4CAF6A', 4).lastInsertRowid;
+  const dess = _ci.run('Desserts',      '#b45be0', 5).lastInsertRowid;
 
-{
-  const _recIns = db.prepare("INSERT OR IGNORE INTO recipes (id, category_id, name, description, allergens) VALUES (?, ?, ?, ?, ?)");
-  for (const [id, cat, name, desc, allergens] of [
-    // ── Entrées ──────────────────────────────────────────────────────────────
-    [1,  1, 'Gaspacho du moment',
-         'Demandez aux serveurs pour le gaspacho du jour',
-         null],
-    [2,  1, 'Salade de tagliatelles de courgette et concombre (entrée)',
-         'Crème de bleu d\'Auvergne maison, menthe, noix torréfiées',
-         'lactose, fruits à coques'],
-    [3,  1, 'Terrine de porc maison',
-         'Terrine de porc fait maison',
-         null],
-    // ── Plats ────────────────────────────────────────────────────────────────
-    [4,  2, 'Salade de tomates et burrata',
-         'Tomates noires de Crimée, pesto vert maison, burrata crémeuse',
-         'lactose'],
-    [5,  2, 'Salade de tagliatelles de courgette et concombre',
-         'Crème de bleu d\'Auvergne maison, menthe, noix torréfiées',
-         'lactose, fruits à coques'],
-    [6,  2, 'Brochette de poulet mariné',
-         'Poulet mariné aux épices, mayonnaise relevée maison, accompagnement au choix',
-         'œufs, moutarde'],
-    [7,  2, 'Fish and Chips',
-         'Filet de cabillaud en tempura, citron, sauce tartare maison, frites fraîches',
-         'gluten, poisson, œufs'],
-    [8,  2, 'Tartare de boeuf',
-         'Bavette de Simmental taillée au couteau, accompagnement au choix',
-         'œufs, moutarde'],
-    [9,  2, 'Bavette de boeuf',
-         'Bavette de Black Angus, sauce incluse et accompagnement au choix',
-         null],
-    // ── Burgers & Cie ─────────────────────────────────────────────────────────
-    [10, 3, 'Beef Burger',
-         'Steak de boeuf frais, bacon, cheddar, oignons frits, pickles d\'échalotes, sauce MOS maison',
-         'gluten, lactose, œufs'],
-    [11, 3, 'Chicken Burger',
-         'Aiguillettes de poulet panées, cheddar, coleslaw, mayonnaise cajun maison',
-         'gluten, lactose, œufs'],
-    [12, 3, 'Fish Burger',
-         'Filet de cabillaud en tempura, cheddar, sauce tartare maison',
-         'gluten, poisson, lactose, œufs'],
-    [13, 3, 'Croque truffé',
-         'Pain de mie Banneton, Saint-Nectaire, jambon blanc, béchamel truffée maison',
-         'gluten, lactose'],
-    [14, 3, 'L\'Italo',
-         'Pain ciabatta toasté, mortadelle pistachée de Bologne AOP, pesto vert maison, stracciatella, roquette',
-         'gluten, lactose, fruits à coques'],
-    [15, 3, 'Le Falafel',
-         'Pain pita maison, falafels de pois chiches et menthe, carottes, chou, oignons, sauce blanche menthe et citron',
-         'gluten'],
-    // ── Tapas ─────────────────────────────────────────────────────────────────
-    [16, 4, 'Assiette de rosette',
-         'Rosette, cornichons et beurre',
-         'lactose'],
-    [17, 4, 'Planche de charcuteries',
-         'Assortiment de charcuteries maison',
-         null],
-    [18, 4, 'Planche de fromages',
-         'Assortiment de fromages',
-         'lactose'],
-    [19, 4, 'Burrata & pain grillé',
-         'Burrata crémeuse, vierge d\'herbes, pain grillé',
-         'gluten, lactose'],
-    [20, 4, 'Pan con tomate & Jamón',
-         'Pain grillé, purée de tomate, purée d\'ail confit, jambon ibérique',
-         'gluten'],
-    [21, 4, 'Aiguillettes de poulet',
-         'Aiguillettes de poulet, sauce creamy bbq',
-         null],
-    [22, 4, 'Assiette de frites',
-         'Frites fraîches maison',
-         null],
-    [23, 4, 'Assiette de frites gruyère',
-         'Frites fraîches, sauce gruyère maison',
-         'lactose'],
-    [24, 4, 'Falafels',
-         'Falafels de pois chiches et menthe, sauce blanche à la menthe et au citron',
-         null],
-    [25, 4, 'Tigre qui pleure',
-         'Bavette de Black Angus marinée aux épices thaï et grillée, sauce relevée tigre qui pleure',
-         null],
-    // ── Desserts ──────────────────────────────────────────────────────────────
-    [26, 5, 'Cookie',
-         'Cookie tout chocolat, boule de glace à la noisette',
-         'gluten, lactose, fruits à coques'],
-    [27, 5, 'Tarte du moment',
-         'Demandez aux serveurs pour la tarte du jour',
-         'gluten, lactose, œufs'],
-    [28, 5, 'Soupe de fraises',
-         'Fraises mixées à la menthe et au citron vert',
-         null],
-    [29, 5, 'Café gourmand',
-         'Assortiment de mignardises maison, espresso',
-         'gluten, lactose, œufs'],
-    [30, 5, 'Gaufre',
-         'Sucre ou Nutella — supplément chantilly 1€',
-         'gluten, lactose, œufs'],
-    [31, 5, 'Coupe de glace',
-         '2 boules de glace au choix parmi nos parfums',
-         'lactose'],
-    [32, 5, 'Salade de fruits du moment',
-         'Demandez aux serveurs pour la salade de fruits du jour',
-         null],
-  ]) _recIns.run(id, cat, name, desc, allergens);
+  const _ri = db.prepare("INSERT INTO recipes (category_id, name, description, allergens) VALUES (?, ?, ?, ?)");
+
+  // Entrées — Brasserie & Bar
+  _ri.run(entr, 'Gaspacho du moment',
+    'Demandez aux serveurs', null);
+  _ri.run(entr, 'Salade de tagliatelles de courgette et concombre',
+    "Crème de bleu d'Auvergne maison, menthe, noix torréfiées", 'lactose, fruits à coques');
+  _ri.run(entr, 'Terrine de porc',
+    null, null);
+
+  // Plats — Brasserie & Bar
+  _ri.run(plat, 'Salade de tomates et burrata',
+    "Tomates noires de Crimée, pesto vert maison, burrata crémeuse", 'lactose');
+  _ri.run(plat, 'Salade de tagliatelles de courgette et concombre',
+    "Crème de bleu d'Auvergne maison, menthe, noix torréfiées", 'lactose, fruits à coques');
+  _ri.run(plat, 'Brochette de poulet mariné',
+    "Poulet mariné aux épices, mayonnaise relevée maison, accompagnement au choix", 'œufs, moutarde');
+  _ri.run(plat, 'Fish and Chips',
+    "Filet de cabillaud en tempura, citron, sauce tartare maison, frites fraîches", 'gluten, poisson, œufs');
+  _ri.run(plat, 'Tartare de boeuf',
+    "Bavette de Simmental taillée au couteau, accompagnement au choix", 'œufs, moutarde');
+  _ri.run(plat, 'Bavette de boeuf',
+    "Bavette de Black Angus, sauce incluse et accompagnement au choix", null);
+
+  // Burgers & Cie
+  _ri.run(burg, 'Beef Burger',
+    "Steak de boeuf frais, bacon, cheddar, oignons frits, pickles d'échalotes, sauce MOS maison", 'gluten, lactose, œufs');
+  _ri.run(burg, 'Chicken Burger',
+    "Aiguillettes de poulet panées, cheddar, coleslaw, mayonnaise cajun maison", 'gluten, lactose, œufs');
+  _ri.run(burg, 'Fish Burger',
+    "Filet de cabillaud en tempura, cheddar, sauce tartare maison", 'gluten, poisson, lactose, œufs');
+  _ri.run(burg, 'Croque truffé',
+    "Pain de mie Banneton, Saint-Nectaire, jambon blanc, béchamel truffée maison", 'gluten, lactose');
+  _ri.run(burg, "L'Italo",
+    "Pain ciabatta toasté, mortadelle pistachée de Bologne AOP, pesto vert maison, stracciatella, roquette", 'gluten, lactose, fruits à coques');
+  _ri.run(burg, 'Le Falafel',
+    "Pain pita maison, falafels de pois chiches et menthe, carottes, chou, oignons, sauce blanche menthe et citron", 'gluten');
+
+  // Tapas — dès 16h
+  _ri.run(tapa, 'Assiette de rosette',       "Rosette, cornichons et beurre", 'lactose');
+  _ri.run(tapa, 'Planche de charcuteries',   "Assortiment de charcuteries maison", null);
+  _ri.run(tapa, 'Planche de fromages',       "Assortiment de fromages", 'lactose');
+  _ri.run(tapa, 'Terrine de porc maison',    null, null);
+  _ri.run(tapa, 'Burrata & pain grillé',     "Burrata crémeuse, vierge d'herbes, pain grillé", 'gluten, lactose');
+  _ri.run(tapa, 'Pan con tomate & Jamón',    "Pain grillé, purée de tomate, purée d'ail confit, jambon ibérique", 'gluten');
+  _ri.run(tapa, 'Aiguillettes de poulet',    "Aiguillettes de poulet, sauce creamy bbq", null);
+  _ri.run(tapa, 'Assiette de frites',        "Frites fraîches maison", null);
+  _ri.run(tapa, 'Assiette de frites gruyère',"Frites fraîches, sauce gruyère maison", 'lactose');
+  _ri.run(tapa, 'Falafels',                  "Falafels de pois chiches et menthe, sauce blanche à la menthe et au citron", null);
+  _ri.run(tapa, 'Tigre qui pleure',          "Bavette de Black Angus marinée aux épices thaï et grillée, sauce relevée tigre qui pleure", null);
+
+  // Desserts
+  _ri.run(dess, 'Salade de fruits du moment', "Demandez aux serveurs", null);
+  _ri.run(dess, 'Cookie',         "Cookie tout chocolat, boule de glace à la noisette", 'gluten, lactose, fruits à coques');
+  _ri.run(dess, 'Tarte du moment',"Demandez aux serveurs", 'gluten, lactose, œufs');
+  _ri.run(dess, 'Soupe de fraises',"Fraises mixées à la menthe et au citron vert", null);
+  _ri.run(dess, 'Café gourmand',  "Assortiment de mignardises maison, espresso", 'gluten, lactose, œufs');
+  _ri.run(dess, 'Gaufre',         "Sucre ou Nutella — supplément chantilly 1€", 'gluten, lactose, œufs');
+  _ri.run(dess, 'Coupe de glace', "2 boules de glace au choix parmi nos parfums", 'lactose');
+
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('recipes_v3', '1')").run();
 }
 
 // ─── Nettoyage doublons Joy au démarrage ───────────────────────────────────────
