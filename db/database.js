@@ -274,18 +274,33 @@ try {
 {
   const _catIns = db.prepare("INSERT OR IGNORE INTO recipe_categories (id, name, color, sort_order) VALUES (?, ?, ?, ?)");
   for (const [id, name, color, order] of [
-    [1, 'Entrées',      '#5b8dee', 1],
-    [2, 'Plats',        '#D4AF37', 2],
-    [3, 'Burgers & Cie','#e0935b', 3],
-    [4, 'Tapas',        '#4CAF6A', 4],
-    [5, 'Desserts',     '#b45be0', 5],
+    [1, 'Carte',        '#D4AF37', 1],
+    [2, 'Tapas',        '#4CAF6A', 2],
   ]) _catIns.run(id, name, color, order);
 }
+
+// Migration: regrouper sous Carte + Tapas si ancienne structure granulaire détectée
+try {
+  const oldCats = db.prepare("SELECT id FROM recipe_categories WHERE name IN ('Entrées','Plats','Burgers & Cie','Desserts')").all();
+  if (oldCats.length > 0) {
+    const oldIds = oldCats.map(r => r.id).join(',');
+    // S'assurer que Carte (id=1) et Tapas (id=2) existent
+    db.prepare("INSERT OR IGNORE INTO recipe_categories (id, name, color, sort_order) VALUES (1,'Carte','#D4AF37',1)").run();
+    db.prepare("INSERT OR IGNORE INTO recipe_categories (id, name, color, sort_order) VALUES (2,'Tapas','#4CAF6A',2)").run();
+    // Recettes brasserie → Carte
+    db.exec(`UPDATE recipes SET category_id = 1 WHERE category_id IN (${oldIds})`);
+    // Ancienne catégorie Tapas (id=4) → nouvelle Tapas (id=2)
+    db.exec("UPDATE recipes SET category_id = 2 WHERE category_id = 4");
+    // Supprimer les anciennes catégories granulaires
+    db.exec(`DELETE FROM recipe_categories WHERE name IN ('Entrées','Plats','Burgers & Cie','Desserts')`);
+    db.exec("DELETE FROM recipe_categories WHERE id = 4 AND name = 'Tapas'");
+  }
+} catch(e) {}
 
 {
   const _recIns = db.prepare("INSERT OR IGNORE INTO recipes (id, category_id, name, description, allergens) VALUES (?, ?, ?, ?, ?)");
   for (const [id, cat, name, desc, allergens] of [
-    // ── Entrées ──────────────────────────────────────────────────────────────
+    // ── Carte (brasserie) ─────────────────────────────────────────────────────
     [1,  1, 'Gaspacho du moment',
          'Demandez aux serveurs pour le gaspacho du jour',
          null],
@@ -295,96 +310,93 @@ try {
     [3,  1, 'Terrine de porc maison',
          'Terrine de porc fait maison',
          null],
-    // ── Plats ────────────────────────────────────────────────────────────────
-    [4,  2, 'Salade de tomates et burrata',
+    [4,  1, 'Salade de tomates et burrata',
          'Tomates noires de Crimée, pesto vert maison, burrata crémeuse',
          'lactose'],
-    [5,  2, 'Salade de tagliatelles de courgette et concombre',
+    [5,  1, 'Salade de tagliatelles de courgette et concombre',
          'Crème de bleu d\'Auvergne maison, menthe, noix torréfiées',
          'lactose, fruits à coques'],
-    [6,  2, 'Brochette de poulet mariné',
+    [6,  1, 'Brochette de poulet mariné',
          'Poulet mariné aux épices, mayonnaise relevée maison, accompagnement au choix',
          'œufs, moutarde'],
-    [7,  2, 'Fish and Chips',
+    [7,  1, 'Fish and Chips',
          'Filet de cabillaud en tempura, citron, sauce tartare maison, frites fraîches',
          'gluten, poisson, œufs'],
-    [8,  2, 'Tartare de boeuf',
+    [8,  1, 'Tartare de boeuf',
          'Bavette de Simmental taillée au couteau, accompagnement au choix',
          'œufs, moutarde'],
-    [9,  2, 'Bavette de boeuf',
+    [9,  1, 'Bavette de boeuf',
          'Bavette de Black Angus, sauce incluse et accompagnement au choix',
          null],
-    // ── Burgers & Cie ─────────────────────────────────────────────────────────
-    [10, 3, 'Beef Burger',
+    [10, 1, 'Beef Burger',
          'Steak de boeuf frais, bacon, cheddar, oignons frits, pickles d\'échalotes, sauce MOS maison',
          'gluten, lactose, œufs'],
-    [11, 3, 'Chicken Burger',
+    [11, 1, 'Chicken Burger',
          'Aiguillettes de poulet panées, cheddar, coleslaw, mayonnaise cajun maison',
          'gluten, lactose, œufs'],
-    [12, 3, 'Fish Burger',
+    [12, 1, 'Fish Burger',
          'Filet de cabillaud en tempura, cheddar, sauce tartare maison',
          'gluten, poisson, lactose, œufs'],
-    [13, 3, 'Croque truffé',
+    [13, 1, 'Croque truffé',
          'Pain de mie Banneton, Saint-Nectaire, jambon blanc, béchamel truffée maison',
          'gluten, lactose'],
-    [14, 3, 'L\'Italo',
+    [14, 1, 'L\'Italo',
          'Pain ciabatta toasté, mortadelle pistachée de Bologne AOP, pesto vert maison, stracciatella, roquette',
          'gluten, lactose, fruits à coques'],
-    [15, 3, 'Le Falafel',
+    [15, 1, 'Le Falafel',
          'Pain pita maison, falafels de pois chiches et menthe, carottes, chou, oignons, sauce blanche menthe et citron',
          'gluten'],
-    // ── Tapas ─────────────────────────────────────────────────────────────────
-    [16, 4, 'Assiette de rosette',
-         'Rosette, cornichons et beurre',
-         'lactose'],
-    [17, 4, 'Planche de charcuteries',
-         'Assortiment de charcuteries maison',
-         null],
-    [18, 4, 'Planche de fromages',
-         'Assortiment de fromages',
-         'lactose'],
-    [19, 4, 'Burrata & pain grillé',
-         'Burrata crémeuse, vierge d\'herbes, pain grillé',
-         'gluten, lactose'],
-    [20, 4, 'Pan con tomate & Jamón',
-         'Pain grillé, purée de tomate, purée d\'ail confit, jambon ibérique',
-         'gluten'],
-    [21, 4, 'Aiguillettes de poulet',
-         'Aiguillettes de poulet, sauce creamy bbq',
-         null],
-    [22, 4, 'Assiette de frites',
-         'Frites fraîches maison',
-         null],
-    [23, 4, 'Assiette de frites gruyère',
-         'Frites fraîches, sauce gruyère maison',
-         'lactose'],
-    [24, 4, 'Falafels',
-         'Falafels de pois chiches et menthe, sauce blanche à la menthe et au citron',
-         null],
-    [25, 4, 'Tigre qui pleure',
-         'Bavette de Black Angus marinée aux épices thaï et grillée, sauce relevée tigre qui pleure',
-         null],
-    // ── Desserts ──────────────────────────────────────────────────────────────
-    [26, 5, 'Cookie',
+    [26, 1, 'Cookie',
          'Cookie tout chocolat, boule de glace à la noisette',
          'gluten, lactose, fruits à coques'],
-    [27, 5, 'Tarte du moment',
+    [27, 1, 'Tarte du moment',
          'Demandez aux serveurs pour la tarte du jour',
          'gluten, lactose, œufs'],
-    [28, 5, 'Soupe de fraises',
+    [28, 1, 'Soupe de fraises',
          'Fraises mixées à la menthe et au citron vert',
          null],
-    [29, 5, 'Café gourmand',
+    [29, 1, 'Café gourmand',
          'Assortiment de mignardises maison, espresso',
          'gluten, lactose, œufs'],
-    [30, 5, 'Gaufre',
+    [30, 1, 'Gaufre',
          'Sucre ou Nutella — supplément chantilly 1€',
          'gluten, lactose, œufs'],
-    [31, 5, 'Coupe de glace',
+    [31, 1, 'Coupe de glace',
          '2 boules de glace au choix parmi nos parfums',
          'lactose'],
-    [32, 5, 'Salade de fruits du moment',
+    [32, 1, 'Salade de fruits du moment',
          'Demandez aux serveurs pour la salade de fruits du jour',
+         null],
+    // ── Tapas ─────────────────────────────────────────────────────────────────
+    [16, 2, 'Assiette de rosette',
+         'Rosette, cornichons et beurre',
+         'lactose'],
+    [17, 2, 'Planche de charcuteries',
+         'Assortiment de charcuteries maison',
+         null],
+    [18, 2, 'Planche de fromages',
+         'Assortiment de fromages',
+         'lactose'],
+    [19, 2, 'Burrata & pain grillé',
+         'Burrata crémeuse, vierge d\'herbes, pain grillé',
+         'gluten, lactose'],
+    [20, 2, 'Pan con tomate & Jamón',
+         'Pain grillé, purée de tomate, purée d\'ail confit, jambon ibérique',
+         'gluten'],
+    [21, 2, 'Aiguillettes de poulet',
+         'Aiguillettes de poulet, sauce creamy bbq',
+         null],
+    [22, 2, 'Assiette de frites',
+         'Frites fraîches maison',
+         null],
+    [23, 2, 'Assiette de frites gruyère',
+         'Frites fraîches, sauce gruyère maison',
+         'lactose'],
+    [24, 2, 'Falafels',
+         'Falafels de pois chiches et menthe, sauce blanche à la menthe et au citron',
+         null],
+    [25, 2, 'Tigre qui pleure',
+         'Bavette de Black Angus marinée aux épices thaï et grillée, sauce relevée tigre qui pleure',
          null],
   ]) _recIns.run(id, cat, name, desc, allergens);
 }
