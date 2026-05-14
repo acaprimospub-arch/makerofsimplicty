@@ -1535,6 +1535,13 @@ try {
   } catch(e2) {}
 }
 
+// Migration : ajout colonnes photos pointage
+try {
+  const _ptCols2 = db.prepare("PRAGMA table_info(pointages)").all().map(c => c.name);
+  if (!_ptCols2.includes('arrived_photo')) db.exec('ALTER TABLE pointages ADD COLUMN arrived_photo TEXT');
+  if (!_ptCols2.includes('left_photo'))    db.exec('ALTER TABLE pointages ADD COLUMN left_photo TEXT');
+} catch(e) {}
+
 function getPointageToday(user_id) {
   const today = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
   return db.prepare('SELECT * FROM pointages WHERE user_id = ? AND date = ?').get(user_id, today);
@@ -1563,6 +1570,11 @@ function getAllPointagesForDate(date) {
     WHERE p.date = ? ORDER BY p.arrived_at ASC
   `).all(date);
 }
+function savePointagePhoto(userId, date, action, filename) {
+  const col = action === 'in' ? 'arrived_photo' : 'left_photo';
+  db.prepare(`UPDATE pointages SET ${col} = ? WHERE user_id = ? AND date = ?`).run(filename, userId, date);
+}
+
 function getKioskStaffList() {
   const today = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
   return db.prepare(`
@@ -2327,7 +2339,7 @@ module.exports = {
   logEtiquette, getEtiquettesLog,
   getTempMateriels, getTempSession, getTempHistory, upsertTempReleve, getTempWeekReport,
   getTachesPeriodiques, completeTachePeriodique, getTachePeriodiquesHistory,
-  getPointageToday, clockIn, clockOut, getPointagesForUser, getAllPointagesForDate, getKioskStaffList,
+  getPointageToday, clockIn, clockOut, getPointagesForUser, getAllPointagesForDate, savePointagePhoto, getKioskStaffList,
   getRecipeCategories, createRecipeCategory, updateRecipeCategory, deleteRecipeCategory,
   getAllRecipes, getRecipeById, createRecipe, updateRecipe, deleteRecipe,
 };

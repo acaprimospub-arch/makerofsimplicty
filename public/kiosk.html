@@ -261,6 +261,46 @@
 
     @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.35 } }
     .pulsing { animation: pulse 1.5s infinite; }
+
+    /* ── Écran caméra ── */
+    #screen-camera {
+      position: fixed; inset: 0;
+      background: #000;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 150;
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s;
+    }
+    #screen-camera.active { opacity: 1; pointer-events: auto; }
+    .camera-wrap { width: 100%; height: 100%; position: relative; }
+    #camFeed {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+    .camera-overlay {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px;
+      background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,.65) 100%);
+    }
+    .camera-person-name {
+      font-size: 1.4rem; font-weight: 800; color: #fff;
+      text-shadow: 0 2px 8px rgba(0,0,0,.9);
+    }
+    .camera-count {
+      font-size: clamp(4rem, 20vw, 8rem);
+      font-weight: 900;
+      color: var(--primary);
+      text-shadow: 0 4px 24px rgba(212,175,55,.6);
+      line-height: 1;
+    }
+    .camera-hint {
+      font-size: 1rem; color: rgba(255,255,255,.75);
+      font-weight: 500;
+      text-shadow: 0 1px 4px rgba(0,0,0,.9);
+    }
   </style>
 </head>
 <body>
@@ -316,6 +356,19 @@
   </div>
 
   <div class="pin-error" id="pinError"></div>
+</div>
+
+<!-- ── Écran caméra ── -->
+<div id="screen-camera">
+  <div class="camera-wrap">
+    <video id="camFeed" autoplay playsinline muted></video>
+    <canvas id="camCanvas" style="display:none"></canvas>
+    <div class="camera-overlay">
+      <div class="camera-person-name" id="camName"></div>
+      <div class="camera-count" id="camCount">3</div>
+      <div class="camera-hint">Regardez la caméra…</div>
+    </div>
+  </div>
 </div>
 
 <!-- ── Écran confirmation ── -->
@@ -478,10 +531,7 @@ async function submitPin() {
     }
 
     closePin();
-    const time = data.action === 'in' ? data.entry.arrived_at : data.entry.left_at;
-    const msg  = data.action === 'in' ? 'Bonne journée !' : 'À bientôt !';
-    showConfirm(data.action, data.user.name, msg, time);
-    await loadStaff();
+    await startCamera({ userId: data.user.id, userName: data.user.name, action: data.action, entry: data.entry });
 
   } catch (e) {
     shakeError('Erreur réseau');
@@ -521,6 +571,70 @@ document.addEventListener('keydown', e => {
     closePin();
   }
 });
+
+// ── Caméra ───────────────────────────────────────────────────────────────────
+let camStream = null;
+let camCountInterval = null;
+
+async function startCamera(clockData) {
+  const screen = document.getElementById('screen-camera');
+  document.getElementById('camName').textContent = clockData.userName;
+  let count = 3;
+  document.getElementById('camCount').textContent = count;
+  screen.classList.add('active');
+
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+      audio: false
+    });
+    document.getElementById('camFeed').srcObject = camStream;
+  } catch(e) {
+    stopCamera();
+    finishClock(clockData);
+    return;
+  }
+
+  if (camCountInterval) clearInterval(camCountInterval);
+  camCountInterval = setInterval(() => {
+    count--;
+    if (count > 0) {
+      document.getElementById('camCount').textContent = count;
+    } else {
+      clearInterval(camCountInterval);
+      captureAndUpload(clockData);
+    }
+  }, 1000);
+}
+
+function captureAndUpload(clockData) {
+  const video  = document.getElementById('camFeed');
+  const canvas = document.getElementById('camCanvas');
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  const photoData = canvas.toDataURL('image/jpeg', 0.8);
+  stopCamera();
+
+  fetch('/api/kiosk/clock/photo', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: clockData.userId, action: clockData.action, photo: photoData })
+  }).catch(() => {}).finally(() => finishClock(clockData));
+}
+
+function stopCamera() {
+  document.getElementById('screen-camera').classList.remove('active');
+  if (camCountInterval) { clearInterval(camCountInterval); camCountInterval = null; }
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+}
+
+function finishClock(clockData) {
+  const time = clockData.action === 'in' ? clockData.entry.arrived_at : clockData.entry.left_at;
+  const msg  = clockData.action === 'in' ? 'Bonne journée !' : 'À bientôt !';
+  showConfirm(clockData.action, clockData.userName, msg, time);
+  loadStaff();
+}
 
 // ── Confirmation ──────────────────────────────────────────────────────────────
 let confirmTimer = null;

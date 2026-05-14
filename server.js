@@ -105,6 +105,10 @@ const uploadRecettePhoto = multer({
   fileFilter: (_req, file, cb) => cb(null, /^image\//.test(file.mimetype))
 });
 
+// ─── Pointages (photos biométriques kiosque) ──────────────────────────────────
+const POINTAGES_DIR = path.join(__dirname, 'uploads', 'pointages');
+if (!fs.existsSync(POINTAGES_DIR)) fs.mkdirSync(POINTAGES_DIR, { recursive: true });
+
 // ─── Joy.io iCal Sync ──────────────────────────────────────────────────────────
 function fetchUrl(url, depth = 0) {
   if (depth > 5) return Promise.reject(new Error('Too many redirects'));
@@ -418,6 +422,7 @@ app.delete('/api/tasks/:id/complete', requireAuth, (req, res) => {
 
 // ── Tâches périodiques ─────────────────────────────────────────────────────────
 app.use('/uploads/taches', requireAuth, express.static(TACHES_PHOTOS_DIR));
+app.use('/uploads/pointages', requireAuth, express.static(POINTAGES_DIR));
 
 app.get('/api/taches/periodiques', requireAuth, (_req, res) => {
   res.json(db.getTachesPeriodiques());
@@ -500,7 +505,28 @@ app.post('/api/kiosk/clock', (req, res) => {
   }
   const entry = db.getPointageToday(user.id);
   io.emit('pointage:updated', { userId: user.id });
-  res.json({ ok: true, user: { id: user.id, name: user.name }, action, entry });
+  res.json({ ok: true, user: { id: user.id, name: user.name }, action, entry, pointageId: entry.id });
+});
+
+app.post('/api/kiosk/clock/photo', (req, res) => {
+  const { userId, action, photo } = req.body;
+  if (!userId || !action || !photo) return res.status(400).json({ ok: false });
+
+  const uid  = parseInt(userId);
+  if (!['in', 'out'].includes(action)) return res.status(400).json({ ok: false });
+
+  try {
+    const base64 = photo.replace(/^data:image\/\w+;base64,/, '');
+    const buf    = Buffer.from(base64, 'base64');
+    const today  = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
+    const fname  = `${uid}_${today}_${action}.jpg`;
+    fs.writeFileSync(path.join(POINTAGES_DIR, fname), buf);
+    db.savePointagePhoto(uid, today, action, fname);
+    res.json({ ok: true });
+  } catch(e) {
+    console.error('photo pointage:', e);
+    res.status(500).json({ ok: false });
+  }
 });
 
 // Admin task management
