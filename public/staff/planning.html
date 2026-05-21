@@ -416,7 +416,10 @@
       const today    = todayStr();
       const dayDates = Array.from({length:7}, (_,i) => addDays(week,i));
 
-      const users = adminMode ? data.users : data.users.filter(u => u.shift === currentUser?.shift);
+      const myShift = currentUser?.shift;
+      const users = (adminMode || !myShift || (myShift !== 'midi' && myShift !== 'soir'))
+        ? data.users
+        : data.users.filter(u => u.shift === myShift);
 
       let html = '<thead><tr><th style="text-align:left;min-width:100px">Employé</th>';
       dayDates.forEach((dd,i) => {
