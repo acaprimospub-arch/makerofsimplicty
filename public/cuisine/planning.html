@@ -35,6 +35,9 @@
     .shift-cell .sc-empty { font-size:.7rem; color:var(--text-muted); }
     .today-col .shift-cell.is-work { background:rgba(205,164,67,.2); border-color:var(--primary); }
     .readonly-badge { display:inline-flex; align-items:center; gap:5px; font-size:.75rem; color:var(--text-muted); background:var(--bg-surface); border:1px solid var(--border); border-radius:20px; padding:4px 12px; margin-bottom:14px; }
+    .btn-dup { display:inline-flex; align-items:center; justify-content:center; margin-left:6px; padding:2px 6px; font-size:.7rem; font-weight:700; background:rgba(205,164,67,.12); color:var(--primary); border:1px solid rgba(205,164,67,.35); border-radius:4px; cursor:pointer; transition:background .12s; vertical-align:middle; white-space:nowrap; }
+    .btn-dup:hover { background:rgba(205,164,67,.25); }
+    .btn-dup:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .btn-whatsapp { display:inline-flex; align-items:center; justify-content:center; gap:8px; background:#25d366; color:#fff; border:none; border-radius:var(--radius-sm); padding:13px 20px; font-size:.95rem; font-weight:700; cursor:pointer; transition:background .15s; width:100%; }
     .btn-whatsapp:hover { background:#1da851; }
     .btn-whatsapp:focus-visible { box-shadow:var(--focus-ring); outline:none; }
@@ -371,6 +374,42 @@
       render();
     }
 
+    async function duplicateCuisineUserWeek(userId, userName) {
+      const hasConge = (planningData?.shifts || []).some(s => s.user_id === userId && s.is_conge);
+      if (hasConge) {
+        showToast(`Impossible : ${userName} a un congé approuvé cette semaine`, 'error');
+        return;
+      }
+      const prevWeekStart = addDays(currentWeekStart, -7);
+      const prevData = await api.get(`/api/cuisine/planning?weekStart=${prevWeekStart}`);
+      if (!prevData) return;
+      const prevShifts = (prevData.shifts || []).filter(s => s.user_id === userId && s.start_time);
+      if (!prevShifts.length) {
+        showToast(`Aucun horaire à copier pour la semaine précédente`, 'error');
+        return;
+      }
+      let ok = true;
+      for (const s of prevShifts) {
+        const dayOffset = (new Date(s.day_date) - new Date(prevWeekStart)) / 86400000;
+        const newDate = addDays(currentWeekStart, dayOffset);
+        const res = await api.put('/api/cuisine/planning', {
+          user_id: userId,
+          week_start: currentWeekStart,
+          day_date: newDate,
+          start_time: s.start_time,
+          end_time: s.end_time,
+          is_off: 0
+        });
+        if (!res?.ok) { ok = false; break; }
+      }
+      if (ok) {
+        showToast(`Planning de ${userName} dupliqué`, 'success');
+        await load();
+      } else {
+        showToast('Erreur lors de la duplication', 'error');
+      }
+    }
+
     function render() {
       const todayStr = today();
       const dayDates = DAYS.map((_, i) => addDays(currentWeekStart, i));
@@ -389,7 +428,7 @@
         const isOwnRow = u.id === myId;
         return `
         <tr${u.id === myId ? ' class="row-me"' : ''}>
-          <th scope="row" class="staff-cell">${escapeHtml(u.name)}</th>
+          <th scope="row" class="staff-cell">${escapeHtml(u.name)}${isChef && !isOwnRow ? `<button class="btn-dup" onclick="duplicateCuisineUserWeek(${u.id},${JSON.stringify(u.name)})" title="Copier la semaine précédente">⎘ Dup</button>` : ''}</th>
           ${dayDates.map(dd => {
             const shift   = planningData.shifts.find(s => s.user_id === u.id && s.day_date === dd);
             const evs     = (planningData.timeEvents || []).filter(e => e.user_id === u.id && e.date === dd);

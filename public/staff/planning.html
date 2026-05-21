@@ -33,6 +33,9 @@
     .shift-badge { display:inline-block; font-size:.62rem; font-weight:600; padding:2px 6px; border-radius:10px; margin-left:4px; vertical-align:middle; }
     .shift-badge.midi { background:rgba(205,164,67,.15); color:var(--primary); }
     .shift-badge.soir { background:rgba(99,102,241,.15); color:#818cf8; }
+    .btn-dup { display:inline-flex; align-items:center; justify-content:center; margin-left:6px; padding:2px 6px; font-size:.7rem; font-weight:700; background:rgba(205,164,67,.12); color:var(--primary); border:1px solid rgba(205,164,67,.35); border-radius:4px; cursor:pointer; transition:background .12s; vertical-align:middle; white-space:nowrap; }
+    .btn-dup:hover { background:rgba(205,164,67,.25); }
+    .btn-dup:focus-visible { box-shadow:var(--focus-ring); outline:none; }
     .group-sep td { background:var(--bg-surface); height:4px; padding:0; border:none; }
     .day-cell { background:var(--bg-card); min-height:60px; display:flex; flex-direction:column; gap:2px; border-radius:4px; padding:5px 6px; }
     .day-cell.clickable { cursor:pointer; transition:background .12s; }
@@ -413,6 +416,8 @@
       const today    = todayStr();
       const dayDates = Array.from({length:7}, (_,i) => addDays(week,i));
 
+      const users = adminMode ? data.users : data.users.filter(u => u.shift === currentUser?.shift);
+
       let html = '<thead><tr><th style="text-align:left;min-width:100px">Employé</th>';
       dayDates.forEach((dd,i) => {
         html += `<th class="${dd===today?'today-col':''}">${DAYS_SHORT[i]}<br><span style="font-weight:400;font-size:.65rem">${dd.slice(8)}</span></th>`;
@@ -420,12 +425,13 @@
       html += '</tr></thead><tbody>';
 
       let lastShift = null;
-      data.users.forEach(u => {
+      users.forEach(u => {
         if (lastShift && u.shift !== lastShift) html += '<tr class="group-sep"><td colspan="8"></td></tr>';
         lastShift = u.shift;
         const canClick = adminMode || u.id === myId;
 
-        html += `<tr${u.id===myId?' class="row-me"':''}><td class="staff-name-cell">${escapeHtml(u.name)}<span class="shift-badge ${u.shift}">${u.shift}</span></td>`;
+        const dupBtn = adminMode ? `<button class="btn-dup" onclick="duplicateSalleUserWeek(${u.id},${JSON.stringify(u.name)})" title="Copier la semaine précédente">⎘ Dup</button>` : '';
+        html += `<tr${u.id===myId?' class="row-me"':''}><td class="staff-name-cell">${escapeHtml(u.name)}<span class="shift-badge ${u.shift}">${u.shift}</span>${dupBtn}</td>`;
         dayDates.forEach((dd,di) => {
           const isToday = dd === today;
           const plan    = data.shifts.find(s => s.user_id===u.id && s.day_date===dd);
@@ -475,6 +481,42 @@
       if (!data) return;
       salleWeekData = data;
       buildSalleGrid(document.getElementById('salleTable'), data, true, currentUser?.id);
+    }
+
+    async function duplicateSalleUserWeek(userId, userName) {
+      const hasConge = (salleWeekData?.shifts || []).some(s => s.user_id === userId && s.is_conge);
+      if (hasConge) {
+        showToast(`Impossible : ${userName} a un congé approuvé cette semaine`, 'error');
+        return;
+      }
+      const prevWeekStart = addDays(salleAdminWeek, -7);
+      const prevData = await api.get(`/api/salle/hours?weekStart=${prevWeekStart}`);
+      if (!prevData) return;
+      const prevShifts = (prevData.shifts || []).filter(s => s.user_id === userId && s.start_time);
+      if (!prevShifts.length) {
+        showToast(`Aucun horaire à copier pour la semaine précédente`, 'error');
+        return;
+      }
+      let ok = true;
+      for (const s of prevShifts) {
+        const dayOffset = (new Date(s.day_date) - new Date(prevWeekStart)) / 86400000;
+        const newDate = addDays(salleAdminWeek, dayOffset);
+        const res = await api.put('/api/salle/planning', {
+          user_id: userId,
+          week_start: salleAdminWeek,
+          day_date: newDate,
+          start_time: s.start_time,
+          end_time: s.end_time,
+          is_off: 0
+        });
+        if (!res?.ok) { ok = false; break; }
+      }
+      if (ok) {
+        showToast(`Planning de ${userName} dupliqué`, 'success');
+        await loadSalleAdminWeek();
+      } else {
+        showToast('Erreur lors de la duplication', 'error');
+      }
     }
 
     async function loadSalleStaffWeek() {
