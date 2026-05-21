@@ -430,7 +430,7 @@
         lastShift = u.shift;
         const canClick = adminMode || u.id === myId;
 
-        const dupBtn = adminMode ? `<button class="btn-dup" onclick="duplicateSalleUserWeek(${u.id},${JSON.stringify(u.name)})" title="Copier la semaine précédente">⎘ Dup</button>` : '';
+        const dupBtn = adminMode ? `<button class="btn-dup" data-dup-uid="${u.id}" data-dup-name="${escapeHtml(u.name)}" title="Copier la semaine précédente">⎘ Dup</button>` : '';
         html += `<tr${u.id===myId?' class="row-me"':''}><td class="staff-name-cell">${escapeHtml(u.name)}<span class="shift-badge ${u.shift}">${u.shift}</span>${dupBtn}</td>`;
         dayDates.forEach((dd,di) => {
           const isToday = dd === today;
@@ -472,6 +472,9 @@
       tableEl.querySelectorAll('.day-cell.clickable').forEach(cell => {
         cell.addEventListener('click', () => openSalleDrawer(cell, adminMode));
         cell.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){e.preventDefault();openSalleDrawer(cell,adminMode);} });
+      });
+      tableEl.querySelectorAll('.btn-dup[data-dup-uid]').forEach(btn => {
+        btn.addEventListener('click', () => duplicateSalleUserWeek(parseInt(btn.dataset.dupUid), btn.dataset.dupName));
       });
     }
 

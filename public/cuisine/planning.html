@@ -428,7 +428,7 @@
         const isOwnRow = u.id === myId;
         return `
         <tr${u.id === myId ? ' class="row-me"' : ''}>
-          <th scope="row" class="staff-cell">${escapeHtml(u.name)}${isChef && !isOwnRow ? `<button class="btn-dup" onclick="duplicateCuisineUserWeek(${u.id},${JSON.stringify(u.name)})" title="Copier la semaine précédente">⎘ Dup</button>` : ''}</th>
+          <th scope="row" class="staff-cell">${escapeHtml(u.name)}${isChef && !isOwnRow ? `<button class="btn-dup" data-dup-uid="${u.id}" data-dup-name="${escapeHtml(u.name)}" title="Copier la semaine précédente">⎘ Dup</button>` : ''}</th>
           ${dayDates.map(dd => {
             const shift   = planningData.shifts.find(s => s.user_id === u.id && s.day_date === dd);
             const evs     = (planningData.timeEvents || []).filter(e => e.user_id === u.id && e.date === dd);
@@ -479,6 +479,9 @@
         };
         cell.addEventListener('click', handler);
         cell.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); } });
+      });
+      tbody.querySelectorAll('.btn-dup[data-dup-uid]').forEach(btn => {
+        btn.addEventListener('click', () => duplicateCuisineUserWeek(parseInt(btn.dataset.dupUid), btn.dataset.dupName));
       });
     }
 
