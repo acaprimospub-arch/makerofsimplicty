@@ -5,6 +5,17 @@ const BCRYPT_ROUNDS = 8;
 
 const db = new DatabaseSync(path.join(__dirname, 'mos.db'));
 db.exec('PRAGMA journal_mode = WAL');
+db.exec('PRAGMA synchronous = NORMAL');
+
+// Helper pour les migrations ALTER TABLE : log les erreurs inattendues (pas "duplicate column")
+function _safeMigrate(sql) {
+  try { db.exec(sql); } catch(e) {
+    const msg = (e.message || '').toLowerCase();
+    if (!msg.includes('duplicate column name') && !msg.includes('already exists')) {
+      console.warn('[DB migration warning]', e.message, '\nSQL:', sql.trim().slice(0, 120));
+    }
+  }
+}
 
 function _addDays(dateStr, n) {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -129,21 +140,31 @@ db.exec(`
   );
 `);
 
+// ─── Index de performance ──────────────────────────────────────────────────────
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_reservations_date         ON reservations(date);
+  CREATE INDEX IF NOT EXISTS idx_reservations_joy_event_id ON reservations(joy_event_id);
+  CREATE INDEX IF NOT EXISTS idx_task_completions_date     ON task_completions(date);
+  CREATE INDEX IF NOT EXISTS idx_joy_events_date           ON joy_events(date);
+`);
+// Ajouté dans un bloc séparé car pointages peut ne pas encore exister au premier démarrage
+_safeMigrate('CREATE INDEX IF NOT EXISTS idx_pointages_user_date ON pointages(user_id, date)');
+
 // ─── Migrations colonnes (BDs existantes) ──────────────────────────────────────
-try { db.exec("ALTER TABLE floor_tables ADD COLUMN zone TEXT DEFAULT 'salle_bas'"); } catch(e) {}
-try { db.exec("ALTER TABLE floor_tables ADD COLUMN is_decoration INTEGER DEFAULT 0"); } catch(e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN email TEXT"); } catch(e) {}
-try { db.exec("ALTER TABLE joy_events ADD COLUMN assigned_tables TEXT DEFAULT '[]'"); } catch(e) {}
-try { db.exec("ALTER TABLE reservations ADD COLUMN joy_event_id INTEGER"); } catch(e) {}
-try { db.exec("ALTER TABLE reservations ADD COLUMN space TEXT"); } catch(e) {}
-try { db.exec("ALTER TABLE reservations ADD COLUMN table_ids TEXT DEFAULT '[]'"); } catch(e) {}
+_safeMigrate("ALTER TABLE floor_tables ADD COLUMN zone TEXT DEFAULT 'salle_bas'");
+_safeMigrate("ALTER TABLE floor_tables ADD COLUMN is_decoration INTEGER DEFAULT 0");
+_safeMigrate("ALTER TABLE users ADD COLUMN email TEXT");
+_safeMigrate("ALTER TABLE joy_events ADD COLUMN assigned_tables TEXT DEFAULT '[]'");
+_safeMigrate("ALTER TABLE reservations ADD COLUMN joy_event_id INTEGER");
+_safeMigrate("ALTER TABLE reservations ADD COLUMN space TEXT");
+_safeMigrate("ALTER TABLE reservations ADD COLUMN table_ids TEXT DEFAULT '[]'");
 // Migration : on peuple table_ids depuis table_id pour les lignes existantes
-try { db.exec("UPDATE reservations SET table_ids = json_array(table_id) WHERE table_id IS NOT NULL AND (table_ids IS NULL OR table_ids = '[]')"); } catch(e) {}
-try { db.exec("ALTER TABLE tasks ADD COLUMN domain TEXT DEFAULT 'salle'"); } catch(e) {}
-try { db.exec("ALTER TABLE reservations ADD COLUMN admin_notes TEXT"); } catch(e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN sort_order INTEGER DEFAULT 99"); } catch(e) {}
-try { db.exec("UPDATE users SET sort_order = CASE name WHEN 'Pierre' THEN 1 WHEN 'Thomas' THEN 2 WHEN 'Moha' THEN 3 WHEN 'Noah' THEN 4 ELSE 99 END WHERE shift = 'cuisine' AND sort_order = 99"); } catch(e) {}
-try { db.exec("ALTER TABLE floor_tables ADD COLUMN note TEXT DEFAULT ''"); } catch(e) {}
+_safeMigrate("UPDATE reservations SET table_ids = json_array(table_id) WHERE table_id IS NOT NULL AND (table_ids IS NULL OR table_ids = '[]')");
+_safeMigrate("ALTER TABLE tasks ADD COLUMN domain TEXT DEFAULT 'salle'");
+_safeMigrate("ALTER TABLE reservations ADD COLUMN admin_notes TEXT");
+_safeMigrate("ALTER TABLE users ADD COLUMN sort_order INTEGER DEFAULT 99");
+_safeMigrate("UPDATE users SET sort_order = CASE name WHEN 'Pierre' THEN 1 WHEN 'Thomas' THEN 2 WHEN 'Moha' THEN 3 WHEN 'Noah' THEN 4 ELSE 99 END WHERE shift = 'cuisine' AND sort_order = 99");
+_safeMigrate("ALTER TABLE floor_tables ADD COLUMN note TEXT DEFAULT ''");
 
 // ─── Table messages d'équipe ───────────────────────────────────────────────────
 try {
@@ -192,7 +213,7 @@ try {
   `);
 } catch(e) {}
 
-try { db.exec(`ALTER TABLE salle_time_events ADD COLUMN type TEXT DEFAULT 'supp'`); } catch(e) {}
+_safeMigrate(`ALTER TABLE salle_time_events ADD COLUMN type TEXT DEFAULT 'supp'`);
 
 try {
   db.exec(`
@@ -393,8 +414,10 @@ const _seedUsers = [
   { name: 'Moha',     pin: '8452', role: 'staff',   shift: 'cuisine' },
   { name: 'Myriam',   pin: '9991', role: 'manager', shift: 'marketing' },
 ];
-const _insertUser = db.prepare('INSERT OR IGNORE INTO users (name, pin, role, shift) VALUES (?, ?, ?, ?)');
-for (const u of _seedUsers) _insertUser.run(u.name, u.pin, u.role, u.shift);
+if (db.prepare('SELECT COUNT(*) as n FROM users').get().n === 0) {
+  const _insertUser = db.prepare('INSERT INTO users (name, pin, role, shift) VALUES (?, ?, ?, ?)');
+  for (const u of _seedUsers) _insertUser.run(u.name, u.pin, u.role, u.shift);
+}
 // Désactiver les anciens comptes test génériques
 db.prepare("UPDATE users SET active = 0 WHERE pin IN ('0000','1234','11111')").run();
 
@@ -819,6 +842,21 @@ function verifyUserPin(userId, pin) {
   if (!bcrypt.compareSync(pin, user.pin)) return null;
   return user;
 }
+function checkWeakAdminPins() {
+  const WEAK_PINS = ['0000', '1234', '1111', '0001'];
+  const admins = db.prepare("SELECT id, name, pin FROM users WHERE role IN ('admin','direction') AND active = 1").all();
+  const warnings = [];
+  for (const admin of admins) {
+    for (const weak of WEAK_PINS) {
+      if (bcrypt.compareSync(weak, admin.pin)) {
+        warnings.push({ name: admin.name, pin: weak });
+        break;
+      }
+    }
+  }
+  return warnings;
+}
+
 function isPinTaken(pin, excludeId = null) {
   const users = db.prepare('SELECT id, pin FROM users').all();
   for (const u of users) {
@@ -912,6 +950,9 @@ function updateTable(id, data) {
   if (!updates.length) return;
   db.prepare(`UPDATE floor_tables SET ${updates.join(', ')} WHERE id = ?`).run(...values, id);
 }
+function updateTableNote(id, note) {
+  db.prepare('UPDATE floor_tables SET note = ? WHERE id = ?').run(note ?? '', Number(id));
+}
 function deleteTable(id) {
   db.prepare('UPDATE floor_tables SET active = 0 WHERE id = ?').run(id);
 }
@@ -997,8 +1038,13 @@ function getUpcomingReservationStats() {
 
 // ─── Stats & Logs ──────────────────────────────────────────────────────────────
 function getStats(from, to) {
-  const dateCondition = from && to ? 'AND tc.date BETWEEN ? AND ?' : '';
-  const params = from && to ? [from, to] : [];
+  // Par défaut : 90 derniers jours pour éviter un scan complet de task_completions
+  if (!from || !to) {
+    to   = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
+    from = new Date(Date.now() - 90 * 86400000).toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
+  }
+  const dateCondition = 'AND tc.date BETWEEN ? AND ?';
+  const params = [from, to];
 
   const byUser = db.prepare(`
     SELECT u.id, u.name, u.shift,
@@ -1182,7 +1228,7 @@ function getHrEvents({ userId, from, to, type } = {}) {
   if (from)   { q += ' AND h.date >= ?';   params.push(from); }
   if (to)     { q += ' AND h.date <= ?';   params.push(to); }
   if (type)   { q += ' AND h.type = ?';    params.push(type); }
-  q += ' ORDER BY h.date DESC, h.created_at DESC';
+  q += ' ORDER BY h.date DESC, h.created_at DESC LIMIT 500';
   return db.prepare(q).all(...params);
 }
 
@@ -1694,157 +1740,6 @@ function deleteTimeEvent(id, userId) {
   db.prepare('DELETE FROM cuisine_time_events WHERE id = ?').run(id);
 }
 
-// ─── Instagram Planificateur ───────────────────────────────────────────────────
-try {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS instagram_accounts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      username TEXT,
-      account_type TEXT DEFAULT 'business',
-      ig_user_id TEXT,
-      ig_page_id TEXT,
-      access_token TEXT,
-      token_expires_at TEXT,
-      avatar_url TEXT,
-      is_active INTEGER DEFAULT 1,
-      created_by INTEGER,
-      created_at TEXT DEFAULT (datetime('now', 'localtime')),
-      FOREIGN KEY (created_by) REFERENCES users(id)
-    );
-
-    CREATE TABLE IF NOT EXISTS instagram_posts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      account_id INTEGER NOT NULL,
-      caption TEXT,
-      status TEXT NOT NULL DEFAULT 'draft',
-      scheduled_at TEXT,
-      published_at TEXT,
-      ig_media_id TEXT,
-      ig_permalink TEXT,
-      error_message TEXT,
-      created_by INTEGER,
-      created_at TEXT DEFAULT (datetime('now', 'localtime')),
-      updated_at TEXT DEFAULT (datetime('now', 'localtime')),
-      FOREIGN KEY (account_id) REFERENCES instagram_accounts(id),
-      FOREIGN KEY (created_by) REFERENCES users(id)
-    );
-
-    CREATE TABLE IF NOT EXISTS instagram_media (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      post_id INTEGER NOT NULL,
-      filename TEXT NOT NULL,
-      original_name TEXT NOT NULL,
-      mimetype TEXT NOT NULL,
-      size INTEGER,
-      sort_order INTEGER DEFAULT 0,
-      FOREIGN KEY (post_id) REFERENCES instagram_posts(id) ON DELETE CASCADE
-    );
-  `);
-} catch(e) {}
-
-// ─── Instagram — Comptes ───────────────────────────────────────────────────────
-function getInstagramAccounts() {
-  return db.prepare('SELECT * FROM instagram_accounts WHERE is_active = 1 ORDER BY name').all();
-}
-function getInstagramAccountById(id) {
-  return db.prepare('SELECT * FROM instagram_accounts WHERE id = ?').get(id);
-}
-function createInstagramAccount({ name, username, account_type, ig_user_id, ig_page_id, access_token, token_expires_at, avatar_url, created_by }) {
-  return db.prepare(
-    'INSERT INTO instagram_accounts (name, username, account_type, ig_user_id, ig_page_id, access_token, token_expires_at, avatar_url, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  ).run(name, username || null, account_type || 'business', ig_user_id || null, ig_page_id || null, access_token || null, token_expires_at || null, avatar_url || null, created_by || null).lastInsertRowid;
-}
-function updateInstagramAccount(id, data) {
-  const fields = ['name', 'username', 'account_type', 'ig_user_id', 'ig_page_id', 'access_token', 'token_expires_at', 'avatar_url'];
-  const updates = fields.filter(f => data[f] !== undefined).map(f => `${f} = ?`);
-  const values  = fields.filter(f => data[f] !== undefined).map(f => data[f]);
-  if (!updates.length) return;
-  db.prepare(`UPDATE instagram_accounts SET ${updates.join(', ')} WHERE id = ?`).run(...values, id);
-}
-function deleteInstagramAccount(id) {
-  db.prepare('UPDATE instagram_accounts SET is_active = 0 WHERE id = ?').run(id);
-}
-
-// ─── Instagram — Posts ─────────────────────────────────────────────────────────
-function getInstagramPosts({ accountId, status, from, to } = {}) {
-  let q = `
-    SELECT p.*, a.name as account_name, a.username as account_username,
-           (SELECT COUNT(*) FROM instagram_media m WHERE m.post_id = p.id) as media_count,
-           (SELECT filename FROM instagram_media m WHERE m.post_id = p.id ORDER BY m.sort_order ASC LIMIT 1) as first_media
-    FROM instagram_posts p
-    JOIN instagram_accounts a ON a.id = p.account_id
-    WHERE 1=1
-  `;
-  const params = [];
-  if (accountId) { q += ' AND p.account_id = ?'; params.push(accountId); }
-  if (status)    { q += ' AND p.status = ?';     params.push(status); }
-  if (from)      { q += ' AND (p.scheduled_at >= ? OR p.published_at >= ?)'; params.push(from, from); }
-  if (to)        { q += ' AND (p.scheduled_at <= ? OR p.published_at <= ?)'; params.push(to, to); }
-  q += ' ORDER BY COALESCE(p.scheduled_at, p.created_at) DESC';
-  return db.prepare(q).all(...params);
-}
-function getInstagramPostById(id) {
-  return db.prepare(`
-    SELECT p.*, a.name as account_name, a.username as account_username,
-           a.ig_user_id, a.access_token, a.token_expires_at
-    FROM instagram_posts p
-    JOIN instagram_accounts a ON a.id = p.account_id
-    WHERE p.id = ?
-  `).get(id);
-}
-function createInstagramPost({ account_id, caption, status, scheduled_at, created_by }) {
-  return db.prepare(
-    "INSERT INTO instagram_posts (account_id, caption, status, scheduled_at, created_by, updated_at) VALUES (?, ?, ?, ?, ?, datetime('now','localtime'))"
-  ).run(account_id, caption || null, status || 'draft', scheduled_at || null, created_by || null).lastInsertRowid;
-}
-function updateInstagramPost(id, data) {
-  const fields = ['account_id', 'caption', 'status', 'scheduled_at', 'published_at', 'ig_media_id', 'ig_permalink', 'error_message'];
-  const updates = fields.filter(f => data[f] !== undefined).map(f => `${f} = ?`);
-  const values  = fields.filter(f => data[f] !== undefined).map(f => data[f]);
-  if (!updates.length) return;
-  updates.push("updated_at = datetime('now','localtime')");
-  db.prepare(`UPDATE instagram_posts SET ${updates.join(', ')} WHERE id = ?`).run(...values, id);
-}
-function deleteInstagramPost(id) {
-  const media = db.prepare('SELECT filename FROM instagram_media WHERE post_id = ?').all(id);
-  db.prepare('DELETE FROM instagram_posts WHERE id = ?').run(id);
-  return media; // retourne les noms de fichiers pour suppression disque
-}
-function getDueInstagramPosts() {
-  return db.prepare(`
-    SELECT p.*, a.ig_user_id, a.access_token, a.token_expires_at, a.name as account_name
-    FROM instagram_posts p
-    JOIN instagram_accounts a ON a.id = p.account_id
-    WHERE p.status = 'scheduled'
-      AND p.scheduled_at <= datetime('now','localtime')
-      AND a.is_active = 1
-  `).all();
-}
-
-// ─── Instagram — Médias ────────────────────────────────────────────────────────
-function addInstagramMedia(post_id, { filename, original_name, mimetype, size, sort_order }) {
-  return db.prepare(
-    'INSERT INTO instagram_media (post_id, filename, original_name, mimetype, size, sort_order) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(post_id, filename, original_name, mimetype, size || 0, sort_order || 0).lastInsertRowid;
-}
-function getInstagramMedia(post_id) {
-  return db.prepare('SELECT * FROM instagram_media WHERE post_id = ? ORDER BY sort_order ASC').all(post_id);
-}
-function getInstagramMediaById(id) {
-  return db.prepare('SELECT * FROM instagram_media WHERE id = ?').get(id);
-}
-function deleteInstagramMedia(id) {
-  const row = db.prepare('SELECT filename FROM instagram_media WHERE id = ?').get(id);
-  db.prepare('DELETE FROM instagram_media WHERE id = ?').run(id);
-  return row; // retourne le filename pour suppression disque
-}
-function reorderInstagramMedia(post_id, orderedIds) {
-  orderedIds.forEach((mid, idx) => {
-    db.prepare('UPDATE instagram_media SET sort_order = ? WHERE id = ? AND post_id = ?').run(idx, mid, post_id);
-  });
-}
-
 // ─── Planning PDF (salle staff) ────────────────────────────────────────────────
 try {
   db.exec(`
@@ -1909,11 +1804,11 @@ try {
 } catch(e) {}
 
 // Migrations colonnes cuisine_produits (DBs existantes)
-try { db.exec("ALTER TABLE cuisine_produits ADD COLUMN fournisseur TEXT"); } catch(e) {}
-try { db.exec("ALTER TABLE cuisine_produits ADD COLUMN dlc_jours INTEGER"); } catch(e) {}
-try { db.exec("ALTER TABLE cuisine_produits ADD COLUMN type_date TEXT DEFAULT 'dlc'"); } catch(e) {}
-try { db.exec("ALTER TABLE cuisine_produits ADD COLUMN configured INTEGER DEFAULT 0"); } catch(e) {}
-try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_cp_nom ON cuisine_produits(nom)"); } catch(e) {}
+_safeMigrate("ALTER TABLE cuisine_produits ADD COLUMN fournisseur TEXT");
+_safeMigrate("ALTER TABLE cuisine_produits ADD COLUMN dlc_jours INTEGER");
+_safeMigrate("ALTER TABLE cuisine_produits ADD COLUMN type_date TEXT DEFAULT 'dlc'");
+_safeMigrate("ALTER TABLE cuisine_produits ADD COLUMN configured INTEGER DEFAULT 0");
+_safeMigrate("CREATE UNIQUE INDEX IF NOT EXISTS idx_cp_nom ON cuisine_produits(nom)");
 
 // Seed produits depuis carte HACCP Avril 2026
 {
@@ -2069,13 +1964,13 @@ function logEtiquette({ type, produit_nom, categorie, fournisseur, date_fab, dat
     "INSERT INTO cuisine_etiquettes_log (type, produit_nom, categorie, date_fab, date_dlc, quantite, allergenes, notes, user_id, user_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
   ).run(type, produit_nom, categorie || null, date_fab || null, date_dlc || null, quantite || 1, JSON.stringify(allergenes || []), notes || null, user_id || null, user_name || null).lastInsertRowid;
 }
-function getEtiquettesLog({ from, to, limit } = {}) {
+function getEtiquettesLog({ from, to, limit = 200 } = {}) {
   let q = "SELECT * FROM cuisine_etiquettes_log WHERE 1=1";
   const params = [];
   if (from) { q += ' AND date(printed_at) >= ?'; params.push(from); }
   if (to)   { q += ' AND date(printed_at) <= ?'; params.push(to); }
-  q += ' ORDER BY printed_at DESC';
-  if (limit) { q += ' LIMIT ?'; params.push(limit); }
+  q += ' ORDER BY printed_at DESC LIMIT ?';
+  params.push(limit);
   return db.prepare(q).all(...params);
 }
 
@@ -2093,113 +1988,6 @@ function getScheduledStartTime(user_id, date) {
     `SELECT start_time FROM cuisine_planning WHERE user_id = ? AND day_date = ? AND is_off = 0 AND start_time IS NOT NULL`
   ).get(user_id, date);
   return cuisineShift ? cuisineShift.start_time : null;
-}
-
-// ─── Températures ─────────────────────────────────────────────────────────────
-try {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS temperature_materiels (
-      id   INTEGER PRIMARY KEY AUTOINCREMENT,
-      nom  TEXT NOT NULL,
-      type TEXT NOT NULL,
-      actif INTEGER DEFAULT 1
-    );
-    CREATE TABLE IF NOT EXISTS temperature_releves (
-      id          INTEGER PRIMARY KEY AUTOINCREMENT,
-      materiel_id INTEGER NOT NULL,
-      date        TEXT NOT NULL,
-      shift       TEXT NOT NULL,
-      temperature REAL NOT NULL,
-      statut      TEXT NOT NULL,
-      user_id     INTEGER,
-      user_name   TEXT,
-      releve_at   TEXT DEFAULT (datetime('now', 'localtime')),
-      FOREIGN KEY(materiel_id) REFERENCES temperature_materiels(id)
-    );
-  `);
-} catch(e) {}
-
-try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_tm_nom ON temperature_materiels(nom)"); } catch(e) {}
-try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_tr_session ON temperature_releves(materiel_id, date, shift)"); } catch(e) {}
-
-// Seed 13 unités
-{
-  const _insM = db.prepare("INSERT OR IGNORE INTO temperature_materiels (nom, type) VALUES (?, ?)");
-  for (const [n, t] of [
-    ['CONGEL STEACK',           'negatif'],
-    ['FRIGO MEP',               'positif'],
-    ['FRIGO PLANCHE',           'positif'],
-    ['CONGEL PJ',               'negatif'],
-    ['FRIGO DESSERTS',          'positif'],
-    ['CONGEL CUISINE',          'negatif'],
-    ['FRIGO FRITES',            'positif'],
-    ['CONGEL GAUFFRES',         'negatif'],
-    ['FRIGO STEACK',            'positif'],
-    ['CONGEL FRITES',           'negatif'],
-    ['FRIGO ECO MEP',           'positif'],
-    ['FRIGO ECO SALADE',        'positif'],
-    ['CONGEL PAIN',             'negatif'],
-    ['CHAMBRE FROIDE POSITIVE', 'positif'],
-    ['CHAMBRE FROIDE POSITIVE 2','positif'],
-    ['CHAMBRE FROIDE NEGATIVE', 'negatif'],
-    ['FRIGO 3',                 'positif'],
-    ['FRIGO 4',                 'positif'],
-    ['FRIGO 5',                 'positif'],
-    ['FRIGO 6',                 'positif'],
-  ]) _insM.run(n, t);
-}
-
-function getTempMateriels() {
-  return db.prepare("SELECT * FROM temperature_materiels WHERE actif = 1 ORDER BY type DESC, nom").all();
-}
-
-function getTempSession(date, shift) {
-  return db.prepare(`
-    SELECT r.*, m.nom AS materiel_nom, m.type AS materiel_type
-    FROM temperature_releves r
-    JOIN temperature_materiels m ON m.id = r.materiel_id
-    WHERE r.date = ? AND r.shift = ?
-    ORDER BY m.type DESC, m.nom
-  `).all(date, shift);
-}
-
-function getTempHistory({ from, to, limit = 100 }) {
-  let q = `
-    SELECT r.*, m.nom AS materiel_nom, m.type AS materiel_type
-    FROM temperature_releves r
-    JOIN temperature_materiels m ON m.id = r.materiel_id
-    WHERE 1=1
-  `;
-  const p = [];
-  if (from) { q += ' AND r.date >= ?'; p.push(from); }
-  if (to)   { q += ' AND r.date <= ?'; p.push(to); }
-  q += ' ORDER BY r.date DESC, r.shift DESC, m.type DESC, m.nom LIMIT ?';
-  p.push(limit);
-  return db.prepare(q).all(...p);
-}
-
-function upsertTempReleve({ materiel_id, date, shift, temperature, statut, user_id, user_name }) {
-  return db.prepare(`
-    INSERT INTO temperature_releves (materiel_id, date, shift, temperature, statut, user_id, user_name)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(materiel_id, date, shift) DO UPDATE SET
-      temperature = excluded.temperature,
-      statut      = excluded.statut,
-      user_id     = excluded.user_id,
-      user_name   = excluded.user_name,
-      releve_at   = datetime('now', 'localtime')
-  `).run(materiel_id, date, shift, temperature, statut, user_id, user_name);
-}
-
-function getTempWeekReport(from, to) {
-  return db.prepare(`
-    SELECT r.date, r.shift, m.nom AS materiel_nom, m.type AS materiel_type,
-           r.temperature, r.statut, r.user_name, r.releve_at
-    FROM temperature_releves r
-    JOIN temperature_materiels m ON m.id = r.materiel_id
-    WHERE r.date >= ? AND r.date <= ?
-    ORDER BY r.date, r.shift, m.type DESC, m.nom
-  `).all(from, to);
 }
 
 // ─── Tâches périodiques ────────────────────────────────────────────────────────
@@ -2351,7 +2139,7 @@ function deleteRecipe(id) {
 module.exports = {
   getUserByPin, verifyUserPin, isPinTaken, getUserById, getAllUsers, createUser, updateUser, deleteUser,
   getTasksWithCompletions, getTaskById, getAllTasks, completeTask, uncompleteTask, createTask, updateTask, deactivateTask,
-  getTables, getTableById, createTable, updateTable, deleteTable,
+  getTables, getTableById, createTable, updateTable, updateTableNote, deleteTable,
   getReservationsByDate, getReservationById, createReservation, updateReservation, deleteReservation,
   getReservationsByRange, getUpcomingReservationStats,
   getStats, getDailyLog, getDashboardData, getReservationStats,
@@ -2368,15 +2156,12 @@ module.exports = {
   logTimeEvent, getTimeEventsByDate, getTimeEventsRange, deleteTimeEvent,
   addReservationAttachment, getReservationAttachments, getAttachmentById, deleteAttachment,
   createCongeRequest, getCongeRequestsByUser, getCongeRequestById, getAllCongeRequests, getCongeRequestsByShift, updateCongeRequestStatus,
-  getInstagramAccounts, getInstagramAccountById, createInstagramAccount, updateInstagramAccount, deleteInstagramAccount,
-  getInstagramPosts, getInstagramPostById, createInstagramPost, updateInstagramPost, deleteInstagramPost, getDueInstagramPosts,
-  addInstagramMedia, getInstagramMedia, getInstagramMediaById, deleteInstagramMedia, reorderInstagramMedia,
   addPlanningPDF, getLatestPlanningPDF, deletePlanningPDF,
   getScheduledStartTime,
   getCuisineProduits, getCuisineProduitById, createCuisineProduit, updateCuisineProduit, deleteCuisineProduit,
   logEtiquette, getEtiquettesLog,
-  getTempMateriels, getTempSession, getTempHistory, upsertTempReleve, getTempWeekReport,
   getTachesPeriodiques, completeTachePeriodique, getTachePeriodiquesHistory,
+  checkWeakAdminPins,
   getPointageToday, clockIn, clockOut, getPointagesForUser, getAllPointagesForDate, savePointagePhoto, resetPointageDay, getKioskStaffList,
   getRecipeCategories, createRecipeCategory, updateRecipeCategory, deleteRecipeCategory,
   getAllRecipes, getRecipeById, createRecipe, updateRecipe, deleteRecipe,
