@@ -330,47 +330,44 @@
     .rc-actions {
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: stretch;
       justify-content: center;
-      gap: 7px;
-      padding: 10px 14px;
+      gap: 6px;
+      padding: 10px 12px;
       flex-shrink: 0;
       border-left: 1px solid var(--border);
-      min-width: 90px;
+      width: 96px;
     }
     .btn-arrived {
       display: flex; align-items: center; justify-content: center; gap: 5px;
-      padding: 7px 12px;
+      padding: 8px 10px;
       border-radius: 999px;
       border: 1.5px solid var(--success);
       background: var(--success-bg);
       color: var(--success);
-      font-size: .78rem; font-weight: 700;
+      font-size: .76rem; font-weight: 700;
       cursor: pointer; white-space: nowrap;
       transition: background .12s, transform .1s;
       touch-action: manipulation;
-      width: 100%;
     }
     .btn-arrived:active  { background: rgba(52,215,123,.28); transform: scale(.95); }
     .btn-arrived:hover   { background: rgba(52,215,123,.18); }
     .btn-arrived:focus-visible { box-shadow: var(--focus-ring); outline: none; }
 
     .status-badge {
-      font-size: .72rem; font-weight: 700;
+      font-size: .7rem; font-weight: 700;
       border-radius: 999px;
-      padding: 4px 10px;
+      padding: 5px 8px;
       border: 1.5px solid;
       white-space: nowrap;
       text-align: center;
-      width: 100%;
-      box-sizing: border-box;
     }
-    .vs-unplaced  .status-badge { border-color: rgba(245,158,11,.5);  color: var(--orange);       background: rgba(245,158,11,.06); }
-    .vs-placed    .status-badge { border-color: rgba(96,165,250,.5);  color: var(--info);          background: rgba(96,165,250,.06); }
-    .vs-arrived   .status-badge { border-color: rgba(52,215,123,.5);  color: var(--success);       background: rgba(52,215,123,.08); }
-    .vs-late      .status-badge { border-color: rgba(239,79,79,.5);   color: var(--danger);        background: rgba(239,79,79,.06);  }
-    .vs-no_show   .status-badge { border-color: rgba(239,79,79,.5);   color: var(--danger);        background: rgba(239,79,79,.06);  }
-    .vs-cancelled .status-badge { border-color: rgba(255,255,255,.12);color: var(--text-subtle);   background: transparent; }
+    .vs-unplaced  .status-badge { border-color: rgba(245,158,11,.5);  color: var(--orange);     background: rgba(245,158,11,.06); }
+    .vs-placed    .status-badge { border-color: rgba(96,165,250,.5);  color: var(--info);        background: rgba(96,165,250,.06); }
+    .vs-arrived   .status-badge { border-color: rgba(52,215,123,.5);  color: var(--success);     background: rgba(52,215,123,.08); }
+    .vs-late      .status-badge { border-color: rgba(239,79,79,.5);   color: var(--danger);      background: rgba(239,79,79,.06);  }
+    .vs-no_show   .status-badge { border-color: rgba(239,79,79,.5);   color: var(--danger);      background: rgba(239,79,79,.06);  }
+    .vs-cancelled .status-badge { border-color: rgba(255,255,255,.12);color: var(--text-subtle); background: transparent; }
 
     /* ── Drawer ── */
     .drawer-backdrop {
