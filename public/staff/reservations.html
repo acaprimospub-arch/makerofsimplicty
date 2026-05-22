@@ -34,7 +34,7 @@
       overflow: hidden;
     }
     .date-arrow {
-      width: 42px; height: 42px;
+      width: 44px; height: 44px;
       display: flex; align-items: center; justify-content: center;
       color: var(--text-muted);
       cursor: pointer; border: none; background: none;
@@ -332,48 +332,45 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 10px 12px;
+      gap: 7px;
+      padding: 10px 14px;
       flex-shrink: 0;
       border-left: 1px solid var(--border);
+      min-width: 90px;
     }
-    .btn-arrived-quick {
-      width: 36px; height: 36px;
-      border-radius: 50%;
+    .btn-arrived {
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      padding: 7px 12px;
+      border-radius: 999px;
       border: 1.5px solid var(--success);
       background: var(--success-bg);
       color: var(--success);
-      font-size: .9rem;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-      flex-shrink: 0;
+      font-size: .78rem; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
       transition: background .12s, transform .1s;
       touch-action: manipulation;
+      width: 100%;
     }
-    .btn-arrived-quick:active { background: rgba(52,215,123,.25); transform: scale(.88); }
-    .btn-arrived-quick:hover { background: rgba(52,215,123,.2); }
+    .btn-arrived:active  { background: rgba(52,215,123,.28); transform: scale(.95); }
+    .btn-arrived:hover   { background: rgba(52,215,123,.18); }
+    .btn-arrived:focus-visible { box-shadow: var(--focus-ring); outline: none; }
 
-    .status-pill {
-      font-size: .68rem;
-      font-weight: 700;
+    .status-badge {
+      font-size: .72rem; font-weight: 700;
       border-radius: 999px;
-      padding: 3px 9px;
+      padding: 4px 10px;
       border: 1.5px solid;
-      background: transparent;
-      cursor: pointer;
       white-space: nowrap;
-      appearance: none;
-      -webkit-appearance: none;
-      color: inherit;
-      font-family: inherit;
       text-align: center;
+      width: 100%;
+      box-sizing: border-box;
     }
-    .vs-unplaced  .status-pill { border-color: rgba(245,158,11,.5);  color: var(--orange);  }
-    .vs-placed    .status-pill { border-color: rgba(96,165,250,.5);   color: var(--info);    }
-    .vs-arrived   .status-pill { border-color: rgba(52,215,123,.5);   color: var(--success); }
-    .vs-late      .status-pill { border-color: rgba(239,79,79,.5);    color: var(--danger);  }
-    .vs-no_show   .status-pill { border-color: rgba(239,79,79,.5);    color: var(--danger);  }
-    .vs-cancelled .status-pill { border-color: rgba(255,255,255,.15); color: var(--text-subtle); }
+    .vs-unplaced  .status-badge { border-color: rgba(245,158,11,.5);  color: var(--orange);       background: rgba(245,158,11,.06); }
+    .vs-placed    .status-badge { border-color: rgba(96,165,250,.5);  color: var(--info);          background: rgba(96,165,250,.06); }
+    .vs-arrived   .status-badge { border-color: rgba(52,215,123,.5);  color: var(--success);       background: rgba(52,215,123,.08); }
+    .vs-late      .status-badge { border-color: rgba(239,79,79,.5);   color: var(--danger);        background: rgba(239,79,79,.06);  }
+    .vs-no_show   .status-badge { border-color: rgba(239,79,79,.5);   color: var(--danger);        background: rgba(239,79,79,.06);  }
+    .vs-cancelled .status-badge { border-color: rgba(255,255,255,.12);color: var(--text-subtle);   background: transparent; }
 
     /* ── Drawer ── */
     .drawer-backdrop {
@@ -912,11 +909,12 @@
           : `<span class="rc-tag rc-tag-notable">Sans table</span>`;
 
         const arrivedBtn = (vs !== 'arrived' && vs !== 'cancelled' && vs !== 'no_show')
-          ? `<button class="btn-arrived-quick" type="button" data-arrived="${r.id}"
+          ? `<button class="btn-arrived" type="button" data-arrived="${r.id}"
                aria-label="Marquer arrivé — ${escapeHtml(r.customer_name)}">
-               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                 <path d="M3 8l4 4 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                 <path d="M3 8l4 4 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
                </svg>
+               Arrivée
              </button>`
           : '';
 
@@ -945,10 +943,7 @@
             </div>
             <div class="rc-actions" onclick="event.stopPropagation()">
               ${arrivedBtn}
-              <label class="sr-only" for="status-${r.id}">Statut de ${escapeHtml(r.customer_name)}</label>
-              <select class="status-pill" id="status-${r.id}" data-status-id="${r.id}" aria-label="Statut : ${vsLabel}">
-                ${statusOptions.map(o => `<option value="${o.v}"${r.status===o.v?' selected':''}>${escapeHtml(o.l)}</option>`).join('')}
-              </select>
+              <span class="status-badge" aria-label="Statut : ${vsLabel}">${vsLabel}</span>
             </div>
           </button>
         </li>`;
@@ -965,16 +960,11 @@
           await changeStatus(parseInt(btn.dataset.arrived, 10), 'arrived');
         });
       });
-      el.querySelectorAll('[data-status-id]').forEach(sel => {
-        sel.addEventListener('change', async e => {
-          e.stopPropagation();
-          await changeStatus(parseInt(sel.dataset.statusId, 10), sel.value);
-        });
-      });
     }
 
     async function changeStatus(id, status) {
-      await api.put(`/api/reservations/${id}`, { status });
+      const res = await api.put(`/api/reservations/${id}`, { status });
+      if (!res?.ok) { showToast('Erreur lors de la mise à jour', 'error'); return; }
       const r = reservations.find(x => x.id === id);
       if (r) r.status = status;
       render();
