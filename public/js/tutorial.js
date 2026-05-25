@@ -138,13 +138,6 @@
       text: 'Retrouve ici toutes tes demandes en cours et leur statut : en attente, acceptée ou refusée.'
     },
 
-    // ── Pointeuse ──
-    {
-      target: '[data-tutorial="nav-pointeuse"]',
-      pos: 'bottom',
-      title: 'Pointeuse',
-      text: 'Enregistre ton heure d\'arrivée et de départ. Tes heures sont sauvegardées automatiquement et visibles par les managers.'
-    },
   ];
 
   const STEPS_MANAGER_EXTRA = [
