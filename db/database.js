@@ -869,7 +869,7 @@ function getUserById(id) {
   return db.prepare('SELECT id, name, role, shift, email, active, created_at FROM users WHERE id = ?').get(id);
 }
 function getAllUsers() {
-  return db.prepare('SELECT id, name, role, shift, email, active, created_at FROM users ORDER BY role DESC, name').all();
+  return db.prepare('SELECT id, name, role, shift, email, active, created_at FROM users WHERE active=1 ORDER BY role DESC, name').all();
 }
 function createUser({ name, pin, role, shift, email }) {
   const hashedPin = bcrypt.hashSync(pin, BCRYPT_ROUNDS);
