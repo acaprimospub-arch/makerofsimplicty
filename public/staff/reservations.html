@@ -496,6 +496,22 @@
     .vsb-no_show   { color: var(--danger);  border-color: rgba(239,79,79,.35);   background: rgba(239,79,79,.06); }
     .vsb-cancelled { color: var(--text-subtle); border-color: rgba(255,255,255,.15); background: rgba(255,255,255,.04); }
 
+    .btn-placer {
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1.5px solid var(--orange);
+      background: var(--orange-bg);
+      color: var(--orange);
+      font-size: .78rem; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+      transition: background .12s, transform .1s;
+      touch-action: manipulation;
+    }
+    .btn-placer:active  { background: rgba(245,158,11,.22); transform: scale(.95); }
+    .btn-placer:hover   { background: rgba(245,158,11,.18); }
+    .btn-placer:focus-visible { box-shadow: var(--focus-ring); outline: none; }
+
     .btn-assign {
       width: 100%;
       margin-top: 16px;
@@ -904,6 +920,15 @@
           ? tableNames.map(n => `<span class="rc-tag rc-tag-table">${escapeHtml(n)}</span>`).join('')
           : `<span class="rc-tag rc-tag-notable">Sans table</span>`;
 
+        const placerBtn = (vs === 'unplaced')
+          ? `<button class="btn-placer" type="button"
+               data-placer-id="${r.id}" data-placer-date="${escapeHtml(r.date)}" data-placer-name="${escapeHtml(r.customer_name)}"
+               aria-label="Assigner une table — ${escapeHtml(r.customer_name)}">
+               <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
+               À placer
+             </button>`
+          : `<span class="status-badge" aria-label="Statut : ${vsLabel}">${vsLabel}</span>`;
+
         const arrivedBtn = (vs !== 'arrived' && vs !== 'cancelled' && vs !== 'no_show')
           ? `<button class="btn-arrived" type="button" data-arrived="${r.id}"
                aria-label="Marquer arrivé — ${escapeHtml(r.customer_name)}">
@@ -939,7 +964,7 @@
             </div>
             <div class="rc-actions" onclick="event.stopPropagation()">
               ${arrivedBtn}
-              <span class="status-badge" aria-label="Statut : ${vsLabel}">${vsLabel}</span>
+              ${placerBtn}
             </div>
           </div>
         </li>`;
@@ -955,6 +980,12 @@
         btn.addEventListener('click', async e => {
           e.stopPropagation();
           await changeStatus(parseInt(btn.dataset.arrived, 10), 'arrived');
+        });
+      });
+      el.querySelectorAll('[data-placer-id]').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          window.location.href = `/staff/tables.html?assignTo=${btn.dataset.placerId}&date=${btn.dataset.placerDate}&name=${encodeURIComponent(btn.dataset.placerName)}`;
         });
       });
     }
