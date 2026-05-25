@@ -157,7 +157,7 @@ const NAV_ICONS = {
   dashboard:               '📊',
   equipe:                  '👥',
   reservations:            '📅',
-  tables:                  '🏠',
+  tables:                  '📋',
   taches:                  '✅',
   cuisine:                 '🍳',
   'admin-tools':           '⚙️',
