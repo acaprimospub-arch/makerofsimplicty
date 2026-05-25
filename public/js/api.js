@@ -165,6 +165,7 @@ const NAV_ICONS = {
   planning:              `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>`,
   conges:                `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>`,
   pointeuse:             `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>`,
+  direction:             `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" clip-rule="evenodd"/></svg>`,
   // ── Autres ──────────────────────────────────────────────────────────────────
   email:                 `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>`,
   joy:                   `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM6.293 5.293a1 1 0 011.414 0L9 6.586V5a1 1 0 112 0v1.586l1.293-1.293a1 1 0 011.414 1.414L12.414 8H14a1 1 0 110 2h-1.586l1.293 1.293a1 1 0 01-1.414 1.414L11 11.414V13a1 1 0 11-2 0v-1.586l-1.293 1.293a1 1 0 01-1.414-1.414L7.586 10H6a1 1 0 110-2h1.586L6.293 6.707a1 1 0 010-1.414z"/></svg>`,
@@ -173,7 +174,6 @@ const NAV_ICONS = {
   'cuisine-taches':      `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>`,
   'cuisine-planning':    `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>`,
   'cuisine-etiquettes':  `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>`,
-  'cuisine-temperatures':`<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 00-1 1v7.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V3a1 1 0 00-1-1zM3 15a5 5 0 0114 0H3z" clip-rule="evenodd"/></svg>`,
   'resa-dashboard':      `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h5a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm1 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1v-4a1 1 0 00-1-1h-4z"/></svg>`,
   'resa-gestion':        `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>`,
   'resa-suivi':          `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>`,
@@ -266,8 +266,15 @@ async function buildNav(activePage) {
   const pointeuseLinks = [
     { href: '/staff/pointeuse.html', label: 'Pointeuse', key: 'pointeuse' },
   ];
+  const directionLinks = [
+    { href: '/admin/direction.html',    label: 'Direction',   key: 'direction' },
+    { href: '/staff/planning.html',     label: 'Planning',    key: 'planning' },
+    { href: '/staff/conges.html',       label: 'Congés',      key: 'conges' },
+    { href: '/admin/pointages.html',    label: 'Pointages',   key: 'pointages' },
+  ];
 
   const links = user.role === 'admin'                              ? adminLinks
+    : user.role === 'direction'                                    ? directionLinks
     : user.shift === 'pointeuse'                                   ? pointeuseLinks
     : user.shift === 'resa'                                        ? resaLinks
     : user.shift === 'marketing'                                   ? marketingLinks
@@ -279,7 +286,7 @@ async function buildNav(activePage) {
 
   const isAdmin = user.role === 'admin';
   const linkHTML = (l) =>
-    `<a href="${l.href}" class="nav-link${l.key === activePage ? ' active' : ''}" ${l.key === activePage ? 'aria-current="page"' : ''}>
+    `<a href="${l.href}" class="nav-link${l.key === activePage ? ' active' : ''}" ${l.key === activePage ? 'aria-current="page"' : ''} data-tutorial="nav-${l.key}">
       <span aria-hidden="true">${navIcon(l.key)}</span>
       ${escapeHtml(l.label)}
     </a>`;
@@ -298,6 +305,7 @@ async function buildNav(activePage) {
 
   nav.setAttribute('aria-label', 'Navigation principale');
   nav.setAttribute('role', 'navigation');
+  nav.setAttribute('data-tutorial', 'navbar');
   nav.innerHTML = `
     <a href="/menu.html" class="nav-logo" aria-label="MOS Pub Mercière — Retour au menu">
       <span class="nav-logo-desktop">
@@ -350,6 +358,18 @@ async function buildNav(activePage) {
 async function logout() {
   await api.post('/api/auth/logout', {});
   window.location.href = '/';
+}
+
+// Vérifie l'auth et le rôle, redirige si non autorisé.
+// roles : tableau de rôles acceptés, ex. ['admin', 'direction']
+async function requireAuth(roles) {
+  const user = await api.get('/api/auth/me');
+  if (!user) return null; // api.get redirige déjà vers '/' sur 401
+  if (roles && !roles.includes(user.role)) {
+    window.location.href = '/menu.html';
+    return null;
+  }
+  return user;
 }
 
 // ─── Utilitaire escapeHtml ────────────────────────────────────────────────────

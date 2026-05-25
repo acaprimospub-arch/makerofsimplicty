@@ -246,8 +246,8 @@
       renderStatus(todayEntry);
 
       // Historique
-      const to   = new Date().toISOString().slice(0, 10);
-      const from = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+      const to   = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
+      const from = new Date(Date.now() - 14 * 86400000).toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
       const hist = await api.get(`/api/pointage/history?from=${from}&to=${to}`);
       renderHistory(hist || []);
     }
@@ -269,8 +269,8 @@
         renderStatus(todayEntry);
         showToast(route.includes('clock-in') ? 'Arrivée enregistrée ✓' : 'Départ enregistré ✓', 'success');
         // Rafraîchir historique
-        const to   = new Date().toISOString().slice(0, 10);
-        const from = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+        const to   = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
+        const from = new Date(Date.now() - 14 * 86400000).toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
         const hist = await api.get(`/api/pointage/history?from=${from}&to=${to}`);
         renderHistory(hist || []);
       } else {
@@ -281,5 +281,6 @@
 
     init();
   </script>
+  <script src="/js/tutorial.js"></script>
 </body>
 </html>
