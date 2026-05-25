@@ -3,9 +3,10 @@
   'use strict';
 
   // ── Définition des étapes ────────────────────────────────────────────────
+  // `page` : si l'élément n'est pas sur la page courante, navigue vers cette URL
 
   const STEPS_STAFF = [
-    // ── Navigation ──
+    // ── Navigation (présente sur toutes les pages) ──
     {
       target: '[data-tutorial="navbar"]',
       pos: 'bottom',
@@ -22,27 +23,31 @@
     },
     {
       target: '[data-tutorial="task-tabs"]',
+      page:   '/staff/taches.html',
       pos: 'bottom',
       title: 'MATIN & PASSATION',
       text: 'Les tâches sont séparées en deux groupes : MATIN (ouverture) et PASSATION (fin de service). Clique sur un onglet pour basculer entre les deux.'
     },
     {
       target: '[data-tutorial="task-progress"]',
+      page:   '/staff/taches.html',
       pos: 'bottom',
       title: 'Barre de progression',
       text: 'La barre dorée te montre combien de tâches sont cochées sur le total. Elle se met à jour en temps réel dès que toi ou un collègue coche une tâche.'
     },
     {
       target: '[data-tutorial="team-stats"]',
+      page:   '/staff/taches.html',
       pos: 'bottom',
       title: 'Statistiques équipe',
       text: 'Tu vois en un coup d\'œil combien de tâches tu as cochées (doré), combien tes collègues ont faites (bleu), et combien il en reste (gris).'
     },
     {
       target: '[data-tutorial="periodic-link"]',
+      page:   '/staff/taches.html',
       pos: 'bottom',
       title: 'Tâches périodiques',
-      text: 'Les tâches mensuelles et bi-mensuelles (nettoyages approfondis, vérifications…) sont regroupées ici avec leur historique et la possibilité d\'ajouter des photos.'
+      text: 'Les tâches mensuelles et bi-mensuelles (nettoyages approfondis, vérifications…) sont regroupées ici avec historique et photos.'
     },
 
     // ── Réservations ──
@@ -54,12 +59,14 @@
     },
     {
       target: '[data-tutorial="res-date-nav"]',
+      page:   '/staff/reservations.html',
       pos: 'bottom',
       title: 'Naviguer par date',
       text: 'Utilise les flèches pour passer au jour précédent ou suivant. Tu peux aussi cliquer sur la date pour choisir un jour précis dans le calendrier.'
     },
     {
       target: '[data-tutorial="res-add-btn"]',
+      page:   '/staff/reservations.html',
       pos: 'bottom',
       title: 'Nouvelle réservation',
       text: 'Ce bouton ouvre le formulaire de création. Tu y renseignes le nom, l\'heure, le nombre de personnes, la table et toute note utile.'
@@ -74,12 +81,14 @@
     },
     {
       target: '[data-tutorial="zone-tabs"]',
+      page:   '/staff/tables.html',
       pos: 'bottom',
       title: 'Zones de la salle',
       text: 'La salle est divisée en zones (terrasse, bar, salle…). Clique sur un onglet pour filtrer l\'affichage et trouver rapidement une table.'
     },
     {
       target: '[data-tutorial="table-legend"]',
+      page:   '/staff/tables.html',
       pos: 'top',
       title: 'Légende des couleurs',
       text: 'Gris = libre · Bleu = réservée · Vert = arrivée confirmée · Rouge = en retard. Un rapide coup d\'œil suffit pour connaître l\'état de chaque table.'
@@ -102,6 +111,7 @@
     },
     {
       target: '[data-tutorial="pointeuse-btn"]',
+      page:   '/staff/pointeuse.html',
       pos: 'top',
       title: 'Pointer ton arrivée',
       text: 'Un simple appui sur ce bouton suffit pour pointer l\'arrivée. En fin de service, le bouton se transforme en "Pointer le départ".'
@@ -146,6 +156,8 @@
 
   // ── Classe Tutorial ───────────────────────────────────────────────────────
 
+  const SESSION_KEY = 'mos_tutorial_resume';
+
   class Tutorial {
     constructor() {
       this.steps             = [];
@@ -154,11 +166,11 @@
       this._onKey            = this._handleKey.bind(this);
       this._lastEffectivePos = null;
       // DOM refs
-      this._overlay  = null;
-      this._spot     = null;
-      this._tooltip  = null;
-      this._arrow    = null;
-      this._helpBtn  = null;
+      this._overlay = null;
+      this._spot    = null;
+      this._tooltip = null;
+      this._arrow   = null;
+      this._helpBtn = null;
     }
 
     async init() {
@@ -177,16 +189,39 @@
 
       this._build();
 
+      // Reprise après navigation inter-pages
+      const resume = this._popResume();
+      if (resume !== null) {
+        setTimeout(() => this._startFrom(resume), 700);
+        return;
+      }
+
       const key = `mos_tutorial_${this.userId}`;
       if (!localStorage.getItem(key)) {
         setTimeout(() => this.start(), 600);
       }
     }
 
+    // ── Résumé de navigation ─────────────────────────────────────────────────
+
+    _saveResume(idx) {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ userId: this.userId, idx }));
+    }
+
+    _popResume() {
+      try {
+        const raw = sessionStorage.getItem(SESSION_KEY);
+        if (!raw) return null;
+        const { userId, idx } = JSON.parse(raw);
+        if (userId !== this.userId) return null;
+        sessionStorage.removeItem(SESSION_KEY);
+        return idx;
+      } catch { return null; }
+    }
+
     // ── Construction du DOM ──────────────────────────────────────────────────
 
     _build() {
-      // Overlay + spotlight
       this._overlay = el('div', {
         id: 'tut-overlay',
         style: `position:fixed;inset:0;z-index:9000;pointer-events:none;opacity:0;transition:opacity .3s;`
@@ -203,7 +238,6 @@
       this._overlay.appendChild(this._spot);
       document.body.appendChild(this._overlay);
 
-      // Tooltip
       this._tooltip = el('div', {
         id: 'tut-tooltip',
         role: 'dialog',
@@ -268,11 +302,15 @@
     // ── Démarrage / navigation ───────────────────────────────────────────────
 
     start() {
-      this.idx = 0;
+      this._startFrom(0);
+    }
+
+    _startFrom(idx) {
+      this.idx = idx;
       this._overlay.style.opacity       = '1';
       this._overlay.style.pointerEvents = 'auto';
       document.addEventListener('keydown', this._onKey);
-      this._showStep(0);
+      this._showStep(idx);
     }
 
     _next() {
@@ -314,9 +352,20 @@
       // Trouve l'élément visible (mobile : préfère bottom-nav si top-nav caché)
       let targetEl = step.target ? document.querySelector(step.target) : null;
       if (step.target && targetEl && targetEl.offsetWidth === 0 && targetEl.offsetHeight === 0) {
-        const all = document.querySelectorAll(step.target);
-        for (const node of all) {
+        for (const node of document.querySelectorAll(step.target)) {
           if (node.offsetWidth > 0 || node.offsetHeight > 0) { targetEl = node; break; }
+        }
+      }
+
+      // Élément absent + page définie → naviguer et reprendre
+      const notFound = !targetEl || (targetEl.offsetWidth === 0 && targetEl.offsetHeight === 0);
+      if (notFound && step.page) {
+        const currentPath = window.location.pathname.replace(/\/$/, '');
+        const targetPath  = step.page.replace(/\/$/, '');
+        if (currentPath !== targetPath) {
+          this._saveResume(i);
+          window.location.href = step.page;
+          return;
         }
       }
 
@@ -366,7 +415,6 @@
         requestAnimationFrame(() => {
           this._tooltip.style.opacity   = '1';
           this._tooltip.style.transform = 'translateY(0)';
-          // Flèche après que le tooltip est rendu (besoin de sa position réelle)
           requestAnimationFrame(() => this._posArrow(visibleTarget));
         });
       });
@@ -398,17 +446,14 @@
       const vh  = window.innerHeight;
       const TW  = Math.min(310, vw - 28);
       const TH  = this._tooltip.offsetHeight || 220;
-      const GAP = 16; // espace cible → tooltip (laisse de la place pour la flèche)
+      const GAP = 16;
       const M   = 12;
 
       this._tooltip.style.width = TW + 'px';
 
       if (!visibleEl || pos === 'center') {
         Object.assign(this._tooltip.style, {
-          top:       '50%',
-          left:      '50%',
-          right:     'auto',
-          bottom:    'auto',
+          top: '50%', left: '50%', right: 'auto', bottom: 'auto',
           transform: 'translate(-50%, -50%)',
         });
         this._lastEffectivePos = 'center';
@@ -423,7 +468,6 @@
       this._lastEffectivePos = effectivePos;
 
       let top, left;
-
       switch (effectivePos) {
         case 'bottom':
           top  = r.bottom + GAP;
@@ -446,18 +490,14 @@
           if (left < M) left = r.right + GAP;
           break;
         default:
-          top  = r.bottom + GAP;
-          left = clamp(r.left, M, vw - TW - M);
+          top  = r.bottom + GAP; left = clamp(r.left, M, vw - TW - M);
       }
 
       top  = clamp(top,  M, vh - TH - M);
       left = clamp(left, M, vw - TW - M);
 
       Object.assign(this._tooltip.style, {
-        top:    top  + 'px',
-        left:   left + 'px',
-        right:  'auto',
-        bottom: 'auto',
+        top: top + 'px', left: left + 'px', right: 'auto', bottom: 'auto',
       });
     }
 
@@ -465,11 +505,7 @@
 
     _posArrow(visibleEl) {
       const pos = this._lastEffectivePos;
-
-      if (!visibleEl || pos === 'center') {
-        this._arrow.style.opacity = '0';
-        return;
-      }
+      if (!visibleEl || pos === 'center') { this._arrow.style.opacity = '0'; return; }
 
       const tr   = this._tooltip.getBoundingClientRect();
       const r    = visibleEl.getBoundingClientRect();
@@ -481,47 +517,34 @@
       let bTop = 'none', bRight = 'none', bBottom = 'none', bLeft = 'none';
 
       switch (pos) {
-        case 'bottom':
-          // Tooltip sous la cible → flèche en haut du tooltip, pointe vers le haut (▲)
-          top   = tr.top - HALF;
-          left  = clamp(r.left + r.width / 2 - HALF, tr.left + 10, tr.right - 10 - AW);
-          bTop  = BC; bLeft = BC;
+        case 'bottom': // flèche en haut du tooltip, pointe ▲
+          top  = tr.top - HALF;
+          left = clamp(r.left + r.width / 2 - HALF, tr.left + 10, tr.right - 10 - AW);
+          bTop = BC; bLeft = BC;
           break;
-
-        case 'top':
-          // Tooltip au-dessus → flèche en bas du tooltip, pointe vers le bas (▼)
+        case 'top': // flèche en bas du tooltip, pointe ▼
           top    = tr.bottom - HALF;
           left   = clamp(r.left + r.width / 2 - HALF, tr.left + 10, tr.right - 10 - AW);
           bBottom = BC; bRight = BC;
           break;
-
-        case 'right':
-          // Tooltip à droite → flèche sur le côté gauche, pointe à gauche (◀)
+        case 'right': // flèche à gauche du tooltip, pointe ◀
           left  = tr.left - HALF;
           top   = clamp(r.top + r.height / 2 - HALF, tr.top + 10, tr.bottom - 10 - AW);
           bLeft = BC; bBottom = BC;
           break;
-
-        case 'left':
-          // Tooltip à gauche → flèche sur le côté droit, pointe à droite (▶)
+        case 'left': // flèche à droite du tooltip, pointe ▶
           left   = tr.right - HALF;
           top    = clamp(r.top + r.height / 2 - HALF, tr.top + 10, tr.bottom - 10 - AW);
           bRight = BC; bTop = BC;
           break;
-
         default:
-          this._arrow.style.opacity = '0';
-          return;
+          this._arrow.style.opacity = '0'; return;
       }
 
       Object.assign(this._arrow.style, {
-        top:         top  + 'px',
-        left:        left + 'px',
-        borderTop:   bTop,
-        borderRight: bRight,
-        borderBottom:bBottom,
-        borderLeft:  bLeft,
-        opacity:     '1',
+        top: top + 'px', left: left + 'px',
+        borderTop: bTop, borderRight: bRight, borderBottom: bBottom, borderLeft: bLeft,
+        opacity: '1',
       });
     }
   }
