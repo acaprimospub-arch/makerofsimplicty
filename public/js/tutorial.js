@@ -148,14 +148,16 @@
 
   class Tutorial {
     constructor() {
-      this.steps    = [];
-      this.idx      = 0;
-      this.userId   = null;
-      this._onKey   = this._handleKey.bind(this);
+      this.steps             = [];
+      this.idx               = 0;
+      this.userId            = null;
+      this._onKey            = this._handleKey.bind(this);
+      this._lastEffectivePos = null;
       // DOM refs
       this._overlay  = null;
       this._spot     = null;
       this._tooltip  = null;
+      this._arrow    = null;
       this._helpBtn  = null;
     }
 
@@ -184,13 +186,10 @@
     // ── Construction du DOM ──────────────────────────────────────────────────
 
     _build() {
+      // Overlay + spotlight
       this._overlay = el('div', {
         id: 'tut-overlay',
-        style: `
-          position:fixed;inset:0;z-index:9000;
-          pointer-events:none;opacity:0;
-          transition:opacity .3s;
-        `
+        style: `position:fixed;inset:0;z-index:9000;pointer-events:none;opacity:0;transition:opacity .3s;`
       });
       this._spot = el('div', {
         id: 'tut-spot',
@@ -204,6 +203,7 @@
       this._overlay.appendChild(this._spot);
       document.body.appendChild(this._overlay);
 
+      // Tooltip
       this._tooltip = el('div', {
         id: 'tut-tooltip',
         role: 'dialog',
@@ -211,7 +211,7 @@
         'aria-label': 'Guide interactif',
         style: `
           position:fixed;z-index:9001;
-          width:310px;max-width:calc(100vw - 32px);
+          width:310px;max-width:calc(100vw - 28px);
           background:#0e1a24;
           border:1px solid rgba(201,168,76,.4);
           border-radius:14px;
@@ -223,6 +223,21 @@
         `
       });
       document.body.appendChild(this._tooltip);
+
+      // Flèche (diamond CSS rotaté)
+      this._arrow = el('div', {
+        id: 'tut-arrow',
+        style: `
+          position:fixed;z-index:9002;
+          width:14px;height:14px;
+          background:#0e1a24;
+          transform:rotate(45deg);
+          opacity:0;
+          pointer-events:none;
+          transition:opacity .18s;
+        `
+      });
+      document.body.appendChild(this._arrow);
 
       // Bouton "?" permanent
       this._helpBtn = el('button', {
@@ -254,8 +269,8 @@
 
     start() {
       this.idx = 0;
-      this._overlay.style.opacity        = '1';
-      this._overlay.style.pointerEvents  = 'auto';
+      this._overlay.style.opacity       = '1';
+      this._overlay.style.pointerEvents = 'auto';
       document.addEventListener('keydown', this._onKey);
       this._showStep(0);
     }
@@ -263,6 +278,7 @@
     _next() {
       this._tooltip.style.opacity   = '0';
       this._tooltip.style.transform = 'translateY(10px)';
+      this._arrow.style.opacity     = '0';
       setTimeout(() => {
         this.idx++;
         if (this.idx >= this.steps.length) this._finish();
@@ -276,16 +292,15 @@
       this._overlay.style.pointerEvents = 'none';
       this._tooltip.style.opacity       = '0';
       this._tooltip.style.transform     = 'translateY(10px)';
+      this._arrow.style.opacity         = '0';
       document.removeEventListener('keydown', this._onKey);
     }
 
-    _finish() {
-      this.close();
-    }
+    _finish() { this.close(); }
 
     _handleKey(e) {
-      if (e.key === 'Escape')                             this.close();
-      if (e.key === 'ArrowRight' || e.key === 'Enter')   this._next();
+      if (e.key === 'Escape')                           this.close();
+      if (e.key === 'ArrowRight' || e.key === 'Enter') this._next();
     }
 
     // ── Affichage d'une étape ────────────────────────────────────────────────
@@ -296,13 +311,12 @@
       const pct   = Math.round(((i + 1) / total) * 100);
       const last  = i === total - 1;
 
+      // Trouve l'élément visible (mobile : préfère bottom-nav si top-nav caché)
       let targetEl = step.target ? document.querySelector(step.target) : null;
-
-      // Sur mobile, préférer l'élément visible (bottom-nav) si le premier est caché
       if (step.target && targetEl && targetEl.offsetWidth === 0 && targetEl.offsetHeight === 0) {
         const all = document.querySelectorAll(step.target);
-        for (const el of all) {
-          if (el.offsetWidth > 0 || el.offsetHeight > 0) { targetEl = el; break; }
+        for (const node of all) {
+          if (node.offsetWidth > 0 || node.offsetHeight > 0) { targetEl = node; break; }
         }
       }
 
@@ -352,6 +366,8 @@
         requestAnimationFrame(() => {
           this._tooltip.style.opacity   = '1';
           this._tooltip.style.transform = 'translateY(0)';
+          // Flèche après que le tooltip est rendu (besoin de sa position réelle)
+          requestAnimationFrame(() => this._posArrow(visibleTarget));
         });
       });
     }
@@ -359,10 +375,9 @@
     // ── Spotlight ────────────────────────────────────────────────────────────
 
     _moveSpot(targetEl) {
-      // Ignore les éléments cachés (display:none → getBoundingClientRect renvoie tout à 0)
       if (!targetEl || (targetEl.offsetWidth === 0 && targetEl.offsetHeight === 0)) {
         Object.assign(this._spot.style, { width: '0', height: '0', top: '50%', left: '50%', boxShadow: 'none' });
-        return null; // signale qu'il n'y a pas de cible visible
+        return null;
       }
       const r   = targetEl.getBoundingClientRect();
       const pad = 8;
@@ -378,46 +393,47 @@
 
     // ── Positionnement du tooltip ─────────────────────────────────────────────
 
-    _posTooltip(targetEl, pos) {
+    _posTooltip(visibleEl, pos) {
       const vw  = window.innerWidth;
       const vh  = window.innerHeight;
-      const TW  = Math.min(310, vw - 28); // responsive width
+      const TW  = Math.min(310, vw - 28);
       const TH  = this._tooltip.offsetHeight || 220;
-      const GAP = 12;
+      const GAP = 16; // espace cible → tooltip (laisse de la place pour la flèche)
       const M   = 12;
 
       this._tooltip.style.width = TW + 'px';
 
-      // Élément invisible ou centré
-      const visibleEl = targetEl && (targetEl.offsetWidth > 0 || targetEl.offsetHeight > 0) ? targetEl : null;
       if (!visibleEl || pos === 'center') {
         Object.assign(this._tooltip.style, {
-          top:    '50%',
-          left:   '50%',
-          right:  'auto',
-          bottom: 'auto',
+          top:       '50%',
+          left:      '50%',
+          right:     'auto',
+          bottom:    'auto',
           transform: 'translate(-50%, -50%)',
         });
+        this._lastEffectivePos = 'center';
         return;
       }
 
       this._tooltip.style.transform = 'translateY(0)';
       const r = visibleEl.getBoundingClientRect();
-      let top, left;
 
-      // Auto-flip : si la cible est dans la moitié basse de l'écran, on met le tooltip au-dessus
+      // Auto-flip si la cible est dans la moitié basse (bottom nav mobile)
       const effectivePos = (pos === 'bottom' && r.top > vh * 0.55) ? 'top' : pos;
+      this._lastEffectivePos = effectivePos;
+
+      let top, left;
 
       switch (effectivePos) {
         case 'bottom':
           top  = r.bottom + GAP;
           left = clamp(r.left + r.width / 2 - TW / 2, M, vw - TW - M);
-          if (top + TH > vh - M) top = r.top - GAP - TH; // flip si déborde
+          if (top + TH > vh - M) top = r.top - GAP - TH;
           break;
         case 'top':
           top  = r.top - GAP - TH;
           left = clamp(r.left + r.width / 2 - TW / 2, M, vw - TW - M);
-          if (top < M) top = r.bottom + GAP; // flip si déborde en haut
+          if (top < M) top = r.bottom + GAP;
           break;
         case 'right':
           top  = clamp(r.top + r.height / 2 - TH / 2, M, vh - TH - M);
@@ -442,6 +458,70 @@
         left:   left + 'px',
         right:  'auto',
         bottom: 'auto',
+      });
+    }
+
+    // ── Flèche pointant vers la cible ────────────────────────────────────────
+
+    _posArrow(visibleEl) {
+      const pos = this._lastEffectivePos;
+
+      if (!visibleEl || pos === 'center') {
+        this._arrow.style.opacity = '0';
+        return;
+      }
+
+      const tr   = this._tooltip.getBoundingClientRect();
+      const r    = visibleEl.getBoundingClientRect();
+      const AW   = 14;
+      const HALF = AW / 2;
+      const BC   = '1.5px solid rgba(201,168,76,.55)';
+
+      let top, left;
+      let bTop = 'none', bRight = 'none', bBottom = 'none', bLeft = 'none';
+
+      switch (pos) {
+        case 'bottom':
+          // Tooltip sous la cible → flèche en haut du tooltip, pointe vers le haut (▲)
+          top   = tr.top - HALF;
+          left  = clamp(r.left + r.width / 2 - HALF, tr.left + 10, tr.right - 10 - AW);
+          bTop  = BC; bLeft = BC;
+          break;
+
+        case 'top':
+          // Tooltip au-dessus → flèche en bas du tooltip, pointe vers le bas (▼)
+          top    = tr.bottom - HALF;
+          left   = clamp(r.left + r.width / 2 - HALF, tr.left + 10, tr.right - 10 - AW);
+          bBottom = BC; bRight = BC;
+          break;
+
+        case 'right':
+          // Tooltip à droite → flèche sur le côté gauche, pointe à gauche (◀)
+          left  = tr.left - HALF;
+          top   = clamp(r.top + r.height / 2 - HALF, tr.top + 10, tr.bottom - 10 - AW);
+          bLeft = BC; bBottom = BC;
+          break;
+
+        case 'left':
+          // Tooltip à gauche → flèche sur le côté droit, pointe à droite (▶)
+          left   = tr.right - HALF;
+          top    = clamp(r.top + r.height / 2 - HALF, tr.top + 10, tr.bottom - 10 - AW);
+          bRight = BC; bTop = BC;
+          break;
+
+        default:
+          this._arrow.style.opacity = '0';
+          return;
+      }
+
+      Object.assign(this._arrow.style, {
+        top:         top  + 'px',
+        left:        left + 'px',
+        borderTop:   bTop,
+        borderRight: bRight,
+        borderBottom:bBottom,
+        borderLeft:  bLeft,
+        opacity:     '1',
       });
     }
   }
