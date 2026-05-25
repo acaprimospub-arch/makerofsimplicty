@@ -98,8 +98,44 @@
     {
       target: '[data-tutorial="nav-planning"]',
       pos: 'bottom',
-      title: 'Planning & Congés',
-      text: 'Consulte ton planning de la semaine et celui de tes collègues. Depuis l\'onglet Congés, tu peux poser une demande directement depuis l\'app.'
+      title: 'Planning',
+      text: 'Consulte ton planning de la semaine et celui de tes collègues de shift.'
+    },
+    {
+      target: '[data-tutorial="planning-tabs"]',
+      page:   '/staff/planning.html',
+      pos: 'bottom',
+      title: 'Salle & Cuisine',
+      text: 'Le planning est séparé en deux sections : Salle et Cuisine. Clique sur l\'onglet qui te correspond pour voir les horaires de ton équipe.'
+    },
+    {
+      target: '[data-tutorial="planning-week-nav"]',
+      page:   '/staff/planning.html',
+      pos: 'bottom',
+      title: 'Navigation semaine',
+      text: 'Utilise les flèches pour passer à la semaine précédente ou suivante et consulter les plannings passés ou à venir.'
+    },
+
+    // ── Congés ──
+    {
+      target: '[data-tutorial="nav-conges"]',
+      pos: 'bottom',
+      title: 'Congés',
+      text: 'Depuis cet onglet, tu peux poser une demande de congés directement depuis l\'app sans avoir à envoyer un message.'
+    },
+    {
+      target: '[data-tutorial="conge-form"]',
+      page:   '/staff/conges.html',
+      pos: 'bottom',
+      title: 'Formulaire de demande',
+      text: 'Remplis les dates souhaitées, le motif et signe électroniquement. Ta demande est envoyée instantanément au manager pour validation.'
+    },
+    {
+      target: '[data-tutorial="conge-history"]',
+      page:   '/staff/conges.html',
+      pos: 'top',
+      title: 'Mes demandes',
+      text: 'Retrouve ici toutes tes demandes en cours et leur statut : en attente, acceptée ou refusée.'
     },
 
     // ── Pointeuse ──
@@ -108,13 +144,6 @@
       pos: 'bottom',
       title: 'Pointeuse',
       text: 'Enregistre ton heure d\'arrivée et de départ. Tes heures sont sauvegardées automatiquement et visibles par les managers.'
-    },
-    {
-      target: '[data-tutorial="pointeuse-btn"]',
-      page:   '/staff/pointeuse.html',
-      pos: 'top',
-      title: 'Pointer ton arrivée',
-      text: 'Un simple appui sur ce bouton suffit pour pointer l\'arrivée. En fin de service, le bouton se transforme en "Pointer le départ".'
     },
   ];
 

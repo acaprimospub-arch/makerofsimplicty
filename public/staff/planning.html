@@ -159,7 +159,7 @@
       </header>
 
       <!-- Onglets — masqués si une seule section visible -->
-      <div role="tablist" aria-label="Planning" style="margin-bottom:20px;" class="tabs" id="planningTabs">
+      <div role="tablist" aria-label="Planning" style="margin-bottom:20px;" class="tabs" id="planningTabs" data-tutorial="planning-tabs">
         <button role="tab" class="tab active" id="tab-salle"   aria-selected="true"  aria-controls="pane-salle">Salle</button>
         <button role="tab" class="tab"         id="tab-cuisine" aria-selected="false" aria-controls="pane-cuisine" tabindex="-1">Cuisine</button>
       </div>
@@ -170,7 +170,7 @@
         <!-- Vue admin/manager -->
         <div id="salleAdminView" style="display:none">
           <div class="card" style="margin-bottom:16px">
-            <div class="week-nav">
+            <div class="week-nav" data-tutorial="planning-week-nav">
               <button class="week-nav-btn" id="saPrev">← Préc.</button>
               <span class="week-label" id="saWeekLabel"></span>
               <button class="week-nav-btn" id="saNext">Suiv. →</button>
@@ -197,7 +197,7 @@
         <!-- Vue staff -->
         <div id="salleStaffView" style="display:none">
           <div class="card">
-            <div class="week-nav">
+            <div class="week-nav" data-tutorial="planning-week-nav">
               <button class="week-nav-btn" id="ssPrev">← Préc.</button>
               <span class="week-label" id="ssWeekLabel"></span>
               <button class="week-nav-btn" id="ssNext">Suiv. →</button>
