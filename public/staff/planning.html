@@ -145,6 +145,33 @@
     .btn-conge:hover { border-color:var(--primary); color:var(--primary); }
 
     @media (prefers-reduced-motion:reduce) { .drawer,.drawer-backdrop { transition:none !important; } }
+
+    /* ── Mobile compact ── */
+    @media (max-width:640px) {
+      .staff-name-cell { min-width:68px !important; max-width:88px; padding:6px 5px; font-size:.76rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .btn-dup { display:none !important; }
+      .shift-badge { display:none !important; }
+      #salleTable, #salleStaffTable { min-width:450px; }
+      #cuisineTable { min-width:410px; }
+      #salleTable td, #salleStaffTable td { min-width:52px; }
+      #cuisineTable td { min-width:48px; }
+      .day-cell { min-height:48px; padding:3px 3px; }
+      .shift-cell { min-height:42px; padding:3px 2px; }
+      .dc-row { font-size:.6rem; line-height:1.2; }
+      .dc-val { font-size:.63rem; }
+      .dc-val.prevu { font-size:.6rem; }
+      .dc-label { font-size:.52rem; min-width:10px; }
+      .dc-supp, .dc-retard { font-size:.58rem; padding:1px 3px; }
+      .dc-off { font-size:.65rem; }
+      .planning-table th { font-size:.63rem; padding:5px 2px; }
+      .planning-table th span { font-size:.58rem !important; }
+      /* Dégradé indiquant qu'on peut faire défiler */
+      .planning-grid { -webkit-mask-image:linear-gradient(to right,#000 78%,transparent 100%); mask-image:linear-gradient(to right,#000 78%,transparent 100%); }
+      .shift-cell .sc-time { font-size:.68rem; }
+      .shift-cell .sc-off, .shift-cell .sc-empty { font-size:.63rem; }
+      .week-nav-btn { padding:6px 12px; font-size:.78rem; }
+      .week-label { font-size:.82rem; }
+    }
   </style>
 </head>
 <body>
