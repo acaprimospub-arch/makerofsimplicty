@@ -915,8 +915,8 @@
           : '';
 
         return `<li>
-          <button class="res-card vs-${vs}" id="rc-${r.id}" data-res-id="${r.id}" type="button"
-                  aria-label="${escapeHtml(r.customer_name)}, ${escapeHtml(r.time||'—')}, ${r.party_size} pers., ${vsLabel}">
+          <div class="res-card vs-${vs}" id="rc-${r.id}" data-res-id="${r.id}" role="button" tabindex="0"
+               aria-label="${escapeHtml(r.customer_name)}, ${escapeHtml(r.time||'—')}, ${r.party_size} pers., ${vsLabel}">
             <div class="res-card-accent" aria-hidden="true"></div>
             <div class="rc-time-col">
               <time class="rc-time" datetime="${escapeHtml(r.date)}T${escapeHtml(r.time||'')}">${escapeHtml(r.time||'—')}</time>
@@ -941,7 +941,7 @@
               ${arrivedBtn}
               <span class="status-badge" aria-label="Statut : ${vsLabel}">${vsLabel}</span>
             </div>
-          </button>
+          </div>
         </li>`;
       });
 
@@ -949,6 +949,7 @@
 
       el.querySelectorAll('[data-res-id]').forEach(btn => {
         btn.addEventListener('click', () => openDetail(parseInt(btn.dataset.resId, 10), btn));
+        btn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(parseInt(btn.dataset.resId, 10), btn); } });
       });
       el.querySelectorAll('[data-arrived]').forEach(btn => {
         btn.addEventListener('click', async e => {
