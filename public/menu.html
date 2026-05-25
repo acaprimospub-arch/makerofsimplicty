@@ -11,6 +11,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MOS">
   <meta name="theme-color" content="#060e15">
+  <style>
+    .menu-tile-icon { font-size: 2rem; line-height: 1; display: flex; align-items: center; justify-content: center; }
+  </style>
 </head>
 <body>
   <nav id="nav" role="navigation" aria-label="Navigation principale"></nav>
@@ -37,29 +40,27 @@
     'use strict';
 
     const TILE_ICONS = {
-      '/admin/dashboard.html':       `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h5a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm1 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1v-4a1 1 0 00-1-1h-4z"/></svg>`,
-      '/admin/equipe.html':          `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/></svg>`,
-      '/admin/admin.html':           `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>`,
-      '/staff/reservations.html':    `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm2 7a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1zm-1 3a1 1 0 100 2h4a1 1 0 100-2H7zm-2-1a1 1 0 110 2 1 1 0 010-2zm0 3a1 1 0 110 2 1 1 0 010-2zm10-3a1 1 0 110 2 1 1 0 010-2zm0 3a1 1 0 110 2 1 1 0 010-2z" clip-rule="evenodd"/></svg>`,
-      '/staff/tables.html':          `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H3a1 1 0 01-1-1V3zm2 1v5h5V4H4zm6 0v5h6V4h-6zM4 10v6h5v-6H4zm6 0v6h6v-6h-6z"/></svg>`,
-      '/staff/taches.html':          `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>`,
-      '/staff/planning.html':        `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>`,
-      '/staff/conges.html':          `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>`,
-      '/cuisine/index.html':         `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"/></svg>`,
-      '/cuisine/taches.html':        `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>`,
-      '/cuisine/recettes.html':      `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/></svg>`,
-      '/cuisine/etiquettes.html':    `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>`,
-      '/cuisine/temperatures.html':  `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a3 3 0 00-3 3v6.17A4 4 0 1013 14V5a3 3 0 00-3-3zm-1 9.17V5a1 1 0 112 0v6.17a2 2 0 11-2 0z" clip-rule="evenodd"/></svg>`,
-      '/resa/devis.html':            `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>`,
-      '/marketing/dashboard.html':   `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>`,
-      '/marketing/reservations.html':`<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>`,
-      '/admin/joy.html':             `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM6.293 5.293a1 1 0 011.414 0L9 6.586V5a1 1 0 112 0v1.586l1.293-1.293a1 1 0 011.414 1.414L12.414 8H14a1 1 0 110 2h-1.586l1.293 1.293a1 1 0 01-1.414 1.414L11 11.414V13a1 1 0 11-2 0v-1.586l-1.293 1.293a1 1 0 01-1.414-1.414L7.586 10H6a1 1 0 110-2h1.586L6.293 6.707a1 1 0 010-1.414z"/></svg>`,
-      '/resa/dashboard.html':        `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 011-1h5a1 1 0 011 1v5a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h5a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm1 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1v-4a1 1 0 00-1-1h-4z"/></svg>`,
-      '/resa/gestion.html':          `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>`,
-      '/resa/suivi.html':            `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>`,
-      '/instagram/index.html':       `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2c-2.236 0-2.516.01-3.394.049-.876.04-1.474.178-1.997.38a4.03 4.03 0 00-1.457.948 4.03 4.03 0 00-.948 1.457c-.202.523-.34 1.121-.38 1.997C2.01 7.484 2 7.764 2 10s.01 2.516.049 3.394c.04.876.178 1.474.38 1.997a4.03 4.03 0 00.948 1.457c.455.455.944.738 1.457.948.523.202 1.121.34 1.997.38C7.484 17.99 7.764 18 10 18s2.516-.01 3.394-.049c.876-.04 1.474-.178 1.997-.38a4.03 4.03 0 001.457-.948 4.03 4.03 0 00.948-1.457c.202-.523.34-1.121.38-1.997C17.99 12.516 18 12.236 18 10s-.01-2.516-.049-3.394c-.04-.876-.178-1.474-.38-1.997a4.03 4.03 0 00-.948-1.457 4.03 4.03 0 00-1.457-.948c-.523-.202-1.121-.34-1.997-.38C12.516 2.01 12.236 2 10 2zm0 1.5c2.2 0 2.46.008 3.328.048.804.036 1.24.168 1.53.28.384.15.658.328.946.616.288.288.466.562.615.946.112.29.244.726.28 1.53.04.868.048 1.128.048 3.328s-.008 2.46-.048 3.328c-.036.804-.168 1.24-.28 1.53a2.553 2.553 0 01-.615.946 2.553 2.553 0 01-.946.615c-.29.112-.726.244-1.53.28-.868.04-1.128.048-3.328.048s-2.46-.008-3.328-.048c-.804-.036-1.24-.168-1.53-.28a2.553 2.553 0 01-.946-.615 2.553 2.553 0 01-.615-.946c-.112-.29-.244-.726-.28-1.53C3.508 12.46 3.5 12.2 3.5 10s.008-2.46.048-3.328c.036-.804.168-1.24.28-1.53.15-.384.327-.658.615-.946.288-.288.562-.466.946-.615.29-.112.726-.244 1.53-.28C7.54 3.508 7.8 3.5 10 3.5zm0 2.5a4 4 0 100 8 4 4 0 000-8zm0 1.5a2.5 2.5 0 110 5 2.5 2.5 0 010-5zm4.5-1.5a.75.75 0 100 1.5.75.75 0 000-1.5z" clip-rule="evenodd"/></svg>`,
-      '/kiosk.html':                 `<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>`,
-      '/admin/pointages.html':       `<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>`,
+      '/admin/dashboard.html':        '📊',
+      '/admin/equipe.html':           '👥',
+      '/admin/admin.html':            '⚙️',
+      '/staff/reservations.html':     '📅',
+      '/staff/tables.html':           '🏠',
+      '/staff/taches.html':           '✅',
+      '/staff/planning.html':         '📆',
+      '/staff/conges.html':           '🌴',
+      '/cuisine/index.html':          '🍳',
+      '/cuisine/taches.html':         '✅',
+      '/cuisine/recettes.html':       '📖',
+      '/cuisine/etiquettes.html':     '🔖',
+      '/resa/devis.html':             '📝',
+      '/marketing/dashboard.html':    '📈',
+      '/marketing/reservations.html': '📅',
+      '/admin/joy.html':              '🎉',
+      '/resa/dashboard.html':         '📊',
+      '/resa/gestion.html':           '📋',
+      '/resa/suivi.html':             '📈',
+      '/kiosk.html':                  '⏰',
+      '/admin/pointages.html':        '📋',
     };
 
     const MENU_ITEMS = {
@@ -108,7 +109,6 @@
       ],
       marketing: [
         { label: 'Dashboard',    href: '/marketing/dashboard.html' },
-        { label: 'Instagram',    href: '/instagram/index.html' },
         { label: 'Réservations', href: '/marketing/reservations.html' },
         { label: 'Joy.io',       href: '/admin/joy.html' },
         { label: 'Devis',        href: '/resa/devis.html' },
