@@ -230,7 +230,9 @@
         'data-tutorial': 'help-btn',
         'aria-label': 'Ouvrir le guide',
         style: `
-          position:fixed;bottom:24px;right:24px;
+          position:fixed;
+          bottom:calc(var(--bottom-nav-height, 64px) + 16px + env(safe-area-inset-bottom));
+          right:18px;
           width:44px;height:44px;border-radius:50%;
           background:#C9A84C;color:#000;border:none;
           font-size:1.25rem;font-weight:800;
