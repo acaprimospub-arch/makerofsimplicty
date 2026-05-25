@@ -5,35 +5,106 @@
   // ── Définition des étapes ────────────────────────────────────────────────
 
   const STEPS_STAFF = [
+    // ── Navigation ──
     {
       target: '[data-tutorial="navbar"]',
       pos: 'bottom',
-      title: 'Navigation',
-      text: 'Ces onglets sont tes outils du service. Tu peux naviguer librement entre eux à tout moment.'
+      title: 'Navigation principale',
+      text: 'Ces onglets en bas de l\'écran sont tes outils du service. Tu peux naviguer librement entre eux à tout moment.'
     },
+
+    // ── Mes Tâches ──
     {
       target: '[data-tutorial="nav-taches"]',
       pos: 'bottom',
       title: 'Mes Tâches',
-      text: 'Tes tâches du jour. Coche-les au fur et à mesure. La barre de progression se met à jour en temps réel.'
+      text: 'Ici tu retrouves toutes tes tâches du service en cours. Coche-les au fur et à mesure que tu les effectues.'
     },
+    {
+      target: '[data-tutorial="task-tabs"]',
+      pos: 'bottom',
+      title: 'MATIN & PASSATION',
+      text: 'Les tâches sont séparées en deux groupes : MATIN (ouverture) et PASSATION (fin de service). Clique sur un onglet pour basculer entre les deux.'
+    },
+    {
+      target: '[data-tutorial="task-progress"]',
+      pos: 'bottom',
+      title: 'Barre de progression',
+      text: 'La barre dorée te montre combien de tâches sont cochées sur le total. Elle se met à jour en temps réel dès que toi ou un collègue coche une tâche.'
+    },
+    {
+      target: '[data-tutorial="team-stats"]',
+      pos: 'bottom',
+      title: 'Statistiques équipe',
+      text: 'Tu vois en un coup d\'œil combien de tâches tu as cochées (doré), combien tes collègues ont faites (bleu), et combien il en reste (gris).'
+    },
+    {
+      target: '[data-tutorial="periodic-link"]',
+      pos: 'bottom',
+      title: 'Tâches périodiques',
+      text: 'Les tâches mensuelles et bi-mensuelles (nettoyages approfondis, vérifications…) sont regroupées ici avec leur historique et la possibilité d\'ajouter des photos.'
+    },
+
+    // ── Réservations ──
     {
       target: '[data-tutorial="nav-reservations"]',
       pos: 'bottom',
       title: 'Réservations',
-      text: 'Consulte et gère les réservations du jour. Tu peux changer le statut d\'une table directement ici.'
+      text: 'Consulte et gère toutes les réservations du jour. Les cartes s\'affichent dans l\'ordre chronologique avec le statut de chaque table.'
     },
+    {
+      target: '[data-tutorial="res-date-nav"]',
+      pos: 'bottom',
+      title: 'Naviguer par date',
+      text: 'Utilise les flèches pour passer au jour précédent ou suivant. Tu peux aussi cliquer sur la date pour choisir un jour précis dans le calendrier.'
+    },
+    {
+      target: '[data-tutorial="res-add-btn"]',
+      pos: 'bottom',
+      title: 'Nouvelle réservation',
+      text: 'Ce bouton ouvre le formulaire de création. Tu y renseignes le nom, l\'heure, le nombre de personnes, la table et toute note utile.'
+    },
+
+    // ── Plan de salle ──
     {
       target: '[data-tutorial="nav-tables"]',
       pos: 'bottom',
       title: 'Plan de Salle',
-      text: 'Vue en temps réel de toutes les tables. Les couleurs indiquent leur statut (libre, occupée, réservée).'
+      text: 'Vue en temps réel de toutes les tables. Clique sur une table pour voir son statut, l\'associer à une réservation ou changer son état.'
     },
+    {
+      target: '[data-tutorial="zone-tabs"]',
+      pos: 'bottom',
+      title: 'Zones de la salle',
+      text: 'La salle est divisée en zones (terrasse, bar, salle…). Clique sur un onglet pour filtrer l\'affichage et trouver rapidement une table.'
+    },
+    {
+      target: '[data-tutorial="table-legend"]',
+      pos: 'top',
+      title: 'Légende des couleurs',
+      text: 'Gris = libre · Bleu = réservée · Vert = arrivée confirmée · Rouge = en retard. Un rapide coup d\'œil suffit pour connaître l\'état de chaque table.'
+    },
+
+    // ── Planning ──
     {
       target: '[data-tutorial="nav-planning"]',
       pos: 'bottom',
       title: 'Planning & Congés',
-      text: 'Consulte ton planning de la semaine et pose tes congés depuis l\'onglet Congés.'
+      text: 'Consulte ton planning de la semaine et celui de tes collègues. Depuis l\'onglet Congés, tu peux poser une demande directement depuis l\'app.'
+    },
+
+    // ── Pointeuse ──
+    {
+      target: '[data-tutorial="nav-pointeuse"]',
+      pos: 'bottom',
+      title: 'Pointeuse',
+      text: 'Enregistre ton heure d\'arrivée et de départ. Tes heures sont sauvegardées automatiquement et visibles par les managers.'
+    },
+    {
+      target: '[data-tutorial="pointeuse-btn"]',
+      pos: 'top',
+      title: 'Pointer ton arrivée',
+      text: 'Un simple appui sur ce bouton suffit pour pointer l\'arrivée. En fin de service, le bouton se transforme en "Pointer le départ".'
     },
   ];
 
@@ -42,19 +113,19 @@
       target: '[data-tutorial="nav-planning"]',
       pos: 'bottom',
       title: 'Gérer le Planning',
-      text: 'En tant que manager, tu peux éditer le planning de ton équipe. Clique sur une case pour ajouter ou modifier un créneau.'
+      text: 'En tant que manager, tu peux éditer le planning de ton équipe. Clique sur une case vide pour ajouter un créneau, sur une case existante pour la modifier ou la supprimer.'
     },
     {
       target: '[data-tutorial="nav-conges"]',
       pos: 'bottom',
       title: 'Valider les Congés',
-      text: 'Tu valides ou refuses les demandes de congés de ton équipe depuis cet onglet.'
+      text: 'Les demandes de congés de ton équipe arrivent ici. Tu peux les accepter ou les refuser — le staff est notifié automatiquement.'
     },
     {
       target: null,
       pos: 'center',
       title: 'Accès Manager',
-      text: 'Tu as accès aux mêmes outils que le staff, plus la gestion de ton équipe. L\'admin Arthur gère les réglages avancés.'
+      text: 'Tu as accès à tous les outils du staff, plus la gestion du planning et des congés. L\'admin Arthur gère les réglages avancés (comptes, tâches, statistiques globales).'
     },
   ];
 
@@ -62,14 +133,14 @@
     {
       target: null,
       pos: 'center',
-      title: 'Panneau Admin',
-      text: 'En tant qu\'admin, tu as accès au panneau de gestion complet : création de comptes, gestion des tâches, statistiques.'
+      title: 'Panneau Administrateur',
+      text: 'En tant qu\'admin, tu accèdes au panneau complet : création et gestion des comptes staff, configuration des tâches, statistiques par personne et suivi des pointages.'
     },
     {
       target: '[data-tutorial="help-btn"]',
       pos: 'top',
       title: 'Guide toujours disponible',
-      text: 'Ce bouton est toujours là pour revoir le guide à tout moment.'
+      text: 'Ce bouton "?" reste affiché en permanence sur toutes les pages. Clique dessus à tout moment pour revoir ce guide depuis le début.'
     },
   ];
 
@@ -89,7 +160,6 @@
     }
 
     async init() {
-      // Récupère l'utilisateur (buildNav l'expose sur window.__mosUser)
       const user = window.__mosUser || await fetch('/api/auth/me').then(r => r.ok ? r.json() : null).catch(() => null);
       if (!user) return;
 
@@ -107,7 +177,6 @@
 
       const key = `mos_tutorial_${this.userId}`;
       if (!localStorage.getItem(key)) {
-        // Petit délai pour laisser buildNav finir
         setTimeout(() => this.start(), 600);
       }
     }
@@ -115,7 +184,6 @@
     // ── Construction du DOM ──────────────────────────────────────────────────
 
     _build() {
-      // Overlay + spotlight
       this._overlay = el('div', {
         id: 'tut-overlay',
         style: `
@@ -136,7 +204,6 @@
       this._overlay.appendChild(this._spot);
       document.body.appendChild(this._overlay);
 
-      // Tooltip
       this._tooltip = el('div', {
         id: 'tut-tooltip',
         role: 'dialog',
@@ -144,7 +211,7 @@
         'aria-label': 'Guide interactif',
         style: `
           position:fixed;z-index:9001;
-          width:300px;max-width:calc(100vw - 32px);
+          width:310px;max-width:calc(100vw - 32px);
           background:#0e1a24;
           border:1px solid rgba(201,168,76,.4);
           border-radius:14px;
@@ -185,8 +252,8 @@
 
     start() {
       this.idx = 0;
-      this._overlay.style.opacity   = '1';
-      this._overlay.style.pointerEvents = 'auto';
+      this._overlay.style.opacity        = '1';
+      this._overlay.style.pointerEvents  = 'auto';
       document.addEventListener('keydown', this._onKey);
       this._showStep(0);
     }
@@ -227,18 +294,14 @@
       const pct   = Math.round(((i + 1) / total) * 100);
       const last  = i === total - 1;
 
-      // Trouve l'élément cible
       let targetEl = step.target ? document.querySelector(step.target) : null;
 
-      // Scroll si hors viewport
       if (targetEl) {
         targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
 
-      // Positionne le spotlight
       this._moveSpot(targetEl);
 
-      // Construit le contenu du tooltip
       this._tooltip.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
           <span style="font-size:.68rem;font-weight:700;color:#C9A84C;letter-spacing:.06em;text-transform:uppercase">
@@ -274,7 +337,6 @@
       this._tooltip.querySelector('[data-tut="skip"]').addEventListener('click',  () => this.close());
       this._tooltip.querySelector('[data-tut="next"]').addEventListener('click',  () => this._next());
 
-      // Positionne le tooltip
       requestAnimationFrame(() => {
         this._posTooltip(targetEl, step.pos);
         requestAnimationFrame(() => {
@@ -288,7 +350,6 @@
 
     _moveSpot(targetEl) {
       if (!targetEl) {
-        // Cache le spotlight quand pas de cible
         Object.assign(this._spot.style, { width: '0', height: '0', top: '50%', left: '50%', boxShadow: 'none' });
         return;
       }
@@ -306,14 +367,13 @@
     // ── Positionnement du tooltip ─────────────────────────────────────────────
 
     _posTooltip(targetEl, pos) {
-      const TW  = 300;
+      const TW  = 310;
       const TH  = this._tooltip.offsetHeight || 220;
       const GAP = 14;
-      const M   = 14; // marge viewport
+      const M   = 14;
       const vw  = window.innerWidth;
       const vh  = window.innerHeight;
 
-      // Centré si pas de cible
       if (!targetEl || pos === 'center') {
         Object.assign(this._tooltip.style, {
           top:    '50%',
