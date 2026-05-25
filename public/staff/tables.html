@@ -150,6 +150,20 @@
     .stepper-val { flex:1; text-align:center; background:var(--bg-card); border:none; border-left:1.5px solid var(--border); border-right:1.5px solid var(--border); color:var(--text); font-size:1.2rem; font-weight:700; font-family:inherit; padding:0; -moz-appearance:textfield; }
     .stepper-val::-webkit-inner-spin-button,.stepper-val::-webkit-outer-spin-button { -webkit-appearance:none; }
     .sr-desc { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+
+    /* ── Mobile optimisations ── */
+    @media (max-width:640px) {
+      /* Header : titre à gauche, actions en dessous sur mobile */
+      .page-header { flex-wrap:wrap; gap:10px; }
+      .page-header > div:last-child { width:100%; display:flex; gap:8px; align-items:center; }
+      #viewDate { flex:1; min-width:0; font-size:.85rem; padding:8px 10px; }
+      #btnNewRes { flex-shrink:0; white-space:nowrap; }
+      /* Zone tabs : dégradé pour indiquer le défilement */
+      .zone-tabs { -webkit-mask-image:linear-gradient(to right,#000 82%,transparent 100%); mask-image:linear-gradient(to right,#000 82%,transparent 100%); }
+      /* Zoom bar plus compact */
+      .zoom-bar { gap:6px; }
+      .zoom-btn { width:34px; height:34px; font-size:1.1rem; }
+    }
   </style>
 </head>
 <body>
@@ -166,7 +180,7 @@
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <label for="viewDate" class="sr-only">Date</label>
-          <input type="date" id="viewDate" style="width:auto">
+          <input type="date" id="viewDate">
           <button class="btn btn-secondary btn-sm" id="editModeBtn" style="display:none">Modifier le plan</button>
           <button class="btn btn-primary" id="btnNewRes">+ Réservation</button>
         </div>
