@@ -298,11 +298,19 @@
 
       let targetEl = step.target ? document.querySelector(step.target) : null;
 
-      if (targetEl) {
+      // Sur mobile, préférer l'élément visible (bottom-nav) si le premier est caché
+      if (step.target && targetEl && targetEl.offsetWidth === 0 && targetEl.offsetHeight === 0) {
+        const all = document.querySelectorAll(step.target);
+        for (const el of all) {
+          if (el.offsetWidth > 0 || el.offsetHeight > 0) { targetEl = el; break; }
+        }
+      }
+
+      if (targetEl && targetEl.offsetWidth > 0) {
         targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
 
-      this._moveSpot(targetEl);
+      const visibleTarget = this._moveSpot(targetEl);
 
       this._tooltip.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -340,7 +348,7 @@
       this._tooltip.querySelector('[data-tut="next"]').addEventListener('click',  () => this._next());
 
       requestAnimationFrame(() => {
-        this._posTooltip(targetEl, step.pos);
+        this._posTooltip(visibleTarget, step.pos);
         requestAnimationFrame(() => {
           this._tooltip.style.opacity   = '1';
           this._tooltip.style.transform = 'translateY(0)';
@@ -351,9 +359,10 @@
     // ── Spotlight ────────────────────────────────────────────────────────────
 
     _moveSpot(targetEl) {
-      if (!targetEl) {
+      // Ignore les éléments cachés (display:none → getBoundingClientRect renvoie tout à 0)
+      if (!targetEl || (targetEl.offsetWidth === 0 && targetEl.offsetHeight === 0)) {
         Object.assign(this._spot.style, { width: '0', height: '0', top: '50%', left: '50%', boxShadow: 'none' });
-        return;
+        return null; // signale qu'il n'y a pas de cible visible
       }
       const r   = targetEl.getBoundingClientRect();
       const pad = 8;
@@ -364,19 +373,24 @@
         height:    (r.height + pad * 2) + 'px',
         boxShadow: '0 0 0 9999px rgba(0,0,0,.65)',
       });
+      return targetEl;
     }
 
     // ── Positionnement du tooltip ─────────────────────────────────────────────
 
     _posTooltip(targetEl, pos) {
-      const TW  = 310;
-      const TH  = this._tooltip.offsetHeight || 220;
-      const GAP = 14;
-      const M   = 14;
       const vw  = window.innerWidth;
       const vh  = window.innerHeight;
+      const TW  = Math.min(310, vw - 28); // responsive width
+      const TH  = this._tooltip.offsetHeight || 220;
+      const GAP = 12;
+      const M   = 12;
 
-      if (!targetEl || pos === 'center') {
+      this._tooltip.style.width = TW + 'px';
+
+      // Élément invisible ou centré
+      const visibleEl = targetEl && (targetEl.offsetWidth > 0 || targetEl.offsetHeight > 0) ? targetEl : null;
+      if (!visibleEl || pos === 'center') {
         Object.assign(this._tooltip.style, {
           top:    '50%',
           left:   '50%',
@@ -388,17 +402,22 @@
       }
 
       this._tooltip.style.transform = 'translateY(0)';
-      const r = targetEl.getBoundingClientRect();
+      const r = visibleEl.getBoundingClientRect();
       let top, left;
 
-      switch (pos) {
+      // Auto-flip : si la cible est dans la moitié basse de l'écran, on met le tooltip au-dessus
+      const effectivePos = (pos === 'bottom' && r.top > vh * 0.55) ? 'top' : pos;
+
+      switch (effectivePos) {
         case 'bottom':
           top  = r.bottom + GAP;
           left = clamp(r.left + r.width / 2 - TW / 2, M, vw - TW - M);
+          if (top + TH > vh - M) top = r.top - GAP - TH; // flip si déborde
           break;
         case 'top':
           top  = r.top - GAP - TH;
           left = clamp(r.left + r.width / 2 - TW / 2, M, vw - TW - M);
+          if (top < M) top = r.bottom + GAP; // flip si déborde en haut
           break;
         case 'right':
           top  = clamp(r.top + r.height / 2 - TH / 2, M, vh - TH - M);

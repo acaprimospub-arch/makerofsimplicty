@@ -333,7 +333,7 @@ async function buildNav(activePage) {
     const tabLinks = links.slice(0, 4);
     const tabsHTML = tabLinks.map(l => {
       const isActive = l.key === activePage;
-      return `<a href="${l.href}" class="bottom-tab${isActive ? ' active' : ''}" ${isActive ? 'aria-current="page"' : ''} aria-label="${escapeHtml(l.label)}">
+      return `<a href="${l.href}" class="bottom-tab${isActive ? ' active' : ''}" ${isActive ? 'aria-current="page"' : ''} aria-label="${escapeHtml(l.label)}" data-tutorial="nav-${l.key}">
         ${navIcon(l.key)}
         <span>${escapeHtml(l.label)}</span>
       </a>`;
@@ -342,6 +342,7 @@ async function buildNav(activePage) {
     const bottomNav = document.createElement('nav');
     bottomNav.className = 'bottom-nav';
     bottomNav.setAttribute('aria-label', 'Navigation rapide mobile');
+    bottomNav.setAttribute('data-tutorial', 'navbar');
     bottomNav.innerHTML = `
       <div class="bottom-tabs">
         <a href="/menu.html" class="bottom-tab tab-menu" aria-label="Retour au menu">
