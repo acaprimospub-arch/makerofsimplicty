@@ -142,10 +142,9 @@ db.exec(`
 
 // ─── Index de performance ──────────────────────────────────────────────────────
 db.exec(`
-  CREATE INDEX IF NOT EXISTS idx_reservations_date         ON reservations(date);
-  CREATE INDEX IF NOT EXISTS idx_reservations_joy_event_id ON reservations(joy_event_id);
-  CREATE INDEX IF NOT EXISTS idx_task_completions_date     ON task_completions(date);
-  CREATE INDEX IF NOT EXISTS idx_joy_events_date           ON joy_events(date);
+  CREATE INDEX IF NOT EXISTS idx_reservations_date     ON reservations(date);
+  CREATE INDEX IF NOT EXISTS idx_task_completions_date ON task_completions(date);
+  CREATE INDEX IF NOT EXISTS idx_joy_events_date       ON joy_events(date);
 `);
 // Ajouté dans un bloc séparé car pointages peut ne pas encore exister au premier démarrage
 _safeMigrate('CREATE INDEX IF NOT EXISTS idx_pointages_user_date ON pointages(user_id, date)');
@@ -156,6 +155,7 @@ _safeMigrate("ALTER TABLE floor_tables ADD COLUMN is_decoration INTEGER DEFAULT 
 _safeMigrate("ALTER TABLE users ADD COLUMN email TEXT");
 _safeMigrate("ALTER TABLE joy_events ADD COLUMN assigned_tables TEXT DEFAULT '[]'");
 _safeMigrate("ALTER TABLE reservations ADD COLUMN joy_event_id INTEGER");
+_safeMigrate("CREATE INDEX IF NOT EXISTS idx_reservations_joy_event_id ON reservations(joy_event_id)");
 _safeMigrate("ALTER TABLE reservations ADD COLUMN space TEXT");
 _safeMigrate("ALTER TABLE reservations ADD COLUMN table_ids TEXT DEFAULT '[]'");
 // Migration : on peuple table_ids depuis table_id pour les lignes existantes
