@@ -7,8 +7,6 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 const nodemailer = require('nodemailer');
-const ExcelJS = require('exceljs');
-const PDFDocument = require('pdfkit');
 const multer = require('multer');
 const crypto = require('crypto');
 const db = require('./db/database');
@@ -35,44 +33,6 @@ const upload = multer({
   }
 });
 
-// ─── Multer (médias Instagram) ─────────────────────────────────────────────────
-const INSTAGRAM_DIR = path.join(__dirname, 'uploads', 'instagram');
-if (!fs.existsSync(INSTAGRAM_DIR)) fs.mkdirSync(INSTAGRAM_DIR, { recursive: true });
-
-const _igStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, INSTAGRAM_DIR),
-  filename: (_req, file, cb) => {
-    const ext  = path.extname(file.originalname);
-    const base = `ig-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
-    cb(null, base);
-  }
-});
-const uploadInstagram = multer({
-  storage: _igStorage,
-  limits: { fileSize: 30 * 1024 * 1024 }, // 30 Mo max
-  fileFilter: (_req, file, cb) => {
-    const ok = /^image\/(jpeg|jpg|png|webp)$/.test(file.mimetype);
-    cb(null, ok);
-  }
-});
-
-// ─── Multer (Planning PDF salle) ───────────────────────────────────────────────
-const PLANNING_DIR = path.join(__dirname, 'uploads', 'planning');
-if (!fs.existsSync(PLANNING_DIR)) fs.mkdirSync(PLANNING_DIR, { recursive: true });
-
-const _planningStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, PLANNING_DIR),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `planning-${Date.now()}${ext}`);
-  }
-});
-const uploadPlanning = multer({
-  storage: _planningStorage,
-  limits: { fileSize: 20 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => cb(null, file.mimetype === 'application/pdf')
-});
-
 // ─── Multer (tâches périodiques — photos) ─────────────────────────────────────
 const TACHES_PHOTOS_DIR = path.join(__dirname, 'uploads', 'taches');
 if (!fs.existsSync(TACHES_PHOTOS_DIR)) fs.mkdirSync(TACHES_PHOTOS_DIR, { recursive: true });
@@ -86,22 +46,6 @@ const _tachesStorage = multer.diskStorage({
 });
 const uploadTachePhoto = multer({
   storage: _tachesStorage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => cb(null, /^image\//.test(file.mimetype))
-});
-
-// ─── Multer (photos recettes cuisine) ─────────────────────────────────────────
-const RECETTES_DIR = path.join(__dirname, 'uploads', 'recettes');
-if (!fs.existsSync(RECETTES_DIR)) fs.mkdirSync(RECETTES_DIR, { recursive: true });
-const _recettesStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, RECETTES_DIR),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, `recette-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
-  }
-});
-const uploadRecettePhoto = multer({
-  storage: _recettesStorage,
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => cb(null, /^image\//.test(file.mimetype))
 });
@@ -311,13 +255,16 @@ app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('trust proxy', 1); // fait confiance au proxy Nginx
+if (!process.env.SESSION_SECRET) {
+  console.warn('⚠️  SESSION_SECRET non défini — utilisation du secret de développement. Définir SESSION_SECRET en production.');
+}
 app.use(session({
-  secret: 'mos-pub-merciere-2024',
+  secret: process.env.SESSION_SECRET || 'mos-pub-merciere-dev-only',
   resave: false,
   saveUninitialized: false,
   cookie: {
     maxAge: 24 * 60 * 60 * 1000,
-    secure: false,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax'
   }
 }));
@@ -357,11 +304,11 @@ function requireAdmin(req, res, next) {
   res.status(403).json({ error: 'Accès refusé' });
 }
 function requireAdminOrManager(req, res, next) {
-  if (req.session.userId && (req.session.role === 'admin' || req.session.role === 'manager')) return next();
+  if (req.session.userId && (req.session.role === 'admin' || req.session.role === 'manager' || req.session.role === 'direction')) return next();
   res.status(403).json({ error: 'Accès refusé' });
 }
-function requireCuisineManager(req, res, next) {
-  if (req.session.userId && (req.session.role === 'admin' || (req.session.role === 'manager' && req.session.shift === 'cuisine'))) return next();
+function requireDirection(req, res, next) {
+  if (req.session.userId && (req.session.role === 'admin' || req.session.role === 'direction')) return next();
   res.status(403).json({ error: 'Accès refusé' });
 }
 
@@ -421,8 +368,7 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 // ─── Tasks ─────────────────────────────────────────────────────────────────────
 app.get('/api/tasks', requireAuth, (req, res) => {
   const today = new Date().toISOString().split('T')[0];
-  const domain = req.session.shift === 'cuisine' ? 'cuisine' : 'salle';
-  res.json(db.getTasksWithCompletions(today, req.session.userId, domain));
+  res.json(db.getTasksWithCompletions(today, req.session.userId, 'salle'));
 });
 
 app.post('/api/tasks/:id/complete', requireAuth, (req, res) => {
@@ -501,7 +447,7 @@ app.post('/api/pointage/clock-out', requireAuth, (req, res) => {
 });
 
 app.get('/api/pointage/history', requireAuth, (req, res) => {
-  const from = req.query.from || new Date(Date.now() - 30*86400000).toISOString().slice(0,10);
+  const from = req.query.from || new Date(Date.now() - 30*86400000).toLocaleString('sv-SE', { timeZone:'Europe/Paris' }).slice(0,10);
   const to   = req.query.to   || new Date().toLocaleString('sv-SE', { timeZone:'Europe/Paris' }).slice(0,10);
   res.json(db.getPointagesForUser(req.session.userId, from, to));
 });
@@ -515,8 +461,12 @@ app.post('/api/admin/pointages/:userId/reset-day', requireAdmin, (req, res) => {
   const userId = parseInt(req.params.userId);
   const date   = req.body.date || new Date().toLocaleString('sv-SE', { timeZone:'Europe/Paris' }).slice(0,10);
   const record = db.resetPointageDay(userId, date);
-  if (record?.arrived_photo) try { fs.unlinkSync(path.join(POINTAGES_DIR, record.arrived_photo)); } catch(e) {}
-  if (record?.left_photo)    try { fs.unlinkSync(path.join(POINTAGES_DIR, record.left_photo));    } catch(e) {}
+  const _safeUnlink = (filename) => {
+    if (!filename || /[/\\]|\.\./.test(filename)) return;
+    try { fs.unlinkSync(path.join(POINTAGES_DIR, filename)); } catch(e) {}
+  };
+  _safeUnlink(record?.arrived_photo);
+  _safeUnlink(record?.left_photo);
   io.emit('pointage:updated', { userId });
   res.json({ ok: true });
 });
@@ -554,15 +504,24 @@ app.post('/api/kiosk/clock/photo', (req, res) => {
   const { userId, action, photo } = req.body;
   if (!userId || !action || !photo) return res.status(400).json({ ok: false });
 
-  const uid  = parseInt(userId);
+  const uid = parseInt(userId);
+  if (isNaN(uid) || uid <= 0) return res.status(400).json({ ok: false });
   if (!['in', 'out'].includes(action)) return res.status(400).json({ ok: false });
 
+  // Vérifier qu'il existe bien un pointage actif aujourd'hui pour cet utilisateur
+  const today = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
+  const pointage = db.getPointageToday(uid);
+  if (!pointage) return res.status(403).json({ ok: false, error: 'Aucun pointage actif' });
+
   try {
+    const mimeMatch = photo.match(/^data:(image\/\w+);base64,/);
+    const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const ext  = mime === 'image/webp' ? 'webp' : mime === 'image/png' ? 'png' : 'jpg';
     const base64 = photo.replace(/^data:image\/\w+;base64,/, '');
-    const buf    = Buffer.from(base64, 'base64');
-    const today  = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
-    const token  = crypto.randomBytes(8).toString('hex');
-    const fname  = `${uid}_${today}_${action}_${token}.jpg`;
+    if (base64.length > 4 * 1024 * 1024) return res.status(413).json({ ok: false, error: 'Photo trop grande' }); // max ~3 Mo
+    const buf   = Buffer.from(base64, 'base64');
+    const token = crypto.randomBytes(8).toString('hex');
+    const fname = `${uid}_${today}_${action}_${token}.${ext}`;
     fs.writeFileSync(path.join(POINTAGES_DIR, fname), buf);
     db.savePointagePhoto(uid, today, action, fname);
     res.json({ ok: true });
@@ -592,401 +551,6 @@ app.delete('/api/admin/tasks/:id', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
-// ─── Cuisine — Gestion tâches (chef) ───────────────────────────────────────────
-app.get('/api/cuisine/tasks', requireCuisineManager, (req, res) => {
-  res.json(db.getAllTasks().filter(t => t.domain === 'cuisine'));
-});
-
-app.post('/api/cuisine/tasks', requireCuisineManager, (req, res) => {
-  const id = db.createTask({ ...req.body, domain: 'cuisine' });
-  res.json(db.getTaskById(id));
-});
-
-app.put('/api/cuisine/tasks/:id', requireCuisineManager, (req, res) => {
-  db.updateTask(req.params.id, req.body);
-  res.json(db.getTaskById(req.params.id));
-});
-
-app.delete('/api/cuisine/tasks/:id', requireCuisineManager, (req, res) => {
-  db.deactivateTask(req.params.id);
-  res.json({ ok: true });
-});
-
-// ─── Cuisine — Completions (qui fait quoi) ─────────────────────────────────────
-app.get('/api/cuisine/completions', requireCuisineManager, (req, res) => {
-  const date = req.query.date || new Date().toISOString().split('T')[0];
-  res.json(db.getCuisineCompletionsByDate(date));
-});
-
-// ─── Salle Planning ────────────────────────────────────────────────────────────
-app.get('/api/salle/planning', requireAuth, (req, res) => {
-  const weekStart = req.query.weekStart;
-  if (!weekStart) return res.status(400).json({ error: 'weekStart requis' });
-  res.json(db.getSallePlanning(weekStart));
-});
-
-app.put('/api/salle/planning', requireAdminOrManager, (req, res) => {
-  db.upsertSallePlanning(req.body);
-  const data = db.getSallePlanning(req.body.week_start);
-  io.emit('salle:planning:updated', { weekStart: req.body.week_start, data });
-  res.json({ ok: true });
-});
-
-app.delete('/api/salle/planning', requireAdminOrManager, (req, res) => {
-  const { user_id, day_date, week_start } = req.body;
-  db.deleteSallePlanningShift(user_id, day_date);
-  const data = db.getSallePlanning(week_start);
-  io.emit('salle:planning:updated', { weekStart: week_start, data });
-  res.json({ ok: true });
-});
-
-// Endpoint combiné : planning + heures supp + snapshot
-app.get('/api/salle/hours', requireAuth, (req, res) => {
-  const weekStart = req.query.weekStart;
-  if (!weekStart) return res.status(400).json({ error: 'weekStart requis' });
-  const weekEnd    = _addDays(weekStart, 6);
-  const planning   = db.getSallePlanning(weekStart);
-  const timeEvents = db.getSalleTimeEventsForWeek(weekStart);
-  const snapshots  = db.getSalleSnapshot(weekStart);
-
-  // Injecter les congés approuvés directement depuis conge_requests
-  const conges = db.getAllCongeRequests().filter(c =>
-    c.status === 'approved' && c.date_from <= weekEnd && c.date_to >= weekStart
-  );
-  conges.forEach(conge => {
-    const from = conge.date_from > weekStart ? conge.date_from : weekStart;
-    const to   = conge.date_to   < weekEnd   ? conge.date_to   : weekEnd;
-    _dateRange(from, to).forEach(dayDate => {
-      if (!planning.shifts.find(s => s.user_id === conge.user_id && s.day_date === dayDate)) {
-        planning.shifts.push({ user_id: conge.user_id, week_start: weekStart, day_date: dayDate, start_time: null, end_time: null, is_off: 1, is_conge: 1 });
-      }
-    });
-  });
-
-  res.json({ ...planning, timeEvents, snapshots });
-});
-
-// Heures supp / retard salle
-app.post('/api/salle/time-events', requireAuth, (req, res) => {
-  const { user_id, date, minutes, note, type } = req.body;
-  const targetId = parseInt(user_id);
-  if (req.session.role === 'staff' && targetId !== req.session.userId) {
-    return res.status(403).json({ error: 'Accès refusé' });
-  }
-  const evType = ['retard', 'supp'].includes(type) ? type : 'supp';
-  const id = db.createSalleTimeEvent({ user_id: targetId, date, minutes: parseInt(minutes) || 0, note, created_by: req.session.userId, type: evType });
-  io.emit('salle:hours:updated', { date });
-  res.json({ ok: true, id });
-});
-
-app.delete('/api/salle/time-events/:id', requireAuth, (req, res) => {
-  db.deleteSalleTimeEvent(req.params.id);
-  io.emit('salle:hours:updated', {});
-  res.json({ ok: true });
-});
-
-// Snapshot manuel (admin/manager)
-app.post('/api/salle/snapshot', requireAdminOrManager, (req, res) => {
-  const date = req.body.date || new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
-  _takeSalleSnapshot(date);
-  res.json({ ok: true });
-});
-
-// ─── Cuisine — Planning ────────────────────────────────────────────────────────
-app.get('/api/cuisine/planning', requireAuth, (req, res) => {
-  const weekStart = req.query.weekStart;
-  if (!weekStart) return res.status(400).json({ error: 'weekStart requis' });
-  const weekEnd = _addDays(weekStart, 6);
-  const data = db.getCuisinePlanning(weekStart);
-
-  // Injecter les congés approuvés cuisine directement depuis conge_requests
-  const conges = db.getAllCongeRequests().filter(c =>
-    c.status === 'approved' && c.date_from <= weekEnd && c.date_to >= weekStart
-  );
-  conges.forEach(conge => {
-    if (!data.users.find(u => u.id === conge.user_id)) return; // pas un user cuisine
-    const from = conge.date_from > weekStart ? conge.date_from : weekStart;
-    const to   = conge.date_to   < weekEnd   ? conge.date_to   : weekEnd;
-    _dateRange(from, to).forEach(dayDate => {
-      if (!data.shifts.find(s => s.user_id === conge.user_id && s.day_date === dayDate)) {
-        data.shifts.push({ user_id: conge.user_id, week_start: weekStart, day_date: dayDate, start_time: null, end_time: null, is_off: 1, is_conge: 1 });
-      }
-    });
-  });
-
-  res.json(data);
-});
-
-app.put('/api/cuisine/planning', requireCuisineManager, (req, res) => {
-  db.upsertCuisinePlanning(req.body);
-  const weekStart = req.body.week_start;
-  const data = db.getCuisinePlanning(weekStart);
-  io.emit('cuisine:planning:updated', { weekStart, data });
-  res.json({ ok: true });
-});
-
-app.delete('/api/cuisine/planning', requireCuisineManager, (req, res) => {
-  const { user_id, day_date, week_start } = req.body;
-  db.deleteCuisinePlanningShift(user_id, day_date);
-  const data = db.getCuisinePlanning(week_start);
-  io.emit('cuisine:planning:updated', { weekStart: week_start, data });
-  res.json({ ok: true });
-});
-
-// ─── Cuisine — Retards & Heures supp ──────────────────────────────────────────
-app.post('/api/cuisine/time-events', requireAuth, (req, res) => {
-  const { type, minutes, note, date, user_id } = req.body;
-  if (!['retard', 'supp'].includes(type)) return res.status(400).json({ error: 'Type invalide' });
-  const isChef = req.session.role === 'admin' || (req.session.role === 'manager' && req.session.shift === 'cuisine');
-  const targetId = (isChef && user_id) ? parseInt(user_id) : req.session.userId;
-  const today = date || new Date().toISOString().split('T')[0];
-  const id = db.logTimeEvent({ user_id: targetId, date: today, type, minutes: parseInt(minutes) || 0, note });
-  const events = db.getTimeEventsByDate(today);
-  io.emit('cuisine:time-events:updated', { date: today, events });
-  res.json({ ok: true, id });
-});
-
-app.get('/api/cuisine/time-events', requireAuth, (req, res) => {
-  const { date, from, to } = req.query;
-  if (from && to) return res.json(db.getTimeEventsRange(from, to));
-  const d = date || new Date().toISOString().split('T')[0];
-  res.json(db.getTimeEventsByDate(d));
-});
-
-app.delete('/api/cuisine/time-events/:id', requireAuth, (req, res) => {
-  db.deleteTimeEvent(req.params.id, req.session.userId);
-  const today = new Date().toISOString().split('T')[0];
-  const events = db.getTimeEventsByDate(today);
-  io.emit('cuisine:time-events:updated', { date: today, events });
-  res.json({ ok: true });
-});
-
-// ─── Étiquettes Cuisine ────────────────────────────────────────────────────────
-app.get('/api/cuisine/produits', requireAuth, (req, res) => {
-  res.json(db.getCuisineProduits());
-});
-
-app.post('/api/cuisine/produits', requireAuth, (req, res) => {
-  const id = db.createCuisineProduit({ ...req.body, created_by: req.session.userId });
-  res.json(db.getCuisineProduitById(id));
-});
-
-app.put('/api/cuisine/produits/:id', requireAuth, (req, res) => {
-  db.updateCuisineProduit(req.params.id, req.body);
-  res.json(db.getCuisineProduitById(req.params.id));
-});
-
-app.delete('/api/cuisine/produits/:id', requireAuth, (req, res) => {
-  db.deleteCuisineProduit(req.params.id);
-  res.json({ ok: true });
-});
-
-app.post('/api/cuisine/etiquettes/log', requireAuth, (req, res) => {
-  const id = db.logEtiquette({
-    ...req.body,
-    user_id: req.session.userId,
-    user_name: req.session.name,
-  });
-  res.json({ id });
-});
-
-app.get('/api/cuisine/etiquettes/log', requireAuth, (req, res) => {
-  const { from, to, limit } = req.query;
-  res.json(db.getEtiquettesLog({ from, to, limit: limit ? parseInt(limit) : 200 }));
-});
-
-// ─── Recettes cuisine ──────────────────────────────────────────────────────────
-app.use('/uploads/recettes', requireAuth, express.static(RECETTES_DIR));
-
-app.get('/api/recettes/categories', requireAuth, (_req, res) => res.json(db.getRecipeCategories()));
-app.post('/api/recettes/categories', requireCuisineManager, (req, res) => {
-  const result = db.createRecipeCategory(req.body);
-  res.json({ id: result.lastInsertRowid, name: req.body.name, color: req.body.color || '#D4AF37', sort_order: 99 });
-});
-app.put('/api/recettes/categories/:id', requireCuisineManager, (req, res) => {
-  db.updateRecipeCategory(Number(req.params.id), req.body);
-  res.json({ ok: true });
-});
-app.delete('/api/recettes/categories/:id', requireCuisineManager, (req, res) => {
-  db.deleteRecipeCategory(Number(req.params.id));
-  res.json({ ok: true });
-});
-
-app.get('/api/recettes', requireAuth, (req, res) => {
-  const cat = req.query.category_id ? Number(req.query.category_id) : null;
-  res.json(db.getAllRecipes(cat));
-});
-app.get('/api/recettes/:id', requireAuth, (req, res) => {
-  const r = db.getRecipeById(Number(req.params.id));
-  if (!r) return res.status(404).json({ error: 'Not found' });
-  res.json(r);
-});
-app.post('/api/recettes', requireAuth, (req, res) => {
-  const result = db.createRecipe(req.body);
-  res.json({ id: result.lastInsertRowid });
-});
-app.put('/api/recettes/:id', requireAuth, (req, res) => {
-  db.updateRecipe(Number(req.params.id), req.body);
-  res.json({ ok: true });
-});
-app.delete('/api/recettes/:id', requireCuisineManager, (req, res) => {
-  db.deleteRecipe(Number(req.params.id));
-  res.json({ ok: true });
-});
-app.post('/api/recettes/:id/photo', requireAuth, uploadRecettePhoto.single('photo'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file' });
-  const url = `/uploads/recettes/${req.file.filename}`;
-  db.updateRecipe(Number(req.params.id), { photo_path: url });
-  res.json({ url });
-});
-
-// ─── Températures cuisine ─────────────────────────────────────────────────────
-function _tempStatut(type, temperature) {
-  if (type === 'positif') {
-    if (temperature >= 0 && temperature <= 4) return 'ok';
-    if (temperature > 4 && temperature <= 8)  return 'limite';
-    return 'hors_plage';
-  } else {
-    if (temperature <= -18)                    return 'ok';
-    if (temperature > -18 && temperature <= -15) return 'limite';
-    return 'hors_plage';
-  }
-}
-
-app.get('/api/cuisine/temperatures/materiels', requireAuth, (req, res) => {
-  res.json(db.getTempMateriels());
-});
-
-app.get('/api/cuisine/temperatures/session', requireAuth, (req, res) => {
-  const { date, shift } = req.query;
-  if (!date || !shift) return res.status(400).json({ error: 'date et shift requis' });
-  res.json(db.getTempSession(date, shift));
-});
-
-app.post('/api/cuisine/temperatures/releves', requireAuth, (req, res) => {
-  const { date, shift, releves } = req.body;
-  if (!date || !shift || !Array.isArray(releves)) return res.status(400).json({ error: 'Données invalides' });
-  const materiels = db.getTempMateriels();
-  for (const r of releves) {
-    const mat = materiels.find(m => m.id === r.materiel_id);
-    if (!mat) continue;
-    db.upsertTempReleve({
-      materiel_id: r.materiel_id,
-      date, shift,
-      temperature: r.temperature,
-      statut: _tempStatut(mat.type, r.temperature),
-      user_id:   req.session.userId,
-      user_name: req.session.name,
-    });
-  }
-  res.json({ ok: true });
-});
-
-app.get('/api/cuisine/temperatures/history', requireAuth, (req, res) => {
-  const { from, to, limit } = req.query;
-  res.json(db.getTempHistory({ from, to, limit: limit ? parseInt(limit) : 200 }));
-});
-
-app.get('/api/cuisine/temperatures/export', requireAuth, (req, res) => {
-  const { from, to } = req.query;
-  if (!from || !to) return res.status(400).json({ error: 'from et to requis' });
-  const rows = db.getTempWeekReport(from, to);
-  const headers = ['Date','Shift','Matériel','Type','Température (°C)','Statut','Relevé par','Heure'];
-  const csv = [headers.join(';'),
-    ...rows.map(r => [
-      r.date, r.shift, r.materiel_nom, r.materiel_type === 'positif' ? 'Froid Positif' : 'Froid Négatif',
-      String(r.temperature).replace('.', ','), r.statut, r.user_name || '',
-      r.releve_at ? r.releve_at.slice(11,16) : ''
-    ].join(';'))
-  ].join('\n');
-  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="temperatures-${from}-${to}.csv"`);
-  res.send('﻿' + csv);
-});
-
-app.get('/api/cuisine/temperatures/export/excel', requireAuth, async (req, res) => {
-  const { from, to } = req.query;
-  if (!from || !to) return res.status(400).json({ error: 'from et to requis' });
-  const rows = db.getTempWeekReport(from, to);
-
-  const wb = new ExcelJS.Workbook();
-  wb.creator = 'Mos Pub Mercière';
-  const ws = wb.addWorksheet('Températures', { views: [{ state: 'frozen', ySplit: 4 }] });
-
-  // Title rows
-  ws.mergeCells('A1:H1');
-  ws.getCell('A1').value = 'Mos Pub Mercière — Relevés de températures HACCP';
-  ws.getCell('A1').font = { bold: true, size: 14, color: { argb: 'FFC9A84C' } };
-  ws.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F1923' } };
-
-  ws.mergeCells('A2:H2');
-  const fmt = d => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-  ws.getCell('A2').value = `Période : ${fmt(from)} → ${fmt(to)}`;
-  ws.getCell('A2').font = { size: 11, color: { argb: 'FF7A9BB0' } };
-  ws.getCell('A2').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F1923' } };
-
-  ws.addRow([]);
-
-  // Header row
-  const headerRow = ws.addRow(['Date', 'Shift', 'Matériel', 'Type', 'Temp. (°C)', 'Statut', 'Relevé par', 'Heure']);
-  headerRow.eachCell(cell => {
-    cell.font  = { bold: true, color: { argb: 'FFFFFFFF' } };
-    cell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A3A4A' } };
-    cell.alignment = { horizontal: 'center' };
-    cell.border = { bottom: { style: 'medium', color: { argb: 'FFC9A84C' } } };
-  });
-
-  // Column widths
-  ws.columns = [
-    { key: 'date',     width: 14 },
-    { key: 'shift',    width: 8  },
-    { key: 'mat',      width: 20 },
-    { key: 'type',     width: 16 },
-    { key: 'temp',     width: 12 },
-    { key: 'statut',   width: 14 },
-    { key: 'user',     width: 18 },
-    { key: 'heure',    width: 8  },
-  ];
-
-  // Data rows
-  for (const r of rows) {
-    const s = r.statut;
-    const bgColor = s === 'ok' ? 'FFD4EDDA' : s === 'limite' ? 'FFFFF3CD' : 'FFF8D7DA';
-    const txtColor = s === 'ok' ? 'FF155724' : s === 'limite' ? 'FF856404' : 'FF721C24';
-    const statutLabel = s === 'ok' ? '✅ OK' : s === 'limite' ? '⚠️ Limite' : '❌ Hors plage';
-
-    const row = ws.addRow([
-      r.date, r.shift.toUpperCase(),
-      r.materiel_nom,
-      r.materiel_type === 'positif' ? 'Froid Positif' : 'Froid Négatif',
-      r.temperature,
-      statutLabel,
-      r.user_name || '',
-      r.releve_at ? r.releve_at.slice(11, 16) : '',
-    ]);
-
-    row.getCell(5).font   = { bold: true, color: { argb: txtColor } };
-    row.getCell(5).fill   = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
-    row.getCell(6).font   = { bold: true, color: { argb: txtColor } };
-    row.getCell(6).fill   = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
-    row.eachCell(cell => { cell.border = { bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } } }; });
-  }
-
-  // Summary at bottom
-  ws.addRow([]);
-  const hors   = rows.filter(r => r.statut === 'hors_plage').length;
-  const limite = rows.filter(r => r.statut === 'limite').length;
-  const ok     = rows.filter(r => r.statut === 'ok').length;
-  const sumRow = ws.addRow([`Total : ${rows.length} relevés — ✅ ${ok} OK — ⚠️ ${limite} limite — ❌ ${hors} hors plage`]);
-  ws.mergeCells(`A${sumRow.number}:H${sumRow.number}`);
-  sumRow.getCell(1).font = { bold: true, italic: true, color: { argb: 'FF4A6070' } };
-
-  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  res.setHeader('Content-Disposition', `attachment; filename="temperatures-${from}-${to}.xlsx"`);
-  await wb.xlsx.write(res);
-  res.end();
-});
-
 // ─── Tables (floor plan) ───────────────────────────────────────────────────────
 app.get('/api/tables', requireAuth, (req, res) => {
   res.json(db.getTables());
@@ -1014,7 +578,7 @@ app.delete('/api/tables/:id', requireAdminOrManager, (req, res) => {
 
 app.put('/api/tables/:id/note', requireAuth, (req, res) => {
   const { note } = req.body;
-  db.prepare("UPDATE floor_tables SET note = ? WHERE id = ?").run(note ?? '', Number(req.params.id));
+  db.updateTableNote(req.params.id, note);
   const table = db.getTableById(Number(req.params.id));
   io.emit('table:updated', table);
   res.json({ ok: true });
@@ -1212,434 +776,12 @@ app.delete('/api/joy/events/:id', requireAdminOrManager, (req, res) => {
   res.json({ ok: true });
 });
 
-// ─── Email Planning Cuisine ────────────────────────────────────────────────────
-const PLANNING_RECIPIENT = 'pverdier.mospub@gmail.com';
-const DAYS_LABEL = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
-
-function _getMonday(dateStr) {
-  const d = new Date(dateStr); const day = d.getDay();
-  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
-  return d.toISOString().split('T')[0];
-}
-function _addDays(dateStr, n) {
-  const d = new Date(dateStr); d.setDate(d.getDate() + n);
-  return d.toISOString().split('T')[0];
-}
-function _minsBetween(start, end) {
-  if (!start || !end) return 0;
-  const [sh, sm] = start.slice(0,5).split(':').map(Number);
-  const [eh, em] = end.slice(0,5).split(':').map(Number);
-  return Math.max(0, (eh*60+em) - (sh*60+sm));
-}
-function _fmtH(mins) {
-  if (!mins) return '—';
-  const h = Math.floor(mins/60), m = mins%60;
-  return h > 0 ? (m > 0 ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`) : `${m}min`;
-}
-
-async function generatePlanningExcel(weekStart) {
-  const weekEnd = _addDays(weekStart, 6);
-  const { users, shifts } = db.getCuisinePlanning(weekStart);
-  const conges = db.getAllCongeRequests().filter(c =>
-    c.status === 'approved' && c.date_from <= weekEnd && c.date_to >= weekStart
-  );
-  conges.forEach(conge => {
-    if (!users.find(u => u.id === conge.user_id)) return;
-    const from = conge.date_from > weekStart ? conge.date_from : weekStart;
-    const to   = conge.date_to   < weekEnd   ? conge.date_to   : weekEnd;
-    _dateRange(from, to).forEach(dayDate => {
-      if (!shifts.find(s => s.user_id === conge.user_id && s.day_date === dayDate))
-        shifts.push({ user_id: conge.user_id, day_date: dayDate, is_off: 1, is_conge: 1 });
-    });
-  });
-
-  const wb = new ExcelJS.Workbook();
-  wb.creator = 'Mos Pub Mercière';
-  const ws = wb.addWorksheet('CUISINE');
-  // Cuisine = cyan (soir-like schedule)
-  const usersWithShift = users.map(u => ({ ...u, shift: 'soir' }));
-  await _buildPlanningSheet(ws, {
-    users: usersWithShift,
-    shifts,
-    timeEvents: [],
-    weekStart,
-    sheetTitle: 'MERCIERE — Planning CUISINE',
-  });
-  return wb.xlsx.writeBuffer();
-}
-
 function createMailTransporter() {
   const user = db.getSetting('email_smtp_user');
   const pass = db.getSetting('email_smtp_pass');
   if (!user || !pass) return null;
   return nodemailer.createTransport({ host:'smtp.gmail.com', port:587, secure:false, auth:{ user, pass } });
 }
-
-async function sendWeeklyPlanningEmail(weekStart) {
-  const transporter = createMailTransporter();
-  if (!transporter) {
-    console.log('[Email] ⚠️  Config SMTP absente — configurez email_smtp_user/pass dans les réglages admin');
-    return { ok:false, error:'SMTP non configuré' };
-  }
-  try {
-    const buf = await generatePlanningExcel(weekStart);
-    const s = new Date(weekStart), e = new Date(_addDays(weekStart,6));
-    const fmt = d => d.toLocaleDateString('fr-FR');
-    const weekLabel = `${fmt(s)} → ${fmt(e)}`;
-    const sender = db.getSetting('email_smtp_user');
-
-    await transporter.sendMail({
-      from: `"Mos Pub Mercière" <${sender}>`,
-      to:   PLANNING_RECIPIENT,
-      subject: `📅 Planning Cuisine — Semaine du ${weekLabel}`,
-      html: `<div style="font-family:Arial,sans-serif;max-width:500px">
-        <h2 style="color:#1a3a4a">📅 Planning Cuisine</h2>
-        <p>Bonjour,</p>
-        <p>Veuillez trouver en pièce jointe le planning cuisine de la semaine du <strong>${weekLabel}</strong>, avec le total des heures et les signalements.</p>
-        <p style="color:#888;font-size:12px">— Mos Pub Mercière</p>
-      </div>`,
-      attachments: [{
-        filename: `Planning-Cuisine-${weekStart}.xlsx`,
-        content:  buf,
-        contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      }],
-    });
-    db.setSetting('email_planning_last_sent', weekStart);
-    console.log(`[Email] ✅ Planning envoyé à ${PLANNING_RECIPIENT} pour la semaine du ${weekStart}`);
-    return { ok:true };
-  } catch(err) {
-    console.error('[Email] ❌', err.message);
-    return { ok:false, error:err.message };
-  }
-}
-
-// Cron : chaque lundi entre 8h et 10h (vérifié toutes les 15 min)
-setInterval(async () => {
-  const now = new Date();
-  if (now.getDay() !== 1) return;                               // pas lundi
-  if (now.getHours() < 8 || now.getHours() >= 10) return;      // hors fenêtre
-  const monday = now.toISOString().split('T')[0];
-  if (db.getSetting('email_planning_last_sent') === monday) return; // déjà envoyé
-  console.log('[Email] 📅 Lundi matin — envoi automatique du planning');
-  await sendWeeklyPlanningEmail(monday);
-}, 15 * 60 * 1000);
-
-// ─── Excel Planning Salle ─────────────────────────────────────────────────────
-// Helpers Excel
-function _timeToFrac(timeStr) {
-  if (!timeStr) return null;
-  const [h, m] = timeStr.split(':').map(Number);
-  return (h * 60 + m) / 1440;
-}
-function _dateSerial(dateStr) {
-  const [y, mo, d] = dateStr.split('-').map(Number);
-  return Math.floor(new Date(Date.UTC(y, mo - 1, d)).getTime() / 86400000) + 25569;
-}
-function _planningBorder() {
-  const s = { style: 'thin', color: { argb: 'FFD0D0D0' } };
-  return { top: s, bottom: s, left: s, right: s };
-}
-
-// Génère l'Excel dans le format exact du fichier "Planning MOS Merciere 2026"
-// col A=Nom, B/C=Lun, D/E=Mar, F/G=Mer, H/I=Jeu, J/K=Ven, L/M=Sam, N/O=Dim, P=Total
-async function _buildPlanningSheet(ws, { users, shifts, timeEvents, weekStart, sheetTitle }) {
-  const dayDates = Array.from({ length: 7 }, (_, i) => _addDays(weekStart, i));
-  const DAY_COLS = [2, 4, 6, 8, 10, 12, 14]; // colonnes B,D,F,H,J,L,N (1-based)
-
-  const YELLOW   = 'FFFFFF00'; // midi
-  const CYAN     = 'FF00B0F0'; // soir / cuisine
-  const DARK_BG  = 'FF1A3A4A';
-  const WHITE    = 'FFFFFFFF';
-  const GREY     = 'FFF2F2F2';
-  const ORANGE_L = 'FFFFF3E0';
-  const RED_L    = 'FFFCE8E8';
-  const ORANGE_D = 'FFE65100';
-  const RED_D    = 'FFD32F2F';
-
-  const bold8  = (color='FF000000') => ({ bold:true,  size:8, color:{ argb:color } });
-  const reg8   = (color='FF000000') => ({ bold:false, size:8, color:{ argb:color } });
-  const center = { horizontal:'center', vertical:'middle' };
-  const brd    = _planningBorder;
-
-  // ── Row 1 : Titre ────────────────────────────────────────────────────────────
-  ws.mergeCells('A1:P1');
-  const r1 = ws.getRow(1);
-  r1.height = 18;
-  const c1 = r1.getCell(1);
-  c1.value = sheetTitle;
-  c1.font  = { bold:true, size:10, color:{ argb:WHITE } };
-  c1.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:DARK_BG } };
-  c1.alignment = { horizontal:'center', vertical:'middle' };
-
-  // ── Row 2 : semaine ──────────────────────────────────────────────────────────
-  ws.mergeCells('B2:P2');
-  const r2 = ws.getRow(2);
-  r2.height = 14;
-  const c2 = r2.getCell(2);
-  const weekNum = String(Math.ceil((new Date(_addDays(weekStart, 3)) - new Date(new Date(_addDays(weekStart, 3)).getFullYear(), 0, 1)) / 604800000) + 1).padStart(2, '0');
-  c2.value = `SEMAINE ${weekNum}`;
-  c2.font  = bold8(WHITE);
-  c2.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:DARK_BG } };
-  c2.alignment = center;
-
-  // ── Row 3 : en-têtes jours (fusionnés 2 colonnes chacun) ────────────────────
-  ws.mergeCells('A3:A4'); // nom
-  const r3 = ws.getRow(3);
-  r3.height = 14;
-  const dayNames = ['LUNDI ', 'MARDI ', 'MERCREDI ', 'JEUDI ', 'VENDREDI ', 'SAMEDI ', 'DIMANCHE '];
-  DAY_COLS.forEach((startCol, i) => {
-    ws.mergeCells(3, startCol, 3, startCol + 1);
-    const c = r3.getCell(startCol);
-    c.value = dayNames[i];
-    c.font  = bold8(WHITE);
-    c.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:DARK_BG } };
-    c.alignment = center;
-    c.border = brd();
-  });
-  ws.mergeCells('P3:P4');
-  const cTotal3 = r3.getCell(16); // P
-  cTotal3.value = 'TOTAL';
-  cTotal3.font  = bold8(WHITE);
-  cTotal3.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:DARK_BG } };
-  cTotal3.alignment = center;
-  cTotal3.border = brd();
-
-  // ── Row 4 : dates (fusionnées 2 colonnes) ────────────────────────────────────
-  const r4 = ws.getRow(4);
-  r4.height = 14;
-  DAY_COLS.forEach((startCol, i) => {
-    ws.mergeCells(4, startCol, 4, startCol + 1);
-    const c = r4.getCell(startCol);
-    c.value = _dateSerial(dayDates[i]);
-    c.numFmt = 'dd/mm/yyyy';
-    c.font  = bold8(WHITE);
-    c.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:DARK_BG } };
-    c.alignment = center;
-    c.border = brd();
-  });
-
-  // ── Row 5 : Evènement ────────────────────────────────────────────────────────
-  const r5 = ws.getRow(5);
-  r5.height = 14;
-  ws.mergeCells('A5:P5');
-  const c5 = r5.getCell(1);
-  c5.value = 'Evènement';
-  c5.font  = bold8(DARK_BG);
-  c5.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFFFF8DC' } };
-  c5.alignment = { horizontal:'left', vertical:'middle' };
-  c5.border = brd();
-
-  // ── Lignes employés ──────────────────────────────────────────────────────────
-  let rowIdx = 6;
-  users.forEach((u, uIdx) => {
-    // Couleur selon shift
-    const isSoir    = u.shift === 'soir';
-    const timeFill  = isSoir ? CYAN : YELLOW;
-
-    const row = ws.getRow(rowIdx++);
-    row.height = 20;
-    const bg = uIdx % 2 === 0 ? WHITE : GREY;
-
-    // Col A : Nom
-    const na = row.getCell(1);
-    na.value = u.name;
-    na.font  = bold8(DARK_BG);
-    na.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:bg } };
-    na.alignment = { horizontal:'left', vertical:'middle' };
-    na.border = brd();
-
-    let totalFrac = 0;
-
-    DAY_COLS.forEach((startCol, i) => {
-      const dd    = dayDates[i];
-      const shift = shifts.find(s => s.user_id === u.id && s.day_date === dd);
-
-      const cS = row.getCell(startCol);      // start
-      const cE = row.getCell(startCol + 1);  // end
-
-      if (shift?.is_conge) {
-        // Congé → fusionner + texte "CONGE"
-        ws.mergeCells(rowIdx - 1, startCol, rowIdx - 1, startCol + 1);
-        cS.value = 'CONGE';
-        cS.font  = { bold:true, size:8, color:{ argb:ORANGE_D } };
-        cS.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:ORANGE_L } };
-        cS.alignment = center;
-        cS.border = brd();
-      } else if (shift?.is_off) {
-        // Repos → fusionner + "R"
-        ws.mergeCells(rowIdx - 1, startCol, rowIdx - 1, startCol + 1);
-        cS.value = 'R';
-        cS.font  = { bold:true, size:8, color:{ argb:RED_D } };
-        cS.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:RED_L } };
-        cS.alignment = center;
-        cS.border = brd();
-      } else if (shift?.start_time) {
-        let startFrac = _timeToFrac(shift.start_time);
-        let endFrac   = _timeToFrac(shift.end_time);
-        // Heures après minuit (ex. fin 01:30 quand début 17:00)
-        if (endFrac !== null && endFrac < startFrac) endFrac += 1;
-        if (startFrac !== null) totalFrac += (endFrac || 0) - startFrac;
-
-        cS.value  = startFrac;
-        cS.numFmt = 'h:mm;@';
-        cS.font   = bold8(DARK_BG);
-        cS.fill   = { type:'pattern', pattern:'solid', fgColor:{ argb:timeFill } };
-        cS.alignment = center;
-        cS.border = brd();
-
-        cE.value  = endFrac;
-        cE.numFmt = 'h:mm;@';
-        cE.font   = reg8(DARK_BG);
-        cE.fill   = { type:'pattern', pattern:'solid', fgColor:{ argb:timeFill } };
-        cE.alignment = center;
-        cE.border = brd();
-      } else {
-        // Vide
-        [cS, cE].forEach(c => {
-          c.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:bg } };
-          c.border = brd();
-        });
-      }
-    });
-
-    // Col P : Total heures
-    const cP = row.getCell(16);
-    if (totalFrac > 0) {
-      cP.value  = totalFrac;
-      cP.numFmt = '[h]:mm';
-      cP.font   = bold8(DARK_BG);
-    } else {
-      cP.value = '';
-      cP.font  = reg8();
-    }
-    cP.fill  = { type:'pattern', pattern:'solid', fgColor:{ argb:bg } };
-    cP.alignment = center;
-    cP.border = brd();
-  });
-
-  // ── Largeurs colonnes ────────────────────────────────────────────────────────
-  ws.getColumn(1).width  = 14; // A = Nom
-  for (let c = 2; c <= 15; c++) ws.getColumn(c).width = 6.5; // B-O = paires start/end
-  ws.getColumn(16).width = 9; // P = Total
-}
-
-async function generateSallePlanningExcel(weekStart) {
-  const weekEnd  = _addDays(weekStart, 6);
-  const planning = db.getSallePlanning(weekStart);
-  const events   = db.getSalleTimeEventsForWeek(weekStart);
-  const conges   = db.getAllCongeRequests().filter(c =>
-    c.status === 'approved' && c.date_from <= weekEnd && c.date_to >= weekStart
-  );
-  conges.forEach(conge => {
-    const from = conge.date_from > weekStart ? conge.date_from : weekStart;
-    const to   = conge.date_to   < weekEnd   ? conge.date_to   : weekEnd;
-    _dateRange(from, to).forEach(dayDate => {
-      if (!planning.shifts.find(s => s.user_id === conge.user_id && s.day_date === dayDate))
-        planning.shifts.push({ user_id: conge.user_id, day_date: dayDate, is_off: 1, is_conge: 1 });
-    });
-  });
-
-  const wb = new ExcelJS.Workbook();
-  wb.creator = 'Mos Pub Mercière';
-
-  // Une feuille par équipe pour coller au format original
-  for (const { label, shift } of [{ label:'MIDI', shift:'midi' }, { label:'SOIR', shift:'soir' }]) {
-    const users = planning.users.filter(u => u.shift === shift);
-    if (!users.length) continue;
-    const ws = wb.addWorksheet(label);
-    await _buildPlanningSheet(ws, {
-      users,
-      shifts: planning.shifts,
-      timeEvents: events,
-      weekStart,
-      sheetTitle: `MERCIERE — Planning ${label}`,
-    });
-  }
-
-  return wb.xlsx.writeBuffer();
-}
-
-// Endpoints valider planning (envoi Excel + retourne fichier)
-app.post('/api/salle/planning/validate', requireAdminOrManager, async (req, res) => {
-  const { weekStart } = req.body;
-  if (!weekStart) return res.status(400).json({ error: 'weekStart requis' });
-  try {
-    const buf = await generateSallePlanningExcel(weekStart);
-    const [y, m, d] = weekStart.split('-');
-    const weekEnd = _addDays(weekStart, 6);
-    const weekLabel = `${d}/${m}/${y.slice(2)} → ${_addDays(weekStart,6).split('-').reverse().join('/')}`;
-    // Email à Paul en arrière-plan
-    setImmediate(async () => {
-      const transporter = createMailTransporter();
-      if (!transporter) return;
-      try {
-        const sender = db.getSetting('email_smtp_user');
-        await transporter.sendMail({
-          from: `"Mos Pub Mercière" <${sender}>`,
-          to:   PAUL_EMAIL,
-          subject: `📅 Planning Salle — Semaine du ${weekStart}`,
-          html: `<div style="font-family:Arial,sans-serif;max-width:500px">
-            <h2 style="color:#1a3a4a">📅 Planning Salle validé</h2>
-            <p>Le planning salle de la semaine du <strong>${weekStart}</strong> au <strong>${weekEnd}</strong> a été validé par <strong>${req.session.name}</strong>.</p>
-            <p style="color:#888;font-size:12px">Planning en pièce jointe.</p>
-            <p style="color:#aaa;font-size:11px;margin-top:20px">— Mos Pub Mercière</p>
-          </div>`,
-          attachments: [{
-            filename: `Planning-Salle-${weekStart}.xlsx`,
-            content:  buf,
-            contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          }],
-        });
-        console.log(`[Planning Salle] ✅ Excel envoyé à Paul pour semaine ${weekStart}`);
-      } catch(e) { console.error('[Planning Salle] ❌ Email:', e.message); }
-    });
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="Planning-Salle-${weekStart}.xlsx"`);
-    res.send(buf);
-  } catch(e) {
-    console.error('[Planning Salle] ❌ Export:', e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
-
-app.post('/api/cuisine/planning/validate', requireCuisineManager, async (req, res) => {
-  const { weekStart } = req.body;
-  if (!weekStart) return res.status(400).json({ error: 'weekStart requis' });
-  try {
-    const buf = await generatePlanningExcel(weekStart);
-    const weekEnd = _addDays(weekStart, 6);
-    setImmediate(async () => {
-      const transporter = createMailTransporter();
-      if (!transporter) return;
-      try {
-        const sender = db.getSetting('email_smtp_user');
-        await transporter.sendMail({
-          from: `"Mos Pub Mercière" <${sender}>`,
-          to:   PAUL_EMAIL,
-          subject: `📅 Planning Cuisine — Semaine du ${weekStart}`,
-          html: `<div style="font-family:Arial,sans-serif;max-width:500px">
-            <h2 style="color:#1a3a4a">📅 Planning Cuisine validé</h2>
-            <p>Le planning cuisine de la semaine du <strong>${weekStart}</strong> au <strong>${weekEnd}</strong> a été validé par <strong>${req.session.name}</strong>.</p>
-            <p style="color:#888;font-size:12px">Planning en pièce jointe.</p>
-            <p style="color:#aaa;font-size:11px;margin-top:20px">— Mos Pub Mercière</p>
-          </div>`,
-          attachments: [{
-            filename: `Planning-Cuisine-${weekStart}.xlsx`,
-            content:  buf,
-            contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          }],
-        });
-        console.log(`[Planning Cuisine] ✅ Excel envoyé à Paul pour semaine ${weekStart}`);
-      } catch(e) { console.error('[Planning Cuisine] ❌ Email:', e.message); }
-    });
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="Planning-Cuisine-${weekStart}.xlsx"`);
-    res.send(buf);
-  } catch(e) {
-    console.error('[Planning Cuisine] ❌ Export:', e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
 
 // Routes admin email config
 app.get('/api/admin/email-config', requireAdmin, (req, res) => {
@@ -1653,426 +795,18 @@ app.put('/api/admin/email-config', requireAdmin, (req, res) => {
   if (pass) db.setSetting('email_smtp_pass', pass.trim());
   res.json({ ok:true });
 });
-app.post('/api/admin/email-test', requireAdmin, async (req, res) => {
-  const monday = _getMonday(new Date().toISOString().split('T')[0]);
-  const result = await sendWeeklyPlanningEmail(monday);
-  res.json(result);
-});
-
-// ─── Génération PDF demande de congés ──────────────────────────────────────────
-function generateCongePDF({ userName, requestedAt, dateFrom, dateTo, motif, signatureDataUrl }) {
-  return new Promise((resolve, reject) => {
-    const doc    = new PDFDocument({ size: 'A4', margin: 50 });
-    const chunks = [];
-    doc.on('data',  c => chunks.push(c));
-    doc.on('end',   () => resolve(Buffer.concat(chunks)));
-    doc.on('error', reject);
-
-    const fmtDate = d => new Date(d).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-    const primary = '#CDA443';
-    const dark    = '#1a3a4a';
-
-    // ── En-tête ──
-    doc.rect(0, 0, doc.page.width, 80).fill(dark);
-    doc.fillColor('#ffffff').fontSize(20).font('Helvetica-Bold')
-       .text('MOS PUB MERCIÈRE', 50, 28);
-    doc.fillColor(primary).fontSize(11).font('Helvetica')
-       .text('Demande de congés', 50, 52);
-
-    // ── Titre ──
-    doc.fillColor(dark).fontSize(16).font('Helvetica-Bold')
-       .text('DEMANDE DE CONGÉS', 50, 110);
-    doc.moveTo(50, 132).lineTo(545, 132).strokeColor(primary).lineWidth(2).stroke();
-
-    // ── Champs ──
-    const rows = [
-      ['Employé(e)',          userName],
-      ['Date de la demande',  requestedAt],
-      ['Début souhaité',      fmtDate(dateFrom)],
-      ['Fin souhaitée',       fmtDate(dateTo)],
-    ];
-    if (motif) rows.push(['Motif', motif]);
-
-    let y = 150;
-    rows.forEach(([label, value], i) => {
-      if (i % 2 === 0) doc.rect(50, y, 495, 28).fill('#f5f7fa');
-      doc.fillColor('#666666').fontSize(10).font('Helvetica').text(label, 60, y + 9);
-      doc.fillColor(dark).fontSize(11).font('Helvetica-Bold').text(value, 220, y + 9);
-      y += 28;
-    });
-
-    // ── Signature ──
-    y += 20;
-    doc.fillColor(dark).fontSize(11).font('Helvetica-Bold').text('Signature :', 50, y);
-    y += 20;
-
-    if (signatureDataUrl) {
-      try {
-        const b64 = signatureDataUrl.replace(/^data:image\/\w+;base64,/, '');
-        const imgBuf = Buffer.from(b64, 'base64');
-        doc.rect(50, y, 300, 100).strokeColor('#cccccc').lineWidth(1).stroke();
-        doc.image(imgBuf, 55, y + 5, { width: 290, height: 90, fit: [290, 90] });
-      } catch(e) {
-        doc.fillColor('#aaa').fontSize(10).text('[Signature non disponible]', 60, y + 40);
-      }
-    }
-
-    // ── Pied de page ──
-    doc.fillColor('#aaaaaa').fontSize(9).font('Helvetica')
-       .text('Document généré automatiquement — Mos Pub Mercière', 50, 760, { align: 'center' });
-
-    doc.end();
-  });
-}
-
-// ─── Demandes de congés ────────────────────────────────────────────────────────
-app.post('/api/staff/conge-request', requireAuth, async (req, res) => {
-  try {
-    const { dateFrom, dateTo, motif, signature } = req.body;
-    const userId   = req.session.userId;
-    const userName = req.session.name;
-    if (!dateFrom || !dateTo) return res.status(400).json({ error: 'Dates manquantes' });
-
-    // Sauvegarder en base
-    let requestId = null;
-    try {
-      requestId = db.createCongeRequest({ user_id: userId, user_name: userName, date_from: dateFrom, date_to: dateTo, motif });
-    } catch(e) {
-      console.error('[Congé] DB error:', e.message);
-      return res.status(500).json({ error: 'Erreur base de données: ' + e.message });
-    }
-
-    // Répondre immédiatement — email/PDF en arrière-plan
-    res.json({ ok: true, id: requestId });
-
-    // Générer le PDF + envoyer l'email en async (non-bloquant)
-    setImmediate(async () => {
-      const todayFr = new Date().toLocaleDateString('fr-FR');
-      let pdfBuf = null;
-      try {
-        pdfBuf = await generateCongePDF({
-          userName: userName, requestedAt: todayFr,
-          dateFrom, dateTo, motif, signatureDataUrl: signature,
-        });
-      } catch(e) { console.error('[Congé] PDF error:', e.message); }
-
-      const transporter = createMailTransporter();
-      if (!transporter) { console.log('[Congé] SMTP non configuré'); return; }
-
-      const fmtShort = d => new Date(d).toLocaleDateString('fr-FR');
-      try {
-        const sender = db.getSetting('email_smtp_user');
-        const mailOpts = {
-          from: `"Mos Pub Mercière" <${sender}>`,
-          to:   PLANNING_RECIPIENT,
-          subject: `📋 Demande de congés — ${userName}`,
-          html: `<div style="font-family:Arial,sans-serif;max-width:500px;padding:20px">
-            <h2 style="color:#1a3a4a">📋 Demande de congés</h2>
-            <p><strong>${userName}</strong> a soumis une demande de congés.</p>
-            <p>📅 Du <strong>${fmtShort(dateFrom)}</strong> au <strong>${fmtShort(dateTo)}</strong></p>
-            ${motif ? `<p>Motif : ${motif}</p>` : ''}
-            <p style="color:#888;font-size:12px">Voir le détail et la signature dans le PDF ci-joint.</p>
-            <p style="color:#aaa;font-size:11px;margin-top:20px">— Mos Pub Mercière</p>
-          </div>`,
-        };
-        if (pdfBuf) {
-          mailOpts.attachments = [{
-            filename: `Conge-${userName.replace(/\s+/g,'-')}-${dateFrom}.pdf`,
-            content:  pdfBuf,
-            contentType: 'application/pdf',
-          }];
-        }
-        await transporter.sendMail(mailOpts);
-        console.log(`[Congé] ✅ Email envoyé pour ${user.name}`);
-      } catch(err) {
-        console.error('[Congé] ❌ Email:', err.message);
-      }
-    });
-
-  } catch(e) {
-    console.error('[Congé] ❌ Route error:', e.message);
-    if (!res.headersSent) res.status(500).json({ error: e.message });
-  }
-});
-
-const PAUL_EMAIL = 'pverdier.mospub@gmail.com';
-
-app.get('/api/staff/conge-requests', requireAuth, (req, res) => {
-  res.json(db.getCongeRequestsByUser(req.session.userId));
-});
-
-app.get('/api/admin/conge-requests', requireAdminOrManager, (req, res) => {
-  if (req.session.role === 'admin') return res.json(db.getAllCongeRequests());
-  res.json(db.getCongeRequestsByShift(req.session.shift));
-});
-
-app.put('/api/admin/conge-requests/:id', requireAdminOrManager, (req, res) => {
-  const { status } = req.body;
-  if (!['pending', 'approved', 'rejected'].includes(status)) return res.status(400).json({ error: 'Statut invalide' });
-
-  const conge = db.getCongeRequestById(req.params.id);
-  if (!conge) return res.status(404).json({ error: 'Demande introuvable' });
-
-  // Un manager ne peut approuver que les demandes de son équipe
-  if (req.session.role !== 'admin') {
-    const targetUser = db.getUserById(conge.user_id);
-    if (!targetUser || targetUser.shift !== req.session.shift) {
-      return res.status(403).json({ error: 'Vous ne pouvez approuver que les congés de votre équipe' });
-    }
-  }
-
-  db.updateCongeRequestStatus(req.params.id, status, req.session.name);
-
-  // Sync planning quand la demande est approuvée ou refusée
-  if (status === 'approved' || status === 'rejected') {
-    try {
-      const user = db.getUserById(conge.user_id);
-      console.log(`[Congé] sync planning — status=${status} user_id=${conge.user_id} shift=${user?.shift} dates=${conge.date_from}→${conge.date_to}`);
-      if (user) {
-        const isCuisine = user.shift === 'cuisine';
-        const dates = _dateRange(conge.date_from, conge.date_to);
-        console.log(`[Congé] dates à insérer:`, dates, `isCuisine=${isCuisine}`);
-        dates.forEach(dayDate => {
-          const weekStart = _getMondayOf(dayDate);
-          if (status === 'approved') {
-            const params = { user_id: conge.user_id, week_start: weekStart, day_date: dayDate, start_time: null, end_time: null, is_off: 1 };
-            console.log(`[Congé] upsert planning:`, params);
-            if (isCuisine) db.upsertCuisinePlanning(params);
-            else db.upsertSallePlanning(params);
-          } else {
-            if (isCuisine) db.deleteCuisinePlanningShift(conge.user_id, dayDate);
-            else db.deleteSallePlanningShift(conge.user_id, dayDate);
-          }
-        });
-        console.log(`[Congé] sync planning terminée`);
-      } else {
-        console.warn(`[Congé] user_id=${conge.user_id} introuvable en DB`);
-      }
-    } catch(e) {
-      console.error('[Congé] Erreur sync planning:', e.message, e.stack);
-    }
-  }
-
-  // Email à Paul quand un congé est approuvé
-  if (status === 'approved') {
-    setImmediate(async () => {
-      const transporter = createMailTransporter();
-      if (!transporter) return;
-      const fmtShort = d => new Date(d).toLocaleDateString('fr-FR');
-      const approvedBy = req.session.name;
-      try {
-        const sender = db.getSetting('email_smtp_user');
-        await transporter.sendMail({
-          from: `"Mos Pub Mercière" <${sender}>`,
-          to: PAUL_EMAIL,
-          subject: `✅ Congé approuvé — ${conge.user_name}`,
-          html: `<div style="font-family:Arial,sans-serif;max-width:500px;padding:20px">
-            <h2 style="color:#1a3a4a">✅ Congé approuvé</h2>
-            <p>Le congé de <strong>${conge.user_name}</strong> a été validé par <strong>${approvedBy}</strong>.</p>
-            <p>📅 Du <strong>${fmtShort(conge.date_from)}</strong> au <strong>${fmtShort(conge.date_to)}</strong></p>
-            ${conge.motif ? `<p>Motif : ${conge.motif}</p>` : ''}
-            <p style="color:#aaa;font-size:11px;margin-top:20px">— Mos Pub Mercière</p>
-          </div>`,
-        });
-        console.log(`[Congé] ✅ Email approbation envoyé à Paul pour ${conge.user_name}`);
-      } catch(err) {
-        console.error('[Congé] ❌ Email approbation:', err.message);
-      }
-    });
-  }
-
-  res.json({ ok: true });
-});
-
-// ─── Planning PDF salle ────────────────────────────────────────────────────────
-app.use('/uploads/planning', requireAuth, express.static(PLANNING_DIR));
-
-app.post('/api/admin/planning-pdf', requireAdminOrManager, uploadPlanning.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'PDF requis (max 20 Mo)' });
-  // Supprimer l'ancien fichier
-  const old = db.getLatestPlanningPDF();
-  if (old) {
-    const oldPath = path.join(PLANNING_DIR, old.filename);
-    if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-    db.deletePlanningPDF(old.id);
-  }
-  db.addPlanningPDF({
-    filename: req.file.filename,
-    original_name: req.file.originalname,
-    uploaded_by: req.session.userId,
-  });
-  res.json(db.getLatestPlanningPDF());
-});
-
-app.get('/api/staff/planning-pdf', requireAuth, (req, res) => {
-  const pdf = db.getLatestPlanningPDF();
-  res.json(pdf ? { ...pdf, url: `/uploads/planning/${pdf.filename}` } : null);
-});
-
-// ─── Instagram Planificateur ───────────────────────────────────────────────────
-function requireMarketing(req, res, next) {
-  if (req.session.userId && (req.session.role === 'admin' || req.session.shift === 'marketing'))
-    return next();
-  res.status(403).json({ error: 'Accès réservé marketing/admin' });
-}
-
-// Sert les médias Instagram
-app.use('/uploads/instagram', requireMarketing, express.static(INSTAGRAM_DIR));
-
-// ── Comptes ──
-app.get('/api/instagram/accounts', requireMarketing, (req, res) => {
-  res.json(db.getInstagramAccounts());
-});
-
-app.post('/api/instagram/accounts', requireMarketing, (req, res) => {
-  const { name, username, account_type, ig_user_id, ig_page_id, access_token, token_expires_at, avatar_url } = req.body;
-  if (!name) return res.status(400).json({ error: 'Nom requis' });
-  const id = db.createInstagramAccount({ name, username, account_type, ig_user_id, ig_page_id, access_token, token_expires_at, avatar_url, created_by: req.session.userId });
-  const account = db.getInstagramAccountById(id);
-  io.emit('instagram:account:created', account);
-  res.json(account);
-});
-
-app.put('/api/instagram/accounts/:id', requireMarketing, (req, res) => {
-  db.updateInstagramAccount(req.params.id, req.body);
-  const account = db.getInstagramAccountById(req.params.id);
-  io.emit('instagram:account:updated', account);
-  res.json(account);
-});
-
-app.delete('/api/instagram/accounts/:id', requireMarketing, (req, res) => {
-  db.deleteInstagramAccount(req.params.id);
-  io.emit('instagram:account:deleted', { id: parseInt(req.params.id) });
-  res.json({ ok: true });
-});
-
-// Test connexion compte Instagram
-app.get('/api/instagram/accounts/:id/check', requireMarketing, async (req, res) => {
-  const account = db.getInstagramAccountById(req.params.id);
-  if (!account) return res.status(404).json({ error: 'Compte introuvable' });
-  if (!account.ig_user_id || !account.access_token) {
-    return res.json({ ok: false, error: 'Identifiants manquants' });
-  }
-  try {
-    const data = await new Promise((resolve, reject) => {
-      const url = `https://graph.facebook.com/v21.0/${account.ig_user_id}?fields=name,username&access_token=${account.access_token}`;
-      https.get(url, { headers: { 'User-Agent': 'MosPub/1.0' } }, (r) => {
-        let body = '';
-        r.on('data', c => body += c);
-        r.on('end', () => {
-          try { resolve(JSON.parse(body)); } catch { reject(new Error('Réponse invalide')); }
-        });
-      }).on('error', reject);
-    });
-    if (data.error) return res.json({ ok: false, error: data.error.message });
-    res.json({ ok: true, name: data.name, username: data.username });
-  } catch(e) {
-    res.json({ ok: false, error: e.message });
-  }
-});
-
-// ── Posts ──
-app.get('/api/instagram/posts', requireMarketing, (req, res) => {
-  const { accountId, status, from, to } = req.query;
-  res.json(db.getInstagramPosts({ accountId, status, from, to }));
-});
-
-app.get('/api/instagram/posts/:id', requireMarketing, (req, res) => {
-  const post = db.getInstagramPostById(req.params.id);
-  if (!post) return res.status(404).json({ error: 'Post introuvable' });
-  const media = db.getInstagramMedia(req.params.id);
-  res.json({ ...post, media });
-});
-
-app.post('/api/instagram/posts', requireMarketing, (req, res) => {
-  const { account_id, caption, status, scheduled_at } = req.body;
-  if (!account_id) return res.status(400).json({ error: 'Compte requis' });
-  if (status === 'scheduled' && !scheduled_at) return res.status(400).json({ error: 'Date requise pour planification' });
-  const id = db.createInstagramPost({ account_id, caption, status: status || 'draft', scheduled_at, created_by: req.session.userId });
-  const post = db.getInstagramPostById(id);
-  io.emit('instagram:post:created', post);
-  res.json(post);
-});
-
-app.put('/api/instagram/posts/:id', requireMarketing, (req, res) => {
-  const { account_id, caption, status, scheduled_at } = req.body;
-  if (status === 'scheduled' && !scheduled_at) return res.status(400).json({ error: 'Date requise pour planification' });
-  db.updateInstagramPost(req.params.id, { account_id, caption, status, scheduled_at });
-  const post = db.getInstagramPostById(req.params.id);
-  io.emit('instagram:post:updated', post);
-  res.json(post);
-});
-
-app.delete('/api/instagram/posts/:id', requireMarketing, (req, res) => {
-  const media = db.deleteInstagramPost(req.params.id);
-  media.forEach(m => { try { fs.unlinkSync(path.join(INSTAGRAM_DIR, m.filename)); } catch(e) {} });
-  io.emit('instagram:post:deleted', { id: parseInt(req.params.id) });
-  res.json({ ok: true });
-});
-
-// Publication manuelle
-app.post('/api/instagram/posts/:id/publish', requireMarketing, async (req, res) => {
-  const post = db.getInstagramPostById(req.params.id);
-  if (!post) return res.status(404).json({ error: 'Post introuvable' });
-  if (['publishing', 'published'].includes(post.status)) return res.status(400).json({ error: 'Post déjà en cours de publication ou publié' });
-  db.updateInstagramPost(req.params.id, { status: 'scheduled', scheduled_at: post.scheduled_at || new Date().toISOString().slice(0,16).replace('T',' ') });
-  res.json({ ok: true, message: 'Publication en cours…' });
-  publishInstagramPost(parseInt(req.params.id));
-});
-
-// ── Médias ──
-app.post('/api/instagram/posts/:id/media', requireMarketing, uploadInstagram.single('file'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'Fichier requis (JPEG/PNG/WebP)' });
-  const post = db.getInstagramPostById(req.params.id);
-  if (!post) {
-    fs.unlinkSync(req.file.path);
-    return res.status(404).json({ error: 'Post introuvable' });
-  }
-  const existing = db.getInstagramMedia(req.params.id);
-  if (existing.length >= 10) {
-    fs.unlinkSync(req.file.path);
-    return res.status(400).json({ error: 'Maximum 10 images par post (carrousel)' });
-  }
-  const id = db.addInstagramMedia(req.params.id, {
-    filename: req.file.filename,
-    original_name: req.file.originalname,
-    mimetype: req.file.mimetype,
-    size: req.file.size,
-    sort_order: existing.length
-  });
-  res.json(db.getInstagramMediaById(id));
-});
-
-app.delete('/api/instagram/media/:mediaId', requireMarketing, (req, res) => {
-  const row = db.deleteInstagramMedia(req.params.mediaId);
-  if (row) { try { fs.unlinkSync(path.join(INSTAGRAM_DIR, row.filename)); } catch(e) {} }
-  res.json({ ok: true });
-});
-
-app.put('/api/instagram/posts/:id/media/reorder', requireMarketing, (req, res) => {
-  const { order } = req.body;
-  if (!Array.isArray(order)) return res.status(400).json({ error: 'order[] requis' });
-  db.reorderInstagramMedia(req.params.id, order);
-  res.json({ ok: true });
-});
-
-// Config Instagram (admin)
-app.get('/api/instagram/config', requireAdmin, (req, res) => {
-  res.json({
-    server_public_url: db.getSetting('server_public_url') || '',
-    instagram_api_configured: db.getSetting('instagram_api_configured') || '0',
-  });
-});
-
-app.put('/api/instagram/config', requireAdmin, (req, res) => {
-  const { server_public_url, instagram_api_configured } = req.body;
-  if (server_public_url !== undefined) db.setSetting('server_public_url', server_public_url);
-  if (instagram_api_configured !== undefined) db.setSetting('instagram_api_configured', instagram_api_configured);
-  res.json({ ok: true });
+// ─── Direction — Vue d'ensemble ───────────────────────────────────────────────
+app.get('/api/direction/overview', requireDirection, (req, res) => {
+  const today = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
+  const pointages = db.getAllPointagesForDate(today);
+  res.json({ today, pointages });
 });
 
 // ─── Webhook déploiement automatique ───────────────────────────────────────────
 const DEPLOY_TOKEN = process.env.DEPLOY_TOKEN || 'mos-deploy-secret';
+if (!process.env.DEPLOY_TOKEN || process.env.DEPLOY_TOKEN === 'mos-deploy-secret') {
+  console.warn('⚠️  DEPLOY_TOKEN non sécurisé — définir DEPLOY_TOKEN dans .env en production (accès git pull + pm2 restart).');
+}
 app.post('/webhook/deploy', express.json(), (req, res) => {
   const token = req.headers['x-deploy-token'] || req.query.token;
   if (token !== DEPLOY_TOKEN) {
@@ -2081,7 +815,7 @@ app.post('/webhook/deploy', express.json(), (req, res) => {
   res.json({ ok: true, message: 'Déploiement en cours…' });
   console.log('[Deploy] 🚀 Webhook reçu — git pull + pm2 restart');
   exec(
-    'cd /var/www/mos && git pull origin main && pm2 restart mos-pub',
+    'cd /var/www/mos && git pull origin main && pm2 reload mos-pub',
     (err, stdout, stderr) => {
       if (err) console.error('[Deploy] ❌', err.message);
       else console.log('[Deploy] ✅\n', stdout);
@@ -2089,276 +823,20 @@ app.post('/webhook/deploy', express.json(), (req, res) => {
   );
 });
 
-// ─── Instagram — Publication automatique ───────────────────────────────────────
-async function igHttpPost(urlStr, bodyObj) {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify(bodyObj);
-    const urlParsed = new URL(urlStr);
-    const options = {
-      hostname: urlParsed.hostname,
-      path: urlParsed.pathname + urlParsed.search,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
-    };
-    const req = https.request(options, (r) => {
-      let data = '';
-      r.on('data', c => data += c);
-      r.on('end', () => {
-        try { resolve(JSON.parse(data)); } catch { reject(new Error('Réponse API invalide')); }
-      });
-    });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
-  });
-}
-
-async function publishInstagramPost(postId) {
-  const post = db.getInstagramPostById(postId);
-  if (!post || post.status !== 'scheduled') return;
-
-  // Marquer comme en cours pour éviter le double-déclenchement
-  db.updateInstagramPost(postId, { status: 'publishing' });
-  io.emit('instagram:post:publishing', { id: postId });
-
-  const media = db.getInstagramMedia(postId);
-
-  if (!post.ig_user_id || !post.access_token) {
-    db.updateInstagramPost(postId, { status: 'failed', error_message: 'Compte Instagram non configuré (token manquant)' });
-    io.emit('instagram:post:failed', { id: postId, error: 'Token manquant — configurez le compte dans Instagram > Comptes' });
-    return;
-  }
-  if (!media.length) {
-    db.updateInstagramPost(postId, { status: 'failed', error_message: 'Aucun média attaché au post' });
-    io.emit('instagram:post:failed', { id: postId, error: 'Aucun média attaché' });
-    return;
-  }
-
-  try {
-    const baseUrl = db.getSetting('server_public_url') || '';
-    if (!baseUrl) throw new Error('URL publique du serveur non configurée (Instagram > Config)');
-
-    const token  = post.access_token;
-    const igId   = post.ig_user_id;
-    const apiBase = `https://graph.facebook.com/v21.0`;
-
-    let containerId;
-
-    if (media.length === 1) {
-      // Post simple
-      const imageUrl = `${baseUrl}/uploads/instagram/${media[0].filename}`;
-      const r = await igHttpPost(`${apiBase}/${igId}/media?access_token=${token}`, {
-        image_url: imageUrl,
-        caption: post.caption || ''
-      });
-      if (r.error) throw new Error(r.error.message);
-      containerId = r.id;
-    } else {
-      // Carrousel
-      const childIds = [];
-      for (const m of media) {
-        const imageUrl = `${baseUrl}/uploads/instagram/${m.filename}`;
-        const r = await igHttpPost(`${apiBase}/${igId}/media?access_token=${token}`, {
-          image_url: imageUrl,
-          is_carousel_item: true
-        });
-        if (r.error) throw new Error(r.error.message);
-        childIds.push(r.id);
-      }
-      const rc = await igHttpPost(`${apiBase}/${igId}/media?access_token=${token}`, {
-        media_type: 'CAROUSEL',
-        children: childIds.join(','),
-        caption: post.caption || ''
-      });
-      if (rc.error) throw new Error(rc.error.message);
-      containerId = rc.id;
-    }
-
-    // Publier le container
-    const rp = await igHttpPost(`${apiBase}/${igId}/media_publish?access_token=${token}`, {
-      creation_id: containerId
-    });
-    if (rp.error) throw new Error(rp.error.message);
-
-    const permalink = `https://www.instagram.com/p/${rp.id}/`;
-    const publishedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    db.updateInstagramPost(postId, { status: 'published', published_at: publishedAt, ig_media_id: containerId, ig_permalink: permalink });
-    io.emit('instagram:post:published', { id: postId, permalink });
-    console.log(`[Instagram] ✅ Post #${postId} publié — ${permalink}`);
-
-  } catch(err) {
-    console.error(`[Instagram] ❌ Erreur publication post #${postId}:`, err.message);
-    db.updateInstagramPost(postId, { status: 'failed', error_message: err.message.substring(0, 500) });
-    io.emit('instagram:post:failed', { id: postId, error: err.message });
-  }
-}
-
-// Cron : publication auto toutes les minutes
-setInterval(async () => {
-  const due = db.getDueInstagramPosts();
-  for (const post of due) {
-    await publishInstagramPost(post.id);
-  }
-}, 60 * 1000);
-
-// Cron : alerte token expirant (une fois par jour)
-setInterval(() => {
-  const accounts = db.getInstagramAccounts();
-  const now = new Date();
-  accounts.forEach(acc => {
-    if (!acc.token_expires_at) return;
-    const daysLeft = Math.ceil((new Date(acc.token_expires_at) - now) / (1000 * 60 * 60 * 24));
-    if (daysLeft <= 7 && daysLeft > 0) {
-      io.emit('instagram:token_expiring', { accountId: acc.id, accountName: acc.name, daysLeft });
-    }
-  });
-}, 24 * 60 * 60 * 1000);
-
-// ─── Snapshot quotidien des heures salle ───────────────────────────────────────
-function _takeSalleSnapshot(date) {
-  try {
-    const weekStart = (() => {
-      const d = new Date(date); const day = d.getDay();
-      d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
-      return d.toISOString().split('T')[0];
-    })();
-    const { users, shifts } = db.getSallePlanning(weekStart);
-    const timeEventsDay = db.getSalleTimeEventsForWeek(date).filter(e => e.date === date);
-
-    for (const u of users) {
-      const plan = shifts.find(s => s.user_id === u.id && s.day_date === date);
-
-      const plannedMin = (() => {
-        if (!plan || plan.is_off || !plan.start_time || !plan.end_time) return 0;
-        const [sh, sm] = plan.start_time.slice(0,5).split(':').map(Number);
-        const [eh, em] = plan.end_time.slice(0,5).split(':').map(Number);
-        return Math.max(0, (eh * 60 + em) - (sh * 60 + sm));
-      })();
-
-      const suppMin = timeEventsDay.filter(e => e.user_id === u.id).reduce((acc, e) => acc + (e.minutes || 0), 0);
-
-      db.upsertSalleSnapshot({
-        user_id: u.id, date,
-        planned_start: plan?.start_time?.slice(0, 5) || null,
-        planned_end:   plan?.end_time?.slice(0, 5) || null,
-        actual_start: null, actual_end: null,
-        total_planned_min: plannedMin,
-        total_actual_min: 0,
-        supp_min: suppMin,
-      });
-    }
-    console.log(`[Snapshot] ✅ Salle ${date}`);
-  } catch(e) {
-    console.error('[Snapshot] ❌', e.message);
-  }
-}
-
-// Cron : snapshot quotidien à 23h45 (Paris)
-setInterval(() => {
-  const now = new Date();
-  const paris = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-  if (paris.getHours() === 23 && paris.getMinutes() === 45) {
-    const date = paris.toISOString().split('T')[0];
-    _takeSalleSnapshot(date);
-  }
-}, 60 * 1000);
-
-// Cron : rapport hebdo températures tous les lundis à 07h00 (Paris)
-setInterval(async () => {
-  const now = new Date();
-  const paris = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-  if (paris.getDay() !== 1 || paris.getHours() !== 7 || paris.getMinutes() !== 0) return;
-
-  const todayStr = paris.toISOString().split('T')[0];
-  const lastSent = db.getSetting('temp_report_last_sent');
-  if (lastSent === todayStr) return;
-
-  try {
-    const to = new Date(paris); to.setDate(to.getDate() - 1);
-    const from = new Date(to); from.setDate(from.getDate() - 6);
-    const fromStr = from.toISOString().split('T')[0];
-    const toStr   = to.toISOString().split('T')[0];
-    const rows = db.getTempWeekReport(fromStr, toStr);
-    if (!rows.length) return;
-
-    const transporter = createMailTransporter();
-    if (!transporter) return;
-
-    const fmt = d => new Date(d).toLocaleDateString('fr-FR');
-    const weekLabel = `${fmt(fromStr)} → ${fmt(toStr)}`;
-
-    const hors = rows.filter(r => r.statut === 'hors_plage');
-    const limite = rows.filter(r => r.statut === 'limite');
-
-    const tableRows = rows.map(r => {
-      const color = r.statut === 'ok' ? '#d4edda' : r.statut === 'limite' ? '#fff3cd' : '#f8d7da';
-      const icon  = r.statut === 'ok' ? '✅' : r.statut === 'limite' ? '⚠️' : '❌';
-      return `<tr style="background:${color}">
-        <td style="padding:4px 8px;border:1px solid #ddd">${r.date}</td>
-        <td style="padding:4px 8px;border:1px solid #ddd">${r.shift.toUpperCase()}</td>
-        <td style="padding:4px 8px;border:1px solid #ddd">${r.materiel_nom}</td>
-        <td style="padding:4px 8px;border:1px solid #ddd">${r.materiel_type === 'positif' ? 'Positif' : 'Négatif'}</td>
-        <td style="padding:4px 8px;border:1px solid #ddd;font-weight:bold">${r.temperature}°C</td>
-        <td style="padding:4px 8px;border:1px solid #ddd">${icon} ${r.statut}</td>
-        <td style="padding:4px 8px;border:1px solid #ddd">${r.user_name || ''}</td>
-      </tr>`;
-    }).join('');
-
-    const alertBlock = hors.length ? `
-      <div style="background:#f8d7da;border:1px solid #f5c6cb;padding:12px;border-radius:6px;margin-bottom:16px">
-        <strong>❌ ${hors.length} relevé(s) hors plage cette semaine</strong><br>
-        ${hors.map(r => `${r.date} ${r.shift.toUpperCase()} — ${r.materiel_nom} : <strong>${r.temperature}°C</strong>`).join('<br>')}
-      </div>` : '';
-
-    const limiteBlock = limite.length ? `
-      <div style="background:#fff3cd;border:1px solid #ffeeba;padding:12px;border-radius:6px;margin-bottom:16px">
-        <strong>⚠️ ${limite.length} relevé(s) en limite cette semaine</strong><br>
-        ${limite.map(r => `${r.date} ${r.shift.toUpperCase()} — ${r.materiel_nom} : <strong>${r.temperature}°C</strong>`).join('<br>')}
-      </div>` : '';
-
-    await transporter.sendMail({
-      from: `"Mos Pub Mercière" <${db.getSetting('email_smtp_user')}>`,
-      to:   PLANNING_RECIPIENT,
-      subject: `🌡️ Relevés températures cuisine — Semaine ${weekLabel}`,
-      html: `<div style="font-family:Arial,sans-serif;max-width:700px">
-        <h2 style="color:#1a3a4a">🌡️ Relevés températures — ${weekLabel}</h2>
-        ${alertBlock}${limiteBlock}
-        <table style="border-collapse:collapse;width:100%;font-size:13px">
-          <thead><tr style="background:#1a3a4a;color:#fff">
-            <th style="padding:6px 8px;border:1px solid #ddd">Date</th>
-            <th style="padding:6px 8px;border:1px solid #ddd">Shift</th>
-            <th style="padding:6px 8px;border:1px solid #ddd">Matériel</th>
-            <th style="padding:6px 8px;border:1px solid #ddd">Type</th>
-            <th style="padding:6px 8px;border:1px solid #ddd">Temp.</th>
-            <th style="padding:6px 8px;border:1px solid #ddd">Statut</th>
-            <th style="padding:6px 8px;border:1px solid #ddd">Par</th>
-          </tr></thead>
-          <tbody>${tableRows}</tbody>
-        </table>
-        <p style="color:#888;font-size:12px;margin-top:16px">— Mos Pub Mercière</p>
-      </div>`,
-    });
-    db.setSetting('temp_report_last_sent', todayStr);
-    console.log(`[Temp] ✅ Rapport hebdo envoyé à ${PLANNING_RECIPIENT} (${fromStr} → ${toStr})`);
-  } catch(e) {
-    console.error('[Temp] ❌ Erreur envoi rapport:', e.message);
-  }
-}, 60 * 1000);
-
 // Auto-sync Joy.io au démarrage puis toutes les 2 min
 setTimeout(syncJoyEvents, 8000);
 setInterval(syncJoyEvents, 2 * 60 * 1000);
 
 setInterval(() => {
   const now = new Date();
-  const today = now.toISOString().split('T')[0];
+  const today = now.toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
   const reservations = db.getReservationsByDate(today);
 
   reservations.forEach(r => {
     if (r.status !== 'confirmed' || alertedReservations.has(r.id)) return;
-    const [rHour, rMin] = r.time.split(':').map(Number);
-    const alertTime = new Date(now);
-    alertTime.setHours(rHour, rMin + 15, 0, 0);
+    // Calcul via timestamp pour éviter le débordement de minutes (ex: 23h50 + 15min = 00h05)
+    const resaTime  = new Date(`${today}T${r.time}:00`);
+    const alertTime = new Date(resaTime.getTime() + 15 * 60 * 1000);
     if (now >= alertTime) {
       alertedReservations.add(r.id);
       io.emit('alert:no_show', {
@@ -2378,5 +856,20 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log('\n🍺 Maker of Simplicity — Mos Pub Mercière');
   console.log(`📡 Serveur démarré sur http://localhost:${PORT}`);
-  console.log('🔑 PIN Admin par défaut : 0000\n');
+
+  // Vérification sécurité PINs faibles (async pour ne pas bloquer le démarrage)
+  setImmediate(() => {
+    try {
+      const weak = db.checkWeakAdminPins();
+      if (weak.length) {
+        console.warn('\n⚠️  SÉCURITÉ — Admin(s) avec PIN faible détecté(s) :');
+        weak.forEach(w => console.warn(`   ✗ ${w.name} utilise le PIN "${w.pin}" — à changer immédiatement`));
+        console.warn('   → Rendez-vous dans /admin/equipe.html pour modifier le PIN.\n');
+      } else {
+        console.log('✅ Sécurité PINs : aucun PIN faible détecté sur les comptes admin/direction.\n');
+      }
+    } catch(e) {
+      console.warn('⚠️  Impossible de vérifier les PINs admin :', e.message);
+    }
+  });
 });

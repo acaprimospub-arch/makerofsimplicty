@@ -60,7 +60,7 @@
   /* ── Layout ── */
   --nav-height:        64px;
   --bottom-nav-height: 64px;
-  --font: 'Inter', system-ui, -apple-system, sans-serif;
+  --font: 'Inter', system-ui, -apple-system, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
 }
 
 /* ─── Reset ──────────────────────────────────────────────────── */
@@ -1258,17 +1258,28 @@ tbody tr:hover td { background: rgba(255,255,255,0.025); transition: background 
 
 /* ─── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
+  :root {
+    --nav-height: 52px;
+  }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .form-row-2, .form-row-3 { grid-template-columns: 1fr; }
   .reservation-panel { width: 100%; }
-  .container, .container-sm, .container-lg { padding: 0 14px 80px; }
+  .container, .container-sm, .container-lg { padding: 0 12px calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 24px); }
   .page {
-    padding-top: calc(var(--nav-height) + 14px);
-    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 20px);
+    /* Nav est sticky (en flux), pas besoin de padding-top de compensation */
+    padding-top: 0;
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 24px);
   }
   .bottom-nav { display: block; }
   .nav-links { display: none; }
-  .nav { padding: 0 14px; position: relative; }
+  /* Nav sticky sur mobile : reste visible au défilement sans occuper d'espace fixe */
+  .nav {
+    padding: 0 12px;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    height: var(--nav-height);
+  }
   .nav-logo-desktop { display: none; }
   .nav-logo-mobile { display: flex; }
   .nav-page-title {
@@ -1276,35 +1287,37 @@ tbody tr:hover td { background: rgba(255,255,255,0.025); transition: background 
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     font-weight: 700;
     color: var(--text);
     pointer-events: none;
     white-space: nowrap;
-    max-width: 42vw;
+    max-width: 38vw;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .page-title { display: none; }
-  .page-header { margin-bottom: 10px; }
-  .nav-user { font-size: 0.76rem; }
+  /* Masquer le nom utilisateur sur mobile (espace précieux) */
+  .nav-user { display: none; }
   .btn-logout { padding: 5px 10px; font-size: 0.76rem; min-height: 32px; }
+  .page-title { display: none; }
+  .page-header { margin-bottom: 12px; gap: 10px; }
   .task-item { padding: 14px; min-height: 56px; }
   .task-checkbox { width: 24px; height: 24px; }
   .btn { min-height: 48px; }
   .btn-sm { min-height: 38px; }
   input, select, textarea { font-size: 16px !important; }
   .page-title { font-size: 1.22rem; }
-  .card { padding: 16px; }
-  .modal { padding: 22px; }
+  .card { padding: 14px; }
+  .modal { padding: 20px; }
   .kpi-value { font-size: 1.65rem; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   #toast-container {
     bottom: calc(var(--bottom-nav-height) + 16px + env(safe-area-inset-bottom));
-    right: 12px;
-    left: 12px;
+    right: 10px;
+    left: 10px;
   }
   .toast { max-width: 100%; }
-  .modal-overlay { padding: 12px; align-items: flex-end; }
+  .modal-overlay { padding: 10px; align-items: flex-end; }
   .modal {
     border-radius: var(--radius) var(--radius) 0 0;
     max-height: 90dvh;
@@ -1313,6 +1326,12 @@ tbody tr:hover td { background: rgba(255,255,255,0.025); transition: background 
   }
   .menu-tile-icon { width: 42px; height: 42px; border-radius: 12px; }
   .menu-tile-icon svg { width: 22px; height: 22px; }
+  /* Section dividers moins lourds */
+  .section-divider { margin: 20px 0 14px; }
+  /* Tables sortables : permettre scroll horizontal */
+  .table-wrap { border-radius: var(--radius-sm); }
+  /* Page actions en colonne sur petits écrans */
+  .page-actions { width: 100%; }
 }
 
 /* ─── prefers-reduced-motion ─────────────────────────────────── */

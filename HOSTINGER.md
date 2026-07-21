@@ -46,6 +46,32 @@ bash setup.sh
 cd /var/www/mos
 git clone https://github.com/TON_COMPTE/mos-pub.git .
 npm install --production
+```
+
+### Étape 3b — Créer le fichier `.env` sur le VPS
+
+**Obligatoire avant de démarrer l'app.** Sans ces variables, les sessions sont invalides à chaque redémarrage et le webhook deploy est non sécurisé.
+
+```bash
+cat > /var/www/mos/.env << 'EOF'
+NODE_ENV=production
+PORT=3000
+
+# Générer : node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+SESSION_SECRET=REMPLACER_PAR_UNE_VRAIE_VALEUR
+
+# Générer : node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+DEPLOY_TOKEN=REMPLACER_PAR_UN_VRAI_TOKEN
+
+# Emails
+PLANNING_RECIPIENT=pverdier.mospub@gmail.com
+PAUL_EMAIL=pverdier.mospub@gmail.com
+EOF
+
+chmod 600 /var/www/mos/.env
+```
+
+```bash
 pm2 start ecosystem.config.js
 pm2 save
 ```
@@ -81,11 +107,12 @@ certbot --nginx -d mospub.com
 ```bash
 pm2 status              # État de l'app
 pm2 logs mos-pub        # Voir les logs en temps réel
-pm2 restart mos-pub     # Redémarrer manuellement
+pm2 reload mos-pub      # Redémarrer avec fermeture gracieuse (préféré)
+pm2 restart mos-pub     # Redémarrage brutal (si reload échoue)
 pm2 stop mos-pub        # Arrêter
 
 # Mettre à jour manuellement sans GitHub Actions
-cd /var/www/mos && git pull && npm install --production && pm2 restart mos-pub
+cd /var/www/mos && git pull && npm install --production && pm2 reload mos-pub
 ```
 
 ## 💾 Backup de la base de données

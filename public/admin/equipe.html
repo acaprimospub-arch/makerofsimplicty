@@ -248,6 +248,7 @@
                 <option value="staff_marketing">Staff Marketing</option>
                 <option value="staff_resa">Staff Réservations</option>
                 <option value="staff_pointeuse">Pointeuse</option>
+                <option value="direction">Direction</option>
               </select>
             </div>
           </div>
@@ -352,6 +353,7 @@
     }
     function posteLabel(s) {
       if (s.role === 'admin')                         return { label: 'Admin',          cls: 'badge-primary' };
+      if (s.role === 'direction')                     return { label: 'Direction',       cls: 'badge-primary' };
       if (s.role === 'manager' && s.shift === 'midi') return { label: 'Manager Midi',   cls: 'badge-warning' };
       if (s.role === 'manager' && s.shift === 'soir') return { label: 'Manager Soir',   cls: 'badge-warning' };
       if (s.shift === 'midi')      return { label: 'Staff Midi',     cls: 'badge-info'    };
@@ -563,7 +565,9 @@
       document.getElementById('staff-id').value = s.id;
       document.getElementById('staff-name').value = s.name;
       document.getElementById('staff-pin').value = '';
-      const poste = (s.role === 'manager' ? 'manager' : 'staff') + '_' + (s.shift || 'midi');
+      let poste;
+      if (s.role === 'admin' || s.role === 'direction') poste = s.role;
+      else poste = (s.role === 'manager' ? 'manager' : 'staff') + '_' + (s.shift || 'midi');
       const select = document.getElementById('staff-poste');
       if ([...select.options].some(o => o.value === poste)) select.value = poste;
       document.getElementById('staff-email').value = s.email || '';

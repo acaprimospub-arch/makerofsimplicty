@@ -4,8 +4,8 @@
   "description": "Gestion du Mos Pub Mercière",
   "main": "server.js",
   "scripts": {
-    "start": "node --experimental-sqlite server.js",
-    "dev": "npx nodemon --exec 'node --experimental-sqlite' server.js"
+    "start": "node --experimental-sqlite --env-file=.env server.js",
+    "dev": "npx nodemon --exec 'node --experimental-sqlite --env-file=.env' server.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

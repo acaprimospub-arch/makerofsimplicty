@@ -524,7 +524,44 @@
   </div>
 
 
-  <!-- ══ 6. PLANNING ══ -->
+  <!-- ══ 6. POINTEUSE ══ -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">⏱️</span>
+      <div>
+        <div class="section-title">Pointeuse</div>
+        <div class="section-subtitle">Enregistrer son arrivée et son départ</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Pointer l'arrivée</div>
+            <div class="step-desc">Menu → <strong>Pointeuse</strong>. Appuyer sur <strong>Pointer l'arrivée</strong>. L'heure est enregistrée automatiquement.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Pointer le départ</div>
+            <div class="step-desc">En fin de service, revenir sur la Pointeuse et appuyer sur <strong>Pointer le départ</strong>. La durée du service est calculée automatiquement.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Historique des 14 derniers jours</div>
+            <div class="step-desc">Sous le bouton, l'historique affiche tes pointages avec l'heure d'arrivée, de départ et la durée totale pour chaque journée.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ 7. PLANNING ══ -->
   <div class="section">
     <div class="section-header">
       <span class="section-icon">📅</span>
@@ -657,12 +694,15 @@
   </div>
 
   <div class="doc-footer">
-    Mos Pub Mercière — Guide Staff Salle — Mai 2026 · Pour toute question, contacter le manager
+    Mos Pub Mercière — Guide Staff Salle — Mai 2026 · Problème avec l'app ? Contacter Arthur ou Paul (admins)
   </div>
 
 </div>
 
 <button class="print-btn no-print" onclick="window.print()">🖨️ Télécharger PDF</button>
 
+<script>
+fetch('/api/auth/me').then(r => { if (r.status === 401) window.location.href = '/'; });
+</script>
 </body>
 </html>

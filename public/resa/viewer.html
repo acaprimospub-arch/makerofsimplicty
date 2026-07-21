@@ -163,7 +163,11 @@
       }
     }
 
-    loadViewer();
+    // Vérifie la session avant d'afficher le contenu
+    api.get('/api/auth/me').then(user => {
+      if (!user) return; // api.get redirige déjà vers '/' sur 401
+      loadViewer();
+    });
   </script>
 </body>
 </html>

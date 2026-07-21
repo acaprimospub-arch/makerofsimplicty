@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Direction — Mos Pub Mercière</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    /* ── KPI cards ─────────────────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .kpi-label {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .8px; color: var(--text-muted);
+    }
+    .kpi-value {
+      font-size: 2rem; font-weight: 800; color: var(--text);
+      line-height: 1.1;
+    }
+    .kpi-value.gold    { color: var(--primary); }
+    .kpi-value.success { color: var(--success); }
+    .kpi-value.danger  { color: var(--danger); }
+    .kpi-sub { font-size: .78rem; color: var(--text-muted); }
+
+    /* ── Tabs ──────────────────────────────────────────────── */
+    .dir-tabs {
+      display: flex; gap: 4px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .dir-tab {
+      background: none; border: none; border-bottom: 2px solid transparent;
+      color: var(--text-muted); font-size: .9rem; font-weight: 600;
+      padding: 10px 18px; cursor: pointer; margin-bottom: -1px;
+      transition: color .15s, border-color .15s;
+    }
+    .dir-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .dir-tab:hover:not(.active) { color: var(--text); }
+
+    /* ── Congé list ────────────────────────────────────────── */
+    .conge-row {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .conge-row:last-child { border-bottom: none; }
+    .conge-name { font-weight: 700; min-width: 110px; }
+    .conge-dates { font-size: .85rem; color: var(--text-muted); flex: 1; }
+    .conge-motif { font-size: .8rem; color: var(--text-muted); font-style: italic; flex: 1; }
+    .badge-pending  { background: rgba(230,162,60,.15); color: #e6a23c; border-radius: 999px; padding: 3px 10px; font-size: .75rem; font-weight: 700; }
+    .badge-approved { background: rgba(72,199,142,.12); color: var(--success); border-radius: 999px; padding: 3px 10px; font-size: .75rem; font-weight: 700; }
+    .badge-rejected { background: rgba(241,70,104,.1); color: var(--danger); border-radius: 999px; padding: 3px 10px; font-size: .75rem; font-weight: 700; }
+    .conge-actions { display: flex; gap: 6px; }
+    .btn-approve {
+      background: rgba(72,199,142,.15); border: 1px solid rgba(72,199,142,.3);
+      color: var(--success); border-radius: 6px; padding: 5px 12px;
+      font-size: .78rem; font-weight: 700; cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-approve:hover { background: rgba(72,199,142,.25); }
+    .btn-reject {
+      background: rgba(241,70,104,.08); border: 1px solid rgba(241,70,104,.25);
+      color: var(--danger); border-radius: 6px; padding: 5px 12px;
+      font-size: .78rem; font-weight: 700; cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-reject:hover { background: rgba(241,70,104,.18); }
+
+    /* ── Présents today ────────────────────────────────────── */
+    .present-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .present-chip {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 999px; padding: 4px 12px; font-size: .82rem;
+    }
+    .present-chip.in-service { border-color: var(--success); color: var(--success); }
+    .present-chip.done { border-color: var(--text-muted); color: var(--text-muted); }
+
+    /* ── Planning grid ─────────────────────────────────────── */
+    .week-nav {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 16px;
+    }
+    .week-nav button {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); padding: 6px 14px;
+      cursor: pointer; font-size: 1rem;
+      transition: background .15s;
+    }
+    .week-nav button:hover { background: var(--bg-surface); }
+    .week-label { font-size: .9rem; font-weight: 700; color: var(--text-muted); }
+
+    .planning-table {
+      width: 100%; border-collapse: collapse; font-size: .82rem;
+      table-layout: fixed;
+    }
+    .planning-table th {
+      padding: 8px 6px; text-align: center; font-size: .7rem;
+      font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+      color: var(--text-muted); border-bottom: 1px solid var(--border);
+    }
+    .planning-table th.name-col { text-align: left; width: 110px; }
+    .planning-table td {
+      padding: 6px 4px; vertical-align: middle;
+      border-bottom: 1px solid rgba(255,255,255,.03);
+    }
+    .planning-table td.name-col {
+      font-weight: 600; font-size: .85rem; padding-left: 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .planning-table tr:hover td { background: rgba(255,255,255,.015); }
+    .planning-table tr:last-child td { border-bottom: none; }
+
+    .cell-inner {
+      min-height: 36px; border-radius: 6px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; font-size: .75rem; font-weight: 600;
+      transition: opacity .15s;
+      padding: 4px;
+    }
+    .cell-inner:hover { opacity: .8; }
+    .cell-inner.empty {
+      background: transparent; color: var(--text-muted);
+      border: 1px dashed rgba(255,255,255,.07);
+      font-weight: 400; font-size: .7rem;
+    }
+    .cell-inner.shift {
+      background: rgba(212,175,55,.12); color: var(--primary);
+    }
+    .cell-inner.off {
+      background: rgba(255,255,255,.04); color: var(--text-muted); font-size: .7rem;
+    }
+    .cell-inner.conge {
+      background: rgba(72,199,142,.08); color: var(--success); font-size: .7rem;
+    }
+    .cell-inner.today-col {
+      outline: 1px solid rgba(212,175,55,.3);
+    }
+    .section-label {
+      font-size: .7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .8px; color: var(--text-muted);
+      margin: 20px 0 8px; display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* ── Heures supp ───────────────────────────────────────── */
+    .hours-table {
+      width: 100%; border-collapse: collapse; font-size: .88rem;
+    }
+    .hours-table th {
+      text-align: left; padding: 8px 12px; font-size: .72rem;
+      font-weight: 700; text-transform: uppercase; letter-spacing: .7px;
+      color: var(--text-muted); border-bottom: 1px solid var(--border);
+    }
+    .hours-table td { padding: 11px 12px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: middle; }
+    .hours-table tr:last-child td { border-bottom: none; }
+    .hours-table tr:hover td { background: rgba(255,255,255,.02); }
+
+    .bar-track {
+      height: 6px; background: rgba(255,255,255,.07); border-radius: 999px;
+      overflow: hidden; width: 100%; max-width: 180px;
+    }
+    .bar-fill {
+      height: 100%; border-radius: 999px;
+      background: var(--primary);
+      transition: width .4s;
+    }
+    .bar-fill.retard { background: var(--danger); }
+    .min-pill {
+      display: inline-block; font-size: .75rem; font-weight: 700;
+      padding: 2px 9px; border-radius: 999px; white-space: nowrap;
+    }
+    .min-pill.supp   { background: rgba(212,175,55,.14); color: var(--primary); }
+    .min-pill.retard { background: rgba(241,70,104,.1); color: var(--danger); }
+    .min-pill.zero   { color: var(--text-muted); font-weight: 400; }
+
+    .event-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+    .event-row {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 8px 12px; background: var(--bg-surface); border-radius: 8px;
+      border: 1px solid var(--border); font-size: .83rem;
+    }
+    .event-date { color: var(--text-muted); font-size: .78rem; }
+    .event-name { font-weight: 700; }
+    .event-note { color: var(--text-muted); font-style: italic; flex: 1; }
+    .btn-del-event {
+      background: none; border: none; color: var(--text-muted);
+      cursor: pointer; font-size: 1rem; padding: 0 4px; line-height: 1;
+    }
+    .btn-del-event:hover { color: var(--danger); }
+
+    /* ── Modal shift ───────────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,.75);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9000; opacity: 0; pointer-events: none;
+      transition: opacity .18s;
+    }
+    .modal-backdrop.active { opacity: 1; pointer-events: auto; }
+    .modal-box {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px 28px 24px;
+      width: min(420px, 94vw);
+    }
+    .modal-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 18px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: .8rem; color: var(--text-muted); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; }
+    .form-group input, .form-group select {
+      width: 100%; background: var(--bg-surface);
+      border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); font-size: .9rem; padding: 9px 12px;
+      box-sizing: border-box;
+    }
+    .form-group input:focus { outline: none; border-color: var(--primary); }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: .9rem; }
+  </style>
+</head>
+<body>
+<div id="app-root"><div class="loading-screen"><div class="spinner"></div></div></div>
+
+<!-- Modal édition shift -->
+<div class="modal-backdrop" id="shift-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="shift-modal-title">Modifier le shift</div>
+    <div class="form-group">
+      <label>Type</label>
+      <select id="shift-type">
+        <option value="shift">Shift (horaires)</option>
+        <option value="off">Jour off</option>
+        <option value="clear">Supprimer</option>
+      </select>
+    </div>
+    <div id="shift-times">
+      <div class="form-group">
+        <label>Début</label>
+        <input type="time" id="shift-start" value="10:00">
+      </div>
+      <div class="form-group">
+        <label>Fin</label>
+        <input type="time" id="shift-end" value="17:00">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary btn-sm" id="shift-cancel">Annuler</button>
+      <button class="btn btn-primary btn-sm" id="shift-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+'use strict';
+
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const DAYS_FR = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+const DAYS_FULL = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+const MONTHS_FR = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+
+function todayStr() {
+  return new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 10);
+}
+function mondayOf(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const dow = dt.getUTCDay();
+  dt.setUTCDate(dt.getUTCDate() + (dow === 0 ? -6 : 1 - dow));
+  return dt.toISOString().slice(0, 10);
+}
+function addDays(dateStr, n) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+function fmtDate(dateStr) {
+  const [, m, d] = dateStr.split('-').map(Number);
+  return `${d} ${MONTHS_FR[m - 1]}`;
+}
+function fmtMin(min) {
+  if (!min) return '0min';
+  const h = Math.floor(Math.abs(min) / 60);
+  const m = Math.abs(min) % 60;
+  return h > 0 ? `${h}h${m.toString().padStart(2,'0')}` : `${m}min`;
+}
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let currentTab    = 'general';
+let planWeekStart = mondayOf(todayStr());
+let planType      = 'salle'; // 'salle' | 'cuisine'
+let planData      = null;
+let cuisineData   = null;
+let overviewData  = null;
+
+// Pending shift edit
+let editCtx = null; // { userId, dayDate, domain }
+
+// ── Tabs ───────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  ['general','planning','heures'].forEach(t => {
+    document.getElementById(`tab-${t}`)?.classList.toggle('active', t === tab);
+    document.getElementById(`pane-${t}`)?.toggleAttribute('hidden', t !== tab);
+  });
+  currentTab = tab;
+  if (tab === 'planning') loadPlanning();
+  if (tab === 'heures')   loadHeures();
+}
+
+// ── Général ────────────────────────────────────────────────────────────────────
+async function loadGeneral() {
+  overviewData = await api.get('/api/direction/overview');
+  renderGeneral(overviewData);
+}
+
+function renderGeneral(d) {
+  const present    = d.pointages.filter(p => p.arrived_at).length;
+  const enService  = d.pointages.filter(p => p.arrived_at && !p.left_at).length;
+  const totalStaff = d.pointages.length;
+  const totalSupp  = d.suppByUser.reduce((s, u) => s + u.supp, 0);
+
+  document.getElementById('kpi-present').textContent  = present;
+  document.getElementById('kpi-service').textContent  = enService;
+  document.getElementById('kpi-pending').textContent  = d.pendingConges.length;
+  document.getElementById('kpi-supp').textContent     = fmtMin(totalSupp);
+
+  // Présents
+  const chips = d.pointages.filter(p => p.arrived_at).map(p => {
+    const cls = p.left_at ? 'done' : 'in-service';
+    const status = p.left_at ? `↩ ${p.left_at}` : 'en service';
+    return `<span class="present-chip ${cls}" title="${esc(p.user_name)} — arrivé ${p.arrived_at}${p.left_at ? ', parti ' + p.left_at : ''}">${esc(p.user_name)} <span style="font-weight:400;font-size:.75rem">${status}</span></span>`;
+  }).join('');
+  document.getElementById('present-chips').innerHTML = chips || '<span style="color:var(--text-muted);font-size:.85rem">Aucun présent pour l\'instant</span>';
+
+  // Congés en attente
+  const pendingEl = document.getElementById('pending-conges');
+  if (!d.pendingConges.length) {
+    pendingEl.innerHTML = '<div class="empty-state" style="padding:20px">Aucune demande en attente</div>';
+  } else {
+    pendingEl.innerHTML = d.pendingConges.map(c => `
+      <div class="conge-row">
+        <span class="conge-name">${esc(c.user_name)}</span>
+        <span class="conge-dates">${fmtDate(c.date_from)} → ${fmtDate(c.date_to)}</span>
+        <span class="conge-motif">${esc(c.motif || '—')}</span>
+        <div class="conge-actions">
+          <button class="btn-approve" data-id="${c.id}">Approuver</button>
+          <button class="btn-reject"  data-id="${c.id}">Refuser</button>
+        </div>
+      </div>`).join('');
+    pendingEl.querySelectorAll('.btn-approve').forEach(b => b.addEventListener('click', () => reviewConge(b.dataset.id, 'approved')));
+    pendingEl.querySelectorAll('.btn-reject').forEach(b  => b.addEventListener('click', () => reviewConge(b.dataset.id, 'rejected')));
+  }
+
+  // Congés à venir
+  const upcomingEl = document.getElementById('upcoming-conges');
+  const allComingUp = [...d.activeConges, ...d.upcomingConges];
+  if (!allComingUp.length) {
+    upcomingEl.innerHTML = '<div class="empty-state" style="padding:16px">Aucun congé approuvé à venir</div>';
+  } else {
+    upcomingEl.innerHTML = allComingUp.map(c => {
+      const isActive = c.date_from <= d.today && c.date_to >= d.today;
+      return `<div class="conge-row">
+        <span class="conge-name">${esc(c.user_name)}</span>
+        <span class="conge-dates">${fmtDate(c.date_from)} → ${fmtDate(c.date_to)}</span>
+        <span class="${isActive ? 'badge-approved' : 'badge-pending'}">${isActive ? 'En cours' : 'À venir'}</span>
+      </div>`;
+    }).join('');
+  }
+}
+
+async function reviewConge(id, status) {
+  const label = status === 'approved' ? 'approuver' : 'refuser';
+  if (!confirm(`Voulez-vous ${label} cette demande ?`)) return;
+  await api.put(`/api/admin/conge-requests/${id}`, { status });
+  showToast(status === 'approved' ? 'Congé approuvé' : 'Congé refusé', status === 'approved' ? 'success' : 'info');
+  await loadGeneral();
+}
+
+// ── Planning ───────────────────────────────────────────────────────────────────
+function weekDates(weekStart) {
+  return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+}
+
+async function loadPlanning() {
+  const [salle, cuisine] = await Promise.all([
+    api.get(`/api/salle/hours?weekStart=${planWeekStart}`),
+    api.get(`/api/cuisine/planning?weekStart=${planWeekStart}`),
+  ]);
+  planData    = salle;
+  cuisineData = cuisine;
+  renderPlanning();
+}
+
+function renderPlanning() {
+  const today = todayStr();
+  const dates = weekDates(planWeekStart);
+  const d = planData;
+  const c = cuisineData;
+
+  // Week label
+  document.getElementById('plan-week-label').textContent =
+    `Semaine du ${fmtDate(planWeekStart)} au ${fmtDate(dates[6])}`;
+
+  renderGrid('grid-salle', d.users, d.shifts, dates, today, 'salle');
+  renderGrid('grid-cuisine', c.users, c.shifts, dates, today, 'cuisine');
+}
+
+function renderGrid(containerId, users, shifts, dates, today, domain) {
+  const el = document.getElementById(containerId);
+  if (!users || !users.length) { el.innerHTML = '<div class="empty-state">Aucun staff</div>'; return; }
+
+  const shiftMap = {};
+  shifts.forEach(s => {
+    const key = `${s.user_id}_${s.day_date}`;
+    shiftMap[key] = s;
+  });
+
+  const headerCols = dates.map((date, i) => {
+    const isToday = date === today;
+    return `<th class="${isToday ? 'today' : ''}" style="${isToday ? 'color:var(--primary)' : ''}">${DAYS_FR[i]}<br><span style="font-weight:400;font-size:.7rem">${fmtDate(date)}</span></th>`;
+  }).join('');
+
+  const rows = users.map(u => {
+    const cells = dates.map(date => {
+      const s = shiftMap[`${u.id}_${date}`];
+      const isToday = date === today;
+      let inner = '';
+      if (!s) {
+        inner = `<div class="cell-inner empty${isToday ? ' today-col' : ''}" data-uid="${u.id}" data-date="${date}" data-domain="${domain}">+</div>`;
+      } else if (s.is_conge) {
+        inner = `<div class="cell-inner conge${isToday ? ' today-col' : ''}">CONGÉ</div>`;
+      } else if (s.is_off) {
+        inner = `<div class="cell-inner off${isToday ? ' today-col' : ''}" data-uid="${u.id}" data-date="${date}" data-domain="${domain}">OFF</div>`;
+      } else {
+        const lbl = s.start_time && s.end_time ? `${s.start_time}<br>${s.end_time}` : (s.start_time || '?');
+        inner = `<div class="cell-inner shift${isToday ? ' today-col' : ''}" data-uid="${u.id}" data-date="${date}" data-domain="${domain}">${lbl}</div>`;
+      }
+      return `<td>${inner}</td>`;
+    }).join('');
+    return `<tr><td class="name-col" title="${esc(u.name)}">${esc(u.name.split(' ')[0])}</td>${cells}</tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="overflow-x:auto">
+      <table class="planning-table">
+        <thead><tr>
+          <th class="name-col">Nom</th>
+          ${headerCols}
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+
+  // Click on editable cells
+  el.querySelectorAll('.cell-inner[data-uid]').forEach(cell => {
+    cell.addEventListener('click', () => openShiftModal(
+      parseInt(cell.dataset.uid),
+      cell.dataset.date,
+      cell.dataset.domain,
+      cell.classList.contains('shift') || cell.classList.contains('off') ? cell : null
+    ));
+  });
+}
+
+// ── Shift modal ────────────────────────────────────────────────────────────────
+function openShiftModal(userId, dayDate, domain, existingCell) {
+  const users = domain === 'salle' ? planData?.users : cuisineData?.users;
+  const user = users?.find(u => u.id === userId);
+  const shifts = domain === 'salle' ? planData?.shifts : cuisineData?.shifts;
+  const existing = shifts?.find(s => s.user_id === userId && s.day_date === dayDate);
+
+  editCtx = { userId, dayDate, domain };
+  document.getElementById('shift-modal-title').textContent =
+    `${user?.name || 'Staff'} — ${fmtDate(dayDate)}`;
+
+  const typeEl  = document.getElementById('shift-type');
+  const timesEl = document.getElementById('shift-times');
+
+  if (existing && !existing.is_conge) {
+    typeEl.value = existing.is_off ? 'off' : 'shift';
+    document.getElementById('shift-start').value = existing.start_time || '10:00';
+    document.getElementById('shift-end').value   = existing.end_time   || '17:00';
+  } else {
+    typeEl.value = 'shift';
+    document.getElementById('shift-start').value = '10:00';
+    document.getElementById('shift-end').value   = '17:00';
+  }
+  timesEl.style.display = typeEl.value === 'shift' ? '' : 'none';
+
+  document.getElementById('shift-modal').classList.add('active');
+}
+
+document.getElementById('shift-type').addEventListener('change', e => {
+  document.getElementById('shift-times').style.display = e.target.value === 'shift' ? '' : 'none';
+});
+document.getElementById('shift-cancel').addEventListener('click', () => {
+  document.getElementById('shift-modal').classList.remove('active');
+});
+document.getElementById('shift-save').addEventListener('click', saveShift);
+
+async function saveShift() {
+  if (!editCtx) return;
+  const { userId, dayDate, domain } = editCtx;
+  const type = document.getElementById('shift-type').value;
+
+  if (type === 'clear') {
+    const url = domain === 'salle' ? '/api/salle/planning' : '/api/cuisine/planning';
+    await api.delete(`${url}?user_id=${userId}&day_date=${dayDate}`);
+  } else {
+    const payload = {
+      user_id: userId, week_start: mondayOf(dayDate), day_date: dayDate,
+      is_off: type === 'off' ? 1 : 0,
+      start_time: type === 'shift' ? document.getElementById('shift-start').value : null,
+      end_time:   type === 'shift' ? document.getElementById('shift-end').value   : null,
+    };
+    const url = domain === 'salle' ? '/api/salle/planning' : '/api/cuisine/planning';
+    await api.put(url, payload);
+  }
+
+  document.getElementById('shift-modal').classList.remove('active');
+  showToast('Planning mis à jour', 'success');
+  await loadPlanning();
+}
+
+document.getElementById('shift-modal').addEventListener('click', e => {
+  if (e.target.id === 'shift-modal') document.getElementById('shift-modal').classList.remove('active');
+});
+
+// ── Heures ─────────────────────────────────────────────────────────────────────
+let hoursWeekStart = mondayOf(todayStr());
+let hoursData = null;
+
+async function loadHeures() {
+  hoursData = await api.get(`/api/salle/hours?weekStart=${hoursWeekStart}`);
+  renderHeures();
+}
+
+function renderHeures() {
+  if (!hoursData) return;
+  const today = todayStr();
+  const dates = weekDates(hoursWeekStart);
+
+  document.getElementById('hours-week-label').textContent =
+    `Semaine du ${fmtDate(hoursWeekStart)} au ${fmtDate(dates[6])}`;
+
+  const { users, timeEvents } = hoursData;
+
+  // Group time events by user
+  const evByUser = {};
+  timeEvents.forEach(e => {
+    if (!evByUser[e.user_id]) evByUser[e.user_id] = [];
+    evByUser[e.user_id].push(e);
+  });
+
+  // Compute totals
+  const userStats = users.map(u => {
+    const evs = evByUser[u.id] || [];
+    const supp   = evs.filter(e => e.type === 'supp').reduce((s, e) => s + e.minutes, 0);
+    const retard = evs.filter(e => e.type !== 'supp').reduce((s, e) => s + e.minutes, 0);
+    return { ...u, supp, retard, evs };
+  }).filter(u => u.supp || u.retard);
+
+  const maxMin = Math.max(...userStats.map(u => u.supp + u.retard), 60);
+
+  // Table
+  const hoursTableEl = document.getElementById('hours-table-body');
+  if (!userStats.length) {
+    hoursTableEl.innerHTML = `<tr><td colspan="4"><div class="empty-state">Aucun événement d'heures cette semaine</div></td></tr>`;
+  } else {
+    hoursTableEl.innerHTML = userStats.map(u => {
+      const suppPct   = Math.round((u.supp   / maxMin) * 100);
+      const retardPct = Math.round((u.retard / maxMin) * 100);
+      const net = u.supp - u.retard;
+      const netLabel = net > 0 ? `+${fmtMin(net)}` : net < 0 ? `-${fmtMin(-net)}` : '=';
+      const netColor = net > 0 ? 'var(--primary)' : net < 0 ? 'var(--danger)' : 'var(--text-muted)';
+      return `
+        <tr>
+          <td style="font-weight:700">${esc(u.name)}</td>
+          <td>
+            ${u.supp ? `<span class="min-pill supp">+${fmtMin(u.supp)} supp</span>` : ''}
+            ${u.retard ? `<span class="min-pill retard">-${fmtMin(u.retard)} retard</span>` : ''}
+          </td>
+          <td>
+            ${u.supp ? `<div class="bar-track" style="margin-bottom:3px"><div class="bar-fill" style="width:${suppPct}%"></div></div>` : ''}
+            ${u.retard ? `<div class="bar-track"><div class="bar-fill retard" style="width:${retardPct}%"></div></div>` : ''}
+          </td>
+          <td style="font-weight:800;color:${netColor}">${netLabel}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  // Détail des événements
+  const allEvents = [...timeEvents].sort((a, b) => b.date.localeCompare(a.date));
+  const evListEl = document.getElementById('event-detail-list');
+  if (!allEvents.length) {
+    evListEl.innerHTML = '<div class="empty-state" style="padding:20px">Aucun événement</div>';
+  } else {
+    evListEl.innerHTML = allEvents.map(e => `
+      <div class="event-row">
+        <span class="event-date">${fmtDate(e.date)}</span>
+        <span class="event-name">${esc(e.user_name)}</span>
+        <span class="min-pill ${e.type === 'supp' ? 'supp' : 'retard'}">${e.type === 'supp' ? '+' : '-'}${fmtMin(e.minutes)}</span>
+        <span class="event-note">${esc(e.note || '')}</span>
+        <button class="btn-del-event" data-id="${e.id}" title="Supprimer">×</button>
+      </div>`).join('');
+    evListEl.querySelectorAll('.btn-del-event').forEach(b => {
+      b.addEventListener('click', async () => {
+        await api.delete(`/api/salle/time-events/${b.dataset.id}`);
+        showToast('Événement supprimé', 'info');
+        await loadHeures();
+      });
+    });
+  }
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  const user = await requireAuth(['admin', 'direction']);
+
+  renderLayout(user, 'Direction', `
+    <div class="dir-tabs" role="tablist">
+      <button class="dir-tab active" id="tab-general"  role="tab" onclick="switchTab('general')">Vue générale</button>
+      <button class="dir-tab"        id="tab-planning" role="tab" onclick="switchTab('planning')">Planning</button>
+      <button class="dir-tab"        id="tab-heures"   role="tab" onclick="switchTab('heures')">Heures supp</button>
+    </div>
+
+    <!-- ── Général ── -->
+    <div id="pane-general">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Présents</div>
+          <div class="kpi-value success" id="kpi-present">—</div>
+          <div class="kpi-sub">aujourd'hui</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">En service</div>
+          <div class="kpi-value" id="kpi-service">—</div>
+          <div class="kpi-sub">pas encore parti</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Congés en attente</div>
+          <div class="kpi-value danger" id="kpi-pending">—</div>
+          <div class="kpi-sub">à traiter</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">H. supp salle</div>
+          <div class="kpi-value gold" id="kpi-supp">—</div>
+          <div class="kpi-sub">cette semaine</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title">Présents aujourd'hui</div>
+        <div class="present-chips" id="present-chips"></div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title" style="margin-bottom:14px">Demandes en attente</div>
+        <div id="pending-conges"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px">Congés approuvés (en cours & à venir)</div>
+        <div id="upcoming-conges"></div>
+      </div>
+    </div>
+
+    <!-- ── Planning ── -->
+    <div id="pane-planning" hidden>
+      <div class="week-nav">
+        <button id="plan-prev">‹</button>
+        <span class="week-label" id="plan-week-label">—</span>
+        <button id="plan-next">›</button>
+        <button class="btn btn-secondary btn-sm" id="plan-today" style="margin-left:auto">Aujourd'hui</button>
+      </div>
+
+      <div class="section-label">Salle</div>
+      <div class="card" style="padding:0;overflow:auto" id="grid-salle"></div>
+
+      <div class="section-label" style="margin-top:24px">Cuisine</div>
+      <div class="card" style="padding:0;overflow:auto" id="grid-cuisine"></div>
+    </div>
+
+    <!-- ── Heures ── -->
+    <div id="pane-heures" hidden>
+      <div class="week-nav">
+        <button id="hours-prev">‹</button>
+        <span class="week-label" id="hours-week-label">—</span>
+        <button id="hours-next">›</button>
+        <button class="btn btn-secondary btn-sm" id="hours-today" style="margin-left:auto">Cette semaine</button>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;overflow:auto">
+        <div class="card-title" style="margin-bottom:14px">Récapitulatif — Salle</div>
+        <table class="hours-table">
+          <thead><tr>
+            <th>Nom</th>
+            <th>Total</th>
+            <th style="width:200px">Répartition</th>
+            <th>Net</th>
+          </tr></thead>
+          <tbody id="hours-table-body">
+            <tr><td colspan="4"><div class="empty-state">Chargement…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">Détail des événements</div>
+        <div id="event-detail-list"></div>
+      </div>
+    </div>
+  `);
+
+  // Planning nav
+  document.getElementById('plan-prev').addEventListener('click', () => {
+    planWeekStart = addDays(planWeekStart, -7);
+    loadPlanning();
+  });
+  document.getElementById('plan-next').addEventListener('click', () => {
+    planWeekStart = addDays(planWeekStart, 7);
+    loadPlanning();
+  });
+  document.getElementById('plan-today').addEventListener('click', () => {
+    planWeekStart = mondayOf(todayStr());
+    loadPlanning();
+  });
+
+  // Heures nav
+  document.getElementById('hours-prev').addEventListener('click', () => {
+    hoursWeekStart = addDays(hoursWeekStart, -7);
+    loadHeures();
+  });
+  document.getElementById('hours-next').addEventListener('click', () => {
+    hoursWeekStart = addDays(hoursWeekStart, 7);
+    loadHeures();
+  });
+  document.getElementById('hours-today').addEventListener('click', () => {
+    hoursWeekStart = mondayOf(todayStr());
+    loadHeures();
+  });
+
+  await loadGeneral();
+});
+</script>
+</body>
+</html>
