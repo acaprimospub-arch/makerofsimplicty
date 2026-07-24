@@ -206,7 +206,6 @@ async function buildNav(activePage) {
     { href: '/admin/equipe.html',       label: 'Gestion Staff',   key: 'equipe' },
     { href: '/staff/reservations.html', label: 'Réservations',    key: 'reservations' },
     { href: '/staff/tables.html',       label: 'Salle',           key: 'tables' },
-    { href: '/cuisine/index.html',      label: 'Cuisine',         key: 'cuisine' },
     { href: '/admin/admin.html',         label: 'Admin',           key: 'admin-tools' },
     { href: '/staff/planning.html',     label: 'Planning',        key: 'planning' },
     { href: '/staff/conges.html',       label: 'Congés',          key: 'conges' },

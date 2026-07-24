@@ -59,18 +59,21 @@
     .task-completers {
       display:flex; flex-wrap:wrap; gap:4px; margin-top:8px;
     }
-    .completer-avatar {
-      width:28px; height:28px; border-radius:50%;
-      display:inline-flex; align-items:center; justify-content:center;
-      font-size:10px; font-weight:800; flex-shrink:0; cursor:default;
+    .completer-tag {
+      display:inline-flex; align-items:center; gap:5px;
+      padding:3px 10px; border-radius:20px;
+      font-size:.78rem; font-weight:700; flex-shrink:0;
     }
-    .completer-avatar.me {
-      background:rgba(230,184,74,.25); color:var(--primary);
-      border:2px solid var(--primary);
+    .completer-tag.me {
+      background:rgba(230,184,74,.15); color:var(--primary);
+      border:1px solid rgba(230,184,74,.4);
     }
-    .completer-avatar.other {
-      background:rgba(91,141,238,.18); color:#5b8dee;
-      border:2px solid rgba(91,141,238,.6);
+    .completer-tag.other {
+      background:rgba(91,141,238,.12); color:#5b8dee;
+      border:1px solid rgba(91,141,238,.35);
+    }
+    .completer-tag .completer-time {
+      font-weight:400; opacity:.75; font-size:.73rem;
     }
 
     .tab-count {
@@ -393,12 +396,14 @@
 
       let badgesHtml = '';
       if (anyDone && t.completers) {
-        const names = t.completers.split(', ');
-        badgesHtml = `<div class="task-completers" aria-label="Complété par : ${escapeHtml(t.completers)}">` +
-          names.map(name => {
-            const isMe     = currentUser && name === currentUser.name;
-            const initials = name.split(' ').map(n => n[0] || '').join('').toUpperCase().slice(0, 2);
-            return `<span class="completer-avatar ${isMe ? 'me' : 'other'}" aria-label="${escapeHtml(name)}" title="${escapeHtml(name)}" role="img">${escapeHtml(initials)}</span>`;
+        const entries = t.completers.split(', ');
+        badgesHtml = `<div class="task-completers">` +
+          entries.map(entry => {
+            const [name, time] = entry.split('|');
+            const isMe = currentUser && name === currentUser.name;
+            return `<span class="completer-tag ${isMe ? 'me' : 'other'}" title="${escapeHtml(name)}">
+              ${escapeHtml(name)}${time ? `<span class="completer-time">· ${escapeHtml(time)}</span>` : ''}
+            </span>`;
           }).join('') +
           `</div>`;
       }
@@ -433,7 +438,7 @@
         task.my_completed   = 0;
         task.completion_count = Math.max(0, (task.completion_count || 1) - 1);
         if (task.completers && currentUser) {
-          task.completers = task.completers.split(', ').filter(n => n !== currentUser.name).join(', ') || null;
+          task.completers = task.completers.split(', ').filter(e => e.split('|')[0] !== currentUser.name).join(', ') || null;
         }
         announce(`Tâche décochée : ${task.description}`);
       } else {
@@ -441,9 +446,12 @@
         task.my_completed     = 1;
         task.completion_count = (task.completion_count || 0) + 1;
         if (currentUser) {
-          const names = task.completers ? task.completers.split(', ') : [];
-          if (!names.includes(currentUser.name)) names.push(currentUser.name);
-          task.completers = names.join(', ');
+          const now   = new Date();
+          const hhmm  = now.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+          const entry = `${currentUser.name}|${hhmm}`;
+          const entries = task.completers ? task.completers.split(', ') : [];
+          if (!entries.some(e => e.split('|')[0] === currentUser.name)) entries.push(entry);
+          task.completers = entries.join(', ');
         }
         announce(`Tâche cochée : ${task.description}`);
       }
@@ -463,16 +471,18 @@
       const task = allTasks.find(t => t.id === taskId);
       if (!task) return;
 
-      const names = task.completers ? task.completers.split(', ') : [];
+      const entries = task.completers ? task.completers.split(', ') : [];
       if (completed) {
-        if (!names.includes(userName)) names.push(userName);
+        const now  = new Date();
+        const hhmm = now.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+        if (!entries.some(e => e.split('|')[0] === userName)) entries.push(`${userName}|${hhmm}`);
         task.completion_count = (task.completion_count || 0) + 1;
       } else {
-        const idx = names.indexOf(userName);
-        if (idx > -1) names.splice(idx, 1);
+        const idx = entries.findIndex(e => e.split('|')[0] === userName);
+        if (idx > -1) entries.splice(idx, 1);
         task.completion_count = Math.max(0, (task.completion_count || 1) - 1);
       }
-      task.completers = names.join(', ') || null;
+      task.completers = entries.join(', ') || null;
       renderAllTabs();
       announce(`${escapeHtml(userName)} a ${completed ? 'coché' : 'décoché'} une tâche.`);
     });

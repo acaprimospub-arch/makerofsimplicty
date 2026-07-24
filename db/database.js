@@ -896,7 +896,7 @@ function getTasksWithCompletions(date, userId, domain = 'salle') {
   return db.prepare(`
     SELECT t.*,
            COUNT(tc.id) as completion_count,
-           GROUP_CONCAT(u.name, ', ') as completers,
+           GROUP_CONCAT(u.name || '|' || substr(tc.completed_at, 12, 5), ', ') as completers,
            MAX(CASE WHEN tc.user_id = ? THEN 1 ELSE 0 END) as my_completed,
            MAX(CASE WHEN tc.user_id = ? THEN tc.id ELSE NULL END) as my_completion_id
     FROM tasks t
